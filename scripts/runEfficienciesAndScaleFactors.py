@@ -100,22 +100,12 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
     histos_mc['ref'] = get_root_object(hnames['ref'], file_mc)
    
     histos_data['trig'], histos_mc['trig'] = ({} for _ in range(2))
+
     for key in keylist_mc:
         rewritten_str = rewriteCutString(hnames['trig'], '')
         if key.startswith(rewritten_str):
             histos_data['trig'][key] = get_root_object(key, file_data)
             histos_mc['trig'][key] = get_root_object(key, file_mc)
-            # print('File Data: {}'.format(file_data))
-            # print('File MC: {}'.format(file_mc))
-            # print('Data histo name: {}.'.format(histos_data['trig'][key].GetName()))
-            # print('MC histo name: {}.'.format(histos_mc['trig'][key].GetName()))
-            # print('Data Ref histo nBins: {}.'.format(histos_data['ref'].GetNbinsX()))
-            # print('Data histo nBins: {}.'.format(histos_data['trig'][key].GetNbinsX()))
-            # print('MC Ref histo nBins: {}.'.format(histos_mc['ref'].GetNbinsX()))
-            # print('MC histo nBins: {}.'.format(histos_mc['trig'][key].GetNbinsX()))
-            # for ibin in range(1,histos_mc['trig'][key].GetNbinsX()+1):
-            #     print(ibin, histos_mc['trig'][key].GetBinContent(ibin))
-            # print()
 
             # "solve" TGraphasymmErrors bin skipping when denominator=0
             # see TGraphAsymmErrors::Divide() (the default behaviour is very error prone!)
@@ -162,7 +152,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
    
         x_sf, y_sf   = ( [[] for _ in range(npoints)] for _ in range(2) )
         eu_sf, ed_sf = ( [[] for _ in range(npoints)] for _ in range(2) )
-   
+
         for i in range(npoints):
             #ctypes conversions needed
             x_mc[i] = ctypes.c_double(0.)
@@ -174,7 +164,8 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
             eu_mc[i] = vmc.GetErrorYhigh(i)
             ed_mc[i] = vmc.GetErrorYlow(i)
             if debug:
-                print('xp[{}] = {} - yp[{}] = {} +{}/-{}\n'.format(i,x_mc[i],iy_mc[i],eu_mc[i],ed_mc[i]))
+                print('X MC: xp[{}] = {}'.format(i,x_mc[i]), flush=True)
+                print('Y MC: yp[{}] = {} +{}/-{}'.format(i,y_mc[i],eu_mc[i],ed_mc[i]), flush=True)
    
             x_data[i] = ctypes.c_double(0.)
             y_data[i] = ctypes.c_double(0.)
@@ -185,7 +176,8 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
             eu_data[i] = vdata.GetErrorYhigh(i)
             ed_data[i] = vdata.GetErrorYlow(i)
             if debug:
-                print('xp[{}] = {} - yp[{}] = {} +{}/-{}\n'.format(i,x_data[i],i,y_data[i],eu_data[i],ed_data[i]))
+                print('X Data: xp[{}] = {}'.format(i,x_data[i]), flush=True)
+                print('Y Data: yp[{}] = {} +{}/-{}'.format(i,y_data[i],eu_data[i],ed_data[i]), flush=True)
    
             x_sf[i] = x_mc[i]
             assert x_data[i] == x_mc[i]
@@ -193,7 +185,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
             try:
                 y_sf[i] = y_data[i] / y_mc[i]
             except ZeroDivisionError:
-                print('[runEfficienciesAndScaleFactors.py] WARNING: There was a division by zero!')
+                print('[runEfficienciesAndScaleFactors.py] WARNING: There was a division by zero!', flush=True)
                 y_sf[i] = 0
    
             if y_sf[i] == 0:
@@ -204,10 +196,10 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
                 ed_sf[i] = np.sqrt( ed_mc[i]**2 + ed_data[i]**2 )
    
             if debug:
-                print('=== Scale Factors ====')
-                for i in range(npoints):
-                    print('xp[{}] = {} - yp[{}] = {} +{}/-{}\n'.format(i,x_sf[i],i,y_sf[i],eu_sf[i],ed_sf[i]))
-   
+                print('X Scale Factors: xp[{}] = {}'.format(i,x_sf[i]), flush=True)
+                print('Y Scale Factors: yp[{}] = {} +{}/-{}'.format(i,y_sf[i],eu_sf[i],ed_sf[i]), flush=True)
+                print('', flush=True)
+
         sf[kdata] = TGraphAsymmErrors( npoints,
                                        darr(x_sf),
                                        darr(y_sf),
@@ -215,7 +207,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
                                        darr(halfbinwidths),
                                        darr(ed_sf),
                                        darr(eu_sf) )
-   
+
     ####### Scale Factors #######################################################################
     # eff_mc_histo = histos_mc['trig'].Clone('eff_mc_histo')
     # eff_data_histo = histos_data['trig'].Clone('eff_data_histo')
@@ -234,10 +226,8 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
    
     # sf.Divide(eff_data_histo, eff_mc_histo, 'pois') #independent processes (Data/MC) with poisson
     #############################################################################################
-   
-      
     if debug:
-        print('[=debug=] Plotting...')
+        print('[=debug=] Plotting...', flush=True)
    
     for akey in sf:
         canvas_name = os.path.basename(save_names[0]).split('.')[0]
@@ -356,7 +346,10 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         pad2.cd()
         pad2.SetGridy()
 
-        max1, min1 = max(y_sf)+max(eu_sf),min(y_sf)-max(ed_sf)
+        if max(y_sf) == min(y_sf):
+            max1, min1 = 1., 0.
+        else:
+            max1, min1 = max(y_sf)+max(eu_sf),min(y_sf)-max(ed_sf)
         axor2 = TH2D( 'axor2'+akey,'axor2'+akey,
                       axor_info[0], axor_info[1], axor_info[2],
                       100, min1-0.1*(max1-min1), max1+0.1*(max1-min1) )
@@ -405,12 +398,11 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         padmax = max1+0.1*(max1-min1)
         fraction = (padmax-padmin)/30
         for i in range(nbins):
-          x = axor2.GetXaxis().GetBinLowEdge(i) + 1.5;
-          l.DrawLine(x,padmin-fraction,x,padmin+fraction)
+            x = axor2.GetXaxis().GetBinLowEdge(i) + 1.5;
+            l.DrawLine(x,padmin-fraction,x,padmin+fraction)
         l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
 
         redraw_border()
-
         for aname in save_names[:-1]:
             _name = rewriteCutString(aname, akey, regex=True)
             canvas.SaveAs( _name )
@@ -426,6 +418,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         eff_data[akey].Write('Data')
         eff_mc[akey].Write('MC')
         sf[akey].Write('ScaleFactors')
+        
 
 def _getCanvasName(proc, chn, var, trig, data_name, subtag):
     """
@@ -496,8 +489,7 @@ def runEfficienciesAndScaleFactors(indir, outdir,
         if args.debug:
           for name in names:
             print('[=debug=] {}'.format(name))
-            m = "process={}, channel={}".format(proc, chn)
-            m += ", variable={}, trigger={}".format(var, trig)
+            m = "process={}, channel={}, variable={}".format(proc, chn, var)
             m += ", trigger_combination={}\n".format(trigger_combination)
 
         drawEfficienciesAndScaleFactors( proc, chn, var,

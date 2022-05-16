@@ -63,7 +63,7 @@ def createSingleFile(f):
 def debug(message, flag=True):
     decorator = ' ============ '
     if flag:
-        print( decorator + message + decorator )
+        print( decorator + message + decorator, flush=True )
 
 class dotDict(dict):
     """dot.notation access to dictionary attributes"""
@@ -435,16 +435,16 @@ def pass_trigger_bits(trig, trig_bit, run, isdata):
         return check_bit(trig_bit, get_trigger_bit(trig, isdata))
 
 def print_configuration(parse_args):
-    print('----------------------------------------')
-    print('Script configuration:')
+    print('----------------------------------------', flush=True)
+    print('Script configuration:', flush=True)
     options = vars(parse_args)
     maxlkey = max(len(x) for x in options.keys())
     for k,v in options.items():
         k = '--' + k
         if isinstance(v, (tuple,list)):
             v = ' '.join(v)
-        print('{0:>{d1}}   {1}'.format(k, v, d1=maxlkey+3))
-    print('----------------------------------------')
+        print('{0:>{d1}}   {1}'.format(k, v, d1=maxlkey+3), flush=True)
+    print('----------------------------------------', flush=True)
 
 def slashToUnderscoreAndKeep(s, n=4):
     """Replaces slashes by underscores, keeping only the last 'n' slash-separated strings"""

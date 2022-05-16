@@ -77,9 +77,9 @@ def eff_extractor(args, chn, effvars, nbins):
                 key_list = TIter(in_file.GetListOfKeys())
                 for key in key_list:
                     obj = key.ReadObj()
-                    print(obj.GetName())
-                    print(in_file_name)
-                    print(nbins[var][chn], obj.GetN(), var, chn)
+                    # print(obj.GetName())
+                    # print(in_file_name)
+                    # print(nbins[var][chn], obj.GetN(), var, chn)
                     
                     #assert nbins[var][chn] == obj.GetN()
                     if obj.GetName() == 'Data':
