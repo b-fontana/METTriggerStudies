@@ -1,0 +1,100 @@
+#+latex_header: \usepackage[utf8]{inputenc}
+
+* HH \rightarrow bb\tau \tau Resonant Analysis: Trigger Scale Factors
+
+This framework calculates and stores "intersection efficiencies" for the =inclusion method= [1]. The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KLUB]]) Ntuples. The framework is managed by ~luigi~ (see ~run_workflow.py~), which both runs local tasks and creates a Direct Acyclic Graph (DAG) to run with HTCondor.
+
+** Tasks:
+
+1. binning (manual or equal width with upper 5% quantile removal)
+2. filling efficiencies numerator and denominator histograms
+3. add histograms together per data type (Data and all MCs)
+4. add histograms for Data and MC
+5. calculate efficiencies by dividing the histograms obtained in point #2
+6. choose the variables to be used to calculate the final union efficiency
+7. calculate the union efficiencies (following the =inclusion method= [1])
+8. perform a simple closure (complete closure is done outside this framework in the HH \rightarrow bb\tau \tau ~C++~ analysis code)
+
+*** Visualize DAG
+
+Run ~dot -Tpng dag.dot -o dag.png~ as explained [[https://research.cs.wisc.edu/htcondor/manual/v7.8/2_10DAGMan_Applications.html#SECTION0031010000000000000000][here]] (a ~dot~ file was previously created by the DAG with ~DOT dag.dot~).
+
+[[./dag.png]]
+
+** Requirements:
+
+- ~python 3.9~ (likely works on other Python 3 versions)
+- ~luigi~ (available in ~CMSSW~ after running ~cmsenv~ and using ~python3~).
+
+** Luigi Workflow
+
+Run the submission workflow (check the meaning of the arguments by adding ~--help~):
+
+#+NAME: running_command
+#+BEGIN_SRC shell
+python3 run_workflow.py --outuser bfontana --tag FullWorkflowTest --data MET --mc_process TT --submit
+#+END_SRC
+
+If everything runs as expected, the above should run locally all local tasks (currently ~DefineBinning~ only) and launch a HTCondor DAG which encodes de dependencies of the remaining tasks and runs them in the server.
+
+| Output files              | Destination folder                                           |
+|---------------------------+--------------------------------------------------------------|
+| ~ROOT~                      | ~/data_CMS/cms/<llr username>/TriggerScaleFactors/<some tag>/~ |
+| Submission                | ~$HOME/jobs/<some tag>/<process>/submission/~                  |
+| Condor (output and error) | ~$HOME/jobs/<some tag>/<process>/outputs/~                     |
+| Pictures (requires ~/eos/~) | ~/eos/home-b/<lxplus username>/www/TriggerScaleFactors/~       |
+
+
+You can also run each ~luigi~ task separately by running its corresponding ~python~ scripts (all support ~--help~). For instance (running within a LLR machine):
+
+#+NAME: single_task
+#+BEGIN_SRC shell 
+python3 scripts/getTriggerEffSig.py --indir /data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_2018_UL_backgrounds_test11Jan22/ --outdir /data_CMS/cms/alves/TriggerScaleFactors/UL_v1 --sample SKIMfix_TT_fullyHad --isData 0 --file output_2.root --subtag _default --channels all etau mutau tautau mumu --triggers METNoMu120 IsoTau50 --variables mht_et mhtnomu_et met_et dau2_eta dau2_pt HH_mass metnomu_et dau1_eta dau1_pt HT20 --tprefix hist_ --binedges_fname /data_CMS/cms/alves/TriggerScaleFactors/UL_v1/binedges.hdf
+#+END_SRC
+
+Variables can be configured in ~luigi_conf/__init__.py~.
+
+** Cleanup
+
+In order to avoid cluttering the local area with output files, a ```bash``` script was written to effortlessly delete them:
+
+#+NAME: clean
+#+BEGIN_SRC shell
+bash triggerClean.sh --tag <any tag>
+#+END_SRC
+
+with options:
+
+- ~-d~: debug mode, where all commands are printed to the screen and nothing is run
+- ~-f~: full delete, including data produced by the HTCondor jobs (this flag is required to avoid data deletions by mistake)
+- ~--tag~: tag used when producing the files (remove this options to print a message displaying all tags used in the past which were not yet removed)
+
+-------------------------------------
+
+** Notes on ~luigi~
+
+The advantages of using a workflow management system as ~luigi~ are the following:
+
+- the whole chain can be run at once
+- the workflow is clearer from a code point of view
+- the configuration is accessible from within a single file (~luigi.cfg~)
+- when two tasks do not share dependencies they can run in parallel
+
+*** Debugging
+
+By passing ~--debug_workflow~, the user can obtain more information regarding the specific order tasks and their functions are run.
+
+*** Visualizing the workflow
+
+When using ```--scheduler central```, one can visualize the ```luigi``` workflow by accessing the correct port in the browser, specified with ```luigid --port <port_number> &```. If using ```ssh```, the port will have to be forwarded to the local machine by using, for instance:
+
+#+NAME: ssh_connection
+#+BEGIN_SRC shell
+ssh -L <port_number>:localhost:<port_number> <server_address>
+#+END_SRC
+
+You should then be able to visualize the worflow in your browser by going to ~localhost:<port_number>~.
+
+*** References
+
+[1] Lendermann, V., Haller, J., Herbst, M., Krüger, K., Schultz-Coulon, H. C., & Stamen, R. (2009). Combining Triggers in HEP data analysis. Nuclear Instruments and Methods in Physics Research, Section A: Accelerators, Spectrometers, Detectors and Associated Equipment, 604(3), 707–718. https://doi.org/10.1016/j.nima.2009.03.173
