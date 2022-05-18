@@ -248,6 +248,9 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         max2, min2 = get_obj_max_min(eff_mc[akey], nbins, False)
         eff_max = max([ max1, max2 ])
         eff_min = min([ min1, min2 ])
+        if eff_max == eff_min:
+            eff_max = 1.
+            eff_min = 0.
 
         axor_info = nbins+1, -1, nbins
         axor_ndiv = 605, 705
@@ -288,6 +291,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         padmin = eff_min-0.1*(eff_max-eff_min)
         padmax = eff_max+0.1*(eff_max-eff_min)
         fraction = (padmax-padmin)/45
+
         for i in range(nbins):
           x = axor.GetXaxis().GetBinLowEdge(i) + 1.5;
           l.DrawLine(x,padmin-fraction,x,padmin+fraction)
@@ -347,9 +351,10 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         pad2.SetGridy()
 
         if max(y_sf) == min(y_sf):
-            max1, min1 = 1., 0.
+            max1, min1 = 1.1, -0.1
         else:
             max1, min1 = max(y_sf)+max(eu_sf),min(y_sf)-max(ed_sf)
+
         axor2 = TH2D( 'axor2'+akey,'axor2'+akey,
                       axor_info[0], axor_info[1], axor_info[2],
                       100, min1-0.1*(max1-min1), max1+0.1*(max1-min1) )
@@ -397,6 +402,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         padmin = min1-0.1*(max1-min1)
         padmax = max1+0.1*(max1-min1)
         fraction = (padmax-padmin)/30
+
         for i in range(nbins):
             x = axor2.GetXaxis().GetBinLowEdge(i) + 1.5;
             l.DrawLine(x,padmin-fraction,x,padmin+fraction)
