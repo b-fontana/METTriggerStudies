@@ -30,27 +30,31 @@ def writeHTCondorHaddEffFiles_outputs(args):
     """
     Outputs are guaranteed to have the same length.
     Returns all separate paths to avoid code duplication.
-    """
-    base_dir = os.path.join(args.localdir, 'jobs', args.tag)
+    """s
+    return JobWriter.define_output( localdir=args.localdir,
+                                    data_folders='HaddEff',
+                                    tag=args.tag )
+
+    # base_dir = os.path.join(args.localdir, 'jobs', args.tag)
     
-    jobDir = os.path.join(base_dir, 'submission')
-    os.system('mkdir -p {}'.format(jobDir))
+    # jobDir = os.path.join(base_dir, 'submission')
+    # os.system('mkdir -p {}'.format(jobDir))
 
-    dataset_folder = 'HaddEff'
-    checkDir = os.path.join(base_dir, 'outputs', dataset_folder)
-    os.system('mkdir -p {}'.format(checkDir))
+    # dataset_folder = 'HaddEff'
+    # checkDir = os.path.join(base_dir, 'outputs', dataset_folder)
+    # os.system('mkdir -p {}'.format(checkDir))
 
-    name = 'jobHaddEff{}.{}'
-    check_name = '{}HaddEff_C$(Cluster)P$(Process).o'
+    # name = 'HaddEff{}.{}'
+    # check_name = '{}HaddEff_C$(Cluster)P$(Process).o'
 
-    jobFiles   = [ os.path.join(jobDir, name.format('', 'sh')),
-                   os.path.join(jobDir, name.format('_Agg', 'sh')) ]
-    submFiles  = [ os.path.join(jobDir, name.format('', 'condor')),
-                   os.path.join(jobDir, name.format('_Agg', 'condor')) ]
-    checkFiles = [ os.path.join(checkDir, check_name.format('')),
-                   os.path.join(checkDir, check_name.format('Agg_')) ]
+    # jobFiles   = [ os.path.join(jobDir, name.format('', 'sh')),
+    #                os.path.join(jobDir, name.format('_Agg', 'sh')) ]
+    # submFiles  = [ os.path.join(jobDir, name.format('', 'condor')),
+    #                os.path.join(jobDir, name.format('_Agg', 'condor')) ]
+    # checkFiles = [ os.path.join(checkDir, check_name.format('')),
+    #                os.path.join(checkDir, check_name.format('Agg_')) ]
 
-    return jobFiles, submFiles, checkFiles
+    # return jobFiles, submFiles, checkFiles
 
 @utils.setPureInputNamespace
 def writeHTCondorHaddEffFiles(args):

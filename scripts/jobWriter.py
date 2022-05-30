@@ -44,6 +44,58 @@ class JobWriter:
             else:
                 self.f.write('queue' + self.endl)
 
+    @staticmethod
+    def define_output(localdir, data_folders, tag, names=None):
+        """
+        Defines where the shell and condor job files, and the HTCondor outputs
+        will be stored.
+        - When `data_folders` has more than one element, `names` will be matched in
+          terms of length, so that each name will correspond to a different folder. This
+          has a consequence on the HTCondor output files only.
+        """
+        base_d = os.path.join(localdir, 'jobs', tag)    
+
+        # type checks
+        if not isinstance(data_folders, (tuple,list)):
+            data_folders = [ data_folders ]
+        if names is None:
+            names = data_folders
+        if not isinstance(names, (tuple,list)):
+            names = [ names ]            
+        if len(data_folders) > 1:
+            assert len(data_folders) == len(names)
+
+        # ensure the length of the two lists is the same for the `zip` that follows
+        if len(data_folders) == 1 and len(names) > 1:
+            data_folders = len(names)*data_folders
+
+        job_d, check_d = ([] for _ in range(2))
+        for dataf in data_folders:
+            job_d.append( os.path.join(base_d, 'submission', dataf) )
+            os.system('mkdir -p {}'.format(job_d[-1]))
+
+            check_d.append( os.path.join(base_d, 'outputs', dataf) )
+            os.system('mkdir -p {}'.format(check_d[-1]))
+
+        job_f, subm_f, check_f = ([] for _ in range(3))
+        for jd, cd, name in zip(job_d,check_d,names):
+            os.system('mkdir -p {}'.format(cd))
+            job_f.append(  os.path.join(jd, name + '.sh') )
+            subm_f.append( os.path.join(jd, name + '.condor') )
+            
+            check_name = '{name}_C$(Cluster)P$(Process).o'
+            check_name = check_name.format(name=name)
+            check_f.append( os.path.join(cd, check_name) )
+                
+        return job_f, subm_f, check_f
+
+    @staticmethod
+    def define_dag_output(localdir, tag, name):
+        assert '.' not in name
+        subm_d = os.path.join(localdir, 'jobs', tag, 'submission')
+        os.system('mkdir -p {}'.format(subm_d))
+        return os.path.join(subm_d, name + '.dag')
+
     def extension_exception(self):
         raise ValueError('Wrong extension.')
     

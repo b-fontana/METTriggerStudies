@@ -18,24 +18,9 @@ def writeHTCondorDiscriminatorFiles_outputs(args):
     """
     One output per channel. Allows channel parallellization with DAGMAN.
     """
-    base_dir = os.path.join(args.localdir, 'jobs', args.tag)
-
-    jobDir = os.path.join(base_dir, 'submission')
-    os.system('mkdir -p {}'.format(jobDir))
-
-    checkDir = os.path.join(base_dir, 'outputs', 'Discriminator')
-    os.system('mkdir -p {}'.format(checkDir))
-
-    name = 'jobDiscriminator_{}.{}'
-    check_name = 'Discriminator_{}_C$(Cluster)P$(Process).o'
-
-    jobFiles = [ os.path.join(jobDir, name.format(chn, 'sh')) for chn in args.channels ]
-
-    submFiles = [ os.path.join(jobDir, name.format(chn, 'condor')) for chn in args.channels ]
-
-    checkFiles = [ os.path.join(checkDir, check_name.format(chn)) for chn in args.channels ]
-
-    return jobFiles, submFiles, checkFiles
+    return JobWriter.define_output( localdir=args.localdir,
+                                    data_folders=['Discriminator_' + x for x in args.channels],
+                                    tag=args.tag )
 
 @utils.setPureInputNamespace
 def writeHTCondorDiscriminatorFiles(args):

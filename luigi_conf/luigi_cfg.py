@@ -228,7 +228,7 @@ class cfg(luigi.Config):
     _selected_mc_processes = _mc_processes[FLAGS.mc_process]
     _selected_data = _data[FLAGS.data]
     
-    drawsf_params = luigi.DictParameter(
+    sf_params = luigi.DictParameter(
         default={ 'data_name': FLAGS.data,
                   'mc_name': FLAGS.mc_process,
                   'data': _selected_data,
@@ -247,7 +247,18 @@ class cfg(luigi.Config):
                   'intersection_str': intersection_str,
                   'nocut_dummy_str': nocut_dummy_str,
                   'debug': FLAGS.debug_workflow,} )
-    
+
+    sfagg_params = luigi.DictParameter(
+        default={ 'indir': out_storage,
+                  'outdir': out_storage,
+                  'localdir': local_folder,
+                  'channels': FLAGS.channels,
+                  'variables': FLAGS.variables_for_efficiencies,
+                  'tag': tag,
+                  'subtag': subtag,
+                  'file_prefix': _sf_prefix,
+                  'debug': FLAGS.debug_workflow,} )
+
     ####
     #### drawDistributions
     ####

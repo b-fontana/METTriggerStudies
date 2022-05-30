@@ -13,27 +13,10 @@ from scripts.jobWriter import JobWriter
 
 @setPureInputNamespace
 def writeHTCondorClosureFiles_outputs(args):
-    """
-    Outputs are guaranteed to have the same length.
-    Returns all separate paths to avoid code duplication.
-    """
-    base_dir = os.path.join(args.localdir, 'jobs', args.tag)
-    specific_str = 'Closure'
-    
-    jobDir = os.path.join(base_dir, 'submission')
-    os.system('mkdir -p {}'.format(jobDir))
-   
-    checkDir = os.path.join(base_dir, 'outputs', specific_str)
-    os.system('mkdir -p {}'.format(checkDir))
-   
-    name = 'job{}.{}'
-    check_name = specific_str + '_C$(Cluster)P$(Process).o'
-   
-    jobFiles   = os.path.join(jobDir, name.format(specific_str, 'sh'))
-    submFiles  = os.path.join(jobDir, name.format(specific_str, 'condor'))
-    checkFiles = os.path.join(checkDir, check_name)
-   
-    return jobFiles, submFiles, checkFiles
+    job_f, subm_f, check_f = JobWriter.define_output( localdir=args.localdir,
+                                                      data_folders='Closure',
+                                                      tag=args.tag )
+    return job_f[0], subm_f[0], check_f[0]
 
 @setPureInputNamespace
 def writeHTCondorClosureFiles(args):

@@ -37,6 +37,10 @@ from scripts.writeHTCondorEfficienciesAndScaleFactorsFiles import (
     writeHTCondorEfficienciesAndScaleFactorsFiles,
     writeHTCondorEfficienciesAndScaleFactorsFiles_outputs,
 )
+from scripts.writeHTCondorEfficienciesAndSFAggregator import (
+    writeHTCondorEfficienciesAndSFAggregator,
+    writeHTCondorEfficienciesAndSFAggregator_outputs,
+)
 from scripts.writeHTCondorDiscriminatorFiles import (
     writeHTCondorDiscriminatorFiles,
     writeHTCondorDiscriminatorFiles_outputs,
@@ -221,7 +225,7 @@ class WriteHTCondorHaddCountsFiles(ForceRun):
 ### WRITE HTCONDOR FILES FOR EFFICIENCIES AND SCALE FACTORS ############
 ########################################################################
 class WriteHTCondorEfficienciesAndScaleFactorsFiles(ForceRun):
-    params = utils.dotDict(lcfg.drawsf_params)
+    params = utils.dotDict(lcfg.sf_params)
     params['tprefix'] = lcfg.modes['histos']
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
@@ -242,6 +246,35 @@ class WriteHTCondorEfficienciesAndScaleFactorsFiles(ForceRun):
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         writeHTCondorEfficienciesAndScaleFactorsFiles(self.params)
+
+########################################################################
+### AGGREGATE HTCONDOR FILES FOR EFFICIENCIES AND SCALE FACTORS ########
+########################################################################
+class WriteHTCondorEfficienciesAndSFAggregator(ForceRun):
+    """
+    Useful for transfering the intersection efficiencies to the KLUB framework.
+    Not needed for the following steps.
+    """
+    params = utils.dotDict(lcfg.sfagg_params)
+    
+    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    def output(self):
+        o1, o2, _ = writeHTCondorEfficienciesAndSFAggregator_outputs(self.params)
+
+        #write the target files for debugging
+        target_path = get_target_path( self.__class__.__name__ )
+        utils.remove( target_path )
+        with open( target_path, 'w' ) as f:
+            f.write( o1 + '\n' )
+            f.write( o2 + '\n' )
+
+        _c1 = convert_to_luigi_local_targets(o1)
+        _c2 = convert_to_luigi_local_targets(o2)
+        return _c1 + _c2
+
+    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    def run(self):
+        writeHTCondorEfficienciesAndSFAggregator(self.params)
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR THE VARIABLE DISCRIMINATOR ################
@@ -351,7 +384,7 @@ class WriteHTCondorClosureFiles(ForceRun):
 ### DRAW 2D TRIGGER SCALE FACTORS #######################################
 ########################################################################
 # class Draw2DTriggerScaleFactors(luigi.Task):
-#     args = utils.dotDict(lcfg.drawsf_params)
+#     args = utils.dotDict(lcfg.sf_params)
 #     args.update( {'tprefix': lcfg.modes['histos'], } )
 #     target_path = get_target_path( args.taskname )
     
@@ -429,7 +462,8 @@ class WriteDAG(ForceRun):
     pHistos     = utils.dotDict(lcfg.histos_params)
     pHaddHisto  = utils.dotDict(lcfg.haddhisto_params)
     pHaddCounts = utils.dotDict(lcfg.haddhisto_params)
-    pEffSF      = utils.dotDict(lcfg.drawsf_params)
+    pEffSF      = utils.dotDict(lcfg.sf_params)
+    pEffSFAgg   = utils.dotDict(lcfg.sfagg_params)
     pDisc       = utils.dotDict(lcfg.discriminator_params)
     pSFCalc     = utils.dotDict(lcfg.calculator_params)
     pClosure    = utils.dotDict(lcfg.closure_params)
@@ -469,26 +503,27 @@ class WriteDAG(ForceRun):
 
         
         _, submEffSF, _  = writeHTCondorEfficienciesAndScaleFactorsFiles_outputs(self.pEffSF)
-
+        _, submEffSFAgg, _  = writeHTCondorEfficienciesAndSFAggregator_outputs(self.pEffSFAgg)
         _, submDisc, _  = writeHTCondorDiscriminatorFiles_outputs(self.pDisc)
-
         _, submUnion, _  = writeHTCondorUnionWeightsCalculatorFiles_outputs(self.pSFCalc)
-
         _, submClosure, _  = writeHTCondorClosureFiles_outputs(self.pClosure)
 
-        jobs = { 'jobsHistos': submHistos,
-                 'jobsCounts': submCounts,
-                 'jobsHaddHistoData':  submHaddHistoData,
-                 'jobsHaddHistoMC':    submHaddHistoMC,
-                 'jobsHaddCountsData': submHaddCountsData,
-                 'jobsHaddCountsMC':   submHaddCountsMC,
-                 'jobsEffSF':          [ submEffSF ],
-                 'jobsDiscr':          submDisc,
-                 'jobsUnion':          submUnion,
-                 'jobsClosure':        [ submClosure ],
+        jobs = { 'Histos':         submHistos,
+                 'Counts':         submCounts,
+                 'HaddHistoData':  submHaddHistoData,
+                 'HaddHistoMC':    submHaddHistoMC,
+                 'HaddCountsData': submHaddCountsData,
+                 'HaddCountsMC':   submHaddCountsMC,
+                 'EffSF':          [ submEffSF ],
+                 'EffSFAgg':       [ submEffSFAgg ],
+                 'Discr':          submDisc,
+                 'Union':          submUnion,
+                 'Closure':        [ submClosure ],
                 }
 
-        dag_manager = WriteDAGManager( self.params['localdir'], self.params['tag'], self.params['data_name'],
+        dag_manager = WriteDAGManager( self.params['localdir'],
+                                       self.params['tag'],
+                                       self.params['data_name'],
                                        jobs )
         dag_manager.write_all()
         
@@ -537,6 +572,7 @@ class SubmitDAG(ForceRun):
                  WriteHTCondorHaddCountsFiles( dataset_name=FLAGS.mc_process,
                                                samples=lcfg._selected_mc_processes ),
                  WriteHTCondorEfficienciesAndScaleFactorsFiles(),
+                 WriteHTCondorEfficienciesAndSFAggregator(),
                  WriteHTCondorDiscriminatorFiles(),
                  WriteHTCondorUnionWeightsCalculatorFiles(),
                  #WriteHTCondorHaddEffFiles( samples=lcfg._selected_mc_processes ),

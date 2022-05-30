@@ -19,30 +19,13 @@ def writeHTCondorUnionWeightsCalculatorFiles_outputs(args):
     Outputs are guaranteed to have the same length.
     Returns all separate paths to avoid code duplication.
     """
-    out_jobs, out_submit, out_check = ([] for _ in range(3))
-    base_dir = os.path.join(args.localdir, 'jobs', args.tag)
-    
-    jobdir = os.path.join(base_dir, 'submission')
-    os.system('mkdir -p {}'.format(jobdir))
-
-    checkdir = os.path.join(base_dir, 'outputs', 'UnionWeightsCalculator')
-    os.system('mkdir -p {}'.format(checkdir))
-
-    name = 'jobUnionWeightsCalculator_{}.{}'
-    check_name = 'UnionWeightsCalculator_C$(Cluster)P$(Process).o'
-
-    for proc in args.mc_processes:
-        out_jobs.append( os.path.join(jobdir, name.format(proc, 'sh')) )
-        out_submit.append( os.path.join(jobdir, name.format(proc, 'condor')) )
-
-        check_dir_proc = os.path.join(checkdir, proc)
-        os.system('mkdir -p {}'.format(check_dir_proc))
-        out_check.append( os.path.join(check_dir_proc, check_name) )
-
-    assert(len(out_jobs)==len(args.mc_processes))
-    assert(len(out_submit)==len(args.mc_processes))
-    assert(len(out_check)==len(args.mc_processes))
-    return out_jobs, out_submit, out_check
+    base_name = 'UnionWeightsCalculator'
+    data_folders = [ os.path.join( base_name, proc) for proc in args.mc_processes ]
+    names = [ base_name + '_' + x for x in args.mc_processes ]
+    return JobWriter.define_output( localdir=args.localdir,
+                                    data_folders=data_folders,
+                                    tag=args.tag,
+                                    names=names )
 
 @utils.setPureInputNamespace
 def writeHTCondorUnionWeightsCalculatorFiles(args):

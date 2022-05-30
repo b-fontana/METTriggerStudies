@@ -63,46 +63,19 @@ def runTrigger_outputs(args, param='root'):
 
 @utils.setPureInputNamespace
 def writeHTCondorProcessingFiles_outputs(args):
-    """
-    Outputs are guaranteed to have the same length.
-    Returns all separate paths to avoid code duplication.
-    """
-    out_jobs, out_submit, out_check = ([] for _ in range(3))
-    base_dir = os.path.join(args.localdir, 'jobs', args.tag)
-    
-    jobDir = os.path.join(base_dir, 'submission')
-    os.system('mkdir -p {}'.format(jobDir))
-
-    checkDir = os.path.join(base_dir, 'outputs')
-    os.system('mkdir -p {}'.format(checkDir))
-
     if args.mode == 'histos':
-        name = 'jobHistos_{}.{}'
-        check_name = 'Eff_C$(Cluster)P$(Process).o'
+        name = 'Histos'
     elif args.mode == 'counts':
-        name = 'jobCounts_{}.{}'
-        check_name = 'Counts_C$(Cluster)P$(Process).o'
+        name = 'Counts'
     else:
         raise ValueError('Mode {} is not supported.'.format(args.mode))
 
     _all_processes = args.data + args.mc_processes
-    for thisProc in _all_processes:
-        jobFile = os.path.join(jobDir, name.format(thisProc, 'sh'))
-        out_jobs.append(jobFile)
-
-        submFile = os.path.join(jobDir, name.format(thisProc, 'condor'))
-        out_submit.append(submFile)
-
-        checkDirProc = os.path.join(checkDir, thisProc)
-        os.system('mkdir -p {}'.format(checkDirProc))
-
-        checkFile = os.path.join(checkDirProc, check_name)
-        out_check.append(checkFile)
-
-    assert(len(out_jobs)==len(_all_processes))
-    assert(len(out_submit)==len(_all_processes))
-    assert(len(out_check)==len(_all_processes))
-    return out_jobs, out_submit, out_check, _all_processes
+    data_folders = [ name + '_' + x for x in _all_processes ]
+    return ( *JobWriter.define_output( localdir=args.localdir,
+                                       data_folders=data_folders,
+                                       tag=args.tag ),
+             _all_processes )
 
 @utils.setPureInputNamespace
 def writeHTCondorProcessingFiles(args):

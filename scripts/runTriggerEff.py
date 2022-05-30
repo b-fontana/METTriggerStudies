@@ -1,4 +1,3 @@
-
 """
 Script which calculates the trigger scale factors.
 On production mode should run in the grid via scripts/submitTriggerEff.py. 
@@ -304,6 +303,7 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
     file_id = ''.join( c for c in fileName[-10:] if c.isdigit() ) 
     outname = os.path.join(outdir, tprefix + sample + '_' + file_id + subtag + '.root')
     print('Saving file {} at {} '.format(file_id, outname) )
+    quit()
 
     f_out = TFile(outname, 'RECREATE')
     f_out.cd()
@@ -326,9 +326,6 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
 
     f_out.Close()
     f_in.Close()
-
-# Run with:
-# python3 /home/llr/cms/alves/CMSSW_12_2_0_pre1/src/METTriggerStudies/scripts/get_trigger_eff_sig.py --indir /data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_2018_UL_backgrounds_test11Jan22/ --outdir /data_CMS/cms/alves/TriggerScaleFactors/UL_v1 --sample SKIM_TT_fullyHad --isdata 0 --file output_2.root --subtag _default --channels all etau mutau tautau mumu --triggers METNoMu120 IsoTau50 --variables mht_et mhtnomu_et met_et dau2_eta dau2_pt HH_mass metnomu_et dau1_eta dau1_pt HT20 --tprefix hist_ --binedges_fname /data_CMS/cms/alves/TriggerScaleFactors/UL_v1/binedges.hdf5 --nocut_dummy_str NoCut
 
 # Parse input arguments
 parser = argparse.ArgumentParser(description='Command line parser')

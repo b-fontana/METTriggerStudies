@@ -27,26 +27,10 @@ def writeHTCondorHaddHistoFiles_outputs(args):
     Outputs are guaranteed to have the same length.
     Returns all separate paths to avoid code duplication.
     """
-    base_dir = os.path.join(args.localdir, 'jobs', args.tag)
-    
-    jobDir = os.path.join(base_dir, 'submission')
-    os.system('mkdir -p {}'.format(jobDir))
-
-    dataset_folder = 'HaddHisto_' + args.dataset_name
-    checkDir = os.path.join(base_dir, 'outputs', dataset_folder)
-    os.system('mkdir -p {}'.format(checkDir))
-
-    name = 'jobHaddHisto{}_{}.{}'
-    check_name = '{}_{}HaddHisto_C$(Cluster)P$(Process).o'
-
-    jobFiles   = [ os.path.join(jobDir, name.format('',    args.dataset_name, 'sh')),
-                   os.path.join(jobDir, name.format('Agg', args.dataset_name, 'sh')) ]
-    submFiles  = [ os.path.join(jobDir, name.format('',    args.dataset_name, 'condor')),
-                   os.path.join(jobDir, name.format('Agg', args.dataset_name, 'condor')) ]
-    checkFiles = [ os.path.join(checkDir, check_name.format(args.dataset_name, '')),
-                   os.path.join(checkDir, check_name.format(args.dataset_name, 'Agg_')) ]
-
-    return jobFiles, submFiles, checkFiles
+    return JobWriter.define_output( localdir=args.localdir,
+                                    data_folders=[ 'HaddHisto' + args.dataset_name,
+                                                   'HaddHistoAgg' + args.dataset_name ],
+                                    tag=args.tag )
 
 @utils.setPureInputNamespace
 def writeHTCondorHaddHistoFiles(args):

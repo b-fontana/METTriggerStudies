@@ -45,14 +45,13 @@ from luigi_conf import (
 def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, binedges, nbins,
                                     tprefix, indir, subtag, mc_name, data_name,
                                     intersection_str, debug):
+
     _name = lambda a,b,c,d : a + b + c + d + '.root'
 
-    name_data = os.path.join(indir, _name( tprefix, data_name,
-                                           '_Sum', subtag ) )
+    name_data = os.path.join(indir, _name( tprefix, data_name, '_Sum', subtag ) )
     file_data = TFile.Open(name_data)
 
-    name_mc = os.path.join(indir, _name( tprefix, mc_name,
-                                         '_Sum', subtag ))
+    name_mc = os.path.join(indir, _name( tprefix, mc_name, '_Sum', subtag ))
     file_mc   = TFile.Open(name_mc)
 
     if debug:
@@ -63,8 +62,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
               .format(proc=proc, channel=channel, variable=variable, trig=trig))
    
     hnames = { 'ref':  get_histo_names('Ref1D')(channel, variable),
-               'trig': get_histo_names('Trig1D')(channel, variable, trig)
-              }
+               'trig': get_histo_names('Trig1D')(channel, variable, trig) }
    
     keylist_data = get_key_list(file_data, inherits=['TH1'])
     keylist_mc = get_key_list(file_mc, inherits=['TH1'])
@@ -507,7 +505,6 @@ def runEfficienciesAndScaleFactors(indir, outdir,
                                          mc_name, data_name,
                                          intersection_str,
                                          debug)
-
 
 parser = argparse.ArgumentParser(description='Draw trigger scale factors')
 
