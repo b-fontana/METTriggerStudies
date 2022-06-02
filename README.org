@@ -1,51 +1,55 @@
 #+latex_header: \usepackage[utf8]{inputenc}
 
-* HH \rightarrow bb\tau \tau Resonant Analysis: Trigger Scale Factors
+* Trigger Scale Factors for the /H H \rightarrow b b \tau \tau/ Resonant Analysis
 
-This framework calculates and stores "intersection efficiencies" for the =inclusion method= [1]. The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KLUB]]) Ntuples. The framework is managed by ~luigi~ (see ~run_workflow.py~), which both runs local tasks and creates a Direct Acyclic Graph (DAG) to run with HTCondor.
+This framework calculates and stores "intersection efficiencies" for the application of the "inclusion method" [1], to be used for the /H H \rightarrow b b \tau \tau/ resonant analysis by the CMS experiment. More details available in [[https://indico.cern.ch/event/1143576/#13-trigger-sf-update][this presentation]].
 
-** Tasks:
+The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KLUB]]) Ntuples. The framework is managed by [[https://github.com/spotify/luigi][luigi]] (see ~run_workflow.py~), which runs local tasks and creates a Direct Acyclic Graph (DAG) which runs on [[https://htcondor.readthedocs.io/en/latest/index.html][HTCondor]].
 
-1. binning (manual or equal width with upper 5% quantile removal)
-2. filling efficiencies numerator and denominator histograms
-3. add histograms together per data type (Data and all MCs)
-4. add histograms for Data and MC
-5. calculate efficiencies by dividing the histograms obtained in point #2
-6. choose the variables to be used to calculate the final union efficiency
-7. calculate the union efficiencies (following the =inclusion method= [1])
-8. perform a simple closure (complete closure is done outside this framework in the HH \rightarrow bb\tau \tau ~C++~ analysis code)
+** Requirements
+
+- ~python3~ (tested on ~3.9.6~)
+- ~luigi~ (available in ~CMSSW~ after running ~cmsenv~ and using ~python3~).
+
+** Tasks
+
+1. Binning (manual or equal width with upper 5% quantile removal)
+   - is the only job which runs locally (/i.e./, not on HTCondor)
+2. *Histos_SKIM_**: filling efficiencies numerator and denominator histograms
+3. *HaddHisto**: add histograms together per data type (Data and all MCs)
+4. *HaddHistoAgg**: add histograms for Data and MC
+5. *EfficienciesAndSF**: calculate efficiencies by dividing the histograms obtained in point #2
+6. *EffAndAgg*: aggregate efficiencies and scale factors in one file per channel
+7. *Discriminator_**: choose the variables to be used to calculate the final union efficiency
+8. *UnionWeightsCalculator_SKIM_**: calculate the union efficiencies (following the =inclusion method= [1])
+9. *Closure*: perform a simple closure (complete closure is done outside this framework in the HH \rightarrow bb\tau \tau ~C++~ analysis code)
 
 *** Visualize DAG
 
-Run ~dot -Tpng dag.dot -o dag.png~ as explained [[https://research.cs.wisc.edu/htcondor/manual/v7.8/2_10DAGMan_Applications.html#SECTION0031010000000000000000][here]] (a ~dot~ file was previously created by the DAG with ~DOT dag.dot~).
+Run ~dot -Tpng dag.dot -o dag.png~ as explained [[https://research.cs.wisc.edu/htcondor/manual/v7.8/2_10DAGMan_Applications.html#SECTION0031010000000000000000][here]] (a ~dot~ file was previously created by the DAG with ~DOT dag.dot~ [[https://github.com/b-fontana/METTriggerStudies/blob/main/scripts/writeHTCondorDAGFiles.py#L73][here]]).
 
 [[./dag.png]]
 
-** Requirements:
-
-- ~python 3.9~ (likely works on other Python 3 versions)
-- ~luigi~ (available in ~CMSSW~ after running ~cmsenv~ and using ~python3~).
-
-** Luigi Workflow
+** Luigi/HTCondor Workflow
 
 Run the submission workflow (check the meaning of the arguments by adding ~--help~):
 
 #+NAME: running_command
 #+BEGIN_SRC shell
-python3 run_workflow.py --outuser bfontana --tag FullWorkflowTest --data MET --mc_process TT --submit
+python3 run_workflow.py --outuser bfontana --tag FullWorkflowTest --data MET --mc_process TT
 #+END_SRC
 
 If everything runs as expected, the above should run locally all local tasks (currently ~DefineBinning~ only) and launch a HTCondor DAG which encodes de dependencies of the remaining tasks and runs them in the server.
+
+The HTCondor files are written using the =scripts/writeHTCondorDAGFiles.py= and =scripts/jobWriter.sh= files.
 
 | Output files              | Destination folder                                           |
 |---------------------------+--------------------------------------------------------------|
 | ~ROOT~                      | ~/data_CMS/cms/<llr username>/TriggerScaleFactors/<some tag>/~ |
 | Submission                | ~$HOME/jobs/<some tag>/<process>/submission/~                  |
 | Condor (output and error) | ~$HOME/jobs/<some tag>/<process>/outputs/~                     |
-| Pictures (requires ~/eos/~) | ~/eos/home-b/<lxplus username>/www/TriggerScaleFactors/~       |
 
-
-You can also run each ~luigi~ task separately by running its corresponding ~python~ scripts (all support ~--help~). For instance (running within a LLR machine):
+You can also run each ~luigi~ task separately by running its corresponding ~python~ scripts (all support ~--help~). Inspect HTCondor's output shell and condor files for the full commands. For instance:
 
 #+NAME: single_task
 #+BEGIN_SRC shell 
@@ -56,7 +60,7 @@ Variables can be configured in ~luigi_conf/__init__.py~.
 
 ** Cleanup
 
-In order to avoid cluttering the local area with output files, a ```bash``` script was written to effortlessly delete them:
+In order to avoid cluttering the local area with output files, a =bash= script was written to effortlessly delete them:
 
 #+NAME: clean
 #+BEGIN_SRC shell
@@ -86,15 +90,4 @@ By passing ~--debug_workflow~, the user can obtain more information regarding th
 
 *** Visualizing the workflow
 
-When using ```--scheduler central```, one can visualize the ```luigi``` workflow by accessing the correct port in the browser, specified with ```luigid --port <port_number> &```. If using ```ssh```, the port will have to be forwarded to the local machine by using, for instance:
-
-#+NAME: ssh_connection
-#+BEGIN_SRC shell
-ssh -L <port_number>:localhost:<port_number> <server_address>
-#+END_SRC
-
-You should then be able to visualize the worflow in your browser by going to ~localhost:<port_number>~.
-
-*** References
-
-[1] Lendermann, V., Haller, J., Herbst, M., Krüger, K., Schultz-Coulon, H. C., & Stamen, R. (2009). Combining Triggers in HEP data analysis. Nuclear Instruments and Methods in Physics Research, Section A: Accelerators, Spectrometers, Detectors and Associated Equipment, 604(3), 707–718. https://doi.org/10.1016/j.nima.2009.03.173
+When using ```--scheduler central```, one can visualize the ```luigi``` workflow by accessing the correct port in the browser, specified with ```luigid --port <port_number> &```. If using ```ssh```, the port will have to be forwarded
