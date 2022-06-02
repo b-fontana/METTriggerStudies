@@ -1,5 +1,6 @@
 import os
 import glob
+import inspect
 import re
 import operator
 import argparse
@@ -93,18 +94,21 @@ def find_bin(edges, value, var):
     return binid
 
 def generate_trigger_combinations(trigs):
-    """Set all possible trigger combinations of intersections with any number of elements"""
-    complete_list = list( it.chain.from_iterable(it.combinations(trigs, x)
+    """
+    Set all possible trigger combinations of intersections with any number of elements
+    Each intersection is sorted alphabetically (useful for matching with the KLUB framework).
+    """
+    complete_list = list( it.chain.from_iterable(it.combinations(sorted(trigs), x)
                                                  for x in range(1,len(trigs)+1)) )
-    length1_list = list( it.chain.from_iterable(it.combinations(trigs, 1)) )
+    length1_list = list( it.chain.from_iterable(it.combinations(sorted(trigs), 1)) )
     for elem in length1_list:
         if elem not in _triggers_map.keys():
             raise ValueError('[utils.generate_trigger_combinations] Trigger {} is not supported'.format(elem))
 
-    # remove combinations that are necessarily orthogonal to save computating time and reduce number of plots
-    trigger_combinations_to_remove = []
-    for elem in complete_list:        
-        if ( # mixing muon and electron channels
+        # remove combinations that are necessarily orthogonal to save computating time and reduce number of plots
+        trigger_combinations_to_remove = []
+        for elem in complete_list:        
+            if ( # mixing muon and electron channels
                 ('IsoMu24' in elem and 'Ele32' in elem) or
                 ('IsoMu27' in elem and 'Ele32' in elem) or
                 ('IsoMu24' in elem and 'Ele35' in elem) or
@@ -115,10 +119,9 @@ def generate_trigger_combinations(trigs):
                 # mixing electron and double tau channels
                 ('Ele32' in elem and 'IsoDoubleTauCustom' in elem) or
                 ('Ele35' in elem and 'IsoDoubleTauCustom' in elem)
-        ):
-            trigger_combinations_to_remove.append( elem )
-
-
+                ):
+                trigger_combinations_to_remove.append( elem )
+                
     return list(set(complete_list) - set(trigger_combinations_to_remove))
 
 def get_display_variable_name(channel, var):
@@ -435,8 +438,11 @@ def pass_trigger_bits(trig, trig_bit, run, isdata):
         return check_bit(trig_bit, get_trigger_bit(trig, isdata))
 
 def print_configuration(parse_args):
+    filename = inspect.stack()[1].filename 
+    
     print('----------------------------------------', flush=True)
-    print('Script configuration:', flush=True)
+    print('Script Name: {}'.format(filename))
+    print('Script Configuration:', flush=True)
     options = vars(parse_args)
     maxlkey = max(len(x) for x in options.keys())
     for k,v in options.items():
