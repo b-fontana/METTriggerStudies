@@ -55,8 +55,8 @@ _triggers_map = {
                         'EleIsoTauHPS': {'mc': 6, 'data': 10}},
     'VBFTauCustom':  {'VBFTau':    {'mc': 8, 'data': 12},
                       'VBFTauHPS': _trigger_shift(8)},
-    # 'METNoMu120':  _trigger_shift(9),
-    # 'IsoTau50':    _trigger_shift(10),
+    'METNoMu120':  _trigger_shift(9),
+    #'IsoTau50':    _trigger_shift(10),
     'IsoTau180':   _trigger_shift(11),
 }
 _triggers_custom = { 'VBFTauCustom',

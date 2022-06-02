@@ -303,7 +303,6 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
     file_id = ''.join( c for c in fileName[-10:] if c.isdigit() ) 
     outname = os.path.join(outdir, tprefix + sample + '_' + file_id + subtag + '.root')
     print('Saving file {} at {} '.format(file_id, outname) )
-    quit()
 
     f_out = TFile(outname, 'RECREATE')
     f_out.cd()

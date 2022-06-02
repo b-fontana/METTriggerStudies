@@ -29,7 +29,7 @@ def writeHTCondorHaddHistoFiles_outputs(args):
     """
     return JobWriter.define_output( localdir=args.localdir,
                                     data_folders=[ 'HaddHisto' + args.dataset_name,
-                                                   'HaddHistoAgg' + args.dataset_name ],
+                                                   'HaddHistoAgg' + args.dataset_name],
                                     tag=args.tag )
 
 @utils.setPureInputNamespace

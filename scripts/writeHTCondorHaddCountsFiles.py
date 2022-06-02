@@ -24,7 +24,8 @@ def runHaddCounts_outputs(args):
 @utils.setPureInputNamespace
 def writeHTCondorHaddCountsFiles_outputs(args):
     return JobWriter.define_output( localdir=args.localdir,
-                                    data_folders=['HaddCounts', 'HaddCountsAgg'],
+                                    data_folders=['HaddCounts' + args.dataset_name,
+                                                  'HaddCountsAgg' + args.dataset_name],
                                     tag=args.tag )
 
 @utils.setPureInputNamespace

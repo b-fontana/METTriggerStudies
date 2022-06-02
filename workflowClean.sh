@@ -69,7 +69,7 @@ fi
 echo "####### Arguments #####################"
 echo "TAG   = ${TAG}"
 echo "DEBUG = ${DEBUG}"
-echo "FULL = ${DEBUG}"
+echo "FULL = ${FULL}"
 echo "#######################################"
 
 ##### FUNCTION DEFINITION #####
