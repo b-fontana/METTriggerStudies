@@ -34,7 +34,7 @@ from utils.utils import (
     load_binning,
     print_configuration,
     redraw_border,
-    rewriteCutString,
+    rewrite_cut_string,
     uniformize_bin_width,
 )
 from luigi_conf import (
@@ -100,7 +100,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
     histos_data['trig'], histos_mc['trig'] = ({} for _ in range(2))
 
     for key in keylist_mc:
-        rewritten_str = rewriteCutString(hnames['trig'], '')
+        rewritten_str = rewrite_cut_string(hnames['trig'], '')
         if key.startswith(rewritten_str):
             histos_data['trig'][key] = get_root_object(key, file_data)
             histos_mc['trig'][key] = get_root_object(key, file_mc)
@@ -229,7 +229,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
    
     for akey in sf:
         canvas_name = os.path.basename(save_names[0]).split('.')[0]
-        canvas_name = rewriteCutString(canvas_name, akey, regex=True)
+        canvas_name = rewrite_cut_string(canvas_name, akey, regex=True)
          
         canvas = TCanvas( canvas_name, 'canvas', 600, 600 )
         ROOT.gStyle.SetOptStat(0)
@@ -408,10 +408,10 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
 
         redraw_border()
         for aname in save_names[:-1]:
-            _name = rewriteCutString(aname, akey, regex=True)
+            _name = rewrite_cut_string(aname, akey, regex=True)
             canvas.SaveAs( _name )
 
-        _name = rewriteCutString(save_names[-1], akey, regex=True)
+        _name = rewrite_cut_string(save_names[-1], akey, regex=True)
         eff_file = TFile.Open(_name, 'RECREATE')
         eff_file.cd()
 
@@ -436,7 +436,7 @@ def _getCanvasName(proc, chn, var, trig, data_name, subtag):
     n += _placeholder_cuts
     return n
 
-#@setPureInputNamespace
+#@set_pure_input_namespace
 def runEfficienciesAndScaleFactors_outputs(outdir,
                                            mc_processes,
                                            mc_name, data_name,

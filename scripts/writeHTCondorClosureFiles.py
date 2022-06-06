@@ -6,19 +6,19 @@ import argparse
 
 from utils.utils import (
     build_prog_path,
-    setPureInputNamespace,
+    set_pure_input_namespace,
 )
 
 from scripts.jobWriter import JobWriter
 
-@setPureInputNamespace
+@set_pure_input_namespace
 def writeHTCondorClosureFiles_outputs(args):
     job_f, subm_f, check_f = JobWriter.define_output( localdir=args.localdir,
                                                       data_folders='Closure',
                                                       tag=args.tag )
     return job_f[0], subm_f[0], check_f[0]
 
-@setPureInputNamespace
+@set_pure_input_namespace
 def writeHTCondorClosureFiles(args):
     outs_job, outs_submit, outs_check = writeHTCondorClosureFiles_outputs(args)
     jw = JobWriter()

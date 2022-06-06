@@ -21,7 +21,7 @@ import argparse
 from utils.utils import (
     get_trigger_bit,
     LeafManager,
-    setPureInputNamespace,
+    set_pure_input_namespace,
 )
 
 from luigi_conf import _binedges, _sel
@@ -32,12 +32,12 @@ def skipDataLoop(args):
             return False
     return True
 
-@setPureInputNamespace
+@set_pure_input_namespace
 def defineBinning_outputs(args):
     assert os.path.splitext(args.binedges_filename)[1] == '.hdf5'
     return os.path.join(args.outdir, args.binedges_filename)
 
-@setPureInputNamespace
+@set_pure_input_namespace
 def defineBinning(args):
     """
     Determine histogram quantiles

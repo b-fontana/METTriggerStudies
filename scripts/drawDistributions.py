@@ -160,7 +160,7 @@ def plotDist(args, channel, variable, trig, save_names, binedges, nbins):
     c_stack.SaveAs( aname )
 
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def drawDistributions_outputs(args):
   def _save_figures(base, figname, outputs, extensions):
     """Saves the output names, modifying the list in-place"""
@@ -188,7 +188,7 @@ def drawDistributions_outputs(args):
   #join all outputs in the same list
   return sum(outputs, []), extensions
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def drawDistributions(args):
   outputs, extensions = drawDistributions_outputs(args)
   

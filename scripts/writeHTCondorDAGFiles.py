@@ -5,11 +5,11 @@ import os
 import atexit # https://stackoverflow.com/questions/865115/how-do-i-correctly-clean-up-a-python-object
 
 from utils.utils import (
-  setPureInputNamespace,
+  set_pure_input_namespace,
 )
 from scripts.jobWriter import JobWriter
 
-@setPureInputNamespace
+@set_pure_input_namespace
 def writeHTCondorDAGFiles_outputs(args):
     return JobWriter.define_dag_output( localdir=args.localdir,
                                         tag=args.tag,

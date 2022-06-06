@@ -9,11 +9,11 @@ from utils.utils import (
     build_prog_path,
     generate_trigger_combinations,
     join_name_trigger_intersection as joinNTC,
-    setPureInputNamespace,
+    set_pure_input_namespace,
 )
 from scripts.jobWriter import JobWriter
 
-@setPureInputNamespace
+@set_pure_input_namespace
 def writeHTCondorEfficienciesAndScaleFactorsFiles_outputs(args):
     """
     Outputs are guaranteed to have the same length.
@@ -25,7 +25,7 @@ def writeHTCondorEfficienciesAndScaleFactorsFiles_outputs(args):
                                                       names='EfficienciesAndSF' )
     return job_f[0], subm_f[0], check_f[0]
 
-@setPureInputNamespace
+@set_pure_input_namespace
 def writeHTCondorEfficienciesAndScaleFactorsFiles(args):
     prog = build_prog_path(args.localdir, 'runEfficienciesAndScaleFactors.py')
     outs_job, outs_submit, outs_check = writeHTCondorEfficienciesAndScaleFactorsFiles_outputs(args)

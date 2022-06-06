@@ -31,7 +31,7 @@ from utils.utils import (
     load_binning,
     pass_any_trigger,
     pass_selection_cuts,
-    rewriteCutString,
+    rewrite_cut_string,
     pass_trigger_bits,
     print_configuration,
 )
@@ -77,7 +77,7 @@ def passes_cuts(trig, variables, leavesmanager, debug):
 
         # additionally, by default do not cut on the variable(s) being plotted
         if avar not in variables and not ignore:
-            value = leavesmanager.getLeaf(avar) 
+            value = leavesmanager.get_leaf(avar) 
 
             for c in acut[1]:
                 flagname = flagnameJoin(avar, acut[0], c)
@@ -178,16 +178,16 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
         if not pass_selection_cuts(lf):
             continue
 
-        trig_bit = lf.getLeaf('pass_triggerbit')
-        run = lf.getLeaf('RunNumber')
+        trig_bit = lf.get_leaf('pass_triggerbit')
+        run = lf.get_leaf('RunNumber')
         if not pass_any_trigger(triggers, trig_bit, run, isdata=isdata):
             continue
 
-        #mcweight   = lf.getLeaf( "MC_weight" )
-        pureweight = lf.getLeaf( "PUReweight" )
-        trigsf     = lf.getLeaf( "trigSF" )
-        lumi       = lf.getLeaf( "lumi" )
-        idandiso   = lf.getLeaf( "IdAndIsoSF_deep_pt")
+        #mcweight   = lf.get_leaf( "MC_weight" )
+        pureweight = lf.get_leaf( "PUReweight" )
+        trigsf     = lf.get_leaf( "trigSF" )
+        lumi       = lf.get_leaf( "lumi" )
+        idandiso   = lf.get_leaf( "IdAndIsoSF_deep_pt")
         
         #if np.isnan(mcweight): mcweight=1
         if np.isnan(pureweight): pureweight=1
@@ -203,7 +203,7 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
         for v in variables:
             fill_var[v] = {}
             for chn in channels:
-                fill_var[v].update({chn: lf.getLeaf(v)})
+                fill_var[v].update({chn: lf.get_leaf(v)})
                 if fill_var[v][chn]>binedges[v][chn][-1]:
                     fill_var[v][chn]=binedges[v][chn][-1] # include overflow
 
@@ -217,7 +217,7 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
                 pass_cuts[trig][var] = passes_cuts(trig, [var], lf, args.debug)
 
         for i in channels:
-            if is_channel_consistent(i, lf.getLeaf('pairType')):
+            if is_channel_consistent(i, lf.get_leaf('pairType')):
 
                 # fill histograms for 1D efficiencies
                 for j in variables:
@@ -264,7 +264,7 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
 
                             if pckey not in hTrig[i][j][joinNTC(tcomb)]:
                                 base_str = get_histo_names('Trig1D')(i,j,joinNTC(tcomb))
-                                htrig_name = rewriteCutString(base_str, pckey)
+                                htrig_name = rewrite_cut_string(base_str, pckey)
                                 hTrig[i][j][joinNTC(tcomb)][pckey] = TH1D(htrig_name, '', *binning)
 
                             if pcval and pass_trigger_intersection:
@@ -310,7 +310,7 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
             for tcomb in triggercomb:
                 for khist,vhist in hTrig[i][j][joinNTC(tcomb)].items():
                     base_str = get_histo_names('Trig1D')(i,j,joinNTC(tcomb))
-                    writename = rewriteCutString(base_str, khist)
+                    writename = rewrite_cut_string(base_str, khist)
 
                     vhist.Write( writename )
 

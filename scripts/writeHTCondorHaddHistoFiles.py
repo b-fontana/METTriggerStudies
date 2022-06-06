@@ -3,7 +3,7 @@ import sys
 from utils import utils
 from scripts.jobWriter import JobWriter
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def runHaddHisto_outputs(args):
     targets = []
 
@@ -21,7 +21,7 @@ def runHaddHisto_outputs(args):
         
     return targets
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorHaddHistoFiles_outputs(args):
     """
     Outputs are guaranteed to have the same length.
@@ -32,7 +32,7 @@ def writeHTCondorHaddHistoFiles_outputs(args):
                                                    'HaddHistoAgg' + args.dataset_name],
                                     tag=args.tag )
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorHaddHistoFiles(args):
     """Adds ROOT histograms"""
     targets = runHaddHisto_outputs(args)

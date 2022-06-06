@@ -7,7 +7,7 @@ def _subpaths(args):
     _tbase2 = '_Sum' + args.subtag
     return _tbase1, _tbase2
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def runHaddEff_outputs(args):
     targets = []
 
@@ -25,7 +25,7 @@ def runHaddEff_outputs(args):
         
     return targets
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorHaddEffFiles_outputs(args):
     """
     Outputs are guaranteed to have the same length.
@@ -56,7 +56,7 @@ def writeHTCondorHaddEffFiles_outputs(args):
 
     # return jobFiles, submFiles, checkFiles
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorHaddEffFiles(args):
     """Adds ROOT histograms"""
     targets = runHaddEff_outputs(args)

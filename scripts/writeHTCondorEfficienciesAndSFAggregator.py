@@ -9,18 +9,18 @@ from utils.utils import (
     build_prog_path,
     generate_trigger_combinations,
     join_name_trigger_intersection as joinNTC,
-    setPureInputNamespace,
+    set_pure_input_namespace,
 )
 from scripts.jobWriter import JobWriter
 
-@setPureInputNamespace
+@set_pure_input_namespace
 def writeHTCondorEfficienciesAndSFAggregator_outputs(args):
     job_f, subm_f, check_f = JobWriter.define_output( localdir=args.localdir,
                                                       data_folders='EffAndSFAgg',
                                                       tag=args.tag )
     return job_f[0], subm_f[0], check_f[0]
 
-@setPureInputNamespace
+@set_pure_input_namespace
 def writeHTCondorEfficienciesAndSFAggregator(args):
     prog = build_prog_path(args.localdir, 'aggregateEfficienciesAndScaleFactors.py')
     outs_job, outs_submit, outs_check = writeHTCondorEfficienciesAndSFAggregator_outputs(args)

@@ -13,7 +13,7 @@ import ROOT
 from utils import utils
 from scripts.jobWriter import JobWriter
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorUnionWeightsCalculatorFiles_outputs(args):
     """
     Outputs are guaranteed to have the same length.
@@ -27,7 +27,7 @@ def writeHTCondorUnionWeightsCalculatorFiles_outputs(args):
                                     tag=args.tag,
                                     names=names )
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorUnionWeightsCalculatorFiles(args):
     prog = utils.build_prog_path(args.localdir, 'runUnionWeightsCalculator.py')
     jobs, subs, checks = writeHTCondorUnionWeightsCalculatorFiles_outputs(args)

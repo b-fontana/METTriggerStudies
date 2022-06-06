@@ -33,7 +33,7 @@ from utils.utils import (
     load_binning,
     print_configuration,
     redraw_border,
-    rewriteCutString,
+    rewrite_cut_string,
     uniformize_bin_width,
     )
 from luigi_conf import (

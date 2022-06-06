@@ -23,11 +23,15 @@ from luigi_conf import (
     _triggers_custom,
 )
   
-def addSlash(s):
+def add_slash(s):
     """Adds single slash to path if absent"""
     s = s if s[-1] == '/' else s + '/'
     return s
 
+def at_least_two(x1, x2, x3):
+    """Checks if at least two out of the three boleans are True."""
+    return x1 ? (x2 || x3) : (x2 && x3)
+    
 def build_prog_path(base, script_name):
     script = os.path.join(base, 'scripts')
     script = os.path.join(script, script_name)
@@ -51,7 +55,7 @@ def create_single_dir(p):
     except FileExistsError:
         pass
     
-def createSingleFile(f):
+def create_single_file(f):
     """Creates a dummy file if it does not exist"""
     try:
         os.remove(f)
@@ -66,7 +70,7 @@ def debug(message, flag=True):
     if flag:
         print( decorator + message + decorator, flush=True )
 
-class dotDict(dict):
+class dot_dict(dict):
     """dot.notation access to dictionary attributes"""
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
@@ -105,21 +109,17 @@ def generate_trigger_combinations(trigs):
         if elem not in _triggers_map.keys():
             raise ValueError('[utils.generate_trigger_combinations] Trigger {} is not supported'.format(elem))
 
-        # remove combinations that are necessarily orthogonal to save computating time and reduce number of plots
+        # remove combinations that are necessarily orthogonal
+        # saves computating time and reduces number of plots
+        etau_only   = {'Ele32', 'Ele35', 'EleIsoTauCustom'}
+        mutau_only  = {'IsoMu24', 'IsoMu27', 'IsoMuIsoTauCustom'}
+        tautau_only = {'IsoDoubleTauCustom'}
         trigger_combinations_to_remove = []
-        for elem in complete_list:        
-            if ( # mixing muon and electron channels
-                ('IsoMu24' in elem and 'Ele32' in elem) or
-                ('IsoMu27' in elem and 'Ele32' in elem) or
-                ('IsoMu24' in elem and 'Ele35' in elem) or
-                ('IsoMu27' in elem and 'Ele35' in elem) or
-                # mixing muon and double tau channels
-                ('IsoMu24' in elem and 'IsoDoubleTauCustom' in elem) or
-                ('IsoMu27' in elem and 'IsoDoubleTauCustom' in elem) or
-                # mixing electron and double tau channels
-                ('Ele32' in elem and 'IsoDoubleTauCustom' in elem) or
-                ('Ele35' in elem and 'IsoDoubleTauCustom' in elem)
-                ):
+        for elem in complete_list:
+            a1 = any(x in elem for x in etau_only)
+            a2 = any(x in elem for x in mutau_only)
+            a3 = any(x in elem for x in tautau_only)
+            if at_least_two(a1,a2,a3):
                 trigger_combinations_to_remove.append( elem )
                 
     return list(set(complete_list) - set(trigger_combinations_to_remove))
@@ -262,7 +262,7 @@ class LeafManager():
         self.absent_leaves = set()
         self.error_prefix = '[LeafManager]: '
         
-    def getLeaf(self, leaf):
+    def get_leaf(self, leaf):
         if not isinstance(leaf, str):
             m = 'The leaf must be a string.'
             raise TypeError(self.error_prefix + m)
@@ -358,7 +358,7 @@ def remove(f):
     if os.path.exists( f ):
         os.remove( f )
 
-def rewriteCutString(oldstr, newstr, regex=False):
+def rewrite_cut_string(oldstr, newstr, regex=False):
     if regex:
         _regex = re.findall(r'^.*CUTS_(.+)$', newstr)
         assert(len(_regex)==1)
@@ -368,7 +368,7 @@ def rewriteCutString(oldstr, newstr, regex=False):
     res = oldstr.replace(_placeholder_cuts, '_CUTS_'+newstr)
     return res
 
-def setPureInputNamespace(func):
+def set_pure_input_namespace(func):
     """
     Decorator which forces the input namespace to be a "bare" one.
     Used when luigi calls a function with a luigi.DictParameter().
@@ -452,7 +452,7 @@ def print_configuration(parse_args):
         print('{0:>{d1}}   {1}'.format(k, v, d1=maxlkey+3), flush=True)
     print('----------------------------------------', flush=True)
 
-def slashToUnderscoreAndKeep(s, n=4):
+def slash_to_underscore_and_keep(s, n=4):
     """Replaces slashes by underscores, keeping only the last 'n' slash-separated strings"""
     return '_'.join( s.split('/')[-n:] )
 

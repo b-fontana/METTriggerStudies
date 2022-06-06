@@ -8,7 +8,7 @@ from pathlib import Path
 
 from utils import utils
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def addTriggerCounts(args):
     outputs_txt = args.outfile_counts
     

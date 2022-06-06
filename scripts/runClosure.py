@@ -582,7 +582,7 @@ def _get_plot_name(chn, var, wvar, trig, subtag, prefix):
     n += _placeholder_cuts
     return n
 
-#@setPureInputNamespace
+#@set_pure_input_namespace
 def run_closure_outputs(outdir, channel, variables, weightvars, triggers, subtag):
     outputs = [[] for _ in range(len(_extensions[:-1]))]
     outdict = {} #redundant but convenient

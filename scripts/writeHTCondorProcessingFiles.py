@@ -48,7 +48,7 @@ def runTrigger_outputs_sample(args, sample, param):
 
     return t
     
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def runTrigger_outputs(args, param='root'):
     """
     Produces all outputs of the submitTriggerEff task.
@@ -61,7 +61,7 @@ def runTrigger_outputs(args, param='root'):
         t.extend( runTrigger_outputs_sample(args, proc, param) )
     return t
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorProcessingFiles_outputs(args):
     if args.mode == 'histos':
         name = 'Histos'
@@ -77,7 +77,7 @@ def writeHTCondorProcessingFiles_outputs(args):
                                        tag=args.tag ),
              _all_processes )
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorProcessingFiles(args):
     prog = utils.build_prog_path(args.localdir, ('runTriggerEff.py' if args.mode == 'histos'
                                                  else 'runTriggerCounts.py') )

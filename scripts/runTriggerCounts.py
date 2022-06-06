@@ -30,7 +30,7 @@ from utils.utils import (
     load_binning,
     pass_any_trigger,
     pass_selection_cuts,
-    rewriteCutString,
+    rewrite_cut_string,
     pass_trigger_bits,
     print_configuration,
 )
@@ -71,8 +71,8 @@ def getTriggerCounts(indir, outdir, sample, fileName,
         if not pass_selection_cuts(lf):
             continue
 
-        trig_bit = lf.getLeaf('pass_triggerbit')
-        run = lf.getLeaf('RunNumber')
+        trig_bit = lf.get_leaf('pass_triggerbit')
+        run = lf.get_leaf('RunNumber')
         if not pass_any_trigger(triggers, trig_bit, run, isdata=isdata):
             continue
 
@@ -82,7 +82,7 @@ def getTriggerCounts(indir, outdir, sample, fileName,
 
         for tcomb in triggercomb:
             for chn in channels:
-                if is_channel_consistent(chn, lf.getLeaf('pairType')):
+                if is_channel_consistent(chn, lf.get_leaf('pairType')):
 
                     pass_trigger_intersection = functools.reduce(
                         lambda x,y: x and y, #logic AND to join all triggers in this option

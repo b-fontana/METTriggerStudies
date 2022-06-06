@@ -222,7 +222,7 @@ def check2DTrigger(args, proc, channel, var, trig, save_names):
         canvas[1].SaveAs( aname[1] )
         canvas_sf.SaveAs( aname[2] )
   
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def draw2DTriggerSF_outputs(args):
     outputs = [[] for _ in range(len(_extensions))]
     processes = args.mc_processes if args.draw_independent_MCs else [args.mc_name]
@@ -247,7 +247,7 @@ def draw2DTriggerSF_outputs(args):
     #join all outputs in the same list
     return sum(outputs, []), _extensions
     
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def draw2DTriggerSF(args):
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)

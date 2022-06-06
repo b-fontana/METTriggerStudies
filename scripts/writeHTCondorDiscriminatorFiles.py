@@ -13,7 +13,7 @@ import ROOT
 from utils import utils
 from scripts.jobWriter import JobWriter
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorDiscriminatorFiles_outputs(args):
     """
     One output per channel. Allows channel parallellization with DAGMAN.
@@ -22,7 +22,7 @@ def writeHTCondorDiscriminatorFiles_outputs(args):
                                     data_folders=['Discriminator_' + x for x in args.channels],
                                     tag=args.tag )
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorDiscriminatorFiles(args):
     prog = utils.build_prog_path(args.localdir, 'runVariableImportanceDiscriminator.py')
     outs_job, outs_submit, outs_check = writeHTCondorDiscriminatorFiles_outputs(args)

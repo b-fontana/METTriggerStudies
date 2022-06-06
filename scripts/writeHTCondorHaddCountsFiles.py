@@ -3,7 +3,7 @@ import sys
 from utils import utils
 from scripts.jobWriter import JobWriter
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def runHaddCounts_outputs(args):
     targets = []
 
@@ -21,14 +21,14 @@ def runHaddCounts_outputs(args):
         
     return targets
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorHaddCountsFiles_outputs(args):
     return JobWriter.define_output( localdir=args.localdir,
                                     data_folders=['HaddCounts' + args.dataset_name,
                                                   'HaddCountsAgg' + args.dataset_name],
                                     tag=args.tag )
 
-@utils.setPureInputNamespace
+@utils.set_pure_input_namespace
 def writeHTCondorHaddCountsFiles(args):
     """Adds TXT count files"""
     targets = runHaddCounts_outputs(args)
