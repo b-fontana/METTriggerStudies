@@ -36,7 +36,7 @@ Run the submission workflow (check the meaning of the arguments by adding ~--hel
 
 #+NAME: running_command
 #+BEGIN_SRC shell
-python3 run_workflow.py --outuser bfontana --tag FullWorkflowTest --data MET --mc_process TT
+python3 run_workflow.py --tag FullWorkflowTest --data MET --mc_process TT
 #+END_SRC
 
 If everything runs as expected, the above should run locally all local tasks (currently ~DefineBinning~ only) and launch a HTCondor DAG which encodes de dependencies of the remaining tasks and runs them in the server.

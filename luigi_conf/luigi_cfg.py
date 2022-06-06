@@ -89,12 +89,6 @@ parser.add_argument(
     help='Select the variables to be used for the display of distributions.'
 )
 parser.add_argument(
-    '--outuser',
-    type=str,
-    default=os.environ['USER'],
-    help='The username required to write the output scale factor plots.'
-)
-parser.add_argument(
     '--tag',
     type=str,
     required=True,
