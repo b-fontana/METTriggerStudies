@@ -260,17 +260,15 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
                             print(pass_cuts_intersection)
                             print()
 
-                        if pass_trigger_intersection:
+                        for pckey,pcval in pass_cuts_intersection.items():
 
-                            for pckey,pcval in pass_cuts_intersection.items():
+                            if pckey not in hTrig[i][j][joinNTC(tcomb)]:
                                 base_str = get_histo_names('Trig1D')(i,j,joinNTC(tcomb))
                                 htrig_name = rewriteCutString(base_str, pckey)
+                                hTrig[i][j][joinNTC(tcomb)][pckey] = TH1D(htrig_name, '', *binning)
 
-                                if pckey not in hTrig[i][j][joinNTC(tcomb)]:
-                                    hTrig[i][j][joinNTC(tcomb)][pckey] = TH1D(htrig_name, '', *binning)
-                                #hTrig[i][j][joinNTC(tcomb)].setdefault(pckey, TH1D(htrig_name, '', *binning))
-                                if pcval:
-                                    hTrig[i][j][joinNTC(tcomb)][pckey].Fill(fill_var[j][i], evt_weight)
+                            if pcval and pass_trigger_intersection:
+                                hTrig[i][j][joinNTC(tcomb)][pckey].Fill(fill_var[j][i], evt_weight)
 
                 # fill 2D efficiencies (currently only reference vs trigger, i.e.,
                 # all events pass the reference cut)
