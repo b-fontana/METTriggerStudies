@@ -30,7 +30,7 @@ def add_slash(s):
 
 def at_least_two(x1, x2, x3):
     """Checks if at least two out of the three boleans are True."""
-    return x1 ? (x2 || x3) : (x2 && x3)
+    return x1 if (x2 or x3) else (x2 and x3)
     
 def build_prog_path(base, script_name):
     script = os.path.join(base, 'scripts')
@@ -305,15 +305,15 @@ def pass_selection_cuts(leaf_manager, invert_mass_cut=True):
     Applies selection cut per TTree entry.
     Returns `True` only if all selection is passed.
     """
-    mhh = leaf_manager.getLeaf( 'HHKin_mass' )
+    mhh = leaf_manager.get_leaf( 'HHKin_mass' )
     if mhh<1:
         return False
 
-    pairtype = leaf_manager.getLeaf( 'pairType' )
-    dau1_eleiso = leaf_manager.getLeaf( 'dau1_eleMVAiso'    )
-    dau1_muiso  = leaf_manager.getLeaf( 'dau1_iso'          )
-    dau1_tauiso = leaf_manager.getLeaf( 'dau1_deepTauVsJet' )
-    dau2_tauiso = leaf_manager.getLeaf( 'dau2_deepTauVsJet' )
+    pairtype = leaf_manager.get_leaf( 'pairType' )
+    dau1_eleiso = leaf_manager.get_leaf( 'dau1_eleMVAiso'    )
+    dau1_muiso  = leaf_manager.get_leaf( 'dau1_iso'          )
+    dau1_tauiso = leaf_manager.get_leaf( 'dau1_deepTauVsJet' )
+    dau2_tauiso = leaf_manager.get_leaf( 'dau2_deepTauVsJet' )
 
     # Loose / Medium / Tight
     bool0 = pairtype==0 and (dau1_muiso>=0.15 or dau2_tauiso<5)
@@ -323,18 +323,18 @@ def pass_selection_cuts(leaf_manager, invert_mass_cut=True):
         return False
 
     #((tauH_SVFIT_mass-116.)*(tauH_SVFIT_mass-116.))/(35.*35.) + ((bH_mass_raw-111.)*(bH_mass_raw-111.))/(45.*45.) <  1.0
-    svfit_mass = leaf_manager.getLeaf('tauH_SVFIT_mass')
-    bh_mass    = leaf_manager.getLeaf('bH_mass_raw')
+    svfit_mass = leaf_manager.get_leaf('tauH_SVFIT_mass')
+    bh_mass    = leaf_manager.get_leaf('bH_mass_raw')
 
     mcut = ( (svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
              (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) <  1.0
     if mcut and invert_mass_cut: # inverted elliptical mass cut (-> ttCR)
         return False
 
-    #pass_met = leaf_manager.getLeaf('isMETtrigger')
-    #pass_tau = leaf_manager.getLeaf('isSingleTautrigger')
-    #pass_taumet = leaf_manager.getLeaf('isTauMETtrigger')
-    pass_lep = leaf_manager.getLeaf('isLeptrigger')
+    #pass_met = leaf_manager.get_leaf('isMETtrigger')
+    #pass_tau = leaf_manager.get_leaf('isSingleTautrigger')
+    #pass_taumet = leaf_manager.get_leaf('isTauMETtrigger')
+    pass_lep = leaf_manager.get_leaf('isLeptrigger')
     if not pass_lep:
         return False
 
@@ -468,10 +468,3 @@ def uniformize_bin_width(old_histo):
 def upify(s):
     """capitalizes the first letter of the passed string"""
     return s[0].upper() + s[1:]
-
-def writeDummyFile(f):
-    try:
-        with open(fname, 'x') as f:
-            f.write('Dummy text.')
-    except FileExistsError:
-        pass

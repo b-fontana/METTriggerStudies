@@ -126,7 +126,7 @@ def prob_calculator(efficiencies, effvars, leaf_manager, channel, closure_single
         #some triggers do not fire for some channels: Ele32 for mutau (for example)
         if joincomb in efficiencies[0][0]:
             variables = effvars[joincomb][0] #constant 1D variables, check [1] and [2] for changing ones
-            values = [ leaf_manager.getLeaf(x) for x in variables ]
+            values = [ leaf_manager.get_leaf(x) for x in variables ]
             assert len(variables) == 4 #Change according to the variable discriminator
             assert len(variables) == nweight_vars
 
@@ -222,12 +222,12 @@ def runUnionWeightsCalculator(args):
         if not pass_selection_cuts(lfm):
             continue
 
-        trig_bit = lfm.getLeaf('pass_triggerbit')
-        run = lfm.getLeaf('RunNumber')
+        trig_bit = lfm.get_leaf('pass_triggerbit')
+        run = lfm.get_leaf('RunNumber')
         if not pass_any_trigger(args.triggers, trig_bit, run, isdata=False):
             continue
         for chn in args.channels:
-            if not is_channel_consistent(chn, lfm.getLeaf('pairType')):
+            if not is_channel_consistent(chn, lfm.get_leaf('pairType')):
                 continue
             prob_data, prob_mc = prob_calculator(efficiencies[chn],
                                                  effvars[chn],
@@ -246,7 +246,7 @@ def runUnionWeightsCalculator(args):
             assert len(effvars[chn][generate_trigger_combinations(args.triggers)[0][0]][0]) == len(prob_ratio)
             
             for var in _variables_unionweights:
-                val = lfm.getLeaf(var)
+                val = lfm.get_leaf(var)
                 binid = find_bin(binedges[var][chn], val, var)
                 for iw,weightvar in enumerate(effvars[chn][generate_trigger_combinations(args.triggers)[0][0]][0]): #any trigger works for the constant list
                     ref_prob_ratios[chn][var][weightvar][str(binid-1)].append(prob_ratio[iw])

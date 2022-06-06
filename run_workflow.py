@@ -102,7 +102,7 @@ def luigi_to_raw( param ):
 ### CALCULATE THE MOST ADEQUATE BINNING BASED ON DATA ##################
 ########################################################################
 class DefineBinning(luigi.Task):
-    args = utils.dotDict(lcfg.bins_params)
+    args = utils.dot_dict(lcfg.bins_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
@@ -124,7 +124,7 @@ class DefineBinning(luigi.Task):
 ### WRITE HTCONDOR FILES FOR TOTAL AND PASSED TRIGGER HISTOGRAMS #######
 ########################################################################
 class WriteHTCondorProcessingFiles(ForceRun):
-    params = utils.dotDict(lcfg.histos_params)
+    params = utils.dot_dict(lcfg.histos_params)
 
     mode = luigi.ChoiceParameter(choices=lcfg.modes.keys(),
                                  var_type=str)
@@ -163,7 +163,7 @@ class WriteHTCondorProcessingFiles(ForceRun):
 class WriteHTCondorHaddHistoFiles(ForceRun):
     samples = luigi.ListParameter()
     dataset_name = luigi.Parameter()
-    args = utils.dotDict(lcfg.haddhisto_params)
+    args = utils.dot_dict(lcfg.haddhisto_params)
     args['tprefix'] = lcfg.modes['histos']
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
@@ -195,7 +195,7 @@ class WriteHTCondorHaddHistoFiles(ForceRun):
 class WriteHTCondorHaddCountsFiles(ForceRun):
     samples = luigi.ListParameter()
     dataset_name = luigi.Parameter()
-    args = utils.dotDict(lcfg.haddcounts_params)
+    args = utils.dot_dict(lcfg.haddcounts_params)
     args['tprefix'] = lcfg.modes['counts']
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
@@ -225,7 +225,7 @@ class WriteHTCondorHaddCountsFiles(ForceRun):
 ### WRITE HTCONDOR FILES FOR EFFICIENCIES AND SCALE FACTORS ############
 ########################################################################
 class WriteHTCondorEfficienciesAndScaleFactorsFiles(ForceRun):
-    params = utils.dotDict(lcfg.sf_params)
+    params = utils.dot_dict(lcfg.sf_params)
     params['tprefix'] = lcfg.modes['histos']
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
@@ -255,7 +255,7 @@ class WriteHTCondorEfficienciesAndSFAggregator(ForceRun):
     Useful for transfering the intersection efficiencies to the KLUB framework.
     Not needed for the following steps.
     """
-    params = utils.dotDict(lcfg.sfagg_params)
+    params = utils.dot_dict(lcfg.sfagg_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
@@ -280,7 +280,7 @@ class WriteHTCondorEfficienciesAndSFAggregator(ForceRun):
 ### WRITE HTCONDOR FILES FOR THE VARIABLE DISCRIMINATOR ################
 ########################################################################
 class WriteHTCondorDiscriminatorFiles(ForceRun):
-    params = utils.dotDict(lcfg.discriminator_params)
+    params = utils.dot_dict(lcfg.discriminator_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
@@ -305,7 +305,7 @@ class WriteHTCondorDiscriminatorFiles(ForceRun):
 ### WRITE HTCONDOR FILES FOR SCALE FACTOR CALCULATOR ###################
 ########################################################################
 class WriteHTCondorUnionWeightsCalculatorFiles(ForceRun):
-    params = utils.dotDict(lcfg.calculator_params)
+    params = utils.dot_dict(lcfg.calculator_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
@@ -332,7 +332,7 @@ class WriteHTCondorUnionWeightsCalculatorFiles(ForceRun):
 ########################################################################
 # class WriteHTCondorHaddEffFiles(ForceRun):
 #     samples = luigi.ListParameter()
-#     args = utils.dotDict(lcfg.haddeff_params)
+#     args = utils.dot_dict(lcfg.haddeff_params)
     
 #     @WorkflowDebugger(flag=FLAGS.debug_workflow)
 #     def output(self):
@@ -359,7 +359,7 @@ class WriteHTCondorUnionWeightsCalculatorFiles(ForceRun):
 ### WRITE HTCONDOR FILES FOR DISPLAYING CLOSURE PLOTS ##################
 ########################################################################
 class WriteHTCondorClosureFiles(ForceRun):
-    params = utils.dotDict(lcfg.closure_params)
+    params = utils.dot_dict(lcfg.closure_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
@@ -384,7 +384,7 @@ class WriteHTCondorClosureFiles(ForceRun):
 ### DRAW 2D TRIGGER SCALE FACTORS #######################################
 ########################################################################
 # class Draw2DTriggerScaleFactors(luigi.Task):
-#     args = utils.dotDict(lcfg.sf_params)
+#     args = utils.dot_dict(lcfg.sf_params)
 #     args.update( {'tprefix': lcfg.modes['histos'], } )
 #     target_path = get_target_path( args.taskname )
     
@@ -422,7 +422,7 @@ class WriteHTCondorClosureFiles(ForceRun):
 ### DRAW VARIABLES' DISTRIBUTIONS ######################################
 ########################################################################
 # class DrawDistributions(luigi.Task):
-#     args = utils.dotDict(lcfg.drawcounts_params)
+#     args = utils.dot_dict(lcfg.drawcounts_params)
 #     args.update( {'tprefix': lcfg.modes['histos'], } )
 #     target_path = get_target_path( args.taskname )
     
@@ -458,15 +458,15 @@ class WriteHTCondorClosureFiles(ForceRun):
 ### TRIGGERING ALL HTCONDOR WRITING CLASSES ############################
 ########################################################################
 class WriteDAG(ForceRun):
-    params      = utils.dotDict(lcfg.write_params)
-    pHistos     = utils.dotDict(lcfg.histos_params)
-    pHaddHisto  = utils.dotDict(lcfg.haddhisto_params)
-    pHaddCounts = utils.dotDict(lcfg.haddhisto_params)
-    pEffSF      = utils.dotDict(lcfg.sf_params)
-    pEffSFAgg   = utils.dotDict(lcfg.sfagg_params)
-    pDisc       = utils.dotDict(lcfg.discriminator_params)
-    pSFCalc     = utils.dotDict(lcfg.calculator_params)
-    pClosure    = utils.dotDict(lcfg.closure_params)
+    params      = utils.dot_dict(lcfg.write_params)
+    pHistos     = utils.dot_dict(lcfg.histos_params)
+    pHaddHisto  = utils.dot_dict(lcfg.haddhisto_params)
+    pHaddCounts = utils.dot_dict(lcfg.haddhisto_params)
+    pEffSF      = utils.dot_dict(lcfg.sf_params)
+    pEffSFAgg   = utils.dot_dict(lcfg.sfagg_params)
+    pDisc       = utils.dot_dict(lcfg.discriminator_params)
+    pSFCalc     = utils.dot_dict(lcfg.calculator_params)
+    pClosure    = utils.dot_dict(lcfg.closure_params)
     
     pHaddHisto['tprefix']  = lcfg.modes['histos']
     pEffSF['tprefix'] =  lcfg.modes['histos']
