@@ -127,11 +127,9 @@ for x in _binedges.values():
 #######################################################################################################
 ########### DATA AND MC SAMPLES #######################################################################
 #######################################################################################################
-#_inputs = '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_Radion_2018_fixedMETtriggers_mht_16Jun2021/'
-# future inputs:
-# /data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_2018_UL_feb22/
-_inputs = [ '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220325_MiniAODv2/',
-            '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220331_data_MiniAODv2/' ] #data, MC signal and MC backgrounds
+_inputs = [ '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220420/', ] #data, MC signal and MC backgrounds
+# _inputs = [ '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220325_MiniAODv2/',
+#             '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220331_data_MiniAODv2/' ] 
 
 # names of the subfolders under '_inputs' above
 _data = dict( MET = ['SKIM_MET',] )
