@@ -155,20 +155,22 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
                 hTrig[i][j][joinNTC(tcomb)]={}
 
     # Define 2D efficiencies:
-    #  effRefVsTrig: efficiency for passing the reference trigger
-    # effRefVsTrig, = ({} for _ in range(1))
-    # addVarNames = lambda var1,var2 : var1 + '_VERSUS_' + var2
+    # effRefVsTrig: efficiency for passing the reference trigger
+    h2D = {}
+    addVarNames = lambda var1,var2 : var1 + '_VERSUS_' + var2
     
-    # for i in channels:
-    #     effRefVsTrig[i], = ({} for _ in range(1))                        
+    for i in channels:
+        h2D[i], = ({} for _ in range(1))                        
 
-    #     for k in triggers:
-    #         if k in _2Dpairs.keys():
-    #             for j in _2Dpairs[k]:
-    #                 vname = addVarNames(j[0],j[1])
-    #                 if vname not in effRefVsTrig[i]: #creates subdictionary if it does not exist
-    #                     effRefVsTrig[i][vname] = {}
-    #                 effRefVsTrig[i][vname][k] = {}
+        for onetrig in triggers:
+            if onetrig in _2Dpairs.keys():
+                for combtrig in triggercomb:
+                    if onetrig in combtrig:
+                        for j in _2Dpairs[onetrig]:
+                            vname = addVarNames(j[0],j[1])
+                            if vname not in h2D[i]: #creates subdictionary if it does not exist
+                                h2D[i][vname] = {}
+                            h2D[i][vname][combtrig] = {}
 
     lf = LeafManager( fileName, t_in )
     
@@ -272,31 +274,33 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
 
                 # fill 2D efficiencies (currently only reference vs trigger, i.e.,
                 # all events pass the reference cut)
-                # for k in triggers:
-                #     if k in _2Dpairs.keys():
-                #         for j in _2Dpairs[k]:
-                #             vname = addVarNames(j[0],j[1])
-
-                #             if passLEP:
-                #                 pCuts = passes_cuts(k, [j[0], j[1]], lf, args.debug)
-                #                 for pckey,pcval in pCuts.items():
-                #                     if pckey not in effRefVsTrig[i][vname][k]:
-                #                         effRefVsTrig_name = 'effRefVsTrig_{}_{}_{}'.format(i,k,vname)
-                #                         effRefVsTrig_name += '_CUTS_' + pckey
-                #                         effRefVsTrig[i][vname][k][pckey] = TEfficiency( effRefVsTrig_name,
-                #                                                                              '',
-                #                                                                              nbins[j[0]][i],
-                #                                                                              binedges[j[0]][i],
-                #                                                                              nbins[j[1]][i],
-                #                                                                              binedges[j[1]][i] )
-                #                         effRefVsTrig[i][vname][k][pckey].SetConfidenceLevel(0.683)
-                #                         #Clopper-Pearson (default)
-                #                         effRefVsTrig[i][vname][k][pckey].SetStatisticOption(0)
-                    
-                #                     trigger_flag = ( pass_trigger_bits[k] and pcval )
-                #                     effRefVsTrig[i][vname][k][pckey].Fill( trigger_flag,
-                #                                                            fill_var[j[0]][i],
-                #                                                            fill_var[j[1]][i] )
+                for onetrig in triggers:
+                    if onetrig in _2Dpairs.keys():
+                        for combtrig in triggercomb:
+                            if onetrig in combtrig:
+                                for j in _2Dpairs[onetrig]:
+                                    vname = addVarNames(j[0],j[1])
+         
+                                    if passLEP:
+                                        pCuts = passes_cuts(onetrig, [j[0], j[1]], lf, args.debug)
+                                        for pckey,pcval in pCuts.items():
+                                            if pckey not in h2D[i][vname][combtrig]:
+                                                h2D_name = 'h2D_{}_{}_{}'.format(i,combtrig,vname)
+                                                h2D_name += '_CUTS_' + pckey
+                                                h2D[i][vname][combtrig][pckey] = TEfficiency( h2D_name,
+                                                                                             '',
+                                                                                             nbins[j[0]][i],
+                                                                                             binedges[j[0]][i],
+                                                                                             nbins[j[1]][i],
+                                                                                             binedges[j[1]][i] )
+                                                h2D[i][vname][combtrig][pckey].SetConfidenceLevel(0.683)
+                                                #Clopper-Pearson (default)
+                                                h2D[i][vname][combtrig][pckey].SetStatisticOption(0)
+                            
+                                            trigger_flag = ( pass_trigger_bits[onetrigger] and pcval )
+                                            h2D[i][vname][combtrig][pckey].Fill( trigger_flag,
+                                                                                 fill_var[j[0]][i],
+                                                                                 fill_var[j[1]][i] )
                                 
     file_id = ''.join( c for c in fileName[-10:] if c.isdigit() ) 
     outname = os.path.join(outdir, tprefix + sample + '_' + file_id + subtag + '.root')
