@@ -70,8 +70,7 @@ def check2DTrigger(args, proc, channel, var, trig, save_names):
         print('[=debug=]  - Args: proc={proc}, channel={channel}, variable={variable}, trig={trig}'
               .format(proc=proc, channel=channel, variable=variable, trig=trig))
         
-    addVarNames = lambda var1,var2 : var1 + '_VERSUS_' + var2
-    vname = addVarNames( var[0], var[1] )
+    vname = utils.add_vnames( var[0], var[1] )
     eff_names = { 'ref_vs_trig': 'effRefVsTrig_{}_{}_{}'.format(channel, trig, vname),
                  }
     

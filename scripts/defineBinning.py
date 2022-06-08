@@ -153,12 +153,13 @@ def defineBinning(args):
             for v in args.variables:
                 vargroup = group.create_group(v)
                 for chn in args.channels:
-
                     try:
                         if chn in _binedges[v]:
-                            dset = vargroup.create_dataset(chn, dtype=float, shape=(len(_binedges[v][chn]),))
+                            dset = vargroup.create_dataset(chn, dtype=float,
+                                                           shape=(len(_binedges[v][chn]),))
                             if args.debug:
-                                print( '[' + os.path.basename(__file__) + '] Using custom binning for variable {}: {}'
+                                print( '[' + os.path.basename(__file__) + '] ' +
+                                       'Using custom binning for variable {}: {}'
                                        .format(v, _binedges[v][chn]) )
                             dset[:] = _binedges[v][chn]
                         else:

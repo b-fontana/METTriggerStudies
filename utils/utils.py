@@ -28,6 +28,9 @@ def add_slash(s):
     s = s if s[-1] == '/' else s + '/'
     return s
 
+def add_vnames(*vnames):
+    return '_VERSUS_'.join(vnames)
+
 def at_least_two(x1, x2, x3):
     """Checks if at least two out of the three boleans are True."""
     return x1 if (x2 or x3) else (x2 and x3)
@@ -152,11 +155,15 @@ def get_key_list(afile, inherits=['TH1']):
         tmp.append( h.GetName() )
     return tmp
 
-def get_histo_names(opt):
+def get_hnames(opt):
     if opt == 'Ref1D':
-        return lambda a,b : 'Ref_{}_{}'.format(a,b)
+        return lambda a,b : 'Ref1D_{}_{}'.format(a,b)
     elif opt == 'Trig1D':
-        return lambda a,b,c : 'Trig_{}_{}_{}{}'.format(a,b,c,_placeholder_cuts)
+        return lambda a,b,c : 'Trig1D_{}_{}_{}{}'.format(a,b,c,_placeholder_cuts)
+    elif opt == 'Ref2D':
+        return lambda a,b : 'Ref2D_{}_{}'.format(a,b)
+    elif opt == 'Trig2D':
+        return lambda a,b,c : 'Trig2D_{}_{}_{}{}'.format(a,b,c,_placeholder_cuts)
     elif opt == 'Closure':
         return lambda a,b,c,d : 'Closure{}_{}_{}_{}'.format(a,b,c,d)
     else:

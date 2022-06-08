@@ -13,6 +13,7 @@ import numpy as np
 from ROOT import (
     TFile,
     TH1D,
+    TH2D,
 )
 import h5py
 from collections import defaultdict
@@ -22,8 +23,9 @@ import sys
 sys.path.append( os.environ['PWD'] ) 
 
 from utils.utils import (
+    add_vnames,
     generate_trigger_combinations,
-    get_histo_names,
+    get_hnames,
     get_trigger_bit,
     is_channel_consistent,
     join_name_trigger_intersection as joinNTC,
@@ -139,8 +141,8 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
             assert nbins[v][c]==6
 
     triggercomb = generate_trigger_combinations(triggers)
-    
-    # Define 1D histograms:
+        
+    # Define 1D histograms
     #  hRef: pass the reference trigger
     #  hTrig: pass the reference trigger + trigger under study
     hRef, hTrig = ({} for _ in range(2))
@@ -148,29 +150,32 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
     for i in channels:
         hRef[i], hTrig[i] = ({} for _ in range(2))
         for j in variables:
-            binning = (nbins[j][i], binedges[j][i])
+            binning1D = (nbins[j][i], binedges[j][i])
             hTrig[i][j]={}
-            hRef[i][j] = TH1D( get_histo_names('Ref1D')(i, j), '', *binning)
+            hRef[i][j] = TH1D( get_hnames('Ref1D')(i, j), '', *binning1D)
             for tcomb in triggercomb:
                 hTrig[i][j][joinNTC(tcomb)]={}
 
-    # Define 2D efficiencies:
-    # effRefVsTrig: efficiency for passing the reference trigger
-    h2D = {}
-    addVarNames = lambda var1,var2 : var1 + '_VERSUS_' + var2
+    # Define 2D histograms
+    #  h2Ref: pass the reference trigger
+    #  h2Trig: pass the reference trigger + trigger under study
+    h2Ref, h2Trig = ({} for _ in range(2))
     
     for i in channels:
-        h2D[i], = ({} for _ in range(1))                        
-
+        h2Ref[i], h2Trig[i] = ({} for _ in range(2))
         for onetrig in triggers:
             if onetrig in _2Dpairs.keys():
-                for combtrig in triggercomb:
-                    if onetrig in combtrig:
-                        for j in _2Dpairs[onetrig]:
-                            vname = addVarNames(j[0],j[1])
-                            if vname not in h2D[i]: #creates subdictionary if it does not exist
-                                h2D[i][vname] = {}
-                            h2D[i][vname][combtrig] = {}
+                combtrigs = {x for x in triggercomb if onetrig in x}
+                for combtrig in combtrigs:
+                    for j in _2Dpairs[onetrig]:
+                        binning2D = ( nbins[j[0]][i], binedges[j[0]][i],
+                                      nbins[j[1]][i], binedges[j[1]][i] )
+                        vname = add_vnames(j[0],j[1])
+                        if vname not in h2Ref[i]:
+                            h2Ref[i][vname] = TH2D(get_hnames('Ref2D')(i, vname), '', *binning2D)
+                        if vname not in h2Trig[i]:
+                            h2Trig[i][vname] = {}
+                        h2Trig[i][vname][joinNTC(combtrig)] = {}
 
     lf = LeafManager( fileName, t_in )
     
@@ -209,99 +214,122 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
                 if fill_var[v][chn]>binedges[v][chn][-1]:
                     fill_var[v][chn]=binedges[v][chn][-1] # include overflow
 
-        pass_trigger, pass_cuts = ({} for _ in range(2))
-
+        # whether the event passes cuts (1 and 2-dimensional_ and single triggers
+        pass_trigger, pcuts1D, pcuts2D = ({} for _ in range(3))
+        for trig in triggers:
+            pcuts2D[trig] = {}    
         for trig in triggers:
             pass_trigger[trig] = pass_trigger_bits(trig, trig_bit, run, isdata)
 
-            pass_cuts[trig] = {}
+            pcuts1D[trig] = {}
             for var in variables:
-                pass_cuts[trig][var] = passes_cuts(trig, [var], lf, args.debug)
+                pcuts1D[trig][var] = passes_cuts(trig, [var], lf, args.debug)
+
+            if trig in _2Dpairs.keys():
+                                # combtrigs = tuple(x for x in triggercomb if trig in x)
+                # for combtrig in combtrigs:
+                # pcuts2D[joinNTC(combtrig)] = {}
+                for j in _2Dpairs[trig]:
+                    vname = add_vnames(j[0],j[1])
+                    for t in triggers:
+                        pcuts2D[t][vname] = passes_cuts(t, [j[0], j[1]], lf, args.debug)
+
+        #logic AND to intersect all triggers in this combination
+        pass_trigger_intersection = {}
+        for tcomb in triggercomb:
+            pass_trigger_intersection[joinNTC(tcomb)] = functools.reduce(
+                lambda x,y: x and y,
+                [ pass_trigger[x] for x in tcomb ] )
 
         for i in channels:
             if is_channel_consistent(i, lf.get_leaf('pairType')):
 
                 # fill histograms for 1D efficiencies
                 for j in variables:
-                    binning = (nbins[j][i], binedges[j][i])
-
+                    binning1D = (nbins[j][i], binedges[j][i])
                     hRef[i][j].Fill(fill_var[j][i], evt_weight)
 
-                    for tcomb in triggercomb:
-
-                        #logic AND to intersect all triggers in this combination
-                        pass_trigger_intersection = functools.reduce(
-                            lambda x,y: x and y,
-                            [ pass_trigger[x] for x in tcomb ]
-                        )
-
-                        # The following is tricky, as we are considering, simultaneously:
-                        # - all trigger intersection combinations
-                        # - all cut combinations for each trigger combination (see '_cuts')
+                    # The following is tricky, as we are considering, simultaneously:
+                    # - all trigger intersection combinations
+                    # - all cut combinations for each trigger combination (see '_cuts')
                         
-                        # Logic AND to intersect all cuts for this trigger combination
-                        # Each element will contain one possible cut combination
-                        # for the trigger combination 'tcomb' being considered
-                        #cuts_combinations = list(it.product( *(pass_cuts[k][j] for atrig in tcomb for k in atrig) ))
-                        cuts_combinations = list(it.product( *(pass_cuts[atrig][j].items() for atrig in tcomb) ))
-                        if args.debug:
-                            print(tcomb, j)
-                            print(cuts_combinations)
+                    # Logic AND to intersect all cuts for this trigger combination
+                    # Each element will contain one possible cut combination
+                    # for the trigger combination 'tcomb' being considered
+                    for tcomb in triggercomb:
+                        cuts_combinations = list(it.product( *(pcuts1D[atrig][j].items()
+                                                            for atrig in tcomb) ))
 
                         # One dict item per cut combination
                         # - key: all cut strings joined
                         # - value: logical and of all cuts
-                        pass_cuts_intersection = { (args.intersection_str).join(e[0] for e in elem): 
-                                                 functools.reduce(                 
-                                                     lambda x,y: x and y,
-                                                     [ e[1] for e in elem ]
-                                                 )
-                                                 for elem in cuts_combinations
-                                                }
+                        pcuts_inters = { (args.intersection_str).join(e[0] for e in elem): 
+                                        functools.reduce(                 
+                                            lambda x,y: x and y,
+                                            [ e[1] for e in elem ]
+                                            )
+                                        for elem in cuts_combinations }
+
                         if args.debug:
-                            print(pass_cuts_intersection)
+                            print(j)
+                            print(cuts_combinations)
+                            print(pcuts_inters)
                             print()
 
-                        for pckey,pcval in pass_cuts_intersection.items():
+                        for key,val in pcuts_inters.items():
+                            if key not in hTrig[i][j][joinNTC(tcomb)]:
+                                base_str = get_hnames('Trig1D')(i,j,joinNTC(tcomb))
+                                htrig_name = rewrite_cut_string(base_str, key)
+                                hTrig[i][j][joinNTC(tcomb)][key] = TH1D(htrig_name, '', *binning1D)
 
-                            if pckey not in hTrig[i][j][joinNTC(tcomb)]:
-                                base_str = get_histo_names('Trig1D')(i,j,joinNTC(tcomb))
-                                htrig_name = rewrite_cut_string(base_str, pckey)
-                                hTrig[i][j][joinNTC(tcomb)][pckey] = TH1D(htrig_name, '', *binning)
+                            if val and pass_trigger_intersection[joinNTC(tcomb)]:
+                                hTrig[i][j][joinNTC(tcomb)][key].Fill(fill_var[j][i], evt_weight)
 
-                            if pcval and pass_trigger_intersection:
-                                hTrig[i][j][joinNTC(tcomb)][pckey].Fill(fill_var[j][i], evt_weight)
-
-                # fill 2D efficiencies (currently only reference vs trigger, i.e.,
-                # all events pass the reference cut)
+                # fill 2D efficiencies
                 for onetrig in triggers:
                     if onetrig in _2Dpairs.keys():
-                        for combtrig in triggercomb:
-                            if onetrig in combtrig:
-                                for j in _2Dpairs[onetrig]:
-                                    vname = addVarNames(j[0],j[1])
-         
-                                    if passLEP:
-                                        pCuts = passes_cuts(onetrig, [j[0], j[1]], lf, args.debug)
-                                        for pckey,pcval in pCuts.items():
-                                            if pckey not in h2D[i][vname][combtrig]:
-                                                h2D_name = 'h2D_{}_{}_{}'.format(i,combtrig,vname)
-                                                h2D_name += '_CUTS_' + pckey
-                                                h2D[i][vname][combtrig][pckey] = TEfficiency( h2D_name,
-                                                                                             '',
-                                                                                             nbins[j[0]][i],
-                                                                                             binedges[j[0]][i],
-                                                                                             nbins[j[1]][i],
-                                                                                             binedges[j[1]][i] )
-                                                h2D[i][vname][combtrig][pckey].SetConfidenceLevel(0.683)
-                                                #Clopper-Pearson (default)
-                                                h2D[i][vname][combtrig][pckey].SetStatisticOption(0)
-                            
-                                            trigger_flag = ( pass_trigger_bits[onetrigger] and pcval )
-                                            h2D[i][vname][combtrig][pckey].Fill( trigger_flag,
-                                                                                 fill_var[j[0]][i],
-                                                                                 fill_var[j[1]][i] )
-                                
+                        combtrigs = tuple(x for x in triggercomb if onetrig in x)
+
+                        for combtrig in combtrigs:
+                            for j in _2Dpairs[onetrig]:
+                                vname = add_vnames(j[0],j[1])
+                                fill_info = ( fill_var[j[0]][i], fill_var[j[1]][i], evt_weight )
+                                try:
+                                    cuts_combinations = list(it.product(
+                                        *(pcuts2D[atrig][vname].items() for atrig in combtrig) ))
+                                except KeyError:
+                                    print('CHECK: ', combtrig)
+                                    raise
+
+                                if args.debug:
+                                    print(combtrig, j)
+                                    print(cuts_combinations)
+
+                                # One dict item per cut combination
+                                # - key: all cut strings joined
+                                # - value: logical and of all cuts
+                                pcuts_inters = { (args.intersection_str).join(e[0] for e in elem):
+                                                 functools.reduce(
+                                                     lambda x,y: x and y,
+                                                     [ e[1] for e in elem ]
+                                                     )
+                                                 for elem in cuts_combinations }
+
+                                if combtrig==combtrigs[0]: #avoid filling multiple times
+                                    h2Ref[i][vname].Fill(*fill_info)
+    
+                                for key,val in pcuts_inters.items():
+                                    if key not in h2Trig[i][vname][joinNTC(combtrig)]:
+                                        base_str = get_hnames('Trig2D')(i, vname, joinNTC(combtrig))
+                                        h2name = rewrite_cut_string(base_str, key)
+                                        binning2D = ( nbins[j[0]][i], binedges[j[0]][i],  
+                                                      nbins[j[1]][i], binedges[j[1]][i] ) 
+                                        h2Trig[i][vname][joinNTC(combtrig)][key] = TH2D(h2name, '',
+                                                                                        *binning2D)
+                       
+                                    if val and pass_trigger_intersection[joinNTC(combtrig)]:
+                                        h2Trig[i][vname][joinNTC(combtrig)][key].Fill(*fill_info)
+
     file_id = ''.join( c for c in fileName[-10:] if c.isdigit() ) 
     outname = os.path.join(outdir, tprefix + sample + '_' + file_id + subtag + '.root')
     print('Saving file {} at {} '.format(file_id, outname) )
@@ -310,21 +338,22 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
     f_out.cd()
     for i in channels:
         for j in variables:
-            hRef[i][j].Write( get_histo_names('Ref1D')(i,j) )
+            hRef[i][j].Write( get_hnames('Ref1D')(i,j) )
             for tcomb in triggercomb:
                 for khist,vhist in hTrig[i][j][joinNTC(tcomb)].items():
-                    base_str = get_histo_names('Trig1D')(i,j,joinNTC(tcomb))
+                    base_str = get_hnames('Trig1D')(i,j,joinNTC(tcomb))
                     writename = rewrite_cut_string(base_str, khist)
+                    vhist.Write(writename)
 
-                    vhist.Write( writename )
-
-    # Writing 2D efficiencies to the current file
-    # for i in channels:
-    #     for _,j in effRefVsTrig[i].items():
-    #         for _,k in j.items():
-    #             for _,q in k.items():
-    #                 q.Write()
-
+        for vname in h2Ref[i].keys():
+            h2Ref[i][vname].Write()
+            for tc in h2Trig[i][vname].keys():
+                for key in h2Trig[i][vname][tc].keys():
+                    #print('\t|\t'.join([i, vname, tc, key]))
+                    #h2name = get_hnames('Trig2D')(i, vname, joinNTC(tcomb))
+                    base_str = h2Trig[i][vname][tc][key].GetName()
+                    writename = rewrite_cut_string(base_str, key)
+                    h2Trig[i][vname][tc][key].Write(writename)
     f_out.Close()
     f_in.Close()
 
