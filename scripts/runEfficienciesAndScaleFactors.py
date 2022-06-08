@@ -42,7 +42,7 @@ from luigi_conf import (
     _placeholder_cuts,
 )
 
-def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, binedges, nbins,
+def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names,
                                     tprefix, indir, subtag, mc_name, data_name,
                                     intersection_str, debug):
 
@@ -147,109 +147,112 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         for khisto2, vhisto2 in hmc1D['trig'].items():
             effmc1D[khisto2] = TGraphAsymmErrors( vhisto2, hmc1D['ref'] )
 
-        for khisto1, vhisto1 in hdata2D['trig'].items():
-            effdata2D[khisto1] = vhisto1.copy()
-            effdata2D[khisto1].Divide(hdata1D['ref'])
-        for khisto2, vhisto2 in hmc2D['trig'].items():
-            effmc2D[khisto2] = vhisto2.copy()
+        for khisto3, vhisto3 in hdata2D['trig'].items():
+            effdata2D[khisto3] = vhisto3.copy()
+            effdata2D[khisto3].Divide(hdata2D['ref'])
+        for khisto4, vhisto4 in hmc2D['trig'].items():
+            effmc2D[khisto4] = vhisto4.copy()
             effmc2D[khisto1].Divide(hdata2D['ref'])
 
     except SystemError:
         m = 'There is likely a mismatch in the number of bins.'
         raise RuntimeError(m)
 
-    # CONTINUE FOMR HERE!!!!!!!!!!!
-    npoints = effmc1D[khisto2].GetN() #they all have the same binning
-    halfbinwidths = (binedges[1:]-binedges[:-1])/2
-    darr = lambda x : np.array(x).astype(dtype=np.double)
-    sf = {}
-    assert len(effdata1D) == len(effmc1D)
+    nb1D = effmc1D[khisto2].GetNbinsX() #they all have the same binning
+    nb2Dx = effmc2D[khisto2].GetNbinsX()
+    nb2Dy = effmc2D[khisto2].GetNbinsY()
+
+    up_xedge  = lambda obj, i: obj.GetXaxis().GetBinUpEdge(i)
+    low_xedge = lambda obj, i: obj.GetXaxis().GetBinLowEdge(i)
+    up_yedge  = lambda obj, i: obj.GetYaxis().GetBinUpEdge(i)
+    low_yedge = lambda obj, i: obj.GetYaxis().GetBinLowEdge(i)
+    ctr_xedge = lambda obj, i: obj.GetXaxis().GetBinCenter(i)
+    ctr_yedge = lambda obj, i: obj.GetYaxis().GetBinCenter(i)
     
+    effmc1D[khisto2].GetXaxis().GetBinLowEdge(2)
+    lowedge1D  = effmc1D[khisto2].GetXaxis().GetBinLowEdge(1)
+    upedge2Dx  = effmc2D[khisto2].GetXaxis().GetBinLowEdge(2)
+    upedge2Dy  = effmc2D[khisto2].GetYaxis().GetBinLowEdge(2)
+    lowedge2Dx = effmc2D[khisto2].GetXaxis().GetBinLowEdge(1)
+    lowedge2Dy = effmc2D[khisto2].GetYaxis().GetBinLowEdge(1)
+    
+    width1D  = abs(upedge1D-lowedge1D)   / 2
+    width2Dx = abs(upedge2Dx-lowedge2Dx) / 2
+    width2Dy = abs(upedge2Dy-lowedge2Dy) / 2
+    
+    darr = lambda x : np.array(x).astype(dtype=np.double)
+    sf1D, sf2D = ({} for _ in range(2))
+    assert len(effdata1D) == len(effmc1D)
+    assert len(effdata2D) == len(effmc2D)
+
+    # 1-dimensional
     for (kmc,vmc),(kdata,vdata) in zip(effmc1D.items(),effdata1D.items()):
         assert(kmc == kdata)
-      
-        x_data, y_data   = ( [[] for _ in range(npoints)] for _ in range(2) )
-        eu_data, ed_data = ( [[] for _ in range(npoints)] for _ in range(2) )
-   
-        x_mc, y_mc   = ( [[] for _ in range(npoints)] for _ in range(2) )
-        eu_mc, ed_mc = ( [[] for _ in range(npoints)] for _ in range(2) )
-   
-        x_sf, y_sf   = ( [[] for _ in range(npoints)] for _ in range(2) )
-        eu_sf, ed_sf = ( [[] for _ in range(npoints)] for _ in range(2) )
 
-        for i in range(npoints):
-            #ctypes conversions needed
-            x_mc[i] = ctypes.c_double(0.)
-            y_mc[i] = ctypes.c_double(0.)
-            vmc.GetPoint(i, x_mc[i], y_mc[i])
-            x_mc[i] = x_mc[i].value
-            y_mc[i] = y_mc[i].value
+        x, y, exu, exd, eyu, eyd = ( dot_dict({'dt': [[] for _ in range(nb1D)],    # data 
+                                               'mc': [[] for _ in range(nb1D)],    # MC
+                                               'sf': [[] for _ in range(nb1D)] })  # scale factor
+                                     for _ in range(6) )
+
+        for i in range(nb1D):
+            x.mc[i] = ctypes.c_double(0.)
+            y.mc[i] = ctypes.c_double(0.)
+            vmc.GetPoint(i, x.mc[i], y.mc[i])
+            x.mc[i] = x.mc[i].value
+            y.mc[i] = y.mc[i].value
+
+            exu.mc[i] = up_xedge(vmc,i)  - ctr_xedge(vmc,i)
+            exd.mc[i] = ctr_xedge(vmc,i) - low_xedge(vmc,i)
+            eyu.mc[i] = vmc.GetErrorYhigh(i)
+            eyd.mc[i] = vmc.GetErrorYlow(i)
    
-            eu_mc[i] = vmc.GetErrorYhigh(i)
-            ed_mc[i] = vmc.GetErrorYlow(i)
+            x.dt[i] = ctypes.c_double(0.)
+            y.dt[i] = ctypes.c_double(0.)
+            vdata.GetPoint(i, x.dt[i], y.dt[i])
+            x.dt[i] = x.dt[i].value
+            y.dt[i] = y.dt[i].value
+
+            exu.dt[i] = up_xedge(vdata,i)  - ctr_xedge(vdata,i)
+            exd.dt[i] = ctr_xedge(vdata,i) - low_xedge(vdata,i)
+            eyu.dt[i] = vdata.GetErrorYhigh(i)
+            eyd.dt[i] = vdata.GetErrorYlow(i)
+
             if debug:
-                print('X MC: xp[{}] = {}'.format(i,x_mc[i]), flush=True)
-                print('Y MC: yp[{}] = {} +{}/-{}'.format(i,y_mc[i],eu_mc[i],ed_mc[i]), flush=True)
+                print('X MC: xp[{}] = {} +{}/-{} '  .format(i,x.mc[i],exu.mc[i],exd.mc[i]), flush=True)
+                print('Y MC: yp[{}] = {} +{}/-{} '  .format(i,y.mc[i],eyu.mc[i],eyd.mc[i]), flush=True)
+                print('X Data: xp[{}] = {} +{}/-{} '.format(i,x.dt[i],exu.dt[i],exd.dt[i]), flush=True)
+                print('Y Data: yp[{}] = {} +{}/-{}' .format(i,y.dt[i],eyu.dt[i],eyd.dt[i]), flush=True)
    
-            x_data[i] = ctypes.c_double(0.)
-            y_data[i] = ctypes.c_double(0.)
-            vdata.GetPoint(i, x_data[i], y_data[i])
-            x_data[i] = x_data[i].value
-            y_data[i] = y_data[i].value
-   
-            eu_data[i] = vdata.GetErrorYhigh(i)
-            ed_data[i] = vdata.GetErrorYlow(i)
-            if debug:
-                print('X Data: xp[{}] = {}'.format(i,x_data[i]), flush=True)
-                print('Y Data: yp[{}] = {} +{}/-{}'.format(i,y_data[i],eu_data[i],ed_data[i]), flush=True)
-   
-            x_sf[i] = x_mc[i]
-            assert x_data[i] == x_mc[i]
+            x.sf[i] = x.mc[i]
+            exu.sf[i] = exu.mc[i]
+            exd.sf[i] = exd.mc[i]
+            assert x.dt[i] == x.mc[i]
+            assert exu.dt[i] == exu.mc[i]
+            assert exd.dt[i] == exd.mc[i]
    
             try:
-                y_sf[i] = y_data[i] / y_mc[i]
+                y.sf[i] = y.dt[i] / y.mc[i]
             except ZeroDivisionError:
                 print('[runEfficienciesAndScaleFactors.py] WARNING: There was a division by zero!', flush=True)
-                y_sf[i] = 0
+                y.sf[i] = 0
    
-            if y_sf[i] == 0:
-                eu_sf[i] = 0
-                ed_sf[i] = 0
+            if y.sf[i] == 0:
+                eyu.sf[i] = 0
+                eyd.sf[i] = 0
             else:
-                eu_sf[i] = np.sqrt( eu_mc[i]**2 + eu_data[i]**2 )
-                ed_sf[i] = np.sqrt( ed_mc[i]**2 + ed_data[i]**2 )
+                eyu.sf[i] = np.sqrt( eyu.mc[i]**2 + eyu.dt[i]**2 )
+                eyd.sf[i] = np.sqrt( eyd.mc[i]**2 + eyd.dt[i]**2 )
    
             if debug:
-                print('X Scale Factors: xp[{}] = {}'.format(i,x_sf[i]), flush=True)
-                print('Y Scale Factors: yp[{}] = {} +{}/-{}'.format(i,y_sf[i],eu_sf[i],ed_sf[i]), flush=True)
+                print('X Scale Factors: xp[{}] = {}'.format(i,x.sf[i]), flush=True)
+                print('Y Scale Factors: yp[{}] = {} +{}/-{}'.format(i,y.sf[i],eyu.sf[i],eyd.sf[i]), flush=True)
                 print('', flush=True)
 
-        sf[kdata] = TGraphAsymmErrors( npoints,
-                                       darr(x_sf),
-                                       darr(y_sf),
-                                       darr(halfbinwidths),
-                                       darr(halfbinwidths),
-                                       darr(ed_sf),
-                                       darr(eu_sf) )
+        sf1D[kdata] = TGraphAsymmErrors( nb1D, darr(x.sf), darr(y.sf),
+                                         darr(exd.sf), darr(exu.sf), darr(eyd.sf), darr(eyu.sf) )
 
-    ####### Scale Factors #######################################################################
-    # effmc1D_histo = hmc1D['trig'].Clone('effmc1D_histo')
-    # effdata1D_histo = hdata1D['trig'].Clone('effdata1D_histo')
-    # effdata1D_histo.Sumw2(True)
-   
-    # # binomial errors are also correct ('b') when considering weighted histograms
-    # # https://root.cern.ch/doc/master/TH1_8cxx_source.html#l03027
-    # flag = effmc1D_histo.Divide(effmc1D_histo, hmc1D['ref'], 1, 1, 'b')
-    # if not flag:
-    #   raise RuntimeError('[drawTriggerSF.py] MC division failed!')
-    # flag = effdata1D_histo.Divide(effdata1D_histo, hdata1D['ref'], 1, 1, 'b')
-    # if not flag:
-    #   raise RuntimeError('[drawTriggerSF.py] Data division failed!')
-   
-    # sf = effdata1D.Clone('sf')
-   
-    # sf.Divide(effdata1D_histo, effmc1D_histo, 'pois') #independent processes (Data/MC) with poisson
-    #############################################################################################
+        #SAME LOOP BUT FOR 2D sf2D!!!!!!!!!!!!!!!
+
     if debug:
         print('[=debug=] Plotting...', flush=True)
    
@@ -302,14 +305,14 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         effdata1D_new.SetMarkerStyle(20)
         effdata1D_new.Draw('same p0 e')
 
-        effmc1D_new.SetLineColor(ROOT.kRed)
+        effmc1D_new.SetLineColor(ROOT.kReyd)
         effmc1D_new.SetLineWidth(2)
-        effmc1D_new.SetMarkerColor(ROOT.kRed)
+        effmc1D_new.SetMarkerColor(ROOT.kReyd)
         effmc1D_new.SetMarkerSize(1.3)
         effmc1D_new.SetMarkerStyle(22)
         effmc1D_new.Draw('same p0')
 
-        pad1.RedrawAxis()
+        pad1.ReydrawAxis()
         l = TLine()
         l.SetLineWidth(2)
         padmin = eff_min-0.1*(eff_max-eff_min)
@@ -317,7 +320,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         fraction = (padmax-padmin)/45
 
         for i in range(nbins):
-          x = axor.GetXaxis().GetBinLowEdge(i) + 1.5;
+          x = axor.GetXaxis().GetBinLowEydge(i) + 1.5;
           l.DrawLine(x,padmin-fraction,x,padmin+fraction)
         l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
 
@@ -333,7 +336,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         leg.AddEntry(effmc1D_new,   proc,   'p')
         leg.Draw('same')
 
-        redraw_border()
+        reydraw_border()
 
         lX, lY, lYstep = 0.23, 0.84, 0.05
         l = TLatex()
@@ -377,7 +380,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         if max(y_sf) == min(y_sf):
             max1, min1 = 1.1, -0.1
         else:
-            max1, min1 = max(y_sf)+max(eu_sf),min(y_sf)-max(ed_sf)
+            max1, min1 = max(y_sf)+max(eyu_sf),min(y_sf)-max(eyd_sf)
 
         axor2 = TH2D( 'axor2'+akey,'axor2'+akey,
                       axor_info[0], axor_info[1], axor_info[2],
@@ -405,9 +408,9 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         axor2.Draw()
 
         sf_new = uniformize_bin_width(sf[akey])
-        sf_new.SetLineColor(ROOT.kRed)
+        sf_new.SetLineColor(ROOT.kReyd)
         sf_new.SetLineWidth(2)
-        sf_new.SetMarkerColor(ROOT.kRed)
+        sf_new.SetMarkerColor(ROOT.kReyd)
         sf_new.SetMarkerSize(1.3)
         sf_new.SetMarkerStyle(22)
         sf_new.GetYaxis().SetLabelSize(0.12)
@@ -428,11 +431,11 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         fraction = (padmax-padmin)/30
 
         for i in range(nbins):
-            x = axor2.GetXaxis().GetBinLowEdge(i) + 1.5;
+            x = axor2.GetXaxis().GetBinLowEydge(i) + 1.5;
             l.DrawLine(x,padmin-fraction,x,padmin+fraction)
         l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
 
-        redraw_border()
+        reydraw_border()
         for aname in save_names[:-1]:
             _name = rewrite_cut_string(aname, akey, regex=True)
             canvas.SaveAs( _name )
@@ -452,7 +455,7 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
 
 def _getCanvasName(proc, chn, var, trig, data_name, subtag):
     """
-    A 'XXX' placeholder is added for later replacement by all cuts considered
+    A 'XXX' placeholder is addeyd for later replacement by all cuts considereyd
       for the same channel, variable and trigger combination.
     Without the placeholder one would have to additionally calculate the number
       of cuts beforehand, which adds complexity with no major benefit.
@@ -492,7 +495,7 @@ def runEfficienciesAndScaleFactors(indir, outdir,
                                    mc_processes, mc_name, data_name,
                                    trigger_combination,
                                    channels, variables,
-                                   binedges_filename, subtag,
+                                   bineydges_filename, subtag,
                                    draw_independent_MCs,
                                    tprefix,
                                    intersection_str,
@@ -504,7 +507,7 @@ def runEfficienciesAndScaleFactors(indir, outdir,
                                                                           subtag,
                                                                           draw_independent_MCs)
   
-  binedges, nbins = load_binning(binedges_filename, subtag, variables, channels)
+  bineydges, nbins = load_binning(bineydges_filename, subtag, variables, channels)
   
   dv = len(args.variables)
   dc = len(args.channels) * dv
@@ -525,7 +528,7 @@ def runEfficienciesAndScaleFactors(indir, outdir,
         drawEfficienciesAndScaleFactors( proc, chn, var,
                                          trigger_combination,
                                          names,
-                                         binedges[var][chn], nbins[var][chn],
+                                         bineydges[var][chn], nbins[var][chn],
                                          tprefix,
                                          indir, subtag,
                                          mc_name, data_name,
@@ -534,24 +537,24 @@ def runEfficienciesAndScaleFactors(indir, outdir,
 
 parser = argparse.ArgumentParser(description='Draw trigger scale factors')
 
-parser.add_argument('--indir', help='Inputs directory', required=True)
-parser.add_argument('--outdir', help='Output directory', required=True, )
-parser.add_argument('--tprefix', help='prefix to the names of the produced outputs (targets in luigi lingo)', required=True)
-parser.add_argument('--canvas_prefix', help='canvas prefix', required=True)
-parser.add_argument('--subtag',           dest='subtag',           required=True, help='subtag')
-parser.add_argument('--mc_processes', help='MC processes to be analyzed', required=True, nargs='+', type=str)
-parser.add_argument('--binedges_filename', dest='binedges_filename', required=True, help='in directory')
-parser.add_argument('--data_name', dest='data_name', required=True, help='Data sample name')
-parser.add_argument('--mc_name', dest='mc_name', required=True, help='MC sample name')
-parser.add_argument('--triggercomb', dest='triggercomb', required=True,
+parser.add_argument('--indir', help='Inputs directory', requireyd=True)
+parser.add_argument('--outdir', help='Output directory', requireyd=True, )
+parser.add_argument('--tprefix', help='prefix to the names of the produceyd outputs (targets in luigi lingo)', requireyd=True)
+parser.add_argument('--canvas_prefix', help='canvas prefix', requireyd=True)
+parser.add_argument('--subtag',           dest='subtag',           requireyd=True, help='subtag')
+parser.add_argument('--mc_processes', help='MC processes to be analyzeyd', requireyd=True, nargs='+', type=str)
+parser.add_argument('--bineydges_filename', dest='bineydges_filename', requireyd=True, help='in directory')
+parser.add_argument('--data_name', dest='data_name', requireyd=True, help='Data sample name')
+parser.add_argument('--mc_name', dest='mc_name', requireyd=True, help='MC sample name')
+parser.add_argument('--triggercomb', dest='triggercomb', requireyd=True,
                     help='Trigger intersection combination.')
-parser.add_argument('--channels',   dest='channels',         required=True, nargs='+', type=str,
+parser.add_argument('--channels',   dest='channels',         requireyd=True, nargs='+', type=str,
                     help='Select the channels over which the workflow will be run.' )
-parser.add_argument('--variables',        dest='variables',        required=True, nargs='+', type=str,
+parser.add_argument('--variables',        dest='variables',        requireyd=True, nargs='+', type=str,
                     help='Select the variables over which the workflow will be run.' )
 parser.add_argument('--draw_independent_MCs', action='store_true', help='debug verbosity')
-parser.add_argument('--intersection_str', dest='intersection_str', required=False, default='_PLUS_',
-                    help='String used to represent set intersection between triggers.')
+parser.add_argument('--intersection_str', dest='intersection_str', requireyd=False, default='_PLUS_',
+                    help='String useyd to represent set intersection between triggers.')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = parser.parse_args()
 print_configuration(args)
@@ -560,7 +563,7 @@ runEfficienciesAndScaleFactors(args.indir, args.outdir,
                                args.mc_processes, args.mc_name, args.data_name,
                                args.triggercomb,
                                args.channels, args.variables,
-                               args.binedges_filename, args.subtag,
+                               args.bineydges_filename, args.subtag,
                                args.draw_independent_MCs,
                                args.tprefix,
                                args.intersection_str,
