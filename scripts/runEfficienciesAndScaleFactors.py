@@ -61,8 +61,10 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         print('[=debug=]  - Args: proc={proc}, channel={channel}, variable={variable}, trig={trig}'
               .format(proc=proc, channel=channel, variable=variable, trig=trig))
    
-    hnames = { 'ref':  get_histo_names('Ref1D')(channel, variable),
-               'trig': get_histo_names('Trig1D')(channel, variable, trig) }
+    hnames1D = { 'ref':  get_histo_names('Ref1D')(channel, variable),
+                 'trig': get_histo_names('Trig1D')(channel, variable, trig) }
+    hnames2D = { 'ref':  get_histo_names('Ref2D')(channel, variable),
+                 'trig': get_histo_names('TrigD')(channel, variable, trig) }
    
     keylist_data = get_key_list(file_data, inherits=['TH1'])
     keylist_mc = get_key_list(file_mc, inherits=['TH1'])
@@ -85,7 +87,8 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
                 keys_to_remove.append(k)
             else:
                 m = 'Histogram {} was present in MC but not in data.\n'.format(k)
-                m += 'The current statistics cut is {}, but this one had {} events.\n'.format(stats_cut, histo.GetNbinsX())
+                m += 'The current statistics cut is {},'.format(stats_cut)
+                m += ' but this one had {} events.'.format(histo.GetNbinsX())
                 m += 'Check everything is correct, and edit this check if so.'
                 raise ValueError(m)
    
@@ -93,53 +96,76 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         keylist_mc.remove(k)
     assert(set(keylist_data)==set(keylist_mc))
       
-    histos_data, histos_mc = ({} for _ in range(2))
-    histos_data['ref'] = get_root_object(hnames['ref'], file_data)
-    histos_mc['ref'] = get_root_object(hnames['ref'], file_mc)
-   
-    histos_data['trig'], histos_mc['trig'] = ({} for _ in range(2))
+    hdata1D, hmc1D = ({} for _ in range(2))
+    hdata1D['ref'] = get_root_object(hnames1D['ref'], file_data)
+    hmc1D['ref'] = get_root_object(hnames1D['ref'], file_mc)   
+    hdata1D['trig'], hmc1D['trig'] = ({} for _ in range(2))
+
+    hdata2D, hmc2D = ({} for _ in range(2))
+    hdata2D['ref'] = get_root_object(hnames2D['ref'], file_data)
+    hmc2D['ref'] = get_root_object(hnames2D['ref'], file_mc)   
+    hdata2D['trig'], hmc2D['trig'] = ({} for _ in range(2))
 
     for key in keylist_mc:
-        rewritten_str = rewrite_cut_string(hnames['trig'], '')
-        if key.startswith(rewritten_str):
-            histos_data['trig'][key] = get_root_object(key, file_data)
-            histos_mc['trig'][key] = get_root_object(key, file_mc)
+        restr1 = rewrite_cut_string(hnames1D['trig'], '')
+        restr2 = rewrite_cut_string(hnames2D['trig'], '')
+        if key.startswith(restr1):
+            hdata1D['trig'][key] = get_root_object(key, file_data)
+            hmc1D['trig'][key] = get_root_object(key, file_mc)
 
             # "solve" TGraphasymmErrors bin skipping when denominator=0
             # see TGraphAsymmErrors::Divide() (the default behaviour is very error prone!)
             # https://root.cern.ch/doc/master/classTGraphAsymmErrors.html#a37a202762b286cf4c7f5d34046be8c0b
-            for ibin in range(1,histos_data['trig'][key].GetNbinsX()+1):
-                if ( histos_data['trig'][key].GetBinContent(ibin)==0. and
-                     histos_data['ref'].GetBinContent(ibin)==0. ):
-                    histos_data['ref'].SetBinContent(ibin, 1)
-            for ibin in range(1,histos_mc['trig'][key].GetNbinsX()+1):
-                if ( histos_mc['trig'][key].GetBinContent(ibin)==0. and
-                     histos_mc['ref'].GetBinContent(ibin)==0. ):
-                    histos_mc['ref'].SetBinContent(ibin, 1)
-            
+            for h1D in (hdata1D,hmc1D):
+                for ibin in range(1,h1D['trig'][key].GetNbinsX()+1):
+                    if ( h1D['trig'][key].GetBinContent(ibin)==0. and
+                         h1D['ref'].GetBinContent(ibin)==0. ):
+                        h1D['ref'].SetBinContent(ibin, 1)
+                    
+        elif key.startswith(restr2):
+            hdata2D['trig'][key] = get_root_object(key, file_data)
+            hmc2D['trig'][key] = get_root_object(key, file_mc)
+
+            for h2D in [hdata2D,hmc2D]:
+                for ix in range(1,h2D['trig'][key].GetNbinsX()+1):
+                    for iy in range(1,h2D['trig'][key].GetNbinsY()+1):
+                        if ( h2D['trig'][key].GetBinContent(ix,iy)==0. and
+                             h2D['ref'].GetBinContent(ix,iy)==0. ):
+                            h2D['ref'].SetBinContent(ix,iy,1)
+
     # some triggers or their intersection naturally never fire for some channels
     # example: 'IsoMu24' for the etau channel
-    if len(histos_mc['trig']) == 0:
+    if len(hmc1D['trig'] or hmc2D['trig']) == 0:
         print('WARNING: Trigger {} never fired for channel {} in MC.'.format(trig, channel))
         return
     
-    eff_data, eff_mc = ({} for _ in range(2))
+    effdata1D, effmc1D = ({} for _ in range(2))
+    effdata2D, effmc1D = ({} for _ in range(2))
     try:
-        for khisto1, vhisto1 in histos_data['trig'].items():
-            eff_data[khisto1] = TGraphAsymmErrors( vhisto1, histos_data['ref'])
-        for khisto2, vhisto2 in histos_mc['trig'].items():
-            eff_mc[khisto2] = TGraphAsymmErrors( vhisto2, histos_mc['ref'] )
+        for khisto1, vhisto1 in hdata1D['trig'].items():
+            effdata1D[khisto1] = TGraphAsymmErrors( vhisto1, hdata1D['ref'])
+        for khisto2, vhisto2 in hmc1D['trig'].items():
+            effmc1D[khisto2] = TGraphAsymmErrors( vhisto2, hmc1D['ref'] )
+
+        for khisto1, vhisto1 in hdata2D['trig'].items():
+            effdata2D[khisto1] = vhisto1.copy()
+            effdata2D[khisto1].Divide(hdata1D['ref'])
+        for khisto2, vhisto2 in hmc2D['trig'].items():
+            effmc2D[khisto2] = vhisto2.copy()
+            effmc2D[khisto1].Divide(hdata2D['ref'])
+
     except SystemError:
         m = 'There is likely a mismatch in the number of bins.'
         raise RuntimeError(m)
 
-    npoints = eff_mc[khisto2].GetN() #they all have the same binning
+    # CONTINUE FOMR HERE!!!!!!!!!!!
+    npoints = effmc1D[khisto2].GetN() #they all have the same binning
     halfbinwidths = (binedges[1:]-binedges[:-1])/2
     darr = lambda x : np.array(x).astype(dtype=np.double)
     sf = {}
-    assert len(eff_data) == len(eff_mc)
+    assert len(effdata1D) == len(effmc1D)
     
-    for (kmc,vmc),(kdata,vdata) in zip(eff_mc.items(),eff_data.items()):
+    for (kmc,vmc),(kdata,vdata) in zip(effmc1D.items(),effdata1D.items()):
         assert(kmc == kdata)
       
         x_data, y_data   = ( [[] for _ in range(npoints)] for _ in range(2) )
@@ -207,22 +233,22 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
                                        darr(eu_sf) )
 
     ####### Scale Factors #######################################################################
-    # eff_mc_histo = histos_mc['trig'].Clone('eff_mc_histo')
-    # eff_data_histo = histos_data['trig'].Clone('eff_data_histo')
-    # eff_data_histo.Sumw2(True)
+    # effmc1D_histo = hmc1D['trig'].Clone('effmc1D_histo')
+    # effdata1D_histo = hdata1D['trig'].Clone('effdata1D_histo')
+    # effdata1D_histo.Sumw2(True)
    
     # # binomial errors are also correct ('b') when considering weighted histograms
     # # https://root.cern.ch/doc/master/TH1_8cxx_source.html#l03027
-    # flag = eff_mc_histo.Divide(eff_mc_histo, histos_mc['ref'], 1, 1, 'b')
+    # flag = effmc1D_histo.Divide(effmc1D_histo, hmc1D['ref'], 1, 1, 'b')
     # if not flag:
     #   raise RuntimeError('[drawTriggerSF.py] MC division failed!')
-    # flag = eff_data_histo.Divide(eff_data_histo, histos_data['ref'], 1, 1, 'b')
+    # flag = effdata1D_histo.Divide(effdata1D_histo, hdata1D['ref'], 1, 1, 'b')
     # if not flag:
     #   raise RuntimeError('[drawTriggerSF.py] Data division failed!')
    
-    # sf = eff_data.Clone('sf')
+    # sf = effdata1D.Clone('sf')
    
-    # sf.Divide(eff_data_histo, eff_mc_histo, 'pois') #independent processes (Data/MC) with poisson
+    # sf.Divide(effdata1D_histo, effmc1D_histo, 'pois') #independent processes (Data/MC) with poisson
     #############################################################################################
     if debug:
         print('[=debug=] Plotting...', flush=True)
@@ -242,8 +268,8 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         pad1.Draw()
         pad1.cd()
 
-        max1, min1 = get_obj_max_min(eff_data[akey], nbins, False)
-        max2, min2 = get_obj_max_min(eff_mc[akey], nbins, False)
+        max1, min1 = get_obj_max_min(effdata1D[akey], nbins, False)
+        max2, min2 = get_obj_max_min(effmc1D[akey], nbins, False)
         eff_max = max([ max1, max2 ])
         eff_min = min([ min1, min2 ])
         if eff_max == eff_min:
@@ -266,22 +292,22 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         axor.GetXaxis().SetTickLength(0)
         axor.Draw()
 
-        eff_data_new = uniformize_bin_width(eff_data[akey])
-        eff_mc_new = uniformize_bin_width(eff_mc[akey])
+        effdata1D_new = uniformize_bin_width(effdata1D[akey])
+        effmc1D_new = uniformize_bin_width(effmc1D[akey])
 
-        eff_data_new.SetLineColor(1)
-        eff_data_new.SetLineWidth(2)
-        eff_data_new.SetMarkerColor(1)
-        eff_data_new.SetMarkerSize(1.3)
-        eff_data_new.SetMarkerStyle(20)
-        eff_data_new.Draw('same p0 e')
+        effdata1D_new.SetLineColor(1)
+        effdata1D_new.SetLineWidth(2)
+        effdata1D_new.SetMarkerColor(1)
+        effdata1D_new.SetMarkerSize(1.3)
+        effdata1D_new.SetMarkerStyle(20)
+        effdata1D_new.Draw('same p0 e')
 
-        eff_mc_new.SetLineColor(ROOT.kRed)
-        eff_mc_new.SetLineWidth(2)
-        eff_mc_new.SetMarkerColor(ROOT.kRed)
-        eff_mc_new.SetMarkerSize(1.3)
-        eff_mc_new.SetMarkerStyle(22)
-        eff_mc_new.Draw('same p0')
+        effmc1D_new.SetLineColor(ROOT.kRed)
+        effmc1D_new.SetLineWidth(2)
+        effmc1D_new.SetMarkerColor(ROOT.kRed)
+        effmc1D_new.SetMarkerSize(1.3)
+        effmc1D_new.SetMarkerStyle(22)
+        effmc1D_new.Draw('same p0')
 
         pad1.RedrawAxis()
         l = TLine()
@@ -303,8 +329,8 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         leg.SetFillStyle(0)
         leg.SetTextFont(42)
 
-        leg.AddEntry(eff_data_new, 'Data', 'p')
-        leg.AddEntry(eff_mc_new,   proc,   'p')
+        leg.AddEntry(effdata1D_new, 'Data', 'p')
+        leg.AddEntry(effmc1D_new,   proc,   'p')
         leg.Draw('same')
 
         redraw_border()
@@ -415,12 +441,12 @@ def drawEfficienciesAndScaleFactors(proc, channel, variable, trig, save_names, b
         eff_file = TFile.Open(_name, 'RECREATE')
         eff_file.cd()
 
-        eff_data[akey].SetName('Data')
-        eff_mc[akey].SetName('MC')
+        effdata1D[akey].SetName('Data')
+        effmc1D[akey].SetName('MC')
         sf[akey].SetName('ScaleFactors')
 
-        eff_data[akey].Write('Data')
-        eff_mc[akey].Write('MC')
+        effdata1D[akey].Write('Data')
+        effmc1D[akey].Write('MC')
         sf[akey].Write('ScaleFactors')
         
 
