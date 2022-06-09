@@ -154,7 +154,8 @@ def check2DTrigger(args, proc, channel, var, trig, save_names):
         paintChannelAndTrigger(channel, trig)
         utils.redrawBorder()
 
-    canvas_sf = TCanvas( os.path.basename(save_names[0][2]).split('.')[0], 'canvas_sf', 600, 600 )
+    canvas_sf = TCanvas(os.path.basename(save_names[0][2]).split('.')[0],
+                        'canvas_sf', 600, 600 )
     canvas_sf.SetLeftMargin(0.10);
     canvas_sf.SetRightMargin(0.15);
     canvas_sf.cd()

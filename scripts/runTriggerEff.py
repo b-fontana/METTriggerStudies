@@ -258,7 +258,7 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
                     # for the trigger combination 'tcomb' being considered
                     for tcomb in triggercomb:
                         cuts_combinations = list(it.product( *(pcuts1D[atrig][j].items()
-                                                            for atrig in tcomb) ))
+                                                             for atrig in tcomb) ))
 
                         # One dict item per cut combination
                         # - key: all cut strings joined

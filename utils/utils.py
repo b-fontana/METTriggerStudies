@@ -17,7 +17,7 @@ from ROOT import (
 )
 
 from luigi_conf import (
-    _placeholder_cuts,
+    _placeholder_cuts as pholdc,
     _sel,
     _triggers_map,
     _triggers_custom,
@@ -159,11 +159,13 @@ def get_hnames(opt):
     if opt == 'Ref1D':
         return lambda a,b : 'Ref1D_{}_{}'.format(a,b)
     elif opt == 'Trig1D':
-        return lambda a,b,c : 'Trig1D_{}_{}_{}{}'.format(a,b,c,_placeholder_cuts)
+        return lambda a,b,c : 'Trig1D_{}_{}_{}{}'.format(a,b,c,pholdc)
     elif opt == 'Ref2D':
         return lambda a,b : 'Ref2D_{}_{}'.format(a,b)
     elif opt == 'Trig2D':
-        return lambda a,b,c : 'Trig2D_{}_{}_{}{}'.format(a,b,c,_placeholder_cuts)
+        return lambda a,b,c : 'Trig2D_{}_{}_{}{}'.format(a,b,c,pholdc)
+    elif opt == 'Canvas2D':
+        return lambda a,b,c : 'Canvas2D_{}_{}_{}{}'.format(a,b,c,pholdc)
     elif opt == 'Closure':
         return lambda a,b,c,d : 'Closure{}_{}_{}_{}'.format(a,b,c,d)
     else:
@@ -372,7 +374,7 @@ def rewrite_cut_string(oldstr, newstr, regex=False):
         _regex = _regex[0]
         newstr = _regex.replace('>', 'L').replace('<', 'S').replace('.', 'p')
     
-    res = oldstr.replace(_placeholder_cuts, '_CUTS_'+newstr)
+    res = oldstr.replace(pholdc, '_CUTS_'+newstr)
     return res
 
 def set_pure_input_namespace(func):
@@ -464,13 +466,13 @@ def slash_to_underscore_and_keep(s, n=4):
     return '_'.join( s.split('/')[-n:] )
 
 def uniformize_bin_width(old_histo):
-        """Change X axis labels."""
-        new_histo = TGraphAsymmErrors( old_histo.GetN() )
-        for ip in range(old_histo.GetN()):
-            new_histo.SetPoint(ip, ip, old_histo.GetPointY(ip) )
-            new_histo.SetPointError(ip, .5, .5,
-                                    old_histo.GetErrorYlow(ip), old_histo.GetErrorYhigh(ip) )
-        return new_histo
+    """Change X axis labels."""
+    new_histo = TGraphAsymmErrors( old_histo.GetN() )
+    for ip in range(old_histo.GetN()):
+        new_histo.SetPoint(ip, ip, old_histo.GetPointY(ip) )
+        new_histo.SetPointError(ip, .5, .5,
+                                old_histo.GetErrorYlow(ip), old_histo.GetErrorYhigh(ip) )
+    return new_histo
 
 def upify(s):
     """capitalizes the first letter of the passed string"""
