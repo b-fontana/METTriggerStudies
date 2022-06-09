@@ -226,7 +226,10 @@ def get_root_object(name, afile):
         msg =  'Wrong ROOT object name!\n'
         msg += 'File name: {}\n'.format(afile.GetName())
         msg += 'Object name: {}\n'.format(name)
-        msg += 'Keys: {}\n'.format([n.GetName() for n in _keys])
+        msg += '{} keys:\n'.format(len(_keys))
+        for k in _keys[:5]:
+            msg += ' - {}\n'.format(k.GetName())
+        msg += ' - ...'
         raise ValueError(msg)
     return afile.Get(name)
 

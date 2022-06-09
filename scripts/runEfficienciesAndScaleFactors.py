@@ -61,10 +61,10 @@ def paint_channel_and_trigger(channel, trig):
     l.DrawLatex( lX, lY-lYstep, 'Trigger: '+trig)
 
 
-def drawEffAndS1D(proc, channel, variable, trig,
-                  save_names_1D,
-                  tprefix, indir, subtag, mc_name, data_name,
-                  intersection_str, debug):
+def drawEffAndSF1D(proc, channel, variable, trig,
+                   save_names_1D,
+                   tprefix, indir, subtag, mc_name, data_name,
+                   intersection_str, debug):
 
     _name = lambda a,b,c,d : a + b + c + d + '.root'
 
@@ -199,10 +199,14 @@ def drawEffAndS1D(proc, channel, variable, trig,
             eyd.dt[i] = vdata.GetErrorYlow(i)
 
             if debug:
-                print('X MC: xp[{}] = {} +{}/-{} '  .format(i,x.mc[i],exu.mc[i],exd.mc[i]), flush=True)
-                print('Y MC: yp[{}] = {} +{}/-{} '  .format(i,y.mc[i],eyu.mc[i],eyd.mc[i]), flush=True)
-                print('X Data: xp[{}] = {} +{}/-{} '.format(i,x.dt[i],exu.dt[i],exd.dt[i]), flush=True)
-                print('Y Data: yp[{}] = {} +{}/-{}' .format(i,y.dt[i],eyu.dt[i],eyd.dt[i]), flush=True)
+                print('X MC: xp[{}] = {} +{}/-{} '
+                      .format(i,x.mc[i],exu.mc[i],exd.mc[i]), flush=True)
+                print('Y MC: yp[{}] = {} +{}/-{} '
+                      .format(i,y.mc[i],eyu.mc[i],eyd.mc[i]), flush=True)
+                print('X Data: xp[{}] = {} +{}/-{} '
+                      .format(i,x.dt[i],exu.dt[i],exd.dt[i]), flush=True)
+                print('Y Data: yp[{}] = {} +{}/-{}'
+                      .format(i,y.dt[i],eyu.dt[i],eyd.dt[i]), flush=True)
    
             x.sf[i] = x.mc[i]
             exu.sf[i] = exu.mc[i]
@@ -214,7 +218,8 @@ def drawEffAndS1D(proc, channel, variable, trig,
             try:
                 y.sf[i] = y.dt[i] / y.mc[i]
             except ZeroDivisionError:
-                print('[runEfficienciesAndScaleFactors.py] WARNING: There was a division by zero!', flush=True)
+                print(('[runEfficienciesAndScaleFactors.py] WARNING: ' +
+                       'There was a division by zero!'), flush=True)
                 y.sf[i] = 0
    
             if y.sf[i] == 0:
@@ -576,8 +581,9 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
         paint_channel_and_trigger(channel, trig)
         redraw_border()
 
-        fullname = save_names_2D[joinvars]
-        sname = os.path.basename(fullname).split('.')[0]
+        full = save_names_2D[joinvars]
+        full = rewrite_cut_string(full, keff, regex=True)
+        sname = os.path.basename(full).split('.')[0]
         canvas.SaveAs(sname)
         
 def _getCanvasName(proc, chn, var, trig, data_name, subtag):
