@@ -204,8 +204,11 @@ def get_root_input_files(proc, indir):
         m += ' Selecting directory {} '.format(indir[fexists.index(True)])
         m += 'from the following list: {}.'.format(indir)
 
-    inputdir = indir[ fexists.index(True) ] #this is the only correct input directory
-    inputfiles = glob.glob(os.path.join(indir[fexists.index(True)], proc + '*/goodfiles.txt'))
+    #this is the only correct input directory
+    inputdir = indir[ fexists.index(True) ]
+
+    inputfiles = glob.glob( os.path.join(indir[fexists.index(True)],
+                                         proc + '*/goodfiles.txt') )
 
     #### Parse input list
     filelist=[]
@@ -465,6 +468,11 @@ def print_configuration(parse_args):
         print('{0:>{d1}}   {1}'.format(k, v, d1=maxlkey+3), flush=True)
     print('----------------------------------------', flush=True)
 
+def parse_args(parser):
+    args = parser.parse_args()
+    print_configuration(args)
+    return args
+    
 def slash_to_underscore_and_keep(s, n=4):
     """Replaces slashes by underscores, keeping only the last 'n' slash-separated strings"""
     return '_'.join( s.split('/')[-n:] )
@@ -481,3 +489,20 @@ def uniformize_bin_width(old_histo):
 def upify(s):
     """capitalizes the first letter of the passed string"""
     return s[0].upper() + s[1:]
+
+def write_trigger_string(trig_inters, join='+'):
+    c = 0
+    trig_str = trig.split(trig_inters)
+    loopstr = 'Trigger' + ('' if len(trig_str)==1 else 's') + ': '
+    if len(trig_str)==1:
+        loopstr += trig
+    else:
+        for i,elem in enumerate(trig_str):
+            if elem == trig_str[-1]:
+                loopstr += elem + '}' + '}'*(c-1)
+            else:
+                c += 1
+                loopstr += '#splitline{'
+                loopstr += elem + ' ' + join + '}{'
+
+    return loopstr

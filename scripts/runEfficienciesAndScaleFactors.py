@@ -34,10 +34,12 @@ from utils.utils import (
     get_obj_max_min,
     get_root_object,
     load_binning,
+    parse_args,
     print_configuration,
     redraw_border,
     rewrite_cut_string,
     uniformize_bin_width,
+    write_trigger_string,
 )
 from luigi_conf import (
     _2Dpairs,
@@ -153,7 +155,8 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         m = 'There is likely a mismatch in the number of bins.'
         raise RuntimeError(m)
 
-    nb1D = effmc1D[khisto2].GetNbinsX() #they all have the same binning
+    tmpkey = list(hmc1D['trig'].keys())[0] #they all have the same binning
+    nb1D = effmc1D[tmpkey].GetN() 
 
     up_xedge  = lambda obj, i: obj.GetXaxis().GetBinUpEdge(i)
     low_xedge = lambda obj, i: obj.GetXaxis().GetBinLowEdge(i)
@@ -163,7 +166,7 @@ def drawEffAndSF1D(proc, channel, variable, trig,
     ctr_yedge = lambda obj, i: obj.GetYaxis().GetBinCenter(i)
         
     darr = lambda x : np.array(x).astype(dtype=np.double)
-    sf1 = {}
+    sf1D = {}
     assert len(effdata1D) == len(effmc1D)
 
     # 1-dimensional
@@ -334,24 +337,9 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         latexChannel.replace('tau','#tau_{h}')
         latexChannel.replace('Tau','#tau_{h}')
 
-        splitcounter = 0
-        ucode = '+'
-        trig_str = trig.split(intersection_str)
-        trig_names_str = ''
-        if len(trig_str)==1:
-            trig_names_str = trig
-        else:
-            for i,elem in enumerate(trig_str):
-                if elem == trig_str[-1]:
-                    trig_names_str += elem + '}' + '}'*(splitcounter-1)
-                else:
-                    splitcounter += 1
-                    trig_names_str += '#splitline{'
-                    trig_names_str += elem + ' ' + ucode + '}{'
-
-        trig_start_str = 'Trigger' + ('' if len(trig_str)==1 else 's') + ': '
         l.DrawLatex( lX, lY, 'Channel: '+latexChannel)
-        l.DrawLatex( lX, lY-lYstep, trig_start_str+trig_names_str)
+        textrigs = write_trigger_string(intersection_str)
+        l.DrawLatex( lX, lY-lYstep, textrigs)
 
         canvas.cd()
         pad2 = TPad('pad2','pad2',0,0.0,1,0.35)
@@ -523,23 +511,24 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
     effdata2D, effmc2D = ({} for _ in range(2))
     try:
         for kh, vh in hdata2D['trig'].items():
-            effdata2D[kh] = vh.copy()
+            effdata2D[kh] = copy(vh)
             effdata2D[kh].Divide(hdata2D['ref'])
         for kh, vh in hmc2D['trig'].items():
-            effmc2D[kh] = vh.copy()
+            effmc2D[kh] = copy(vh)
             effmc2D[kh].Divide(hdata2D['ref'])
     except SystemError:
         m = 'There is likely a mismatch in the number of bins.'
         raise RuntimeError(m)
 
-    nb2Dx = effmc2D[khisto2].GetNbinsX()
-    nb2Dy = effmc2D[khisto2].GetNbinsY()
+    tmpkey = list(hmc2D['trig'].keys())[0]
+    nb2Dx = effmc2D[tmpkey].GetNbinsX()
+    nb2Dy = effmc2D[tmpkey].GetNbinsY()
         
     sf2D = {}
     assert len(effdata2D) == len(effmc2D)
 
     for kh, vh in effdata2D.items():
-        sf2D[kh] = vh.copy()
+        sf2D[kh] = copy(vh)
         sf2D[kh].Sumw2()
         sf2D[kh].Divide(effdata2D[kh],effmc2D[kh],1,1,"B")
         
@@ -555,37 +544,39 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
                       'MC': effmc2D,
                       'SF': sf2D})
 
-    for ieff, (keff,veff) in enumerate(eff2D.items()):
-        veff.SetName(n2[ieff])
-        veff.Write(n2[ieff])
+    for itype, (ktype,vtype) in enumerate(eff2D.items()):
+        for keff,veff in vtype.items():
+            veff.SetName(n2[itype])
+            veff.Write(n2[itype])
 
-        canvas = TCanvas(cnames[ieff], cnames[ieff], 600, 600)
-        canvas.SetLeftMargin(0.10)
-        canvas.SetRightMargin(0.15);
-        canvas.cd()
+            canvas = TCanvas(cnames[itype], cnames[itype], 600, 600)
+            canvas.SetLeftMargin(0.10)
+            canvas.SetRightMargin(0.15);
+            canvas.cd()
 
-        # useful when adding errors
-        # check scripts/draw2DTriggerSF.py
-        veff.SetBarOffset(0.0)
-        veff.SetMarkerSize(.75)
-        veff.SetMarkerColor(ROOT.kOrange+10)
-        veff.SetMarkerSize(.8)
-        veff.Draw(histo_options)
+            # useful when adding errors
+            # check scripts/draw2DTriggerSF.py
+            veff.SetBarOffset(0.0)
+            veff.SetMarkerSize(.75)
+            veff.SetMarkerColor(ROOT.kOrange+10)
+            veff.SetMarkerSize(.8)
+            veff.Draw(histo_options)
 
-        lX, lY, lYstep = 0.8, 0.92, 0.045
-        l = TLatex()
-        l.SetNDC()
-        l.SetTextFont(72)
-        l.SetTextColor(2)
-        l.DrawLatex(lX, lY, effname)
+            lX, lY, lYstep = 0.8, 0.92, 0.045
+            l = TLatex()
+            l.SetNDC()
+            l.SetTextFont(72)
+            l.SetTextColor(2)
+            textrig = write_trigger_string(intersection_str)
+            l.DrawLatex(lX, lY, textrig)
 
-        paint_channel_and_trigger(channel, trig)
-        redraw_border()
+            paint_channel_and_trigger(channel, trig)
+            redraw_border()
 
-        full = save_names_2D[joinvars]
-        full = rewrite_cut_string(full, keff, regex=True)
-        sname = os.path.basename(full).split('.')[0]
-        canvas.SaveAs(sname)
+            full = save_names_2D[joinvars]
+            full = rewrite_cut_string(full, keff, regex=True)
+            sname = os.path.basename(full).split('.')[0]
+            canvas.SaveAs(sname)
         
 def _getCanvasName(proc, chn, var, trig, data_name, subtag):
     """
@@ -679,7 +670,7 @@ def runEffSF(indir, outdir,
              mc_processes, mc_name, data_name,
              trigger_combination,
              channels, variables,
-             binedges_filename, subtag,
+             subtag,
              draw_independent_MCs,
              tprefix,
              intersection_str,
@@ -692,36 +683,33 @@ def runEffSF(indir, outdir,
                                                      subtag,
                                                      draw_independent_MCs)
   
-    binedges, nbins = load_binning(binedges_filename, subtag,
-                                   variables, channels)
-  
     dv = len(args.variables)
     dc = len(args.channels) * dv
     dp = len(processes) * dc
   
-    for ip,proc in enumerate(processes):
-        for ic,chn in enumerate(channels):
-            for iv,var in enumerate(variables):
-                index = ip*dc + ic*dv + iv
-                names1D = [ outs1D[index + dp*x] for x in range(len(extensions)) ]
+    # for ip,proc in enumerate(processes):
+    #     for ic,chn in enumerate(channels):
+    #         for iv,var in enumerate(variables):
+    #             index = ip*dc + ic*dv + iv
+    #             names1D = [ outs1D[index + dp*x] for x in range(len(extensions)) ]
 
-                if args.debug:
-                    for name in names:
-                        print('[=debug=] {}'.format(name))
-                        m = ( "process={}, channel={}, variable={}"
-                              .format(proc, chn, var) )
-                        m += ( ", trigger_combination={}\n"
-                               .format(trigger_combination) )
-                        print(m)
+    #             if args.debug:
+    #                 for name in names:
+    #                     print('[=debug=] {}'.format(name))
+    #                     m = ( "process={}, channel={}, variable={}"
+    #                           .format(proc, chn, var) )
+    #                     m += ( ", trigger_combination={}\n"
+    #                            .format(trigger_combination) )
+    #                     print(m)
 
-                drawEffAndSF1D(proc, chn, var,
-                               trigger_combination,
-                               names1D,
-                               tprefix,
-                               indir, subtag,
-                               mc_name, data_name,
-                               intersection_str,
-                               debug)
+    #             drawEffAndSF1D(proc, chn, var,
+    #                            trigger_combination,
+    #                            names1D,
+    #                            tprefix,
+    #                            indir, subtag,
+    #                            mc_name, data_name,
+    #                            intersection_str,
+    #                            debug)
 
     splits = trigger_combination.split(intersection_str)
     run = any({x in _2Dpairs for x in splits})
@@ -731,6 +719,7 @@ def runEffSF(indir, outdir,
             for ic,chn in enumerate(channels):
                 for onetrig in splits:
                     if onetrig in _2Dpairs:
+                        pass
                         names2D = runEffSF2D_outs(outdir, proc,
                                                   trigger_combination,
                                                   chn,
@@ -751,7 +740,6 @@ def runEffSF(indir, outdir,
                                            intersection_str,
                                            debug)
 
-
 parser = argparse.ArgumentParser(description='Draw trigger scale factors')
 parser.add_argument('--indir', help='Inputs directory', required=True)
 parser.add_argument('--outdir', help='Output directory', required=True, )
@@ -759,7 +747,6 @@ parser.add_argument('--tprefix', help='prefix to the names of the produceyd outp
 parser.add_argument('--canvas_prefix', help='canvas prefix', required=True)
 parser.add_argument('--subtag',           dest='subtag',           required=True, help='subtag')
 parser.add_argument('--mc_processes', help='MC processes to be analyzeyd', required=True, nargs='+', type=str)
-parser.add_argument('--binedges_filename', dest='binedges_filename', required=True, help='in directory')
 parser.add_argument('--data_name', dest='data_name', required=True, help='Data sample name')
 parser.add_argument('--mc_name', dest='mc_name', required=True, help='MC sample name')
 parser.add_argument('--triggercomb', dest='triggercomb', required=True,
@@ -772,14 +759,13 @@ parser.add_argument('--draw_independent_MCs', action='store_true', help='debug v
 parser.add_argument('--intersection_str', dest='intersection_str', required=False, default='_PLUS_',
                     help='String useyd to represent set intersection between triggers.')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
-args = parser.parse_args()
-print_configuration(args)
+args = parse_args(parser)
 
 runEffSF(args.indir, args.outdir,
          args.mc_processes, args.mc_name, args.data_name,
          args.triggercomb,
          args.channels, args.variables,
-         args.binedges_filename, args.subtag,
+         args.subtag,
          args.draw_independent_MCs,
          args.tprefix,
          args.intersection_str,
