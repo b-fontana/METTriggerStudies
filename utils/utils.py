@@ -490,9 +490,9 @@ def upify(s):
     """capitalizes the first letter of the passed string"""
     return s[0].upper() + s[1:]
 
-def write_trigger_string(trig_inters, join='+'):
+def write_trigger_string(trig_comb, trig_inters_str, join='+'):
     c = 0
-    trig_str = trig.split(trig_inters)
+    trig_str = trig_comb.split(trig_inters_str)
     loopstr = 'Trigger' + ('' if len(trig_str)==1 else 's') + ': '
     if len(trig_str)==1:
         loopstr += trig

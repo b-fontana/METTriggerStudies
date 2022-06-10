@@ -47,20 +47,22 @@ from luigi_conf import (
     _placeholder_cuts,
 )
 
-def paint_channel_and_trigger(channel, trig):
-    lX, lY, lYstep = 0.06, 0.96, 0.03
+def paint2D(channel, trig):
+    lX1, lX2, lY, lYstep = 0.04, 0.8, 0.96, 0.03
     l = TLatex()
     l.SetNDC()
     l.SetTextFont(72)
     l.SetTextSize(0.03)
     l.SetTextColor(1)
-  
+
+    l.DrawLatex( lX1, lY, trig)
+    
     latexChannel = copy(channel)
     latexChannel.replace('mu','#mu')
     latexChannel.replace('tau','#tau_{h}')
     latexChannel.replace('Tau','#tau_{h}')
-    l.DrawLatex( lX, lY, 'Channel: '+latexChannel)
-    l.DrawLatex( lX, lY-lYstep, 'Trigger: '+trig)
+    l.DrawLatex( lX2, lY, 'Channel: '+latexChannel)
+
 
 
 def drawEffAndSF1D(proc, channel, variable, trig,
@@ -71,10 +73,10 @@ def drawEffAndSF1D(proc, channel, variable, trig,
     _name = lambda a,b,c,d : a + b + c + d + '.root'
 
     name_data = os.path.join(indir, _name( tprefix, data_name, '_Sum', subtag ) )
-    file_data = TFile.Open(name_data)
+    file_data = TFile.Open(name_data, 'READ')
 
     name_mc = os.path.join(indir, _name( tprefix, mc_name, '_Sum', subtag ))
-    file_mc   = TFile.Open(name_mc)
+    file_mc   = TFile.Open(name_mc, 'READ')
 
     if debug:
         print('[=debug=] Open files:')
@@ -248,8 +250,6 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         canvas_name = os.path.basename(save_names_1D[0]).split('.')[0]
         canvas_name = rewrite_cut_string(canvas_name, akey, regex=True)
         canvas = TCanvas( canvas_name, 'canvas', 600, 600 )
-        ROOT.gStyle.SetOptStat(0)
-        ROOT.gStyle.SetOptTitle(0)
         canvas.cd()
          
         pad1 = TPad('pad1', 'pad1', 0, 0.35, 1, 1)
@@ -338,7 +338,7 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         latexChannel.replace('Tau','#tau_{h}')
 
         l.DrawLatex( lX, lY, 'Channel: '+latexChannel)
-        textrigs = write_trigger_string(intersection_str)
+        textrigs = write_trigger_string(trig, intersection_str)
         l.DrawLatex( lX, lY-lYstep, textrigs)
 
         canvas.cd()
@@ -409,6 +409,7 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
 
         redraw_border()
+
         for aname in save_names_1D[:-1]:
             _name = rewrite_cut_string(aname, akey, regex=True)
             canvas.SaveAs( _name )
@@ -432,14 +433,13 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
                    save_names_2D,
                    tprefix, indir, subtag, mc_name, data_name,
                    intersection_str, debug):
-
     _name = lambda a,b,c,d : a + b + c + d + '.root'
 
     name_data = os.path.join(indir, _name( tprefix, data_name, '_Sum', subtag ) )
-    file_data = TFile.Open(name_data)
+    file_data = TFile.Open(name_data, 'READ')
 
     name_mc = os.path.join(indir, _name( tprefix, mc_name, '_Sum', subtag ))
-    file_mc   = TFile.Open(name_mc)
+    file_mc   = TFile.Open(name_mc, 'READ')
 
     if debug:
         print('[=debug=] Open files:')
@@ -513,6 +513,22 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
         for kh, vh in hdata2D['trig'].items():
             effdata2D[kh] = copy(vh)
             effdata2D[kh].Divide(hdata2D['ref'])
+
+            # test_file = TFile.Open('test.root', 'RECREATE')
+            # test_file.cd()
+            # vh.SetName('Test')
+            # vh.Write('Test')
+
+            # canvas = TCanvas('c', 'c', 600, 600)
+            # canvas.SetLeftMargin(0.10)
+            # canvas.SetRightMargin(0.15);
+            # canvas.cd()
+
+            # vh.Draw('colz')
+            # canvas.SaveAs('pic.png')
+            # quit()
+
+            
         for kh, vh in hmc2D['trig'].items():
             effmc2D[kh] = copy(vh)
             effmc2D[kh].Divide(hdata2D['ref'])
@@ -539,17 +555,26 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
     cnames = [x + '_c' for x in n2]
     ROOT.gStyle.SetPaintTextFormat("4.3f");
     histo_options = 'colz text'
-
-    eff2D = dot_dict({'Data': effdata2D,
-                      'MC': effmc2D,
-                      'SF': sf2D})
+    
+    eff2D = dot_dict({'Data' : effdata2D,
+                      'MC'   : effmc2D,
+                      'SF'   : sf2D})
+    base_name = ( save_names_2D[joinvars][0][0]
+                  .split('.')[0]
+                  .replace('EffData','trigSF2D')
+                  .replace('Canvas2D_', '') )
 
     for itype, (ktype,vtype) in enumerate(eff2D.items()):
         for keff,veff in vtype.items():
+            # save 2D histograms
+            _name = rewrite_cut_string(base_name, keff, regex=True)
+            _name += '.root'
+            eff_file_2D = TFile.Open(_name, 'RECREATE')
+            eff_file_2D.cd()
             veff.SetName(n2[itype])
             veff.Write(n2[itype])
 
-            canvas = TCanvas(cnames[itype], cnames[itype], 600, 600)
+            canvas = TCanvas(cnames[itype]+keff, cnames[itype]+keff, 600, 600)
             canvas.SetLeftMargin(0.10)
             canvas.SetRightMargin(0.15);
             canvas.cd()
@@ -567,16 +592,17 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
             l.SetNDC()
             l.SetTextFont(72)
             l.SetTextColor(2)
-            textrig = write_trigger_string(intersection_str)
-            l.DrawLatex(lX, lY, textrig)
+            textrig = write_trigger_string(trig, intersection_str)
+            l.DrawLatex(lX, lY, ktype)
 
-            paint_channel_and_trigger(channel, trig)
+            paint2D(channel, textrig)
             redraw_border()
 
-            full = save_names_2D[joinvars]
-            full = rewrite_cut_string(full, keff, regex=True)
-            sname = os.path.basename(full).split('.')[0]
-            canvas.SaveAs(sname)
+            for ext_type in save_names_2D[joinvars]:
+                for full in ext_type:
+                    full = rewrite_cut_string(full, keff, regex=True)
+                    full = full.replace('Canvas2D_', '')
+                    canvas.SaveAs(full)    
         
 def _getCanvasName(proc, chn, var, trig, data_name, subtag):
     """
@@ -647,7 +673,7 @@ def runEffSF2D_outs(outdir,
                                        'mc': cname_build('EffMC_',  cname),
                                        'sf': cname_build('SF_',     cname)})
 
-                    thisbase = os.path.join(outdir, channel, '')
+                    thisbase = os.path.join(outdir, channel, vname, '')
                     create_single_dir(thisbase)
                 
                     for ext in _extensions:
@@ -719,7 +745,6 @@ def runEffSF(indir, outdir,
             for ic,chn in enumerate(channels):
                 for onetrig in splits:
                     if onetrig in _2Dpairs:
-                        pass
                         names2D = runEffSF2D_outs(outdir, proc,
                                                   trigger_combination,
                                                   chn,
@@ -761,6 +786,8 @@ parser.add_argument('--intersection_str', dest='intersection_str', required=Fals
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = parse_args(parser)
 
+ROOT.gStyle.SetOptStat(0)
+ROOT.gStyle.SetOptTitle(0)
 runEffSF(args.indir, args.outdir,
          args.mc_processes, args.mc_name, args.data_name,
          args.triggercomb,
