@@ -380,9 +380,7 @@ parser.add_argument('--intersection_str', dest='intersection_str', required=Fals
 parser.add_argument('--nocut_dummy_str', dest='nocut_dummy_str', required=True,
                     help='Dummy string associated to trigger histograms were no cuts are applied.')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
-
-args = parser.parse_args()
-print_configuration(args)
+args = parse_args(parser)
 
 get_trigger_eff_sig(args.indir, args.outdir, args.sample, args.fileName,
                     args.channels, args.variables, args.triggers,

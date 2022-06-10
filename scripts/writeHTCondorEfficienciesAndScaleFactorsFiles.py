@@ -37,14 +37,13 @@ def writeHTCondorEfficienciesAndScaleFactorsFiles(args):
                    '--mc_name {mc_name} --data_name {data_name} '
                    '--triggercomb ${{1}} '
                    '--channels {channels} --variables {variables} '
-                   '--binedges_filename {binedges_filename} --subtag {subtag} '
+                   '--subtag {subtag} '
                    '--tprefix {tprefix} '
                    '--canvas_prefix {cprefix} '
                   ).format( prog=prog, indir=args.indir, outdir=args.outdir,
                             mc_processes=' '.join(args.mc_processes,),
                             mc_name=args.mc_name, data_name=args.data_name,
                             channels=' '.join(args.channels,), variables=' '.join(args.variables,),
-                            binedges_filename=args.binedges_filename,
                             subtag=args.subtag,
                             draw_independent_MCs=1 if args.draw_independent_MCs else 0,
                             tprefix=args.tprefix,

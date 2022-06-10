@@ -127,9 +127,7 @@ parser.add_argument('--channels',    dest='channels',    required=True, nargs='+
 parser.add_argument('--triggers',    dest='triggers',    required=True, nargs='+', type=str,
                     help='Select the triggers over which the workflow will be run.' )
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
-
-args = parser.parse_args()
-print_configuration(args)
+args = parse_args(parser)
 
 getTriggerCounts( args.indir, args.outdir, args.sample, args.fileName,
                   args.channels, args.triggers,

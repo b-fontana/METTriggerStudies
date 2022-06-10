@@ -192,6 +192,6 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--channels',   dest='channels',         required=True, nargs='+', type=str,
                         help='Select the channels over which the workflow will be run.' )
     parser.add_argument('--debug', action='store_true', help='debug verbosity')
-    args = parser.parse_args()
+    args = parse_args(parser)
 
     defineBinning( args )

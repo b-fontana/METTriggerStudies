@@ -694,8 +694,7 @@ parser.add_argument('--data_name', dest='data_name', required=True, help='Data s
 parser.add_argument('--mc_name', dest='mc_name', required=True, help='MC sample name')
 
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
-args = parser.parse_args()
-print_configuration(args)
+args = parse_args(parser)
 
 run_closure( args.indir_union, args.indir_eff,
              args.outdir,
