@@ -173,10 +173,11 @@ def get_hnames(opt):
         currentFunction = inspect.getframeinfo(frame).function
         raise ValueError('[{}] option not supported.'.format(currentFunction))
 
-def get_obj_max_min(graph, npoints, ishisto):
+def get_obj_max_min(graph, is_histo):
     vmax, vmin = 0, 1e10
+    npoints = graph.GetN()
     for point in range(npoints):
-        if ishisto:
+        if is_histo:
             val = graph.GetBinContent(point+1)
         else:
             val = graph.GetPointY(point)

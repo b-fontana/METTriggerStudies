@@ -255,14 +255,15 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         pad1.Draw()
         pad1.cd()
 
-        max1, min1 = get_obj_max_min(effdata1D[akey], nbins, False)
-        max2, min2 = get_obj_max_min(effmc1D[akey], nbins, False)
+        max1, min1 = get_obj_max_min(effdata1D[akey], is_histo=False)
+        max2, min2 = get_obj_max_min(effmc1D[akey],   is_histo=False)
         eff_max = max([ max1, max2 ])
         eff_min = min([ min1, min2 ])
         if eff_max == eff_min:
             eff_max = 1.
             eff_min = 0.
 
+        nbins = effdata1D[akey].GetN()
         axor_info = nbins+1, -1, nbins
         axor_ndiv = 605, 705
         axor = TH2D('axor'+akey,'axor'+akey,

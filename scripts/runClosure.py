@@ -322,9 +322,9 @@ def draw_single_eff( ref_obj, indir_union, indir_eff, channel, var, weightvar, t
     pad1.Draw()
     pad1.cd()
 
-    max1, min1 = get_obj_max_min(eff_prof,   nbins, False)
-    max2, min2 = get_obj_max_min(eff1d_data, nbins, False)
-    max3, min3 = get_obj_max_min(eff1d_mc,    nbins, False)
+    max1, min1 = get_obj_max_min(eff_prof,   is_histo=False)
+    max2, min2 = get_obj_max_min(eff1d_data, is_histo=False)
+    max3, min3 = get_obj_max_min(eff1d_mc,   is_histo=False)
     prof_max = max([ max1, max2, max3 ])
     prof_min = min([ min1, min2, min3 ])
     

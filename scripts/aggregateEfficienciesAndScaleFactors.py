@@ -28,7 +28,6 @@ from utils.utils import (
     get_display_variable_name,
     get_histo_names,
     get_key_list,
-    get_obj_max_min,
     get_root_object,
     load_binning,
     print_configuration,
