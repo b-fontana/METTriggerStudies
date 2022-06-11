@@ -34,6 +34,7 @@ from utils.utils import (
     pass_any_trigger,
     pass_selection_cuts,
     rewrite_cut_string,
+    parse_args,
     pass_trigger_bits,
     print_configuration,
 )
@@ -136,11 +137,10 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
 
     binedges, nbins = load_binning( afile=binedges_fname, key=subtag,
                                     variables=variables, channels=channels )
-    for v in variables:
-        for c in channels:
-            assert nbins[v][c]==6
 
-    triggercomb = generate_trigger_combinations(triggers)
+    triggercomb = {}
+    for chn in channels:
+        triggercomb[chn] = generate_trigger_combinations(chn, triggers)
         
     # Define 1D histograms
     #  hRef: pass the reference trigger
@@ -153,7 +153,7 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
             binning1D = (nbins[j][i], binedges[j][i])
             hTrig[i][j]={}
             hRef[i][j] = TH1D( get_hnames('Ref1D')(i, j), '', *binning1D)
-            for tcomb in triggercomb:
+            for tcomb in triggercomb[i]:
                 hTrig[i][j][joinNTC(tcomb)]={}
 
     # Define 2D histograms
@@ -165,7 +165,7 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
         h2Ref[i], h2Trig[i] = ({} for _ in range(2))
         for onetrig in triggers:
             if onetrig in _2Dpairs.keys():
-                combtrigs = {x for x in triggercomb if onetrig in x}
+                combtrigs = {x for x in triggercomb[i] if onetrig in x}
                 for combtrig in combtrigs:
                     for j in _2Dpairs[onetrig]:
                         binning2D = ( nbins[j[0]][i], binedges[j[0]][i],
@@ -236,10 +236,11 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
 
         #logic AND to intersect all triggers in this combination
         pass_trigger_intersection = {}
-        for tcomb in triggercomb:
-            pass_trigger_intersection[joinNTC(tcomb)] = functools.reduce(
-                lambda x,y: x and y,
-                [ pass_trigger[x] for x in tcomb ] )
+        for i in channels:
+            for tcomb in triggercomb[i]:
+                pass_trigger_intersection[joinNTC(tcomb)] = functools.reduce(
+                    lambda x,y: x and y,
+                    [ pass_trigger[x] for x in tcomb ] )
 
         for i in channels:
             if is_channel_consistent(i, lf.get_leaf('pairType')):
@@ -256,7 +257,7 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
                     # Logic AND to intersect all cuts for this trigger combination
                     # Each element will contain one possible cut combination
                     # for the trigger combination 'tcomb' being considered
-                    for tcomb in triggercomb:
+                    for tcomb in triggercomb[i]:
                         cuts_combinations = list(it.product( *(pcuts1D[atrig][j].items()
                                                              for atrig in tcomb) ))
 
@@ -288,7 +289,7 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
                 # fill 2D efficiencies
                 for onetrig in triggers:
                     if onetrig in _2Dpairs.keys():
-                        combtrigs = tuple(x for x in triggercomb if onetrig in x)
+                        combtrigs = tuple(x for x in triggercomb[i] if onetrig in x)
 
                         for combtrig in combtrigs:
                             for j in _2Dpairs[onetrig]:
@@ -339,7 +340,7 @@ def get_trigger_eff_sig(indir, outdir, sample, fileName,
     for i in channels:
         for j in variables:
             hRef[i][j].Write( get_hnames('Ref1D')(i,j) )
-            for tcomb in triggercomb:
+            for tcomb in triggercomb[i]:
                 for khist,vhist in hTrig[i][j][joinNTC(tcomb)].items():
                     base_str = get_hnames('Trig1D')(i,j,joinNTC(tcomb))
                     writename = rewrite_cut_string(base_str, khist)

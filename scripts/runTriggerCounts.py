@@ -31,6 +31,7 @@ from utils.utils import (
     pass_any_trigger,
     pass_selection_cuts,
     rewrite_cut_string,
+    parse_args,
     pass_trigger_bits,
     print_configuration,
 )
@@ -53,15 +54,17 @@ def getTriggerCounts(indir, outdir, sample, fileName,
     f_in = TFile(fileName)
     t_in = f_in.Get('HTauTauTree')
 
-    triggercomb = generate_trigger_combinations(triggers)
+    triggercomb = {}
+    for chn in channels:
+        triggercomb[chn] = generate_trigger_combinations(chn, triggers)
 
     counter, counterRef = ({} for _ in range(2))
-    for tcomb in triggercomb:
-        tcomb_str = joinNTC(tcomb)
-        counter[tcomb_str] = {}
-        for chn in channels:
-            counter[tcomb_str][chn] = 0
-            counterRef.setdefault(chn, 0.)
+    for chn in channels:
+        counter[chn] = {}
+        counterRef.setdefault(chn, 0.)
+        for tcomb in triggercomb[chn]:
+            tcomb_str = joinNTC(tcomb)
+            counter[chn][tcomb_str] = 0
 
     lf = LeafManager(fileName, t_in)
     
@@ -80,19 +83,19 @@ def getTriggerCounts(indir, outdir, sample, fileName,
         for trig in triggers:
             pass_trigger[trig] = pass_trigger_bits(trig, trig_bit, run, isdata)
 
-        for tcomb in triggercomb:
-            for chn in channels:
-                if is_channel_consistent(chn, lf.get_leaf('pairType')):
-
+        for chn in channels:
+            if is_channel_consistent(chn, lf.get_leaf('pairType')):
+                counterRef[chn] += 1
+                
+                for tcomb in triggercomb[chn]:
                     pass_trigger_intersection = functools.reduce(
                         lambda x,y: x and y, #logic AND to join all triggers in this option
                         [ pass_trigger[x] for x in tcomb ]
                     )
 
-                    counterRef[chn] += 1
                     if pass_trigger_intersection:
                         tcomb_str = joinNTC(tcomb)
-                        counter[tcomb_str][chn] += 1
+                        counter[chn][tcomb_str] += 1
                                             
     file_id = ''.join( c for c in fileName[-10:] if c.isdigit() )
 
@@ -106,10 +109,11 @@ def getTriggerCounts(indir, outdir, sample, fileName,
     with open(outName, 'w') as f:
         for chn in channels:
             f.write( 'Total' + sep + chn + sep + str(int(counterRef[chn])) + '\n' )
-        for tcomb in triggercomb:
-            for chn in channels:
+        for chn in channels:
+            for tcomb in triggercomb:
                 tcomb_str = joinNTC(tcomb)
-                f.write( tcomb_str + sep + chn + sep + str(int(counter[tcomb_str][chn])) + '\n' )
+                basestr = tcomb_str + sep + chn + sep
+                f.write(basestr + str(int(counter[chn][tcomb_str])) + '\n' )
     
 # -- Parse input arguments
 parser = argparse.ArgumentParser(description='Command line parser')

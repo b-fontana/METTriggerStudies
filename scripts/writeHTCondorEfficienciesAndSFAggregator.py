@@ -7,7 +7,6 @@ import argparse
 
 from utils.utils import (
     build_prog_path,
-    generate_trigger_combinations,
     join_name_trigger_intersection as joinNTC,
     set_pure_input_namespace,
 )

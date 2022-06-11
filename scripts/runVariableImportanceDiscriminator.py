@@ -10,6 +10,7 @@ sys.path.append( os.environ['PWD'] )
 from utils.utils import (
     generate_trigger_combinations,
     join_name_trigger_intersection as joinNTC,
+    parse_args,
     print_configuration,
 )
 
@@ -20,7 +21,7 @@ def discriminator(args, chn):
     """
     result = {}
 
-    triggercomb = generate_trigger_combinations(args.triggers)
+    triggercomb = generate_trigger_combinations(chn, args.triggers)
     constant_list = ['dau1_pt', 'dau1_eta', 'dau2_pt', 'dau2_eta']
     for tcomb in triggercomb:
         # CHANGE!!!!!!!!!!!!!!!!!!!

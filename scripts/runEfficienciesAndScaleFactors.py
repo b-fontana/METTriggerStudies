@@ -38,6 +38,7 @@ from utils.utils import (
     print_configuration,
     redraw_border,
     rewrite_cut_string,
+    split_vnames,
     uniformize_bin_width,
     write_trigger_string,
 )
@@ -355,6 +356,9 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         else:
             max1, min1 = max(y.sf)+max(eyu.sf),min(y.sf)-max(eyd.sf)
 
+        nbins = effdata2D[akey].GetN()
+        axor_info = nbins+1, -1, nbins
+        axor_ndiv = 605, 705
         axor2 = TH2D( 'axor2'+akey,'axor2'+akey,
                       axor_info[0], axor_info[1], axor_info[2],
                       100, min1-0.1*(max1-min1), max1+0.1*(max1-min1) )
@@ -452,6 +456,10 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
    
     hnames2D = { 'ref':  get_hnames('Ref2D')(channel, joinvars),
                  'trig': get_hnames('Trig2D')(channel, joinvars, trig) }
+    print(name_data)
+    print(hnames2D)
+    quit()
+
    
     keylist_data = get_key_list(file_data, inherits=['TH1'])
     keylist_mc = get_key_list(file_mc, inherits=['TH1'])
@@ -516,18 +524,16 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
 
             # test_file = TFile.Open('test.root', 'RECREATE')
             # test_file.cd()
-            # vh.SetName('Test')
-            # vh.Write('Test')
+            # hdata2D['ref'].Write('Test')
 
             # canvas = TCanvas('c', 'c', 600, 600)
             # canvas.SetLeftMargin(0.10)
             # canvas.SetRightMargin(0.15);
             # canvas.cd()
 
-            # vh.Draw('colz')
+            # hdata2D['ref'].Draw('colz')
             # canvas.SaveAs('pic.png')
             # quit()
-
             
         for kh, vh in hmc2D['trig'].items():
             effmc2D[kh] = copy(vh)
@@ -578,6 +584,34 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
             canvas.SetLeftMargin(0.10)
             canvas.SetRightMargin(0.15);
             canvas.cd()
+
+            vnames_2D = split_vnames(joinvars)
+            axor_info = nbinsX+1, -1, nbinsX, nbinsY+1, -1, nbinsY
+            axor_ndiv = 705, 705
+            axor1_2D = TH2D('axor2'+keff,'axor2'+keff,
+                            axor_info[0], axor_info[1], axor_info[2],
+                            axor_info[3], axor_info[4], axor_info[5])
+            axor1_2D.GetXaxis().SetNdivisions(axor_ndiv[0])
+            axor1_2D.GetYaxis().SetNdivisions(axor_ndiv[1])
+            axor1_2D.GetXaxis().SetLabelOffset(1)
+            axor1_2D.GetYaxis().SetTitleSize(0.08)
+            axor1_2D.GetYaxis().SetTitleOffset(.85)
+            axor1_2D.GetXaxis().SetLabelSize(0.07)
+            axor1_2D.GetYaxis().SetLabelSize(0.07)
+            axor1_2D.GetXaxis().SetTickLength(0)
+
+            # Change bin labels
+            # for iv, vn in enumerate(vnames_2D):
+            #     rounding = lambda x: int(x) if 'pt' in vn else round(x, 2)
+            #     sf_ax = sf2D[keff].GetX() if iv==0 else sf2D[keff].GetY()
+            #     ax = axor1_2D.GetXaxis() if iv==0 else axor1_2D.GetYaxis()
+            #     for i,elem in enumerate(sf_ax):
+            #         low = sf2D[akey].GetErrorXlow(i)
+            #         ax.SetBinLabel(i+1,
+            #                        str(rounding(elem-low)))
+            #         ax.SetBinLabel(i+2,
+            #                        str(rounding(elem+sf1D[akey].GetErrorXlow(i))))
+            axor1_2D.Draw()
 
             # useful when adding errors
             # check scripts/draw2DTriggerSF.py

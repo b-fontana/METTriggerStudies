@@ -38,6 +38,7 @@ from utils.utils import (
     get_obj_max_min,
     get_root_object,
     load_binning,
+    parse_args,
     print_configuration,
     redraw_border,
     uniformize_bin_width,
@@ -643,7 +644,7 @@ def run_closure( indir_union,
                              'runVariableImportanceDiscriminator_{}.json'.format(channel))
     with open(json_name, 'r') as f:
         effvars[channel] = json.load(f)
-    weightvars = effvars[channel][generate_trigger_combinations(triggers)[0][0]][0]
+    weightvars = effvars[channel][generate_trigger_combinations(channel, triggers)[0][0]][0]
     
     _, outs = run_closure_outputs(outdir, channel, variables, weightvars, triggers, subtag)
     

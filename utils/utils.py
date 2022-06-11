@@ -100,32 +100,33 @@ def find_bin(edges, value, var):
 
     return binid
 
-def generate_trigger_combinations(trigs):
+def generate_trigger_combinations(channel, trigs):
     """
-    Set all possible trigger combinations of intersections with any number of elements
-    Each intersection is sorted alphabetically (useful for matching with the KLUB framework).
+    Set all possible trigger intersection combinations, per channel.
+    Does not consider intersections between incompatible triggers and channels
+    (for instance, `etau` channel with `IsoMu24` trigger).
+    Each intersection is sorted alphabetically
+    (useful for matching with the KLUB framework).
     """
-    complete_list = list( it.chain.from_iterable(it.combinations(sorted(trigs), x)
-                                                 for x in range(1,len(trigs)+1)) )
-    length1_list = list( it.chain.from_iterable(it.combinations(sorted(trigs), 1)) )
-    for elem in length1_list:
-        if elem not in _triggers_map.keys():
-            raise ValueError('[utils.generate_trigger_combinations] Trigger {} is not supported'.format(elem))
+    exclusive = { 'etau'   : ('Ele32', 'Ele35', 'EleIsoTauCustom'),
+                  'mutau'  : ('IsoMu24', 'IsoMu27', 'IsoMuIsoTauCustom'),
+                  'tautau' : ('IsoDoubleTauCustom',) }
 
-        # remove combinations that are necessarily orthogonal
-        # saves computating time and reduces number of plots
-        etau_only   = {'Ele32', 'Ele35', 'EleIsoTauCustom'}
-        mutau_only  = {'IsoMu24', 'IsoMu27', 'IsoMuIsoTauCustom'}
-        tautau_only = {'IsoDoubleTauCustom'}
-        trigger_combinations_to_remove = []
-        for elem in complete_list:
-            a1 = any(x in elem for x in etau_only)
-            a2 = any(x in elem for x in mutau_only)
-            a3 = any(x in elem for x in tautau_only)
-            if at_least_two(a1,a2,a3):
-                trigger_combinations_to_remove.append( elem )
-                
-    return list(set(complete_list) - set(trigger_combinations_to_remove))
+    # look only at combinations where the channel is imcompatible with the trigger
+    pruntrigs = [ exclusive[x] for x in exclusive if x != channel ]
+    pruntrigs = set(it.chain(*pruntrigs))
+    pruntrigs = set(trigs) - pruntrigs
+
+    length1 = list(it.chain.from_iterable(it.combinations(sorted(pruntrigs), 1)))
+    for elem in length1:
+        if elem not in _triggers_map.keys():
+            mess = '[utils.generate_trigger_combinations] '
+            mess += 'Trigger {} is not supported'.format(elem)
+            raise ValueError(mess)
+
+    complete = list( it.chain.from_iterable(it.combinations(sorted(pruntrigs), x)
+                                            for x in range(1,len(pruntrigs)+1)) )
+    return complete
 
 def get_display_variable_name(channel, var):
     if channel == 'mutau':
@@ -434,6 +435,9 @@ def set_custom_trigger_bit(trigger, trigBit, run, isData):
             bits = check_bit(trigBit, _triggers_map[trigger]['EleIsoTauHPS'][s])
 
     return bits
+
+def split_vnames(joinvars):
+    return joinvars.splitname('_VERSUS_')
 
 def pass_any_trigger(trigs, bit, run, isdata):
     # checks that at least one trigger was fired

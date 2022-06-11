@@ -66,7 +66,12 @@ def writeHTCondorEfficienciesAndScaleFactorsFiles(args):
                    queue='short' )
 
     qlines = []
-    triggercomb = generate_trigger_combinations(args.triggers)
+    for chn in args.channels:
+        if chn == channels[0]:
+            triggercomb = generate_trigger_combinations(chn, args.triggers)
+        else:
+            triggercomb += generate_trigger_combinations(chn, args.triggers)
+            
     for tcomb in triggercomb:
         qlines.append('  {}'.format(joinNTC(tcomb)))
 
