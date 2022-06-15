@@ -90,10 +90,12 @@ def aggregateEfficienciesAndScaleFactors(indir, outdir, channel, subtag, prefix,
                 fout.cd()
                 for key in keyList:
                     cl = ROOT.gROOT.GetClass(key.GetClassName())
-                    if not cl.InheritsFrom('TGraph'):
+                    if not cl.InheritsFrom('TGraph') or not cl.InheritsFrom('TH1'):
                         continue
+
                     h = key.ReadObj()
-                    h = convertGraphToHist(h)
+                    if cl.InheritsFrom('TGraph')
+                        h = convertGraphToHist(h)
                     
                     var, trigger, cut = regex.match(afile).groups()
                     new_name = h.GetName() + '_VAR_' + var + '_TRG_' + trigger + '_CUT_' + cut

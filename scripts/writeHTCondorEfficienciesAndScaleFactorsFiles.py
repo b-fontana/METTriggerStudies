@@ -21,8 +21,7 @@ def writeHTCondorEfficienciesAndScaleFactorsFiles_outputs(args):
     """
     job_f, subm_f, check_f = JobWriter.define_output( localdir=args.localdir,
                                                       data_folders='EffAndScaleFactors',
-                                                      tag=args.tag,
-                                                      names='EfficienciesAndSF' )
+                                                      tag=args.tag )
     return job_f[0], subm_f[0], check_f[0]
 
 @set_pure_input_namespace
@@ -67,7 +66,7 @@ def writeHTCondorEfficienciesAndScaleFactorsFiles(args):
 
     qlines = []
     for chn in args.channels:
-        if chn == channels[0]:
+        if chn == args.channels[0]:
             triggercomb = generate_trigger_combinations(chn, args.triggers)
         else:
             triggercomb += generate_trigger_combinations(chn, args.triggers)

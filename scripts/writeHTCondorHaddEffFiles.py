@@ -30,7 +30,7 @@ def writeHTCondorHaddEffFiles_outputs(args):
     """
     Outputs are guaranteed to have the same length.
     Returns all separate paths to avoid code duplication.
-    """s
+    """
     return JobWriter.define_output( localdir=args.localdir,
                                     data_folders='HaddEff',
                                     tag=args.tag )

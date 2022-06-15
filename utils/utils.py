@@ -361,7 +361,7 @@ def redraw_border():
     """
     this little macro redraws the axis tick marks and the pad border lines.
     """
-    ROOT.gPad.Update();
+    ROOT.gPad.Update()
     ROOT.gPad.RedrawAxis()
     l = TLine()
     l.SetLineWidth(2)
@@ -437,7 +437,7 @@ def set_custom_trigger_bit(trigger, trigBit, run, isData):
     return bits
 
 def split_vnames(joinvars):
-    return joinvars.splitname('_VERSUS_')
+    return joinvars.split('_VERSUS_')
 
 def pass_any_trigger(trigs, bit, run, isdata):
     # checks that at least one trigger was fired
@@ -494,19 +494,26 @@ def upify(s):
     """capitalizes the first letter of the passed string"""
     return s[0].upper() + s[1:]
 
-def write_trigger_string(trig_comb, trig_inters_str, join='+'):
-    c = 0
-    trig_str = trig_comb.split(trig_inters_str)
+def write_trigger_string(trig_comb, inters_str, items_per_line=1, join='+'):
+    c1, c2 = 0, 0
+    trig_str = trig_comb.split(inters_str)
     loopstr = 'Trigger' + ('' if len(trig_str)==1 else 's') + ': '
-    if len(trig_str)==1:
-        loopstr += trig
-    else:
-        for i,elem in enumerate(trig_str):
-            if elem == trig_str[-1]:
-                loopstr += elem + '}' + '}'*(c-1)
-            else:
-                c += 1
-                loopstr += '#splitline{'
-                loopstr += elem + ' ' + join + '}{'
+
+    it = [iter(trig_str)]*items_per_line
+    raw = list(zip(*it))
+    raw = [' + '.join(x) for x in raw]
+    rest = len(trig_str) % items_per_line
+    end = trig_str[-rest:]
+    
+    if end != trig_str:
+        raw += end
+
+    for elem in raw:
+        if elem == raw[-1]:
+            loopstr += elem + '}'*(len(raw)-1)
+        else:
+            loopstr += '#splitline{'
+            loopstr += elem + ' ' + join
+            loopstr += '}{'
 
     return loopstr

@@ -46,10 +46,11 @@ from luigi_conf import (
     _2Dpairs,
     _extensions,
     _placeholder_cuts,
+    _triggers_map,
 )
 
 def paint2D(channel, trig):
-    lX1, lX2, lY, lYstep = 0.04, 0.8, 0.96, 0.03
+    lX1, lX2, lY, lYstep = 0.04, 0.7, 0.96, 0.03
     l = TLatex()
     l.SetNDC()
     l.SetTextFont(72)
@@ -142,9 +143,9 @@ def drawEffAndSF1D(proc, channel, variable, trig,
     # some triggers or their intersection naturally never fire for some channels
     # example: 'IsoMu24' for the etau channel
     if len(hmc1D['trig']) == 0:
-        m = ('WARNING [drawEffAndSF1D]: Trigger {} never ' +
+        m = ('WARNING [drawEffAndSF1D]: Trigger {} never '.format(trig) +
              'fired for channel={}, variable={} in MC.'
-              .format(trig, variable, channel))
+              .format(variable, channel))
         print(m)
         return
     
@@ -339,7 +340,8 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         latexChannel.replace('Tau','#tau_{h}')
 
         l.DrawLatex( lX, lY, 'Channel: '+latexChannel)
-        textrigs = write_trigger_string(trig, intersection_str)
+        textrigs = write_trigger_string(trig, intersection_str,
+                                        items_per_line=2)
         l.DrawLatex( lX, lY-lYstep, textrigs)
 
         canvas.cd()
@@ -356,7 +358,7 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         else:
             max1, min1 = max(y.sf)+max(eyu.sf),min(y.sf)-max(eyd.sf)
 
-        nbins = effdata2D[akey].GetN()
+        nbins = effdata1D_new.GetN()
         axor_info = nbins+1, -1, nbins
         axor_ndiv = 605, 705
         axor2 = TH2D( 'axor2'+akey,'axor2'+akey,
@@ -456,10 +458,6 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
    
     hnames2D = { 'ref':  get_hnames('Ref2D')(channel, joinvars),
                  'trig': get_hnames('Trig2D')(channel, joinvars, trig) }
-    print(name_data)
-    print(hnames2D)
-    quit()
-
    
     keylist_data = get_key_list(file_data, inherits=['TH1'])
     keylist_mc = get_key_list(file_mc, inherits=['TH1'])
@@ -519,25 +517,13 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
     effdata2D, effmc2D = ({} for _ in range(2))
     try:
         for kh, vh in hdata2D['trig'].items():
-            effdata2D[kh] = copy(vh)
-            effdata2D[kh].Divide(hdata2D['ref'])
+            effdata2D[kh] = vh.Clone(vh.GetName() + '_' + kh)
+            effdata2D[kh].Divide(effdata2D[kh], hdata2D['ref'], 1, 1, "B")
 
-            # test_file = TFile.Open('test.root', 'RECREATE')
-            # test_file.cd()
-            # hdata2D['ref'].Write('Test')
-
-            # canvas = TCanvas('c', 'c', 600, 600)
-            # canvas.SetLeftMargin(0.10)
-            # canvas.SetRightMargin(0.15);
-            # canvas.cd()
-
-            # hdata2D['ref'].Draw('colz')
-            # canvas.SaveAs('pic.png')
-            # quit()
-            
         for kh, vh in hmc2D['trig'].items():
-            effmc2D[kh] = copy(vh)
-            effmc2D[kh].Divide(hdata2D['ref'])
+            effmc2D[kh] = vh.Clone(vh.GetName() + '_' + kh)
+            effmc2D[kh].Divide(effmc2D[kh], hmc2D['ref'], 1, 1, "B")
+            
     except SystemError:
         m = 'There is likely a mismatch in the number of bins.'
         raise RuntimeError(m)
@@ -550,7 +536,7 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
     assert len(effdata2D) == len(effmc2D)
 
     for kh, vh in effdata2D.items():
-        sf2D[kh] = copy(vh)
+        sf2D[kh] = vh.Clone(vh.GetName() + '_' + kh)
         sf2D[kh].Sumw2()
         sf2D[kh].Divide(effdata2D[kh],effmc2D[kh],1,1,"B")
         
@@ -560,12 +546,11 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
     n2 = ['Data2D', 'MC2D', 'SF2D']
     cnames = [x + '_c' for x in n2]
     ROOT.gStyle.SetPaintTextFormat("4.3f");
-    histo_options = 'colz text'
     
     eff2D = dot_dict({'Data' : effdata2D,
                       'MC'   : effmc2D,
                       'SF'   : sf2D})
-    base_name = ( save_names_2D[joinvars][0][0]
+    base_name = ( save_names_2D[joinvars]['Data'][0]
                   .split('.')[0]
                   .replace('EffData','trigSF2D')
                   .replace('Canvas2D_', '') )
@@ -575,68 +560,99 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
             # save 2D histograms
             _name = rewrite_cut_string(base_name, keff, regex=True)
             _name += '.root'
+
             eff_file_2D = TFile.Open(_name, 'RECREATE')
             eff_file_2D.cd()
             veff.SetName(n2[itype])
             veff.Write(n2[itype])
 
+            # upper and lower 2D uncertainties
+            eff_eu = veff.Clone(n2[itype] + '_eu')
+            eff_ed = veff.Clone(n2[itype] + '_ed')
+            for i in range(1,veff.GetNbinsX()+1):
+                for j in range(1,veff.GetNbinsY()+1):
+                    abin = veff.GetBin(i, j)
+                    eu2d = veff.GetBinErrorLow(abin)
+                    ed2d = veff.GetBinErrorUp(abin)
+                    if veff.GetBinContent(abin)==0.:
+                        eff_eu.SetBinContent(abin, 0.)
+                        eff_ed.SetBinContent(abin, 0.)
+                    else:
+                        eff_eu.SetBinContent(abin, eu2d)
+                        eff_ed.SetBinContent(abin, ed2d)
+
+                    if eff_eu.GetBinContent(abin)==0.:
+                        eff_eu.SetBinContent(abin, 1.e-10)
+                    if eff_ed.GetBinContent(abin)==0.:
+                        eff_ed.SetBinContent(abin, 1.e-10)
+            
             canvas = TCanvas(cnames[itype]+keff, cnames[itype]+keff, 600, 600)
             canvas.SetLeftMargin(0.10)
             canvas.SetRightMargin(0.15);
             canvas.cd()
 
             vnames_2D = split_vnames(joinvars)
-            axor_info = nbinsX+1, -1, nbinsX, nbinsY+1, -1, nbinsY
-            axor_ndiv = 705, 705
-            axor1_2D = TH2D('axor2'+keff,'axor2'+keff,
-                            axor_info[0], axor_info[1], axor_info[2],
-                            axor_info[3], axor_info[4], axor_info[5])
-            axor1_2D.GetXaxis().SetNdivisions(axor_ndiv[0])
-            axor1_2D.GetYaxis().SetNdivisions(axor_ndiv[1])
-            axor1_2D.GetXaxis().SetLabelOffset(1)
-            axor1_2D.GetYaxis().SetTitleSize(0.08)
-            axor1_2D.GetYaxis().SetTitleOffset(.85)
-            axor1_2D.GetXaxis().SetLabelSize(0.07)
-            axor1_2D.GetYaxis().SetLabelSize(0.07)
-            axor1_2D.GetXaxis().SetTickLength(0)
-
-            # Change bin labels
-            # for iv, vn in enumerate(vnames_2D):
-            #     rounding = lambda x: int(x) if 'pt' in vn else round(x, 2)
-            #     sf_ax = sf2D[keff].GetX() if iv==0 else sf2D[keff].GetY()
-            #     ax = axor1_2D.GetXaxis() if iv==0 else axor1_2D.GetYaxis()
-            #     for i,elem in enumerate(sf_ax):
-            #         low = sf2D[akey].GetErrorXlow(i)
-            #         ax.SetBinLabel(i+1,
-            #                        str(rounding(elem-low)))
-            #         ax.SetBinLabel(i+2,
-            #                        str(rounding(elem+sf1D[akey].GetErrorXlow(i))))
-            axor1_2D.Draw()
-
+            vname_x = get_display_variable_name(channel, vnames_2D[0])
+            vname_y = get_display_variable_name(channel, vnames_2D[1])
+            veff.GetXaxis().SetTitleOffset(1.0)
+            veff.GetYaxis().SetTitleOffset(1.2)
+            veff.GetXaxis().SetTitleSize(0.03)
+            veff.GetYaxis().SetTitleSize(0.03)
+            veff.GetXaxis().SetLabelSize(0.025)
+            veff.GetYaxis().SetLabelSize(0.025)
+            veff.GetXaxis().SetTitle(vname_x)
+            veff.GetYaxis().SetTitle(vname_y)
             # useful when adding errors
             # check scripts/draw2DTriggerSF.py
-            veff.SetBarOffset(0.0)
+            veff.SetBarOffset(0.22)
             veff.SetMarkerSize(.75)
             veff.SetMarkerColor(ROOT.kOrange+10)
             veff.SetMarkerSize(.8)
-            veff.Draw(histo_options)
+            ROOT.gStyle.SetPaintTextFormat("4.3f");
+            veff.Draw('colz text')
+
+            # numerator and denominator
+            htot  = hdata2D['ref'].Clone('tot')
+            hpass = hdata2D['trig'][keff].Clone('pass')
+            htot.SetMarkerSize(.65)
+            hpass.SetMarkerSize(.65)
+            htot.SetMarkerColor(ROOT.kOrange+6)
+            hpass.SetMarkerColor(ROOT.kOrange+6)
+            hpass.SetBarOffset(-0.10)
+            htot.SetBarOffset(-0.22)
+            ROOT.gStyle.SetPaintTextFormat("4.3f");
+            hpass.Draw("same text")
+            htot.Draw("same text")
+
+            # up and down errors for the 2D histogram
+            eff_eu.SetMarkerSize(.6)
+            eff_ed.SetMarkerSize(.6)
+            eff_eu.SetBarOffset(0.323);
+            eff_ed.SetBarOffset(0.10);
+            eff_eu.SetMarkerColor(ROOT.kBlack)
+            eff_ed.SetMarkerColor(ROOT.kBlack)
+            ROOT.gStyle.SetPaintTextFormat("+ 4.3f xxx");
+            eff_eu.Draw("same text")
+            ROOT.gStyle.SetPaintTextFormat("- 4.3f");
+            eff_ed.Draw("same text")
 
             lX, lY, lYstep = 0.8, 0.92, 0.045
             l = TLatex()
             l.SetNDC()
             l.SetTextFont(72)
             l.SetTextColor(2)
-            textrig = write_trigger_string(trig, intersection_str)
+            textrig = write_trigger_string(trig, intersection_str,
+                                           items_per_line=2)
             l.DrawLatex(lX, lY, ktype)
 
             paint2D(channel, textrig)
             redraw_border()
 
-            for ext_type in save_names_2D[joinvars]:
-                for full in ext_type:
-                    full = rewrite_cut_string(full, keff, regex=True)
-                    full = full.replace('Canvas2D_', '')
-                    canvas.SaveAs(full)    
+            for full in save_names_2D[joinvars][ktype]:
+                print(full)
+                full = rewrite_cut_string(full, keff, regex=True)
+                full = full.replace('Canvas2D_', '')
+                canvas.SaveAs(full)
         
 def _getCanvasName(proc, chn, var, trig, data_name, subtag):
     """
@@ -669,7 +685,7 @@ def runEffSF_outputs(outdir,
 
                 for ext,out in zip(_extensions, outputs):
                     _out = os.path.join(thisbase, canvas_name + '.' + ext)
-                    out.append(_out)
+                    out.append(_out)                    
 
     #join all outputs in the same list
     return sum(outputs, []), _extensions, processes
@@ -701,21 +717,21 @@ def runEffSF2D_outs(outdir,
                 for j in _2Dpairs[onetrig]:
                     vname = add_vnames(j[0],j[1])
                     cname = get_hnames('Canvas2D')(channel, vname, trigger_combination)
-                    outputs[vname] = []
+                    outputs[vname] = {}
                     
-                    cnames = dot_dict({'dt': cname_build('EffData_',cname),
-                                       'mc': cname_build('EffMC_',  cname),
-                                       'sf': cname_build('SF_',     cname)})
+                    cnames = dot_dict({'Data': cname_build('EffData_',cname),
+                                       'MC': cname_build('EffMC_',  cname),
+                                       'SF': cname_build('SF_',     cname)})
 
                     thisbase = os.path.join(outdir, channel, vname, '')
                     create_single_dir(thisbase)
-                
-                    for ext in _extensions:
-                        if ext not in ('C', 'root'): #remove extra outputs to reduce noise
-                            outputs[vname].append( (os.path.join(thisbase, cnames.dt + '.' + ext),
-                                                    os.path.join(thisbase, cnames.mc + '.' + ext),
-                                                    os.path.join(thisbase, cnames.sf + '.' + ext)) )
 
+                    for kn,vn in cnames.items():
+                        outputs[vname][kn] = []
+                        for ext in _extensions:
+                            if ext not in ('C', 'root'): #remove extra outputs to reduce noise
+                                outputs[vname][kn].append(os.path.join(thisbase, vn + '.' + ext))
+    
     if debug:
         for k,out in outputs.items():
             print(k)
@@ -746,34 +762,38 @@ def runEffSF(indir, outdir,
     dv = len(args.variables)
     dc = len(args.channels) * dv
     dp = len(processes) * dc
-  
-    # for ip,proc in enumerate(processes):
-    #     for ic,chn in enumerate(channels):
-    #         for iv,var in enumerate(variables):
-    #             index = ip*dc + ic*dv + iv
-    #             names1D = [ outs1D[index + dp*x] for x in range(len(extensions)) ]
 
-    #             if args.debug:
-    #                 for name in names:
-    #                     print('[=debug=] {}'.format(name))
-    #                     m = ( "process={}, channel={}, variable={}"
-    #                           .format(proc, chn, var) )
-    #                     m += ( ", trigger_combination={}\n"
-    #                            .format(trigger_combination) )
-    #                     print(m)
+    for ip,proc in enumerate(processes):
+        for ic,chn in enumerate(channels):
+            for iv,var in enumerate(variables):
+                index = ip*dc + ic*dv + iv
+                names1D = [ outs1D[index + dp*x] for x in range(len(extensions)) ]
 
-    #             drawEffAndSF1D(proc, chn, var,
-    #                            trigger_combination,
-    #                            names1D,
-    #                            tprefix,
-    #                            indir, subtag,
-    #                            mc_name, data_name,
-    #                            intersection_str,
-    #                            debug)
+                if args.debug:
+                    for name in names:
+                        print('[=debug=] {}'.format(name))
+                        m = ( "process={}, channel={}, variable={}"
+                              .format(proc, chn, var) )
+                        m += ( ", trigger_combination={}\n"
+                               .format(trigger_combination) )
+                        print(m)
+
+                drawEffAndSF1D(proc, chn, var,
+                               trigger_combination,
+                               names1D,
+                               tprefix,
+                               indir, subtag,
+                               mc_name, data_name,
+                               intersection_str,
+                               debug)
 
     splits = trigger_combination.split(intersection_str)
+    for x in splits:
+        if x not in _triggers_map:
+            mess = 'Trigger {} was not defined in the configuration.'.format(x)
+            raise ValueError(mess)
+        
     run = any({x in _2Dpairs for x in splits})
-
     if run:
         for ip,proc in enumerate(processes):
             for ic,chn in enumerate(channels):
