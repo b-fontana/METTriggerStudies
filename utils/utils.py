@@ -536,8 +536,11 @@ def upify(s):
 def write_trigger_string(trig_comb, inters_str, items_per_line=1, join='+'):
     c1, c2 = 0, 0
     trig_str = trig_comb.split(inters_str)
-    loopstr = 'Trigger' + ('' if len(trig_str)==1 else 's') + ': '
 
+    if len(trig_str)==1:
+        return 'Trigger: ' + trig_str[0]
+    
+    loopstr = 'Triggers: '
     it = [iter(trig_str)]*items_per_line
     raw = list(zip(*it))
     raw = [' + '.join(x) for x in raw]

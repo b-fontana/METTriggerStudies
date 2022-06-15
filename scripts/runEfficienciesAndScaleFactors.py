@@ -461,7 +461,7 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
    
     keylist_data = get_key_list(file_data, inherits=['TH1'])
     keylist_mc = get_key_list(file_mc, inherits=['TH1'])
-    
+
     for k in keylist_data:
         if k not in keylist_mc:
             m = 'Histogram {} was present in data but not in MC.\n'.format(k)
@@ -764,33 +764,33 @@ def runEffSF(indir, outdir,
                                                      subtag,
                                                      draw_independent_MCs)
   
-    # dv = len(args.variables)
-    # dc = len(args.channels) * dv
-    # dp = len(processes) * dc
+    dv = len(args.variables)
+    dc = len(args.channels) * dv
+    dp = len(processes) * dc
 
-    # for ip,proc in enumerate(processes):
-    #     for ic,chn in enumerate(channels):
-    #         for iv,var in enumerate(variables):
-    #             index = ip*dc + ic*dv + iv
-    #             names1D = [ outs1D[index + dp*x] for x in range(len(extensions)) ]
+    for ip,proc in enumerate(processes):
+        for ic,chn in enumerate(channels):
+            for iv,var in enumerate(variables):
+                index = ip*dc + ic*dv + iv
+                names1D = [ outs1D[index + dp*x] for x in range(len(extensions)) ]
 
-    #             if args.debug:
-    #                 for name in names:
-    #                     print('[=debug=] {}'.format(name))
-    #                     m = ( "process={}, channel={}, variable={}"
-    #                           .format(proc, chn, var) )
-    #                     m += ( ", trigger_combination={}\n"
-    #                            .format(trigger_combination) )
-    #                     print(m)
+                if args.debug:
+                    for name in names:
+                        print('[=debug=] {}'.format(name))
+                        m = ( "process={}, channel={}, variable={}"
+                              .format(proc, chn, var) )
+                        m += ( ", trigger_combination={}\n"
+                               .format(trigger_combination) )
+                        print(m)
 
-    #             drawEffAndSF1D(proc, chn, var,
-    #                            trigger_combination,
-    #                            names1D,
-    #                            tprefix,
-    #                            indir, subtag,
-    #                            mc_name, data_name,
-    #                            intersection_str,
-    #                            debug)
+                drawEffAndSF1D(proc, chn, var,
+                               trigger_combination,
+                               names1D,
+                               tprefix,
+                               indir, subtag,
+                               mc_name, data_name,
+                               intersection_str,
+                               debug)
 
     splits = trigger_combination.split(intersection_str)
     for x in splits:
