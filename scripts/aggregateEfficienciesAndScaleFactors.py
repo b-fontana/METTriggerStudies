@@ -8,37 +8,17 @@ from copy import copy
 import ROOT
 ROOT.gROOT.SetBatch(True)
 from ROOT import (
-    TCanvas,
-    TEfficiency,
     TFile,
     TGraphAsymmErrors,
     TH1D,
     TH2D,
-    TLatex,
-    TLegend,
-    TLine,
-    TPad,
     )
 from array import array
 
 import sys
 sys.path.append( os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
 from utils.utils import (
-    create_single_dir,
-    get_display_variable_name,
-    get_histo_names,
-    get_key_list,
-    get_root_object,
-    load_binning,
     parse_args,
-    print_configuration,
-    redraw_border,
-    rewrite_cut_string,
-    uniformize_bin_width,
-    )
-from luigi_conf import (
-    _extensions,
-    _placeholder_cuts,
     )
 
 def convertGraphToHist(graph):
@@ -59,7 +39,7 @@ def convertGraphToHist(graph):
     for i in range(1,n):
         x.append((graph.GetX()[i-1] + graph.GetX()[i]) / 2.0)
     x.append((3.0 * graph.GetX()[n-1] - graph.GetX()[n-2]) / 2.0)
-    histo = ROOT.TH1D(name, name, n, x)
+    histo = TH1D(name, name, n, x)
 
     # fill y values (counts)
     for i in range(n):
@@ -85,22 +65,36 @@ def aggregateEfficienciesAndScaleFactors(indir, outdir, channel, subtag, prefix,
     for root, _, files in os.walk( walk_path ):
         for afile in files:
             if afile.endswith('.' + extension):
+                print(os.path.join(root,afile))
                 froot = ROOT.TFile.Open( os.path.join(root,afile), 'READ' )
                 keyList = ROOT.TIter(froot.GetListOfKeys())
                 fout.cd()
                 for key in keyList:
-                    cl = ROOT.gROOT.GetClass(key.GetClassName())
-                    if not cl.InheritsFrom('TGraph') or not cl.InheritsFrom('TH1'):
-                        continue
-
                     h = key.ReadObj()
-                    if cl.InheritsFrom('TGraph')
+                    if ( not h.InheritsFrom(TGraphAsymmErrors.Class()) and
+                         not h.InheritsFrom(TH2D.Class()) ):
+                        mess = '\n - dir = {}\n'.format(root)
+                        mess += ' - file = {}\n'.format(afile)
+                        mess += ' - key = {}\n'.format(key)
+                        raise ValueError(mess)
+
+
+                    if h.InheritsFrom(TGraphAsymmErrors.Class()):
                         h = convertGraphToHist(h)
-                    
-                    var, trigger, cut = regex.match(afile).groups()
+
+                    try:
+                        var, trigger, cut = regex.match(afile).groups()
+                    except AttributeError:
+                        print('No match!')
+                        print('Variable(s): {}'.format(var))
+                        print('Trigger(s): {}'.format(trigger))
+                        print('Cut(s): {}'.format(cut))
+                        print('Channel: {}'.format(channel))
+                        raise
                     new_name = h.GetName() + '_VAR_' + var + '_TRG_' + trigger + '_CUT_' + cut
 
                     h.Write(new_name)
+    print('File {} saved.'.format(_outname))
             
 parser = argparse.ArgumentParser(description='Draw trigger scale factors')
 
@@ -113,8 +107,7 @@ parser.add_argument('--variables', dest='variables', required=True, type=str, na
                     help='Select the variables over which the workflow will be run.' )
 parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
-args = parser.parse_args()
-print_configuration(args)
+args = parse_args(parser)
 
 aggregateEfficienciesAndScaleFactors(args.indir, args.outdir, args.channel, args.subtag,
                                      args.file_prefix, args.variables, args.debug)
