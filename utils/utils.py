@@ -13,6 +13,7 @@ from types import SimpleNamespace
 import ROOT
 from ROOT import (
     TGraphAsymmErrors,
+    TH2D,
     TLine,
 )
 
@@ -481,14 +482,52 @@ def slash_to_underscore_and_keep(s, n=4):
     """Replaces slashes by underscores, keeping only the last 'n' slash-separated strings"""
     return '_'.join( s.split('/')[-n:] )
 
-def uniformize_bin_width(old_histo):
-    """Change X axis labels."""
-    new_histo = TGraphAsymmErrors( old_histo.GetN() )
-    for ip in range(old_histo.GetN()):
-        new_histo.SetPoint(ip, ip, old_histo.GetPointY(ip) )
-        new_histo.SetPointError(ip, .5, .5,
-                                old_histo.GetErrorYlow(ip), old_histo.GetErrorYhigh(ip) )
-    return new_histo
+def apply_equal_bin_width(old, roundx=2, roundy=2):
+    """
+    Replaces the object by changing the labels and
+    ensuring all bins have the same visual width.
+    Internally the bins are numbered from 0 to nBins.
+    """
+    darr = lambda x : np.array(x).astype(dtype=np.double)
+    def xfunc(l, r):
+        lstr = str(round(l, roundx)) if roundx!=0 else str(int(l))
+        rstr = str(round(r, roundx)) if roundx!=0 else str(int(r))
+        return '[' + lstr + ';' + rstr + '['
+    def yfunc(l, r):
+        lstr = str(round(l, roundy)) if roundy!=0 else str(int(l))
+        rstr = str(round(r, roundy)) if roundy!=0 else str(int(r))
+        return '#splitline{[' + lstr + ';}{' + rstr + '[}'
+    
+    if old.InheritsFrom(TGraphAsymmErrors.Class()):
+        h = TGraphAsymmErrors( old.GetN() )
+        for ip in range(old.GetN()):
+            h.SetPoint(ip, ip, old.GetPointY(ip) )
+            h.SetPointError(ip, .5, .5,
+                            old.GetErrorYlow(ip), old.GetErrorYhigh(ip) )
+
+    elif old.InheritsFrom(TH2D.Class()): 
+        name = old.GetName() + '_equal_width'
+        nx, ny = old.GetNbinsX(), old.GetNbinsY()
+        h = TH2D(name, name, nx, 0, nx, ny, 0, ny)
+        for by in range(1, old.GetNbinsY()+1):
+            for bx in range(1, old.GetNbinsX()+1):
+                h.SetBinContent(bx, by, old.GetBinContent(bx, by))
+                h.SetBinError(bx, by, old.GetBinError(bx, by))
+
+        # Change bin labels
+        for bx in range(1, old.GetNbinsX()+1):
+            ledge = old.GetXaxis().GetBinLowEdge(bx)
+            redge = old.GetXaxis().GetBinUpEdge(bx)
+            h.GetXaxis().SetBinLabel(bx, xfunc(ledge,redge))
+        for by in range(1, old.GetNbinsY()+1):
+            dedge = old.GetYaxis().GetBinLowEdge(by)
+            uedge = old.GetYaxis().GetBinUpEdge(by)
+            h.GetYaxis().SetBinLabel(by, yfunc(dedge,uedge))
+    else:
+        mess = '[apply_equal_bin_width] '
+        mess += 'The object should either be a TGraphasymmErrors or a TH2D'
+        raise ValueError(mess)
+    return h
 
 def upify(s):
     """capitalizes the first letter of the passed string"""

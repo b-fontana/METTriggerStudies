@@ -1,14 +1,7 @@
-"""
-Script which calculates the trigger scale factors.
-On production mode should run in the grid via scripts/submitTriggerEff.py. 
-"""
 import re
 import os
 import functools
 import argparse
-import fnmatch
-import math
-from array import array
 import numpy as np
 from ROOT import (
     TFile,

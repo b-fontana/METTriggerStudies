@@ -39,7 +39,7 @@ from utils.utils import (
     redraw_border,
     rewrite_cut_string,
     split_vnames,
-    uniformize_bin_width,
+    apply_equal_bin_width,
     write_trigger_string,
 )
 from luigi_conf import (
@@ -285,8 +285,8 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         axor.GetXaxis().SetTickLength(0)
         axor.Draw()
 
-        effdata1D_new = uniformize_bin_width(effdata1D[akey])
-        effmc1D_new = uniformize_bin_width(effmc1D[akey])
+        effdata1D_new = apply_equal_bin_width(effdata1D[akey])
+        effmc1D_new = apply_equal_bin_width(effmc1D[akey])
 
         effdata1D_new.SetLineColor(1)
         effdata1D_new.SetLineWidth(2)
@@ -386,7 +386,7 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         axor2.GetXaxis().SetTickLength(0)
         axor2.Draw()
 
-        sf1Dnew = uniformize_bin_width(sf1D[akey])
+        sf1Dnew = apply_equal_bin_width(sf1D[akey])
         sf1Dnew.SetLineColor(ROOT.kRed)
         sf1Dnew.SetLineWidth(2)
         sf1Dnew.SetMarkerColor(ROOT.kRed)
@@ -594,26 +594,29 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
             vnames_2D = split_vnames(joinvars)
             vname_x = get_display_variable_name(channel, vnames_2D[0])
             vname_y = get_display_variable_name(channel, vnames_2D[1])
-            veff.GetXaxis().SetTitleOffset(1.0)
-            veff.GetYaxis().SetTitleOffset(1.2)
-            veff.GetXaxis().SetTitleSize(0.03)
-            veff.GetYaxis().SetTitleSize(0.03)
-            veff.GetXaxis().SetLabelSize(0.025)
-            veff.GetYaxis().SetLabelSize(0.025)
-            veff.GetXaxis().SetTitle(vname_x)
-            veff.GetYaxis().SetTitle(vname_y)
+            rx = 2 if 'pt' not in vname_x else 0
+            ry = 2 if 'pt' not in vname_y else 0
+            veff_new = apply_equal_bin_width(veff, roundx=rx, roundy=ry)
+            veff_new.GetXaxis().SetTitleOffset(1.0)
+            veff_new.GetYaxis().SetTitleOffset(1.3)
+            veff_new.GetXaxis().SetTitleSize(0.03)
+            veff_new.GetYaxis().SetTitleSize(0.03)
+            veff_new.GetXaxis().SetLabelSize(0.03)
+            veff_new.GetYaxis().SetLabelSize(0.03)
+            veff_new.GetXaxis().SetTitle(vname_x)
+            veff_new.GetYaxis().SetTitle(vname_y)
             # useful when adding errors
             # check scripts/draw2DTriggerSF.py
-            veff.SetBarOffset(0.22)
-            veff.SetMarkerSize(.75)
-            veff.SetMarkerColor(ROOT.kOrange+10)
-            veff.SetMarkerSize(.8)
+            veff_new.SetBarOffset(0.22)
+            veff_new.SetMarkerSize(.75)
+            veff_new.SetMarkerColor(ROOT.kOrange+10)
+            veff_new.SetMarkerSize(.8)
             ROOT.gStyle.SetPaintTextFormat("4.3f");
-            veff.Draw('colz text')
+            veff_new.Draw('colz text')
 
             # numerator and denominator
-            htot  = hdata2D['ref'].Clone('tot')
-            hpass = hdata2D['trig'][keff].Clone('pass')
+            htot  = apply_equal_bin_width(hdata2D['ref'].Clone('tot'))
+            hpass = apply_equal_bin_width(hdata2D['trig'][keff].Clone('pass'))
             htot.SetMarkerSize(.65)
             hpass.SetMarkerSize(.65)
             htot.SetMarkerColor(ROOT.kOrange+6)
@@ -625,6 +628,8 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
             htot.Draw("same text")
 
             # up and down errors for the 2D histogram
+            eff_eu = apply_equal_bin_width(eff_eu)
+            eff_ed = apply_equal_bin_width(eff_ed)
             eff_eu.SetMarkerSize(.6)
             eff_ed.SetMarkerSize(.6)
             eff_eu.SetBarOffset(0.323);
@@ -759,33 +764,33 @@ def runEffSF(indir, outdir,
                                                      subtag,
                                                      draw_independent_MCs)
   
-    dv = len(args.variables)
-    dc = len(args.channels) * dv
-    dp = len(processes) * dc
+    # dv = len(args.variables)
+    # dc = len(args.channels) * dv
+    # dp = len(processes) * dc
 
-    for ip,proc in enumerate(processes):
-        for ic,chn in enumerate(channels):
-            for iv,var in enumerate(variables):
-                index = ip*dc + ic*dv + iv
-                names1D = [ outs1D[index + dp*x] for x in range(len(extensions)) ]
+    # for ip,proc in enumerate(processes):
+    #     for ic,chn in enumerate(channels):
+    #         for iv,var in enumerate(variables):
+    #             index = ip*dc + ic*dv + iv
+    #             names1D = [ outs1D[index + dp*x] for x in range(len(extensions)) ]
 
-                if args.debug:
-                    for name in names:
-                        print('[=debug=] {}'.format(name))
-                        m = ( "process={}, channel={}, variable={}"
-                              .format(proc, chn, var) )
-                        m += ( ", trigger_combination={}\n"
-                               .format(trigger_combination) )
-                        print(m)
+    #             if args.debug:
+    #                 for name in names:
+    #                     print('[=debug=] {}'.format(name))
+    #                     m = ( "process={}, channel={}, variable={}"
+    #                           .format(proc, chn, var) )
+    #                     m += ( ", trigger_combination={}\n"
+    #                            .format(trigger_combination) )
+    #                     print(m)
 
-                drawEffAndSF1D(proc, chn, var,
-                               trigger_combination,
-                               names1D,
-                               tprefix,
-                               indir, subtag,
-                               mc_name, data_name,
-                               intersection_str,
-                               debug)
+    #             drawEffAndSF1D(proc, chn, var,
+    #                            trigger_combination,
+    #                            names1D,
+    #                            tprefix,
+    #                            indir, subtag,
+    #                            mc_name, data_name,
+    #                            intersection_str,
+    #                            debug)
 
     splits = trigger_combination.split(intersection_str)
     for x in splits:
