@@ -90,6 +90,8 @@ def aggregateEfficienciesAndScaleFactors(indir, outdir, channel, subtag, prefix,
                         print('Trigger(s): {}'.format(trigger))
                         print('Cut(s): {}'.format(cut))
                         print('Channel: {}'.format(channel))
+                        print('File: {}'.format(afile))
+                        print('Dir: {}'.format(root))
                         raise
                     new_name = h.GetName() + '_VAR_' + var + '_TRG_' + trigger + '_CUT_' + cut
 

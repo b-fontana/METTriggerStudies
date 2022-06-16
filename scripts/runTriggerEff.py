@@ -112,9 +112,9 @@ def passes_cuts(trig, variables, leavesmanager, debug):
         res = {args.nocut_dummy_str: True}
     return res
     
-def get_trigger_eff_sig(indir, outdir, sample, fileName,
-                        channels, variables, triggers,
-                        subtag, tprefix, isdata, binedges_fname):
+def build_histograms(indir, outdir, sample, fileName,
+                     channels, variables, triggers,
+                     subtag, tprefix, isdata, binedges_fname):
     # -- Check if outdir exists, if not create it
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -376,6 +376,6 @@ parser.add_argument('--nocut_dummy_str', dest='nocut_dummy_str', required=True,
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = parse_args(parser)
 
-get_trigger_eff_sig(args.indir, args.outdir, args.sample, args.fileName,
-                    args.channels, args.variables, args.triggers,
-                    args.subtag, args.tprefix, args.isdata, args.binedges_fname)
+build_histograms(args.indir, args.outdir, args.sample, args.fileName,
+                 args.channels, args.variables, args.triggers,
+                 args.subtag, args.tprefix, args.isdata, args.binedges_fname)

@@ -538,7 +538,7 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
     for kh, vh in effdata2D.items():
         sf2D[kh] = vh.Clone(vh.GetName() + '_' + kh)
         sf2D[kh].Sumw2()
-        sf2D[kh].Divide(effdata2D[kh],effmc2D[kh],1,1,"B")
+        sf2D[kh].Divide(effmc2D[kh])
         
     if debug:
         print('[=debug=] 2D Plotting...', flush=True)
@@ -546,57 +546,56 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
     n2 = ['Data2D', 'MC2D', 'SF2D']
     cnames = [x + '_c' for x in n2]
     ROOT.gStyle.SetPaintTextFormat("4.3f");
-    
-    eff2D = dot_dict({'Data' : effdata2D,
-                      'MC'   : effmc2D,
-                      'SF'   : sf2D})
-    base_name = ( save_names_2D[joinvars]['Data'][0]
+
+    base_name = ( save_names_2D[joinvars][n2[0]][0]
                   .split('.')[0]
-                  .replace('EffData','trigSF2D')
+                  .replace('EffData_', '')
                   .replace('Canvas2D_', '') )
 
-    for itype, (ktype,vtype) in enumerate(eff2D.items()):
-        for keff,veff in vtype.items():
-            # save 2D histograms
-            _name = rewrite_cut_string(base_name, keff, regex=True)
-            _name += '.root'
+    hzip = zip(effdata2D.items(), effmc2D.items(), sf2D.items())
+    for items in hzip:
+        # save 2D histograms
+        _name = rewrite_cut_string(base_name, items[0][0], regex=True)
+        _name += '.root'
 
-            eff_file_2D = TFile.Open(_name, 'RECREATE')
-            eff_file_2D.cd()
-            veff.SetName(n2[itype])
-            veff.Write(n2[itype])
+        eff_file_2D = TFile.Open(_name, 'RECREATE')
+        eff_file_2D.cd()
 
+        for itype, obj in enumerate(items):
+            obj[1].SetName(n2[itype])
+            obj[1].Write(n2[itype])
+  
             # upper and lower 2D uncertainties
-            eff_eu = veff.Clone(n2[itype] + '_eu')
-            eff_ed = veff.Clone(n2[itype] + '_ed')
-            for i in range(1,veff.GetNbinsX()+1):
-                for j in range(1,veff.GetNbinsY()+1):
-                    abin = veff.GetBin(i, j)
-                    eu2d = veff.GetBinErrorLow(abin)
-                    ed2d = veff.GetBinErrorUp(abin)
-                    if veff.GetBinContent(abin)==0.:
+            eff_eu = obj[1].Clone(n2[itype] + '_eu')
+            eff_ed = obj[1].Clone(n2[itype] + '_ed')
+            for i in range(1,obj[1].GetNbinsX()+1):
+                for j in range(1,obj[1].GetNbinsY()+1):
+                    abin = obj[1].GetBin(i, j)
+                    eu2d = obj[1].GetBinErrorLow(abin)
+                    ed2d = obj[1].GetBinErrorUp(abin)
+                    if obj[1].GetBinContent(abin)==0.:
                         eff_eu.SetBinContent(abin, 0.)
                         eff_ed.SetBinContent(abin, 0.)
                     else:
                         eff_eu.SetBinContent(abin, eu2d)
                         eff_ed.SetBinContent(abin, ed2d)
-
+      
                     if eff_eu.GetBinContent(abin)==0.:
                         eff_eu.SetBinContent(abin, 1.e-10)
                     if eff_ed.GetBinContent(abin)==0.:
                         eff_ed.SetBinContent(abin, 1.e-10)
-            
-            canvas = TCanvas(cnames[itype]+keff, cnames[itype]+keff, 600, 600)
+
+            canvas = TCanvas(cnames[itype]+obj[0], cnames[itype]+obj[0], 600, 600)
             canvas.SetLeftMargin(0.10)
             canvas.SetRightMargin(0.15);
             canvas.cd()
-
+      
             vnames_2D = split_vnames(joinvars)
             vname_x = get_display_variable_name(channel, vnames_2D[0])
             vname_y = get_display_variable_name(channel, vnames_2D[1])
             rx = 2 if 'pt' not in vname_x else 0
             ry = 2 if 'pt' not in vname_y else 0
-            veff_new = apply_equal_bin_width(veff, roundx=rx, roundy=ry)
+            veff_new = apply_equal_bin_width(obj[1], roundx=rx, roundy=ry)
             veff_new.GetXaxis().SetTitleOffset(1.0)
             veff_new.GetYaxis().SetTitleOffset(1.3)
             veff_new.GetXaxis().SetTitleSize(0.03)
@@ -613,20 +612,30 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
             veff_new.SetMarkerSize(.8)
             ROOT.gStyle.SetPaintTextFormat("4.3f");
             veff_new.Draw('colz text')
-
+      
             # numerator and denominator
-            htot  = apply_equal_bin_width(hdata2D['ref'].Clone('tot'))
-            hpass = apply_equal_bin_width(hdata2D['trig'][keff].Clone('pass'))
-            htot.SetMarkerSize(.65)
-            hpass.SetMarkerSize(.65)
-            htot.SetMarkerColor(ROOT.kOrange+6)
-            hpass.SetMarkerColor(ROOT.kOrange+6)
-            hpass.SetBarOffset(-0.10)
-            htot.SetBarOffset(-0.22)
-            ROOT.gStyle.SetPaintTextFormat("4.3f");
-            hpass.Draw("same text")
-            htot.Draw("same text")
+            if itype == 0: # data
+                htot = hdata2D['ref'].Clone('tot')
+                hpass = hdata2D['trig'][obj[0]].Clone('pass')
+            elif itype == 1: # MC
+                htot = hmc2D['ref'].Clone('tot')
+                hpass = hmc2D['trig'][obj[0]].Clone('pass')
 
+            if itype < 2:
+                htot.SetName('tot_' + str(itype))
+                hpass.SetName('pass_' + str(itype))
+                htot = apply_equal_bin_width(htot)
+                hpass = apply_equal_bin_width(hpass)
+                htot.SetMarkerSize(.65)
+                hpass.SetMarkerSize(.65)
+                htot.SetMarkerColor(ROOT.kOrange+6)
+                hpass.SetMarkerColor(ROOT.kOrange+6)
+                hpass.SetBarOffset(-0.10)
+                htot.SetBarOffset(-0.22)
+                ROOT.gStyle.SetPaintTextFormat("4.3f");
+                hpass.Draw("same text")
+                htot.Draw("same text")
+      
             # up and down errors for the 2D histogram
             eff_eu = apply_equal_bin_width(eff_eu)
             eff_ed = apply_equal_bin_width(eff_ed)
@@ -640,7 +649,7 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
             eff_eu.Draw("same text")
             ROOT.gStyle.SetPaintTextFormat("- 4.3f");
             eff_ed.Draw("same text")
-
+      
             lX, lY, lYstep = 0.8, 0.92, 0.045
             l = TLatex()
             l.SetNDC()
@@ -648,14 +657,13 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
             l.SetTextColor(2)
             textrig = write_trigger_string(trig, intersection_str,
                                            items_per_line=2)
-            l.DrawLatex(lX, lY, ktype)
-
+            l.DrawLatex(lX, lY, n2[itype].replace('2D',''))
+      
             paint2D(channel, textrig)
             redraw_border()
 
-            for full in save_names_2D[joinvars][ktype]:
-                print(full)
-                full = rewrite_cut_string(full, keff, regex=True)
+            for full in save_names_2D[joinvars][n2[itype]]:
+                full = rewrite_cut_string(full, obj[0], regex=True)
                 full = full.replace('Canvas2D_', '')
                 canvas.SaveAs(full)
         
@@ -724,11 +732,12 @@ def runEffSF2D_outs(outdir,
                     cname = get_hnames('Canvas2D')(channel, vname, trigger_combination)
                     outputs[vname] = {}
                     
-                    cnames = dot_dict({'Data': cname_build('EffData_',cname),
-                                       'MC': cname_build('EffMC_',  cname),
-                                       'SF': cname_build('SF_',     cname)})
+                    cnames = dot_dict({'Data2D': cname_build('EffData_',cname),
+                                       'MC2D': cname_build('EffMC_',  cname),
+                                       'SF2D': cname_build('SF_',     cname)})
 
                     thisbase = os.path.join(outdir, channel, vname, '')
+
                     create_single_dir(thisbase)
 
                     for kn,vn in cnames.items():
