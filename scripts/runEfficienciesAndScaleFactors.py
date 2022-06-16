@@ -421,7 +421,7 @@ def drawEffAndSF1D(proc, channel, variable, trig,
             canvas.SaveAs( _name )
 
         _name = save_names_1D[-1].replace(args.canvas_prefix, '')
-        _name = rewrite_cut_string(, akey, regex=True)
+        _name = rewrite_cut_string(_name, akey, regex=True)
         eff_file = TFile.Open(_name, 'RECREATE')
         eff_file.cd()
 
@@ -668,13 +668,13 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
                 full = full.replace('Canvas2D_', '')
                 canvas.SaveAs(full)
         
-def _get_canvas_name(proc, chn, var, trig, data_name, subtag):
+def _get_canvas_name(prefix, proc, chn, var, trig, data_name, subtag):
     """
     A 'XXX' placeholder is added for later replacement by all cuts considered for the same channel, variable and trigger combination.
     Without the placeholder one would have to additionally calculate the number of cuts beforehand, which adds complexity with no major benefit.
     """
     add = proc + '_' + chn + '_' + var + '_TRG_' + trig
-    n = args.canvas_prefix + data_name + '_' + add
+    n = prefix + data_name + '_' + add
     n += _placeholder_cuts + subtag
     return n
 
@@ -691,7 +691,8 @@ def runEffSF_outputs(outdir,
     for proc in processes:
         for ch in channels:
             for var in variables:
-                canvas_name = _get_canvas_name(proc, ch, var,
+                canvas_name = _get_canvas_name(args.canvas_prefix,
+                                               proc, ch, var,
                                                trigger_combination,
                                                data_name, subtag)
                 thisbase = os.path.join(outdir, ch, var, '')
@@ -719,8 +720,6 @@ def runEffSF2D_outs(outdir,
     This was done for the sake of simplification.
     """
     outputs = {}
-    cname_build = lambda pref,cname: ( pref + data_name + '_' +
-                                       proc + '_' + cname + subtag )
     
     # only running when one of the triggers in the intersection
     # matches one of the triggers specified by the user with `_2Dpairs`
@@ -732,12 +731,17 @@ def runEffSF2D_outs(outdir,
             if onetrig in _2Dpairs:
                 for j in _2Dpairs[onetrig]:
                     vname = add_vnames(j[0],j[1])
-                    cname = get_hnames('Canvas2D')(channel, vname, trigger_combination)
+                    pref2d = args.canvas_prefix.replace('1', '2')
+                    cname = _get_canvas_name(pref2d,
+                                             proc, channel, vname,
+                                             trigger_combination,
+                                             data_name, subtag)
+
                     outputs[vname] = {}
                     
-                    cnames = dot_dict({'Data2D': cname_build('EffData_',cname),
-                                       'MC2D': cname_build('EffMC_',  cname),
-                                       'SF2D': cname_build('SF_',     cname)})
+                    cnames = { 'Data2D': cname.replace(pref2d,'EffData_'),
+                               'MC2D': cname.replace(pref2d,'EffMC_'),
+                               'SF2D': cname.replace(pref2d,'SF_') }
 
                     thisbase = os.path.join(outdir, channel, vname, '')
 

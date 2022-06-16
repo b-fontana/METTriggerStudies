@@ -55,13 +55,14 @@ def aggregateEfficienciesAndScaleFactors(indir, outdir, channel, subtag, prefix,
     _outname = os.path.join(outdir, prefix + channel + '.' + extension)
     fout = ROOT.TFile.Open(_outname , 'RECREATE')
     
-    walk_path = os.path.join(indir, channel)
-    var_re = '(?:' + '|'.join(variables) + ')' # ?: match but do not capture
-
-    regex_str = ( '.*' + channel + '.*(' + var_re +
-                  ')_(.+)' + '_CUTS_(.+' + ')\.' + args.subtag + extension )
+    var_re = '_(.+)_TRG_' # ?: match but do not capture
+    trig_re = '(.+)_CUTS_'
+    cuts_re = '(.+)'
+    regex_str = ( '.*' + channel + var_re + trig_re +
+                   cuts_re + args.subtag + '\.' + extension )
     regex = re.compile( regex_str )
 
+    walk_path = os.path.join(indir, channel)
     for root, _, files in os.walk( walk_path ):
         for afile in files:
             if afile.endswith('.' + extension):
@@ -73,23 +74,22 @@ def aggregateEfficienciesAndScaleFactors(indir, outdir, channel, subtag, prefix,
                     h = key.ReadObj()
                     if ( not h.InheritsFrom(TGraphAsymmErrors.Class()) and
                          not h.InheritsFrom(TH2D.Class()) ):
-                        mess = '\n - dir = {}\n'.format(root)
-                        mess += ' - file = {}\n'.format(afile)
-                        mess += ' - key = {}\n'.format(key)
+                        mess = '\n - Dir: {}\n'.format(root)
+                        mess += ' - File: {}\n'.format(afile)
+                        mess += ' - Key: {}\n'.format(key)
                         raise ValueError(mess)
-
 
                     if h.InheritsFrom(TGraphAsymmErrors.Class()):
                         h = convertGraphToHist(h)
 
                     try:
                         var, trigger, cut = regex.match(afile).groups()
-                    except AttributeError:
-                        print('No match! Regex: {}'.format(regex))
-                        print('Channel: {}'.format(channel))
-                        print('File: {}'.format(afile))
-                        print('Dir: {}'.format(root))
-                        raise
+                    except AttributeError as e:
+                        mess = '\nNo match! Regex: {}\n'.format(regex)
+                        mess += 'Channel: {}\n'.format(channel)
+                        mess += 'File: {}\n'.format(afile)
+                        mess += 'Dir: {}\n'.format(root)
+                        raise AttributeError(mess) from e
                     new_name = h.GetName() + '_VAR_' + var + '_TRG_' + trigger + '_CUT_' + cut
 
                     h.Write(new_name)

@@ -24,7 +24,9 @@ BASE="jobs/${TAG}/submission/"
 # condor_submit "${BASE}"HaddCountsAggMET/HaddCountsAggMET.condor
 # condor_submit "${BASE}"HaddCountsAggTT/HaddCountsAggTT.condor
 
-condor_submit "${BASE}"EffAndScaleFactors/EfficienciesAndSF.condor
+# condor_submit "${BASE}"EffAndScaleFactors/EfficienciesAndSF.condor
+
+condor_submit "${BASE}"EffAndSFAgg/EffAndSFAgg.condor
 
 # for sub in "${BASE}"Discriminator_*; do
 # 	condor_submit "${sub}/${sub}.condor"
