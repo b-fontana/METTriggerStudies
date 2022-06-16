@@ -237,7 +237,7 @@ class cfg(luigi.Config):
                   'binedges_filename': binedges_filename,
                   'tag': tag,
                   'subtag': subtag,
-                  'canvas_prefix': _sf_prefix,
+                  'canvas_prefix': 'Canvas1D_',
                   'intersection_str': intersection_str,
                   'nocut_dummy_str': nocut_dummy_str,
                   'debug': FLAGS.debug_workflow,} )

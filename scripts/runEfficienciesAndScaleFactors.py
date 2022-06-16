@@ -420,7 +420,8 @@ def drawEffAndSF1D(proc, channel, variable, trig,
             _name = rewrite_cut_string(aname, akey, regex=True)
             canvas.SaveAs( _name )
 
-        _name = rewrite_cut_string(save_names_1D[-1], akey, regex=True)
+        _name = save_names_1D[-1].replace(args.canvas_prefix, '')
+        _name = rewrite_cut_string(, akey, regex=True)
         eff_file = TFile.Open(_name, 'RECREATE')
         eff_file.cd()
 
@@ -667,14 +668,14 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
                 full = full.replace('Canvas2D_', '')
                 canvas.SaveAs(full)
         
-def _getCanvasName(proc, chn, var, trig, data_name, subtag):
+def _get_canvas_name(proc, chn, var, trig, data_name, subtag):
     """
     A 'XXX' placeholder is added for later replacement by all cuts considered for the same channel, variable and trigger combination.
     Without the placeholder one would have to additionally calculate the number of cuts beforehand, which adds complexity with no major benefit.
     """
-    add = proc + '_' + chn + '_' + var + '_' + trig
-    n = args.canvas_prefix + data_name + '_' + add + subtag
-    n += _placeholder_cuts
+    add = proc + '_' + chn + '_' + var + '_TRG_' + trig
+    n = args.canvas_prefix + data_name + '_' + add
+    n += _placeholder_cuts + subtag
     return n
 
 def runEffSF_outputs(outdir,
@@ -690,9 +691,9 @@ def runEffSF_outputs(outdir,
     for proc in processes:
         for ch in channels:
             for var in variables:
-                canvas_name = _getCanvasName(proc, ch, var,
-                                            trigger_combination,
-                                            data_name, subtag)
+                canvas_name = _get_canvas_name(proc, ch, var,
+                                               trigger_combination,
+                                               data_name, subtag)
                 thisbase = os.path.join(outdir, ch, var, '')
                 create_single_dir( thisbase )
 
@@ -705,6 +706,7 @@ def runEffSF_outputs(outdir,
 
 def runEffSF2D_outs(outdir,
                     proc,
+                    data_name,
                     trigger_combination,
                     channel,
                     subtag,
@@ -717,7 +719,8 @@ def runEffSF2D_outs(outdir,
     This was done for the sake of simplification.
     """
     outputs = {}
-    cname_build = lambda pref,cname: pref + proc + '_' + cname + subtag
+    cname_build = lambda pref,cname: ( pref + data_name + '_' +
+                                       proc + '_' + cname + subtag )
     
     # only running when one of the triggers in the intersection
     # matches one of the triggers specified by the user with `_2Dpairs`
@@ -813,7 +816,7 @@ def runEffSF(indir, outdir,
             for ic,chn in enumerate(channels):
                 for onetrig in splits:
                     if onetrig in _2Dpairs:
-                        names2D = runEffSF2D_outs(outdir, proc,
+                        names2D = runEffSF2D_outs(outdir, proc, data_name,
                                                   trigger_combination,
                                                   chn,
                                                   subtag,
@@ -838,8 +841,8 @@ parser.add_argument('--indir', help='Inputs directory', required=True)
 parser.add_argument('--outdir', help='Output directory', required=True, )
 parser.add_argument('--tprefix', help='prefix to the names of the produceyd outputs (targets in luigi lingo)', required=True)
 parser.add_argument('--canvas_prefix', help='canvas prefix', required=True)
-parser.add_argument('--subtag',           dest='subtag',           required=True, help='subtag')
-parser.add_argument('--mc_processes', help='MC processes to be analyzeyd', required=True, nargs='+', type=str)
+parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
+parser.add_argument('--mc_processes', help='MC processes to be analyzed', required=True, nargs='+', type=str)
 parser.add_argument('--data_name', dest='data_name', required=True, help='Data sample name')
 parser.add_argument('--mc_name', dest='mc_name', required=True, help='MC sample name')
 parser.add_argument('--triggercomb', dest='triggercomb', required=True,

@@ -58,10 +58,10 @@ def aggregateEfficienciesAndScaleFactors(indir, outdir, channel, subtag, prefix,
     walk_path = os.path.join(indir, channel)
     var_re = '(?:' + '|'.join(variables) + ')' # ?: match but do not capture
 
-    regex_str = ( prefix + '.*' + channel + '.*(' + var_re +
-                 ')_(.+)' + args.subtag + '_CUTS_(.+' + ')\.' + extension)
+    regex_str = ( '.*' + channel + '.*(' + var_re +
+                  ')_(.+)' + '_CUTS_(.+' + ')\.' + args.subtag + extension )
     regex = re.compile( regex_str )
-    
+
     for root, _, files in os.walk( walk_path ):
         for afile in files:
             if afile.endswith('.' + extension):
@@ -85,10 +85,7 @@ def aggregateEfficienciesAndScaleFactors(indir, outdir, channel, subtag, prefix,
                     try:
                         var, trigger, cut = regex.match(afile).groups()
                     except AttributeError:
-                        print('No match!')
-                        print('Variable(s): {}'.format(var))
-                        print('Trigger(s): {}'.format(trigger))
-                        print('Cut(s): {}'.format(cut))
+                        print('No match! Regex: {}'.format(regex))
                         print('Channel: {}'.format(channel))
                         print('File: {}'.format(afile))
                         print('Dir: {}'.format(root))
