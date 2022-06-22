@@ -1,5 +1,5 @@
 
-TAG="WednesdayTest"
+TAG="TestVirtualMachines"
 BASE="jobs/${TAG}/submission/"
 
 # condor_submit "${BASE}"Histos_SKIM_MET/Histos_SKIM_MET.condor
@@ -12,8 +12,8 @@ BASE="jobs/${TAG}/submission/"
 # condor_submit "${BASE}"Counts_SKIM_TT_semiLep/Counts_SKIM_TT_semiLep.condor
 # condor_submit "${BASE}"Counts_SKIM_TT_fullyHad/Counts_SKIM_TT_fullyHad.condor
 
-# condor_submit "${BASE}"HaddHistoMET/HaddHistoMET.condor
-# condor_submit "${BASE}"HaddHistoTT/HaddHistoTT.condor
+#condor_submit "${BASE}"HaddHistoMET/HaddHistoMET.condor
+#condor_submit "${BASE}"HaddHistoTT/HaddHistoTT.condor
 
 # condor_submit "${BASE}"HaddCountsMET/HaddCountsMET.condor
 # condor_submit "${BASE}"HaddCountsTT/HaddCountsTT.condor
@@ -24,7 +24,7 @@ BASE="jobs/${TAG}/submission/"
 # condor_submit "${BASE}"HaddCountsAggMET/HaddCountsAggMET.condor
 # condor_submit "${BASE}"HaddCountsAggTT/HaddCountsAggTT.condor
 
-# condor_submit "${BASE}"EffAndScaleFactors/EfficienciesAndSF.condor
+# condor_submit "${BASE}"EffAndScaleFactors/EffAndScaleFactors.condor
 
 condor_submit "${BASE}"EffAndSFAgg/EffAndSFAgg.condor
 
