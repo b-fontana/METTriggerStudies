@@ -134,7 +134,7 @@ def build_histograms(indir, outdir, sample, fileName,
     triggercomb = {}
     for chn in channels:
         triggercomb[chn] = generate_trigger_combinations(chn, triggers)
-        
+
     # Define 1D histograms
     #  hRef: pass the reference trigger
     #  hTrig: pass the reference trigger + trigger under study
@@ -170,7 +170,7 @@ def build_histograms(indir, outdir, sample, fileName,
                             h2Trig[i][vname] = {}
                         h2Trig[i][vname][joinNTC(combtrig)] = {}
 
-    lf = LeafManager( fileName, t_in )
+    lf = LeafManager(fileName, t_in)
     
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
@@ -185,17 +185,15 @@ def build_histograms(indir, outdir, sample, fileName,
 
         #mcweight   = lf.get_leaf( "MC_weight" )
         pureweight = lf.get_leaf( "PUReweight" )
-        trigsf     = lf.get_leaf( "trigSF" )
         lumi       = lf.get_leaf( "lumi" )
         idandiso   = lf.get_leaf( "IdAndIsoSF_deep_pt")
         
         #if np.isnan(mcweight): mcweight=1
         if np.isnan(pureweight): pureweight=1
-        if np.isnan(trigsf): trigsf=1
         if np.isnan(lumi): lumi=1
         if np.isnan(idandiso): idandiso=1
 
-        evt_weight = pureweight*trigsf*lumi*idandiso
+        evt_weight = pureweight*lumi*idandiso
         if np.isnan(evt_weight) or isdata:
             evt_weight = 1
 
