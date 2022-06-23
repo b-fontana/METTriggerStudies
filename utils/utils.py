@@ -323,7 +323,7 @@ def pass_selection_cuts(leaf_manager, invert_mass_cut=True):
     Applies selection cut per TTree entry.
     Returns `True` only if all selection is passed.
     """
-    mhh = leaf_manager.get_leaf( 'HHKin_mass' )
+    mhh = leaf_manager.get_leaf('HHKin_mass')
     if mhh<1:
         return False
 

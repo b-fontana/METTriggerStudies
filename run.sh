@@ -1,5 +1,5 @@
 
-TAG="TestVirtualMachines"
+TAG="WednesdayTest"
 BASE="jobs/${TAG}/submission/"
 
 # condor_submit "${BASE}"Histos_SKIM_MET/Histos_SKIM_MET.condor
@@ -7,10 +7,10 @@ BASE="jobs/${TAG}/submission/"
 # condor_submit "${BASE}"Histos_SKIM_TT_semiLep/Histos_SKIM_TT_semiLep.condor
 # condor_submit "${BASE}"Histos_SKIM_TT_fullyHad/Histos_SKIM_TT_fullyHad.condor
 
-# condor_submit "${BASE}"Counts_SKIM_MET/Counts_SKIM_MET.condor
-# condor_submit "${BASE}"Counts_SKIM_TT_fullyLep/Counts_SKIM_TT_fullyLep.condor
-# condor_submit "${BASE}"Counts_SKIM_TT_semiLep/Counts_SKIM_TT_semiLep.condor
-# condor_submit "${BASE}"Counts_SKIM_TT_fullyHad/Counts_SKIM_TT_fullyHad.condor
+condor_submit "${BASE}"Counts_SKIM_MET/Counts_SKIM_MET.condor
+condor_submit "${BASE}"Counts_SKIM_TT_fullyLep/Counts_SKIM_TT_fullyLep.condor
+condor_submit "${BASE}"Counts_SKIM_TT_semiLep/Counts_SKIM_TT_semiLep.condor
+condor_submit "${BASE}"Counts_SKIM_TT_fullyHad/Counts_SKIM_TT_fullyHad.condor
 
 #condor_submit "${BASE}"HaddHistoMET/HaddHistoMET.condor
 #condor_submit "${BASE}"HaddHistoTT/HaddHistoTT.condor
@@ -26,7 +26,7 @@ BASE="jobs/${TAG}/submission/"
 
 # condor_submit "${BASE}"EffAndScaleFactors/EffAndScaleFactors.condor
 
-condor_submit "${BASE}"EffAndSFAgg/EffAndSFAgg.condor
+# condor_submit "${BASE}"EffAndSFAgg/EffAndSFAgg.condor
 
 # for sub in "${BASE}"Discriminator_*; do
 # 	condor_submit "${sub}/${sub}.condor"

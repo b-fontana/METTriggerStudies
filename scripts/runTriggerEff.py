@@ -227,19 +227,19 @@ def build_histograms(indir, outdir, sample, fileName,
 
         #logic AND to intersect all triggers in this combination
         pass_trigger_intersection = {}
-        for i in channels:
-            for tcomb in triggercomb[i]:
+        for chn in channels:
+            for tcomb in triggercomb[chn]:
                 pass_trigger_intersection[joinNTC(tcomb)] = functools.reduce(
                     lambda x,y: x and y,
                     [ pass_trigger[x] for x in tcomb ] )
 
-        for i in channels:
-            if is_channel_consistent(i, lf.get_leaf('pairType')):
+        for chn in channels:
+            if is_channel_consistent(chn, lf.get_leaf('pairType')):
 
                 # fill histograms for 1D efficiencies
                 for j in variables:
-                    binning1D = (nbins[j][i], binedges[j][i])
-                    hRef[i][j].Fill(fill_var[j][i], evt_weight)
+                    binning1D = (nbins[j][chn], binedges[j][chn])
+                    hRef[chn][j].Fill(fill_var[j][chn], evt_weight)
 
                     # The following is tricky, as we are considering, simultaneously:
                     # - all trigger intersection combinations
@@ -248,7 +248,7 @@ def build_histograms(indir, outdir, sample, fileName,
                     # Logic AND to intersect all cuts for this trigger combination
                     # Each element will contain one possible cut combination
                     # for the trigger combination 'tcomb' being considered
-                    for tcomb in triggercomb[i]:
+                    for tcomb in triggercomb[chn]:
                         cuts_combinations = list(it.product( *(pcuts1D[atrig][j].items()
                                                              for atrig in tcomb) ))
 
@@ -262,30 +262,24 @@ def build_histograms(indir, outdir, sample, fileName,
                                             )
                                         for elem in cuts_combinations }
 
-                        if args.debug:
-                            print(j)
-                            print(cuts_combinations)
-                            print(pcuts_inters)
-                            print()
-
                         for key,val in pcuts_inters.items():
-                            if key not in hTrig[i][j][joinNTC(tcomb)]:
+                            if key not in hTrig[chn][j][joinNTC(tcomb)]:
                                 base_str = get_hnames('Trig1D')(i,j,joinNTC(tcomb))
                                 htrig_name = rewrite_cut_string(base_str, key)
-                                hTrig[i][j][joinNTC(tcomb)][key] = TH1D(htrig_name, '', *binning1D)
+                                hTrig[chn][j][joinNTC(tcomb)][key] = TH1D(htrig_name, '', *binning1D)
 
                             if val and pass_trigger_intersection[joinNTC(tcomb)]:
-                                hTrig[i][j][joinNTC(tcomb)][key].Fill(fill_var[j][i], evt_weight)
+                                hTrig[chn][j][joinNTC(tcomb)][key].Fill(fill_var[j][chn], evt_weight)
 
                 # fill 2D efficiencies
                 for onetrig in triggers:
                     if onetrig in _2Dpairs.keys():
-                        combtrigs = tuple(x for x in triggercomb[i] if onetrig in x)
+                        combtrigs = tuple(x for x in triggercomb[chn] if onetrig in x)
 
                         for combtrig in combtrigs:
                             for j in _2Dpairs[onetrig]:
                                 vname = add_vnames(j[0],j[1])
-                                fill_info = ( fill_var[j[0]][i], fill_var[j[1]][i], evt_weight )
+                                fill_info = ( fill_var[j[0]][chn], fill_var[j[1]][chn], evt_weight )
                                 try:
                                     cuts_combinations = list(it.product(
                                         *(pcuts2D[atrig][vname].items() for atrig in combtrig) ))
@@ -308,44 +302,49 @@ def build_histograms(indir, outdir, sample, fileName,
                                                  for elem in cuts_combinations }
 
                                 if combtrig==combtrigs[0]: #avoid filling multiple times
-                                    h2Ref[i][vname].Fill(*fill_info)
+                                    h2Ref[chn][vname].Fill(*fill_info)
     
                                 for key,val in pcuts_inters.items():
-                                    if key not in h2Trig[i][vname][joinNTC(combtrig)]:
+                                    if key not in h2Trig[chn][vname][joinNTC(combtrig)]:
                                         base_str = get_hnames('Trig2D')(i, vname, joinNTC(combtrig))
                                         h2name = rewrite_cut_string(base_str, key)
-                                        binning2D = ( nbins[j[0]][i], binedges[j[0]][i],  
-                                                      nbins[j[1]][i], binedges[j[1]][i] ) 
-                                        h2Trig[i][vname][joinNTC(combtrig)][key] = TH2D(h2name, '',
+                                        binning2D = ( nbins[j[0]][chn], binedges[j[0]][chn],  
+                                                      nbins[j[1]][chn], binedges[j[1]][chn] ) 
+                                        h2Trig[chn][vname][joinNTC(combtrig)][key] = TH2D(h2name, '',
                                                                                         *binning2D)
                        
                                     if val and pass_trigger_intersection[joinNTC(combtrig)]:
-                                        h2Trig[i][vname][joinNTC(combtrig)][key].Fill(*fill_info)
+                                        h2Trig[chn][vname][joinNTC(combtrig)][key].Fill(*fill_info)
 
     file_id = ''.join( c for c in fileName[-10:] if c.isdigit() ) 
     outname = os.path.join(outdir, tprefix + sample + '_' + file_id + subtag + '.root')
     print('Saving file {} at {} '.format(file_id, outname) )
 
+    print()
+    print(hTrig['mutau']['dau1_pt']['IsoMu24']['NoCut'].GetEntries())
+    print(hTrig['mutau']['dau1_pt']['IsoMu27']['NoCut'].GetEntries())
+    print(hTrig['mutau']['dau1_pt']['IsoMu27']['NoCut'].GetEntries())    
+    
     f_out = TFile(outname, 'RECREATE')
     f_out.cd()
-    for i in channels:
+    for chn in channels:
         for j in variables:
-            hRef[i][j].Write( get_hnames('Ref1D')(i,j) )
-            for tcomb in triggercomb[i]:
-                for khist,vhist in hTrig[i][j][joinNTC(tcomb)].items():
+            hRef[chn][j].Write( get_hnames('Ref1D')(i,j) )
+            for tcomb in triggercomb[chn]:
+                for khist,vhist in hTrig[chn][j][joinNTC(tcomb)].items():
                     base_str = get_hnames('Trig1D')(i,j,joinNTC(tcomb))
                     writename = rewrite_cut_string(base_str, khist)
                     vhist.Write(writename)
 
-        for vname in h2Ref[i].keys():
-            h2Ref[i][vname].Write()
-            for tc in h2Trig[i][vname].keys():
-                for key in h2Trig[i][vname][tc].keys():
+        for vname in h2Ref[chn].keys():
+            h2Ref[chn][vname].Write()
+            for tc in h2Trig[chn][vname].keys():
+                for key in h2Trig[chn][vname][tc].keys():
                     #print('\t|\t'.join([i, vname, tc, key]))
                     #h2name = get_hnames('Trig2D')(i, vname, joinNTC(tcomb))
-                    base_str = h2Trig[i][vname][tc][key].GetName()
+                    base_str = h2Trig[chn][vname][tc][key].GetName()
                     writename = rewrite_cut_string(base_str, key)
-                    h2Trig[i][vname][tc][key].Write(writename)
+                    h2Trig[chn][vname][tc][key].Write(writename)
     f_out.Close()
     f_in.Close()
 
