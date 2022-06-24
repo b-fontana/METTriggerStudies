@@ -19,7 +19,6 @@ from utils.utils import (
     add_vnames,
     generate_trigger_combinations,
     get_hnames,
-    get_trigger_bit,
     is_channel_consistent,
     join_name_trigger_intersection as joinNTC,
     LeafManager,

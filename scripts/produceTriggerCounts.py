@@ -1,11 +1,3 @@
-
-"""
-Script which calculates the trigger scale factors.
-On production mode should run in the grid via scripts/submitTriggerEff.py. 
-Local run example:
-
-python3 /home/llr/cms/alves/CMSSW_12_2_0_pre1/src/METTriggerStudies/scripts/getTriggerCounts.py --indir /data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_2018_UL_data_test11Jan22/ --outdir /data_CMS/cms/alves/CountsTest/ --sample SKIM_MET2018 --file output_0.root --channels etau mutau tautau --subtag _default --isdata 1 --tprefix count_ --triggers IsoMuIsoTau EleIsoTau VBFTau VBFTauHPS METNoMu120 IsoTau50 IsoTau180 --debug
-"""
 import re
 import os
 import sys
@@ -22,18 +14,13 @@ from writeHTCondorProcessingFiles import runTrigger_outputs_sample
 
 from utils.utils import (
     generate_trigger_combinations,
-    get_histo_names,
-    get_trigger_bit,
     is_channel_consistent,
     join_name_trigger_intersection as joinNTC,
     LeafManager,
-    load_binning,
     pass_any_trigger,
     pass_selection_cuts,
-    rewrite_cut_string,
     parse_args,
     pass_trigger_bits,
-    print_configuration,
 )
 
 from luigi_conf import _triggers_custom
@@ -99,18 +86,19 @@ def getTriggerCounts(indir, outdir, sample, fileName,
                                             
     file_id = ''.join( c for c in fileName[-10:] if c.isdigit() )
 
-    #all_sample_files = runTrigger_outputs_sample(args, sample, 'root')
-
     proc_folder = os.path.dirname(fileName).split('/')[-1]
-    outName = os.path.join(outdir, tprefix + proc_folder + '_' + file_id + subtag + '.txt')
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    outName = os.path.join(outdir, tprefix + proc_folder + '_' + file_id + subtag + '.csv')
     print('Saving file {} at {} '.format(file_id, outName) )
 
-    sep = '\t'
+    sep = ','
     with open(outName, 'w') as f:
         for chn in channels:
             f.write( 'Total' + sep + chn + sep + str(int(counterRef[chn])) + '\n' )
         for chn in channels:
-            for tcomb in triggercomb:
+            for tcomb in triggercomb[chn]:
                 tcomb_str = joinNTC(tcomb)
                 basestr = tcomb_str + sep + chn + sep
                 f.write(basestr + str(int(counter[chn][tcomb_str])) + '\n' )

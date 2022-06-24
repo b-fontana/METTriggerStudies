@@ -79,8 +79,8 @@ def writeHTCondorProcessingFiles_outputs(args):
 
 @utils.set_pure_input_namespace
 def writeHTCondorProcessingFiles(args):
-    prog = utils.build_prog_path(args.localdir, ('runTriggerEff.py' if args.mode == 'histos'
-                                                 else 'runTriggerCounts.py') )
+    prog = utils.build_prog_path(args.localdir, ('produceTriggerHistograms.py' if args.mode == 'histos'
+                                                 else 'produceTriggerCounts.py') )
     jw = JobWriter()
 
     outs_job, outs_submit, outs_check, _all_processes = writeHTCondorProcessingFiles_outputs(args)

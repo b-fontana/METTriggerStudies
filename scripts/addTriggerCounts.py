@@ -21,7 +21,7 @@ def addTriggerCounts(args):
 
     inputs_join = []
     if args.aggr:
-        regex = re.compile( args.tprefix + '.+_Sum.*' + args.subtag + '.txt' )
+        regex = re.compile(args.tprefix + '.+_Sum.*' + args.subtag + '.csv')
         walk_path = args.indir
         for root, d, files in os.walk( walk_path, topdown=True ):
             if root[len(walk_path):].count(os.sep) < 1:
@@ -44,13 +44,14 @@ def addTriggerCounts(args):
                 if regex.match( os.path.basename(afile) ):
                     inputs_join.append( os.path.join(root, afile) )
             are_there_files(files, regex)
-            
+
+    sep = ','
     counter, counter_ref = ({} for _ in range(2))
     for afile in inputs_join:
         with open(afile, 'r') as f:
             for line in f.readlines():
                 if line.strip(): #ignore empty lines
-                    trig, chn, count = [x.replace('\n', '') for x in line.split('\t')]
+                    trig, chn, count = [x.replace('\n', '') for x in line.split(sep)]
 
                     if trig != 'Total':
                         counter.setdefault(chn, {})
@@ -60,7 +61,7 @@ def addTriggerCounts(args):
                         counter_ref.setdefault(chn, 0)
                         counter_ref[chn] += int(count)
 
-    with open( outputs_txt, 'w') as ftxt:
+    with open(outputs_txt, 'w') as ftxt:
         for ic,chn in enumerate(counter):
 
             trigs, vals = ([] for _ in range(2))
@@ -84,14 +85,10 @@ def addTriggerCounts(args):
             for i,j in zip(vals,trigs):
                 if i != 0: #do not print the padding
                     #remove the extra info after the line break
-                    ftxt.write(str(j) + '\t' + chn + '\t' + str(i) + '\n')
+                    ftxt.write(str(j) + sep + chn + sep + str(i) + '\n')
 
             ftxt.write('\n')
                     
-# Run with:
-# python3 /home/llr/cms/alves/CMSSW_12_2_0_pre1/src/METTriggerStudies/scripts/addTriggerCounts.py --indir /data_CMS/cms/alves/TriggerScaleFactors/CountsTest/Data --outdir /data_CMS/cms/alves/TriggerScaleFactors/CountsTest/Data --subtag _default --tprefix counts_ --dataset_name TT --outfile_counts /data_CMS/cms/alves/TriggerScaleFactors/CountsTest/Data/counts_TT_Sum_default.txt --infile_counts /data_CMS/cms/alves/TriggerScaleFactors/CountsTest/Data/counts_TT_SKIM_TT_fullyHad_Sum_default.txt /data_CMS/cms/alves/TriggerScaleFactors/CountsTest/Data/counts_TT_SKIM_TT_fullyLep_Sum_default.txt /data_CMS/cms/alves/TriggerScaleFactors/CountsTest/Data/counts_TT_SKIM_TT_semiLep_Sum_default.txt --aggregation_step 1
-
-# -- Parse input arguments
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line parser')
 

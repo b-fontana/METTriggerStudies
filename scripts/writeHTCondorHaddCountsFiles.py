@@ -10,13 +10,13 @@ def runHaddCounts_outputs(args):
     # add the merge of all the samples first
     _tbase1, _tbase2 = utils.hadd_subpaths(args)
     tbase = _tbase1 + _tbase2
-    t = os.path.join( args.indir, tbase + '.txt' )
+    t = os.path.join( args.indir, tbase + '.csv' )
     targets.append( t )
 
     # add individual sample merges
     for smpl in args.samples:
         tbase = _tbase1 + '_' + smpl + _tbase2
-        t = os.path.join( args.indir, tbase + '.txt' )
+        t = os.path.join( args.indir, tbase + '.csv' )
         targets.append( t )
         
     return targets
@@ -72,7 +72,7 @@ def writeHTCondorHaddCountsFiles(args):
         if out1 == outs_job[0]:
             qvars = ('myoutput', 'sample')
             for t,smpl in zip(targets[1:], args.samples):
-                inputs = os.path.join(args.indir, smpl, args.tprefix + '*' + args.subtag + '.txt')
+                inputs = os.path.join(args.indir, smpl, args.tprefix + '*' + args.subtag + '.csv')
                 inputs_join.append(t)
                 qlines.append('  {}, {}'.format(t,smpl))
 
