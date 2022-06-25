@@ -48,6 +48,8 @@ def discriminatorExecutor(args, chn):
     with open(out, 'w') as f:
         json.dump(ordered_vars, f)
 
+    print('File {} produced.'.format(out))
+
 
 parser = argparse.ArgumentParser(description='Choose the most significant variables to draw the efficiencies.')
 

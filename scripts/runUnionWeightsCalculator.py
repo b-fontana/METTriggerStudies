@@ -18,7 +18,6 @@ gROOT.SetBatch(True)
 from utils.utils import (
     find_bin,
     generate_trigger_combinations,
-    get_histo_names,
     get_root_input_files,
     is_channel_consistent,
     join_name_trigger_intersection as joinNTC,
@@ -28,13 +27,9 @@ from utils.utils import (
     pass_any_trigger,
     pass_selection_cuts,
     pass_trigger_bits,
-    print_configuration,
 )
 
-from luigi_conf import (
-    _extensions,
-    _variables_unionweights,
-)
+from luigi_conf import _variables_unionweights
 
 def eff_extractor(args, chn, effvars, nbins):
     """
@@ -44,16 +39,17 @@ def eff_extractor(args, chn, effvars, nbins):
     efficiencies_data, efficiencies_data_ehigh, efficiencies_data_elow = ({} for _ in range(3))
     efficiencies_mc, efficiencies_mc_ehigh, efficiencies_mc_elow = ({} for _ in range(3)) 
     
-    triggercomb = generate_trigger_combinations(chn, triggers)
+    triggercomb = generate_trigger_combinations(chn, args.triggers)
         
     for tcomb in triggercomb:
         tcstr = joinNTC(tcomb)
         comb_vars = effvars[tcstr][0]
+
         assert len(comb_vars)==4
 
         for var in comb_vars:        
-            in_base_name = ( args.inprefix + args.data_name + '_' + args.mc_name + '_' +
-                             chn + '_' + var + '_' + tcstr + args.subtag + '_CUTS*.root' )
+            in_base_name = ( args.data_name + '_' + args.mc_name + '_' +
+                             chn + '_' + var + '_TRG_' + tcstr + '_CUTS*' + args.subtag + '.root' )
             in_name = os.path.join(args.indir_eff, chn, var, in_base_name)
             glob_name = glob.glob(in_name)
 
@@ -84,17 +80,17 @@ def eff_extractor(args, chn, effvars, nbins):
                     # print(nbins[var][chn], obj.GetN(), var, chn)
                     
                     #assert nbins[var][chn] == obj.GetN()
-                    if obj.GetName() == 'Data':
+                    if obj.GetName() == 'Data1D':
                         for datapoint in range(obj.GetN()):
                             efficiencies_data[tcstr][var].append( obj.GetPointY(datapoint) )
                             efficiencies_data_elow[tcstr][var].append( obj.GetErrorYlow(datapoint) )
                             efficiencies_data_ehigh[tcstr][var].append( obj.GetErrorYhigh(datapoint) )               
-                    elif obj.GetName() == 'MC':
+                    elif obj.GetName() == 'MC1D':
                         for datapoint in range(obj.GetN()):
                             efficiencies_mc[tcstr][var].append( obj.GetPointY(datapoint) )
                             efficiencies_mc_elow[tcstr][var].append( obj.GetErrorYlow(datapoint) )
                             efficiencies_mc_ehigh[tcstr][var].append( obj.GetErrorYhigh(datapoint) )
-                    elif obj.GetName() == 'ScaleFactors':
+                    elif obj.GetName() == 'SF1D':
                         pass
                     else:
                         raise ValueError('[runUnionWeightsCalculator.py] It must be either Data or MC. It was {}.'.format(obj.GetName()))
@@ -119,6 +115,7 @@ def prob_calculator(efficiencies, effvars, leaf_manager, channel, closure_single
     prob_data, prob_mc = ([0 for _ in range(nweight_vars)] for _ in range(2))
 
     triggercomb = generate_trigger_combinations(channel, closure_single_trigger)
+
     for tcomb in triggercomb:
         joincomb = joinNTC(tcomb)
 
@@ -163,7 +160,7 @@ def runUnionWeightsCalculator_outputs(args, proc):
         outputs.append( os.path.join(folder, basename) )
     return outputs
 
-def runUnionWeightsCalculator(args):
+def runUnionWeightsCalculator(args, single_trigger_closure=False):
     output = runUnionWeightsCalculator_outputs(args, args.sample)
     number = re.search('(_[0-9]{1,5}).root', args.file_name)
     r = re.compile('.*/' + args.outprefix + '_' + args.sample + number.group(1) + args.subtag + '\.hdf5')
@@ -221,6 +218,7 @@ def runUnionWeightsCalculator(args):
     # event loop; building scale factor 2D maps
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
+
         if not pass_selection_cuts(lfm):
             continue
 
@@ -228,43 +226,53 @@ def runUnionWeightsCalculator(args):
         run = lfm.get_leaf('RunNumber')
         if not pass_any_trigger(args.triggers, trig_bit, run, isdata=False):
             continue
+
         for chn in args.channels:
             if not is_channel_consistent(chn, lfm.get_leaf('pairType')):
                 continue
+            triggers_for_master_formula = args.closure_single_trigger if single_trigger_closure else args.triggers
             prob_data, prob_mc = prob_calculator(efficiencies[chn],
                                                  effvars[chn],
                                                  lfm,
                                                  chn,
-                                                 args.closure_single_trigger, #args.triggers
+                                                 triggers_for_master_formula,
                                                  binedges)
 
             prob_ratio = []
-            for pd,pm in zip(prob_data,prob_mc): #loop over weight variables: dau1_pt, dau1_eta, dau2_pt, dau2_eta
-                 if pm==0.:
-                     prob_ratio.append( 0. )
-                     print('WARNING: Appending 0 for channel {}.'.format(chn))
-                 else:
-                     prob_ratio.append( pd/pm )
+            # loop over weight variables: dau1_pt, dau1_eta, dau2_pt, dau2_eta
+            for ivar, (pd,pm) in enumerate(zip(prob_data,prob_mc)):
+                if ivar == 0:
+                    print('First discriminator variable, Channel={}, ProbData={}, ProbMC={}'.format(chn,pd, pm))
+                if pm==0.:
+                    prob_ratio.append( 0. )
+                    print('WARNING: Appending 0 for channel {}.'.format(chn))
+                else:
+                    prob_ratio.append( pd/pm )
             assert len(effvars[chn][generate_trigger_combinations(chn, args.triggers)[0][0]][0]) == len(prob_ratio)
-            
-            for var in _variables_unionweights:
-                val = lfm.get_leaf(var)
-                binid = find_bin(binedges[var][chn], val, var)
-                for iw,weightvar in enumerate(effvars[chn][generate_trigger_combinations(chn, args.triggers)[0][0]][0]): #any trigger works for the constant list
-                    ref_prob_ratios[chn][var][weightvar][str(binid-1)].append(prob_ratio[iw])
-                    for trig in args.triggers:
-                        ptb = pass_trigger_bits(trig, trig_bit, run, isdata=False)
-                        if ptb:
-                            prob_ratios[chn][var][weightvar][trig][str(binid-1)].append(prob_ratio[iw])
+            print() #new line
 
-    for chn in args.channels:
-        for var in _variables_unionweights:
-            for weightvar in effvars[chn][generate_trigger_combinations(chn, args.triggers)[0][0]][0]: #any trigger works for the constant list
-                for trig in args.triggers:
-                    for ibin in range(nbins[var][chn]):
-                        outdata[chn][var][weightvar][trig][str(ibin)]['prob_ratios'] = prob_ratios[chn][var][weightvar][trig][str(ibin)]
-                        if trig==args.triggers[0]:
-                            outdata[chn][var][weightvar][str(ibin)]['ref_prob_ratios'] = ref_prob_ratios[chn][var][weightvar][str(ibin)]
+            if single_trigger_closure:
+                for var in _variables_unionweights:
+                    val = lfm.get_leaf(var)
+                    binid = find_bin(binedges[var][chn], val, var)
+                    for iw,weightvar in enumerate(effvars[chn][generate_trigger_combinations(chn, args.triggers)[0][0]][0]): #any trigger works for the constant list
+                        ref_prob_ratios[chn][var][weightvar][str(binid-1)].append(prob_ratio[iw])
+                        for trig in args.triggers:
+                            ptb = pass_trigger_bits(trig, trig_bit, run, isdata=False)
+                            if ptb:
+                                prob_ratios[chn][var][weightvar][trig][str(binid-1)].append(prob_ratio[iw])
+
+    # no output if the closure will not be calculated
+    if single_trigger_closure:
+        for chn in args.channels:
+            for var in _variables_unionweights:
+                for weightvar in effvars[chn][generate_trigger_combinations(chn, args.triggers)[0][0]][0]: #any trigger works for the constant list
+                    for trig in args.triggers:
+                        for ibin in range(nbins[var][chn]):
+                            outdata[chn][var][weightvar][trig][str(ibin)]['prob_ratios'] = prob_ratios[chn][var][weightvar][trig][str(ibin)]
+                            if trig==args.triggers[0]:
+                                outdata[chn][var][weightvar][str(ibin)]['ref_prob_ratios'] = ref_prob_ratios[chn][var][weightvar][str(ibin)]
+
     outdata.attrs['doc'] = ( 'Probability ratios (data/MC) and counts per bin for all'
                              ' channels, variables and triggers' )
                 
@@ -281,7 +289,6 @@ if __name__ == '__main__':
     parser.add_argument('--sample', dest='sample', required=True, help='Process name as in SKIM directory')
     parser.add_argument('--file_name', dest='file_name', required=True, help='ID of input root file')
     parser.add_argument('--outdir', help='Output directory for ROOT files', required=True)
-    parser.add_argument('--inprefix', dest='inprefix', required=True, help='In histos prefix.')
     parser.add_argument('--outprefix', dest='outprefix', required=True, help='Out histos prefix.')
     parser.add_argument('--data_name', dest='data_name', required=True, help='Data sample name')
     parser.add_argument('--mc_name', dest='mc_name', required=True, help='MC sample name')

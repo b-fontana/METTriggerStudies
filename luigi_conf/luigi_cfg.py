@@ -194,7 +194,7 @@ class cfg(luigi.Config):
                       'subtag': subtag,
                       'intersection_str': intersection_str,
                       'nocut_dummy_str': nocut_dummy_str,
-                      'debug': FLAGS.debug_workflow
+                      'debug': FLAGS.debug_workflow,
                      }
 
     ####
@@ -211,7 +211,7 @@ class cfg(luigi.Config):
     ####
     haddcounts_params = luigi.DictParameter(
         default={ 'indir': data_storage,
-                  'outdir': data_storage,
+                  'outdir': out_storage,
                   'localdir': local_folder,
                   'tag': tag,
                   'subtag': subtag } )
@@ -254,50 +254,6 @@ class cfg(luigi.Config):
                   'debug': FLAGS.debug_workflow,} )
 
     ####
-    #### drawDistributions
-    ####
-    # _selected_mc_processes =_mc_processes[FLAGS.mc_process]
-    # _selected_data = _data[FLAGS.data]
-    
-    # drawdist_params = luigi.DictParameter(
-    #     default={ 'data_name': FLAGS.data,
-    #               'mc_name': FLAGS.mc_process,
-    #               'data': _selected_data,
-    #               'mc_processes': _selected_mc_processes,
-    #               'draw_independent_MCs': False,
-    #               'indir': data_storage,
-    #               'outdir': out_storage,
-    #               'triggers': FLAGS.triggers,
-    #               'channels': FLAGS.channels,
-    #               'variables': FLAGS.variables_for_distributions,
-    #               'binedges_filename': binedges_filename,
-    #               'tag': tag,
-    #               'subtag': subtag,
-    #               'debug': FLAGS.debug_workflow,} )
-
-
-    ####
-    #### drawCounts
-    ####
-    # _selected_mc_processes = _mc_processes[FLAGS.mc_process]
-    # _selected_data = _data[FLAGS.data]
-    
-    # drawcounts_params = luigi.DictParameter(
-    #     default={ 'data_name': FLAGS.data,
-    #               'mc_name': FLAGS.mc_process,
-    #               'data': _selected_data,
-    #               'mc_processes': _selected_mc_processes,
-    #               'indir': data_storage,
-    #               'outdir': out_storage,
-    #               'triggers': FLAGS.triggers,
-    #               'channels': FLAGS.channels,
-    #               'variables': FLAGS.variables_for_distributions,
-    #               'binedges_filename': binedges_filename,
-    #               'tag': tag,
-    #               'subtag': subtag,
-    #               'debug': FLAGS.debug_workflow,} )
-
-    ####
     #### variableImportanceDiscriminator
     ####
     discriminator_params = luigi.DictParameter(
@@ -323,7 +279,6 @@ class cfg(luigi.Config):
                   'indir_json': data_storage,
                   'indir_eff': out_storage,
                   'outdir': data_storage,
-                  'inprefix': _sf_prefix,
                   'outprefix': _closure_prefix,
                   'data_name': FLAGS.data,
                   'mc_name': FLAGS.mc_process,
