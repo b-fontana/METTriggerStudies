@@ -111,7 +111,7 @@ def passes_cuts(trig, variables, leavesmanager, debug):
         res = {args.nocut_dummy_str: True}
     return res
     
-def build_histograms(indir, outdir, sample, fileName,
+def build_histograms(infile, outdir, sample,
                      channels, variables, triggers,
                      subtag, tprefix, isdata, binedges_fname):
     # -- Check if outdir exists, if not create it
@@ -121,10 +121,10 @@ def build_histograms(indir, outdir, sample, fileName,
         os.makedirs( os.path.join(outdir, sample) )
     outdir = os.path.join(outdir, sample)
 
-    if not os.path.exists(fileName):
-        raise ValueError('[' + os.path.basename(__file__) + '] {} does not exist.'.format(fileName))
+    if not os.path.exists(infile):
+        raise ValueError('[' + os.path.basename(__file__) + '] {} does not exist.'.format(infile))
 
-    f_in = TFile( fileName )
+    f_in = TFile(infile)
     t_in = f_in.Get('HTauTauTree')
 
     binedges, nbins = load_binning( afile=binedges_fname, key=subtag,
@@ -169,7 +169,7 @@ def build_histograms(indir, outdir, sample, fileName,
                             h2Trig[i][vname] = {}
                         h2Trig[i][vname][joinNTC(combtrig)] = {}
 
-    lf = LeafManager(fileName, t_in)
+    lf = LeafManager(infile, t_in)
     
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
@@ -315,7 +315,7 @@ def build_histograms(indir, outdir, sample, fileName,
                                     if val and pass_trigger_intersection[joinNTC(combtrig)]:
                                         h2Trig[chn][vname][joinNTC(combtrig)][key].Fill(*fill_info)
 
-    file_id = ''.join( c for c in fileName[-10:] if c.isdigit() ) 
+    file_id = ''.join( c for c in infile[-10:] if c.isdigit() ) 
     outname = os.path.join(outdir, tprefix + sample + '_' + file_id + subtag + '.root')
     print('Saving file {} at {} '.format(file_id, outname) )
 
@@ -351,17 +351,20 @@ def build_histograms(indir, outdir, sample, fileName,
 parser = argparse.ArgumentParser(description='Command line parser')
 
 parser.add_argument('--binedges_fname', dest='binedges_fname', required=True, help='where the bin edges are stored')
-parser.add_argument('--indir',       dest='indir',       required=True, help='SKIM directory')
-parser.add_argument('--outdir',      dest='outdir',      required=True, help='output directory')
-parser.add_argument('--sample',      dest='sample',      required=True, help='Process name as in SKIM directory')
-parser.add_argument('--isdata',      dest='isdata',      required=True, help='Whether it is data or MC', type=int)
-parser.add_argument('--file',        dest='fileName',    required=True, help='Full path of ROOT input file')
-parser.add_argument('--subtag',      dest='subtag',      required=True,
+parser.add_argument('--outdir', dest='outdir', required=True,
+                    help='output directory')
+parser.add_argument('--sample', dest='sample', required=True,
+                    help='Process name as in SKIM directory')
+parser.add_argument('--isdata', dest='isdata', required=True, type=int,
+                    help='Whether it is data or MC')
+parser.add_argument('--file', dest='infile', required=True,
+                    help='Full path of ROOT input file')
+parser.add_argument('--subtag', dest='subtag', required=True,
                     help='Additional (sub)tag to differentiate similar runs within the same tag.')
-parser.add_argument('--tprefix',     dest='tprefix',     required=True, help='Targets name prefix.')
-parser.add_argument('--channels',    dest='channels',    required=True, nargs='+', type=str,  
+parser.add_argument('--tprefix', dest='tprefix', required=True, help='Targets name prefix.')
+parser.add_argument('--channels', dest='channels', required=True, nargs='+', type=str,  
                     help='Select the channels over which the workflow will be run.' )
-parser.add_argument('--triggers',    dest='triggers',    required=True, nargs='+', type=str,
+parser.add_argument('--triggers', dest='triggers', required=True, nargs='+', type=str,
                     help='Select the triggers over which the workflow will be run.' )
 parser.add_argument('--variables',   dest='variables',   required=True, nargs='+', type=str,
                     help='Select the variables over which the workflow will be run.' )
@@ -372,6 +375,6 @@ parser.add_argument('--nocut_dummy_str', dest='nocut_dummy_str', required=True,
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = parse_args(parser)
 
-build_histograms(args.indir, args.outdir, args.sample, args.fileName,
+build_histograms(args.outdir, args.sample, args.fileName,
                  args.channels, args.variables, args.triggers,
                  args.subtag, args.tprefix, args.isdata, args.binedges_fname)

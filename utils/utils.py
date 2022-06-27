@@ -318,25 +318,50 @@ def load_binning(afile, key, variables, channels):
 
     return binedges, nbins
 
-def pass_selection_cuts(leaf_manager, invert_mass_cut=True):
+def pass_selection_cuts(leaf_manager, iso_cuts=dict(),
+                        lepton_veto=True, bjets_cut=True, invert_mass_cut=True):
     """
     Applies selection cut per TTree entry.
-    Returns `True` only if all selection is passed.
+    Returns `True` only if all selections cuts pass.
     """
     mhh = leaf_manager.get_leaf('HHKin_mass')
     if mhh<1:
         return False
 
-    pairtype = leaf_manager.get_leaf( 'pairType' )
-    dau1_eleiso = leaf_manager.get_leaf( 'dau1_eleMVAiso'    )
-    dau1_muiso  = leaf_manager.get_leaf( 'dau1_iso'          )
-    dau1_tauiso = leaf_manager.get_leaf( 'dau1_deepTauVsJet' )
-    dau2_tauiso = leaf_manager.get_leaf( 'dau2_deepTauVsJet' )
+    pairtype = leaf_manager.get_leaf('pairType')
+    dau1_eleiso = leaf_manager.get_leaf('dau1_eleMVAiso')
+    dau1_muiso  = leaf_manager.get_leaf('dau1_iso')
+    dau1_tauiso = leaf_manager.get_leaf('dau1_deepTauVsJet')
+    dau2_tauiso = leaf_manager.get_leaf('dau2_deepTauVsJet')
+
+    # third lepton veto
+    nleps = leaf_manager.get_leaf('nleps')
+    if nleps > 0 and lepton_veto:
+        continue
+
+    # require at least two b jet candidates
+    nbjetscand = leaf_manager.get_leaf('nbjetscand')
+    if nbjetscand <= 1 and bjet_cuts:
+        continue
 
     # Loose / Medium / Tight
-    bool0 = pairtype==0 and (dau1_muiso>=0.15 or dau2_tauiso<5)
-    bool1 = pairtype==1 and (dau1_eleiso!=1 or dau2_tauiso<5)
-    bool2 = pairtype==2 and (dau1_tauiso<5 or dau2_tauiso<5)
+    iso_allowed = { 'dau1_ele': 1., 'dau1_mu': 0.15,
+                    'dau1_tau', 5., 'dau2_tau': 5. }
+    if any(x not in iso_allowed for x in iso_cuts.keys()):
+        mes = 'At least one of the keys is not allowed. '
+        mes += 'Keys introduced: {}.'.format(iso_cuts.keys())
+        raise ValueError(mes)
+
+    # setting to the defaults in case the user did not specify the values
+    for k, v in iso_allowed:
+        if k not in iso_cuts: iso_cuts[k] = v
+        
+    bool0 = pairtype==0 and (dau1_muiso >= iso_cuts['dau1_mu'] or
+                             dau2_tauiso < iso_cuts['dau2_tau'])
+    bool1 = pairtype==1 and (dau1_eleiso != iso_cuts['dau1_ele'] or
+                             dau2_tauiso < iso_cuts['dau2_tau'])
+    bool2 = pairtype==2 and (dau1_tauiso < iso_cuts['dau1_tau'] or
+                             dau2_tauiso < iso_cuts['dau2_tau'])
     if bool0 or bool1 or bool2:
         return False
 
@@ -347,13 +372,6 @@ def pass_selection_cuts(leaf_manager, invert_mass_cut=True):
     mcut = ( (svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
              (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) <  1.0
     if mcut and invert_mass_cut: # inverted elliptical mass cut (-> ttCR)
-        return False
-
-    #pass_met = leaf_manager.get_leaf('isMETtrigger')
-    #pass_tau = leaf_manager.get_leaf('isSingleTautrigger')
-    #pass_taumet = leaf_manager.get_leaf('isTauMETtrigger')
-    pass_lep = leaf_manager.get_leaf('isLeptrigger')
-    if not pass_lep:
         return False
 
     return True
