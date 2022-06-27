@@ -230,7 +230,9 @@ def runUnionWeightsCalculator(args, single_trigger_closure=False):
         for chn in args.channels:
             if not is_channel_consistent(chn, lfm.get_leaf('pairType')):
                 continue
-            triggers_for_master_formula = args.closure_single_trigger if single_trigger_closure else args.triggers
+            #triggers_for_master_formula = args.closure_single_trigger if single_trigger_closure else args.triggers
+            triggers_for_master_formula = ['IsoMu24', 'METNoMu120']
+
             prob_data, prob_mc = prob_calculator(efficiencies[chn],
                                                  effvars[chn],
                                                  lfm,
