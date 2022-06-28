@@ -13,6 +13,7 @@ The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KL
 
 ** Tasks
 
+*** Efficiencies Chain [Main]
 1. Binning (manual or equal width with upper 5% quantile removal)
    - is the only job which runs locally (/i.e./, not on HTCondor)
 2. *Histos_SKIM_**: filling efficiencies numerator and denominator histograms
@@ -23,6 +24,11 @@ The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KL
 7. *Discriminator_**: choose the variables to be used to calculate the final union efficiency
 8. *UnionWeightsCalculator_SKIM_**: calculate the union efficiencies (following the =inclusion method= [1])
 9. *Closure*: perform a simple closure (complete closure is done outside this framework in the HH \rightarrow bb\tau \tau ~C++~ analysis code)
+
+*** Counts Chain
+1. *Counts_SKIM_**: count the number of events that pass a selection identical to the one of the events in the "Efficiencies Chain"
+2. *HaddCounts**: add counters per data type (Data and all MCs)
+3. *HaddCountsAgg**: add counters for Data and MC
 
 *** Visualize DAG
 
