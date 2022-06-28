@@ -678,15 +678,10 @@ def _get_canvas_name(prefix, proc, chn, var, trig, data_name, subtag):
     n += _placeholder_cuts + subtag
     return n
 
-def runEffSF_outputs(outdir,
-                     mc_processes,
-                     mc_name, data_name,
-                     trigger_combination,
-                     channels, variables,
-                     subtag,
-                     draw_independent_MCs):
+def runEffSF_outputs(outdir, mc_processes, data_name,
+                     trigger_combination, channels, variables, subtag):
     outputs = [[] for _ in range(len(_extensions))]
-    processes = mc_processes if draw_independent_MCs else [mc_name]
+    processes = list(set(mc_keys))
   
     for proc in processes:
         for ch in channels:
@@ -705,15 +700,9 @@ def runEffSF_outputs(outdir,
     #join all outputs in the same list
     return sum(outputs, []), _extensions, processes
 
-def runEffSF2D_outs(outdir,
-                    proc,
-                    data_name,
-                    trigger_combination,
-                    channel,
-                    subtag,
-                    intersection_str,
-                    draw_independent_MCs,
-                    debug):
+def runEffSF2D_outs(outdir, proc, data_name,
+                    trigger_combination, channel, subtag,
+                    intersection_str, draw_independent_MCs, debug):
     """
     This output function is not ready to be used in the luigi framework.
     It returns the outputs corresponding to a single trigger combination.
@@ -763,23 +752,12 @@ def runEffSF2D_outs(outdir,
     return outputs
 
 
-def runEffSF(indir, outdir,
-             mc_keys, mc_vals,
-             data_keys, data_vals,
-             trigger_combination,
-             channels, variables,
-             subtag,
-             draw_independent_MCs,
-             tprefix,
-             intersection_str,
-             debug):
-    CHANGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    mc_processes replaced by mc_vals
-    data_name by data_keys
+def runEffSF(indir, outdir, mc_keys, mc_vals, data_keys, data_vals,
+             trigger_combination, channels, variables, subtag,
+             draw_independent_MCs, tprefix, intersection_str, debug):
     
     outs1D, extensions, processes = runEffSF_outputs(outdir,
-                                                     mc_processes, mc_name,
-                                                     data_name,
+                                                     mc_vals, mc_keys, data_keys,
                                                      trigger_combination,
                                                      channels, variables,
                                                      subtag,

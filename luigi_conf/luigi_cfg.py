@@ -40,7 +40,7 @@ parser.add_argument(
     help='Select the data over which the workflow will be run.'
 )
 parser.add_argument(
-    '--mc_process',
+    '--mc_processes',
     type=str,
     nargs='+',
     required=True,
@@ -141,16 +141,19 @@ class cfg(luigi.Config):
         for k,v in d.items():
             for x in v:
                 keys.append(k)
-                vals.append(v)
+            vals.extend(v)
         return keys, vals
         
-    user_data = {k,v for k,v in _data         if k in FLAGS.data}
-    user_mc   = {k,v for k,v in _mc_processes if k in FLAGS.mc_process}
+    user_data = {k:v for k,v in _data.items() if k in FLAGS.data}
+    user_mc   = {k:v for k,v in _mc_processes.items() if k in FLAGS.mc_processes}
     data_keys, data_vals = flatten_nested_dict(user_data)
     assert len(data_keys)==len(data_vals)
     mc_keys, mc_vals = flatten_nested_dict(user_mc)
     assert len(mc_keys)==len(mc_vals)
 
+    data_name = 'Data_' + '_'.join(FLAGS.data)
+    mc_name   = 'MC_'   + '_'.join(FLAGS.mc_processes)
+    
     _storage = os.path.join(data_base, user, base_name, tag)
     data_storage = os.path.join(_storage, 'Data')
     out_storage = os.path.join(_storage, 'Outputs')
@@ -181,157 +184,155 @@ class cfg(luigi.Config):
     #### defineBinning
     ####   
     bins_params = luigi.DictParameter(
-        default={ 'nbins': FLAGS.nbins,
-                  'binedges_filename': binedges_filename,
-                  'indir': _inputs,
-                  'outdir': data_storage,
-                  'data_vals': data_vals,
-                  'variables': variables_join,
-                  'channels': FLAGS.channels,
-                  'tag': tag,
-                  'subtag': subtag,
-                  'debug': FLAGS.debug_workflow} )
+        default={ 'nbins'             : FLAGS.nbins,
+                  'binedges_filename' : binedges_filename,
+                  'indir'             : _inputs,
+                  'outdir'            : data_storage,
+                  'data_vals'         : data_vals,
+                  'variables'         : variables_join,
+                  'channels'          : FLAGS.channels,
+                  'tag'               : tag,
+                  'subtag'            : subtag,
+                  'debug'             : FLAGS.debug_workflow} )
 
     ####
     #### writeHTCondorDAGFiles
     ####
-    write_params = { 'data_name': FLAGS.data,
-                     'localdir': local_folder,
-                     'tag': tag }
+    write_params = { 'data_name' : data_name,
+                     'localdir'  : local_folder,
+                     'tag'       : tag }
     
     ####
     #### produceTriggerHistograms
     ####
-    histos_params = { 'binedges_filename': binedges_filename,
-                      'indir': _inputs,
-                      'outdir': data_storage,
-                      'localdir': local_folder,
-                      'data_keys': data_keys,
-                      'data_vals': data_vals,
-                      'mc_keys': mc_keys,
-                      'mc_vals': mc_vals,
-                      'triggers': FLAGS.triggers,
-                      'channels': FLAGS.channels,
-                      'variables': variables_join,
-                      'tag': tag,
-                      'subtag': subtag,
-                      'intersection_str': intersection_str,
-                      'nocut_dummy_str': nocut_dummy_str,
-                      'debug': FLAGS.debug_workflow,
+    histos_params = { 'binedges_filename' : binedges_filename,
+                      'indir'             : _inputs,
+                      'outdir'            : data_storage,
+                      'localdir'          : local_folder,
+                      'data_keys'         : data_keys,
+                      'data_vals'         : data_vals,
+                      'mc_keys'           : mc_keys,
+                      'mc_vals'           : mc_vals,
+                      'triggers'          : FLAGS.triggers,
+                      'channels'          : FLAGS.channels,
+                      'variables'         : variables_join,
+                      'tag'               : tag,
+                      'subtag'            : subtag,
+                      'intersection_str'  : intersection_str,
+                      'nocut_dummy_str'   : nocut_dummy_str,
+                      'debug'             : FLAGS.debug_workflow,
                      }
 
     ####
     #### haddHisto
     ####
     haddhisto_params = luigi.DictParameter(
-        default={ 'indir': data_storage,
-                  'localdir': local_folder,
-                  'tag': tag,
-                  'subtag': subtag } )
+        default={ 'indir'    : data_storage,
+                  'localdir' : local_folder,
+                  'tag'      : tag,
+                  'subtag'   : subtag } )
 
     ####
     #### haddCounts
     ####
     haddcounts_params = luigi.DictParameter(
-        default={ 'indir': data_storage,
-                  'outdir': out_storage,
-                  'localdir': local_folder,
-                  'tag': tag,
-                  'subtag': subtag } )
+        default={ 'indir'    : data_storage,
+                  'outdir'   : out_storage,
+                  'localdir' : local_folder,
+                  'tag'      : tag,
+                  'subtag'   : subtag } )
 
     ####
     #### drawTriggerScaleFactors
     ####
     sf_params = luigi.DictParameter(
-        default={ 'data_keys': data_keys,
-                  'mc_keys': mc_keys,
-                  'data_vals': data_vals,
-                  'mc_vals': mc_vals,
-                  'draw_independent_MCs': False,
-                  'indir': data_storage,
-                  'outdir': out_storage,
-                  'localdir': local_folder,
-                  'triggers': FLAGS.triggers,
-                  'channels': FLAGS.channels,
-                  'variables': FLAGS.variables_for_efficiencies,
-                  'binedges_filename': binedges_filename,
-                  'tag': tag,
-                  'subtag': subtag,
-                  'canvas_prefix': 'Canvas1D_',
-                  'intersection_str': intersection_str,
-                  'nocut_dummy_str': nocut_dummy_str,
-                  'debug': FLAGS.debug_workflow,} )
+        default={ 'data_keys'            : data_keys,
+                  'mc_keys'              : mc_keys,
+                  'data_vals'            : data_vals,
+                  'mc_vals'              : mc_vals,
+                  'draw_independent_MCs' : False,
+                  'indir'                : data_storage,
+                  'outdir'               : out_storage,
+                  'localdir'             : local_folder,
+                  'triggers'             : FLAGS.triggers,
+                  'channels'             : FLAGS.channels,
+                  'variables'            : FLAGS.variables_for_efficiencies,
+                  'binedges_filename'    : binedges_filename,
+                  'tag'                  : tag,
+                  'subtag'               : subtag,
+                  'canvas_prefix'        : 'Canvas1D_',
+                  'intersection_str'     : intersection_str,
+                  'nocut_dummy_str'      : nocut_dummy_str,
+                  'debug'                : FLAGS.debug_workflow,} )
 
     sfagg_params = luigi.DictParameter(
-        default={ 'indir': out_storage,
-                  'outdir': out_storage,
-                  'localdir': local_folder,
-                  'channels': FLAGS.channels,
-                  'variables': FLAGS.variables_for_efficiencies,
-                  'tag': tag,
-                  'subtag': subtag,
-                  'file_prefix': _sf_prefix,
-                  'debug': FLAGS.debug_workflow,} )
+        default={ 'indir'       : out_storage,
+                  'outdir'      : out_storage,
+                  'localdir'    : local_folder,
+                  'channels'    : FLAGS.channels,
+                  'variables'   : FLAGS.variables_for_efficiencies,
+                  'tag'         : tag,
+                  'subtag'      : subtag,
+                  'file_prefix' : _sf_prefix,
+                  'debug'       : FLAGS.debug_workflow,} )
 
     ####
     #### variableImportanceDiscriminator
     ####
     discriminator_params = luigi.DictParameter(
-        default={ 'data_name': FLAGS.data,
-                  'mc_name': FLAGS.mc_process,
-                  'indir': data_storage,
-                  'outdir': data_storage,
-                  'localdir': local_folder,
-                  'triggers': FLAGS.triggers,
-                  'channels': FLAGS.channels,
-                  'variables': FLAGS.variables_for_efficiencies,
-                  'tag': tag,
-                  'subtag': subtag,
-                  'intersection_str': intersection_str,
-                  'debug': FLAGS.debug_workflow,} )
+        default={ 'indir'            : data_storage,
+                  'outdir'           : data_storage,
+                  'localdir'         : local_folder,
+                  'triggers'         : FLAGS.triggers,
+                  'channels'         : FLAGS.channels,
+                  'variables'        : FLAGS.variables_for_efficiencies,
+                  'tag'              : tag,
+                  'subtag'           : subtag,
+                  'intersection_str' : intersection_str,
+                  'debug'            : FLAGS.debug_workflow,} )
 
     ####
     #### scale factor calculator
     ####
     calculator_params = luigi.DictParameter(
-        default={ 'binedges_filename': binedges_filename,
-                  'indir_root': _inputs,
-                  'indir_json': data_storage,
-                  'indir_eff': out_storage,
-                  'outdir': data_storage,
-                  'outprefix': _closure_prefix,
-                  'data_name': FLAGS.data,
-                  'mc_name': FLAGS.mc_process,
-                  'mc_processes': _mc_processes[FLAGS.mc_process],
-                  'localdir': local_folder,
-                  'triggers': FLAGS.triggers,
-                  'closure_single_triggers': FLAGS.triggers_closure,
-                  'channels': FLAGS.channels,
-                  'variables': FLAGS.variables_for_efficiencies,
-                  'tag': tag,
-                  'subtag': subtag,
-                  'debug': FLAGS.debug_workflow,} )
+        default={ 'binedges_filename'       : binedges_filename,
+                  'indir_root'              : _inputs,
+                  'indir_json'              : data_storage,
+                  'indir_eff'               : out_storage,
+                  'outdir'                  : data_storage,
+                  'outprefix'               : _closure_prefix,
+                  'data_name'               : data_name,
+                  'mc_name'                 : mc_name,
+                  'mc_processes'            : mc_vals,
+                  'localdir'                : local_folder,
+                  'triggers'                : FLAGS.triggers,
+                  'closure_single_triggers' : FLAGS.triggers_closure,
+                  'channels'                : FLAGS.channels,
+                  'variables'               : FLAGS.variables_for_efficiencies,
+                  'tag'                     : tag,
+                  'subtag'                  : subtag,
+                  'debug'                   : FLAGS.debug_workflow,} )
 
     ####
     #### draw single efficiencies closure
     ####
     closure_params = luigi.DictParameter(
-        default={ 'data_name': FLAGS.data,
-                  'mc_name': FLAGS.mc_process,
-                  'binedges_filename': binedges_filename,
-                  'indir_eff': out_storage,
-                  'indir_union': data_storage,
-                  'indir_json': data_storage,
-                  'outdir': out_storage,
-                  'inprefix': _closure_prefix,
-                  'eff_prefix': _sf_prefix,
-                  'mc_processes': _mc_processes[FLAGS.mc_process],
-                  'out_weighted_prefix': _closure_prefix,
-                  'out_original_prefix': modes['histos'],
-                  'localdir': local_folder,
-                  'closure_single_triggers': FLAGS.triggers_closure,
-                  'channels': FLAGS.channels,
-                  'variables': FLAGS.variables_for_efficiencies,
-                  'tag': tag,
-                  'subtag': subtag,
-                  'debug': FLAGS.debug_workflow } )
+        default={ 'data_name'               : data_name,
+                  'mc_name'                 : mc_name,
+                  'binedges_filename'       : binedges_filename,
+                  'indir_eff'               : out_storage,
+                  'indir_union'             : data_storage,
+                  'indir_json'              : data_storage,
+                  'outdir'                  : out_storage,
+                  'inprefix'                : _closure_prefix,
+                  'eff_prefix'              : _sf_prefix,
+                  'mc_processes'            : mc_vals,
+                  'out_weighted_prefix'     : _closure_prefix,
+                  'out_original_prefix'     : modes['histos'],
+                  'localdir'                : local_folder,
+                  'closure_single_triggers' : FLAGS.triggers_closure,
+                  'channels'                : FLAGS.channels,
+                  'variables'               : FLAGS.variables_for_efficiencies,
+                  'tag'                     : tag,
+                  'subtag'                  : subtag,
+                  'debug'                   : FLAGS.debug_workflow } )

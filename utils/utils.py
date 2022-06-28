@@ -424,16 +424,16 @@ def pass_selection_cuts(leaf_manager, iso_cuts=dict(),
     # third lepton veto
     nleps = leaf_manager.get_leaf('nleps')
     if nleps > 0 and lepton_veto:
-        continue
+        return False
 
     # require at least two b jet candidates
     nbjetscand = leaf_manager.get_leaf('nbjetscand')
     if nbjetscand <= 1 and bjet_cuts:
-        continue
+        return False
 
     # Loose / Medium / Tight
     iso_allowed = { 'dau1_ele': 1., 'dau1_mu': 0.15,
-                    'dau1_tau', 5., 'dau2_tau': 5. }
+                    'dau1_tau': 5., 'dau2_tau': 5. }
     if any(x not in iso_allowed for x in iso_cuts.keys()):
         mes = 'At least one of the keys is not allowed. '
         mes += 'Keys introduced: {}.'.format(iso_cuts.keys())

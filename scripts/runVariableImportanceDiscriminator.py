@@ -55,8 +55,6 @@ parser = argparse.ArgumentParser(description='Choose the most significant variab
 
 parser.add_argument('--indir',  help='Inputs directory',  required=True)
 parser.add_argument('--outdir', help='Outputs directory', required=True)
-parser.add_argument('--data_name', dest='data_name', required=True, help='Data sample name')
-parser.add_argument('--mc_name', dest='mc_name', required=True, help='MC sample name')
 parser.add_argument('--triggers', dest='triggers', nargs='+', type=str,
                     required=True, help='Triggers included in the workfow.')
 parser.add_argument('--channel',   dest='channel', required=True,

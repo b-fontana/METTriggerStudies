@@ -122,7 +122,8 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
     outdir = os.path.join(outdir, sample)
 
     if not os.path.exists(infile):
-        raise ValueError('[' + os.path.basename(__file__) + '] {} does not exist.'.format(infile))
+        mes = '[' + os.path.basename(__file__) + '] {} does not exist.'.format(infile)
+        raise ValueError(mes)
 
     f_in = TFile(infile)
     t_in = f_in.Get('HTauTauTree')

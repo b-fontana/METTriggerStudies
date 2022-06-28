@@ -25,7 +25,7 @@ from utils.utils import (
 
 from luigi_conf import _triggers_custom
 
-def getTriggerCounts(indir, outdir, sample, fileName,
+def getTriggerCounts(indir, outdir, dataset, sample, fileName,
                      channels, triggers,
                      subtag, tprefix, isdata ):
     # -- Check if outdir exists, if not create it
@@ -36,7 +36,8 @@ def getTriggerCounts(indir, outdir, sample, fileName,
     outdir = os.path.join(outdir, sample)
 
     if not os.path.exists(fileName):
-        raise ValueError('[' + os.path.basename(__file__) + '] {} does not exist.'.format(fileName))
+        mes = '[' + os.path.basename(__file__) + '] {} does not exist.'.format(fileName)
+        raise ValueError(mes)
 
     f_in = TFile(fileName)
     t_in = f_in.Get('HTauTauTree')
@@ -58,12 +59,13 @@ def getTriggerCounts(indir, outdir, sample, fileName,
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
 
-        if not pass_selection_cuts(lf):
+        if not pass_dataset_cuts(lf, dataset):
             continue
 
         trig_bit = lf.get_leaf('pass_triggerbit')
         run = lf.get_leaf('RunNumber')
-        if not pass_any_trigger(triggers, trig_bit, run, isdata=isdata):
+        if not pass_dataset_triggers( dataset, triggers,
+                                      trig_bit, run, isdata=isdata ):
             continue
 
         pass_trigger = {}
@@ -80,7 +82,8 @@ def getTriggerCounts(indir, outdir, sample, fileName,
                         [ pass_trigger[x] for x in tcomb ]
                     )
 
-                    if pass_trigger_intersection:
+                    ds_flag = match_inters_with_dataset(tcomb, dataset, chn)
+                    if pass_trigger_intersection and ds_flag:
                         tcomb_str = joinNTC(tcomb)
                         counter[chn][tcomb_str] += 1
                                             
@@ -108,6 +111,8 @@ parser = argparse.ArgumentParser(description='Command line parser')
 
 parser.add_argument('--indir',       dest='indir',       required=True, help='SKIM directory')
 parser.add_argument('--outdir',      dest='outdir',      required=True, help='output directory')
+parser.add_argument('--dataset', dest='dataset', required=True,
+                    help='Dataset name as provided by the user: MET, EG, ...')
 parser.add_argument('--sample',      dest='sample',      required=True, help='Process name as in SKIM directory')
 parser.add_argument('--isdata',      dest='isdata',      required=True, help='Whether it is data or MC', type=int)
 parser.add_argument('--file',        dest='fileName',    required=True, help='ID of input root file')

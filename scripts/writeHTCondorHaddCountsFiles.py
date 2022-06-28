@@ -45,6 +45,7 @@ def writeHTCondorHaddCountsFiles(args):
                      )
 
     command_first_step = ( command_base +
+                           '--dataset '
                            '--sample ${2} ' +
                            ' --aggregation_step 0' )
     command_aggregation_step = ( command_base + '--infile_counts ${2} --aggregation_step 1')

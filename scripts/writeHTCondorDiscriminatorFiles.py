@@ -32,8 +32,7 @@ def writeHTCondorDiscriminatorFiles(args):
     for i,chn in enumerate(args.channels):
         command =  ( ( '{prog} --indir {indir} --outdir {outdir} '
                        '--channel {channel} --triggers {triggers} '
-                       '--variables {variables} --tag {tag} --subtag {subtag} '
-                       '--data_name {dataname} --mc_name {mcname}' )
+                       '--variables {variables} --tag {tag} --subtag {subtag} ' )
                      .format( prog=prog,
                               indir=args.indir, outdir=args.outdir,
                               channel=chn,

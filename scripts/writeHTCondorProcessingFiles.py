@@ -71,7 +71,8 @@ def writeHTCondorProcessingFiles_outputs(args):
 
     _all_keys = args.data_keys + args.mc_keys
     _all_vals = args.data_vals + args.mc_vals
-    _all_dict = { k:v for k,v in zip(_all_keys,_all_vals) }
+    _all_dict = tuple((k,v) for k,v in zip(_all_keys,_all_vals))
+
     data_folders = [ name + '_' + v for v in _all_vals ]
     return ( *JobWriter.define_output( localdir=args.localdir,
                                        data_folders=data_folders,
@@ -86,12 +87,14 @@ def writeHTCondorProcessingFiles(args):
     jw = JobWriter()
 
     outs_job, outs_submit, outs_check, _all_processes = writeHTCondorProcessingFiles_outputs(args)
-    for i, (kproc, vproc) in enumerate(_all_processes.items()):
+    for i, (kproc, vproc) in enumerate(_all_processes):
+        print(kproc, vproc)
+        continue
         filelist, inputdir = utils.get_root_input_files(vproc, args.indir)
         
         #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-        command =  ( '{prog} ' +
-                     '--indir {} '    .format(prog=prog, indir=inputdir) +
+        command =  ( '{} '            .format(prog) +
+                     '--indir {} '    .format(inputdir) +
                      '--outdir {} '   .format(args.outdir) +
                      '--dataset {} '  .format(kproc) +
                      '--sample {} '   .format(vproc) +
@@ -107,10 +110,10 @@ def writeHTCondorProcessingFiles(args):
             command += '--debug '
 
         if args.mode == 'histos':
-            command += ( '--binedges_fname {bename} '.format(bename=args.binedges_filename) +
-                         '--intersection_str {inters} '.format(inters=args.intersection_str) +
-                         '--variables {variables} '.format(variables=' '.join(args.variables,)) +
-                         '--nocut_dummy_str {nocutstr}'.format(nocutstr=args.nocut_dummy_str)
+            command += ( '--binedges_fname {} '.format(args.binedges_filename) +
+                         '--intersection_str {} '.format(args.intersection_str) +
+                         '--variables {} '.format(' '.join(args.variables,)) +
+                         '--nocut_dummy_str {}'.format(args.nocut_dummy_str)
                         )
 
         jw.write_init(outs_job[i], command, args.localdir)
@@ -124,11 +127,11 @@ def writeHTCondorProcessingFiles(args):
 
         qlines = []
         for listname in filelist:
-            qlines.append('  {}'.format( listname.replace('\n','') ))
+            qlines.append(' {}'.format( listname.replace('\n','') ))
         
         jw.write_queue( qvars=('filename',),
                         qlines=qlines )
-
+    quit()
 # -- Parse options
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line parser')

@@ -80,7 +80,7 @@ def defineBinning(args):
                     for line in fIn:
                         if '.root' in line:
                             if not os.path.exists(line[:-1]):
-                                mes = '[' + os.path.basename(__file__) + '] ' +
+                                mes = '[' + os.path.basename(__file__) + '] '
                                 mes += ' The input file does not exist: {}'.format(line)
                                 raise ValueError(mes)
                             filelist.append(line[:-1] + ':HTauTauTree')

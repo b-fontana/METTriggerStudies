@@ -455,12 +455,12 @@ class WriteDAG(ForceRun):
 
         self.pHaddHisto['dataset_name'] = FLAGS.data
         _, submHaddHistoData, _   = writeHTCondorHaddHistoFiles_outputs(self.pHaddHisto)
-        self.pHaddHisto['dataset_name'] = FLAGS.mc_process
+        self.pHaddHisto['dataset_name'] = FLAGS.mc_processes
         _, submHaddHistoMC, _   = writeHTCondorHaddHistoFiles_outputs(self.pHaddHisto)
 
         self.pHaddCounts['dataset_name'] = FLAGS.data
         _, submHaddCountsData, _   = writeHTCondorHaddCountsFiles_outputs(self.pHaddCounts)
-        self.pHaddCounts['dataset_name'] = FLAGS.mc_process
+        self.pHaddCounts['dataset_name'] = FLAGS.mc_processes
         _, submHaddCountsMC, _   = writeHTCondorHaddCountsFiles_outputs(self.pHaddCounts)
 
         
@@ -525,19 +525,18 @@ class SubmitDAG(ForceRun):
     def requires(self):
         return [ WriteHTCondorProcessingFiles( mode='histos' ),
                  WriteHTCondorProcessingFiles( mode='counts' ),
-                 WriteHTCondorHaddHistoFiles( dataset_name=FLAGS.data,
-                                              samples=lcfg._selected_data ),
-                 WriteHTCondorHaddHistoFiles( dataset_name=FLAGS.mc_process,
-                                              samples=lcfg._selected_mc_processes ),
-                 WriteHTCondorHaddCountsFiles( dataset_name=FLAGS.data,
-                                               samples=lcfg._selected_data ),
-                 WriteHTCondorHaddCountsFiles( dataset_name=FLAGS.mc_process,
-                                               samples=lcfg._selected_mc_processes ),
+                 WriteHTCondorHaddHistoFiles( dataset_name=lcfg.data_name,
+                                              samples=lcfg.data_vals ),
+                 WriteHTCondorHaddHistoFiles( dataset_name=lcfg.mc_name,
+                                              samples=lcfg.mc_vals ),
+                 WriteHTCondorHaddCountsFiles( dataset_name=lcfg.data_name,
+                                               samples=lcfg.data_vals ),
+                 WriteHTCondorHaddCountsFiles( dataset_name=lcfg.mc_name,
+                                               samples=lcfg.mc_vals ),
                  WriteHTCondorEfficienciesAndScaleFactorsFiles(),
                  WriteHTCondorEfficienciesAndSFAggregator(),
                  WriteHTCondorDiscriminatorFiles(),
                  WriteHTCondorUnionWeightsCalculatorFiles(),
-                 #WriteHTCondorHaddEffFiles( samples=lcfg._selected_mc_processes ),
                  WriteHTCondorClosureFiles(),
                  WriteDAG(),
                 ]
