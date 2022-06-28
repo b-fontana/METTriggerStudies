@@ -764,7 +764,8 @@ def runEffSF2D_outs(outdir,
 
 
 def runEffSF(indir, outdir,
-             mc_processes, mc_name, data_name,
+             mc_keys, mc_vals,
+             data_keys, data_vals,
              trigger_combination,
              channels, variables,
              subtag,
@@ -772,6 +773,10 @@ def runEffSF(indir, outdir,
              tprefix,
              intersection_str,
              debug):
+    CHANGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    mc_processes replaced by mc_vals
+    data_name by data_keys
+    
     outs1D, extensions, processes = runEffSF_outputs(outdir,
                                                      mc_processes, mc_name,
                                                      data_name,
@@ -846,9 +851,15 @@ parser.add_argument('--outdir', help='Output directory', required=True, )
 parser.add_argument('--tprefix', help='prefix to the names of the produceyd outputs (targets in luigi lingo)', required=True)
 parser.add_argument('--canvas_prefix', help='canvas prefix', required=True)
 parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
-parser.add_argument('--mc_processes', help='MC processes to be analyzed', required=True, nargs='+', type=str)
-parser.add_argument('--data_name', dest='data_name', required=True, help='Data sample name')
-parser.add_argument('--mc_name', dest='mc_name', required=True, help='MC sample name')
+parser.add_argument('--mc_keys', dest='mc_keys', required=True, nargs='+', type=str,
+                    help='MC dataset user names')
+parser.add_argument('--mc_vals', dest='mc_vals', required=True, nargs='+', type=str,
+                    help='MC dataset subdirectories',)
+parser.add_argument('--data_keys', dest='data_keys', required=True, nargs='+', type=str,
+                    help='Data dataset user names',)
+parser.add_argument('--data_vals', dest='data_vals', required=True, nargs='+', type=str,
+                    help='Data dataset subdirectories',)
+parser.add_argument('--data_keys',  required=True, help='Data sample name')
 parser.add_argument('--triggercomb', dest='triggercomb', required=True,
                     help='Trigger intersection combination.')
 parser.add_argument('--channels',   dest='channels',         required=True, nargs='+', type=str,
@@ -864,7 +875,8 @@ args = parse_args(parser)
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
 runEffSF(args.indir, args.outdir,
-         args.mc_processes, args.mc_name, args.data_name,
+         args.mc_keys, args.mc_vals,
+         args.data_keys, args.data_vals,
          args.triggercomb,
          args.channels, args.variables,
          args.subtag,

@@ -34,6 +34,7 @@ parser.add_argument(
 parser.add_argument(
     '--data',
     type=str,
+    nargs='+',
     required=True,
     choices=_data.keys(),
     help='Select the data over which the workflow will be run.'
@@ -41,6 +42,7 @@ parser.add_argument(
 parser.add_argument(
     '--mc_process',
     type=str,
+    nargs='+',
     required=True,
     choices=_mc_processes.keys(),
     help='Select the MC processes over which the workflow will be run.'
@@ -129,7 +131,26 @@ class cfg(luigi.Config):
     data_base = os.path.join( '/data_CMS/', 'cms' )
     user = os.environ['USER']
     tag = FLAGS.tag
-    
+
+    def flatten_nested_dict(d):
+        """
+        Splits keys and values.
+        Dictionaries are not straightforward to pass as arguments.
+        """
+        keys, vals = ([] for _ in range(2))
+        for k,v in d.items():
+            for x in v:
+                keys.append(k)
+                vals.append(v)
+        return keys, vals
+        
+    user_data = {k,v for k,v in _data         if k in FLAGS.data}
+    user_mc   = {k,v for k,v in _mc_processes if k in FLAGS.mc_process}
+    data_keys, data_vals = flatten_nested_dict(user_data)
+    assert len(data_keys)==len(data_vals)
+    mc_keys, mc_vals = flatten_nested_dict(user_mc)
+    assert len(mc_keys)==len(mc_vals)
+
     _storage = os.path.join(data_base, user, base_name, tag)
     data_storage = os.path.join(_storage, 'Data')
     out_storage = os.path.join(_storage, 'Outputs')
@@ -164,7 +185,7 @@ class cfg(luigi.Config):
                   'binedges_filename': binedges_filename,
                   'indir': _inputs,
                   'outdir': data_storage,
-                  'data': _data[FLAGS.data],
+                  'data_vals': data_vals,
                   'variables': variables_join,
                   'channels': FLAGS.channels,
                   'tag': tag,
@@ -179,14 +200,16 @@ class cfg(luigi.Config):
                      'tag': tag }
     
     ####
-    #### submitTriggerEff, submitTriggerCounts
+    #### produceTriggerHistograms
     ####
     histos_params = { 'binedges_filename': binedges_filename,
                       'indir': _inputs,
                       'outdir': data_storage,
                       'localdir': local_folder,
-                      'data': _data[FLAGS.data],
-                      'mc_processes': _mc_processes[FLAGS.mc_process],
+                      'data_keys': data_keys,
+                      'data_vals': data_vals,
+                      'mc_keys': mc_keys,
+                      'mc_vals': mc_vals,
                       'triggers': FLAGS.triggers,
                       'channels': FLAGS.channels,
                       'variables': variables_join,
@@ -219,14 +242,11 @@ class cfg(luigi.Config):
     ####
     #### drawTriggerScaleFactors
     ####
-    _selected_mc_processes = _mc_processes[FLAGS.mc_process]
-    _selected_data = _data[FLAGS.data]
-    
     sf_params = luigi.DictParameter(
-        default={ 'data_name': FLAGS.data,
-                  'mc_name': FLAGS.mc_process,
-                  'data': _selected_data,
-                  'mc_processes': _selected_mc_processes,
+        default={ 'data_keys': data_keys,
+                  'mc_keys': mc_keys,
+                  'data_vals': data_vals,
+                  'mc_vals': mc_vals,
                   'draw_independent_MCs': False,
                   'indir': data_storage,
                   'outdir': out_storage,

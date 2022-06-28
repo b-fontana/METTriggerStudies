@@ -381,44 +381,6 @@ class WriteHTCondorClosureFiles(ForceRun):
         writeHTCondorClosureFiles(self.params)
 
 ########################################################################
-### DRAW 2D TRIGGER SCALE FACTORS #######################################
-########################################################################
-# class Draw2DTriggerScaleFactors(luigi.Task):
-#     args = utils.dot_dict(lcfg.sf_params)
-#     args.update( {'tprefix': lcfg.modes['histos'], } )
-#     target_path = get_target_path( args.taskname )
-    
-#     @WorkflowDebugger(flag=FLAGS.debug_workflow)
-#     def output(self):
-#         targets = []
-#         targets_list, _ = draw2DTriggerSF_outputs( self.args )
-
-#         #define luigi targets
-#         for t in targets_list:
-#             for elem in t:
-#                 targets.append( luigi.LocalTarget(elem) )
-
-#         #write the target files for debugging
-#         utils.remove( target_path )
-#         with open( target_path, 'w' ) as f:
-#             for t in targets_list:
-#                 for elem in t:
-#                     f.write( elem )
-                
-#         return targets
-
-#     @WorkflowDebugger(flag=FLAGS.debug_workflow)
-#     def run(self):
-#         draw2DTriggerSF( self.args )
-
-#     @WorkflowDebugger(flag=FLAGS.debug_workflow)
-#     def requires(self):
-#         return [ HaddTriggerEff(force=force_flag, samples=self.args.data,
-#                                 dataset_name=self.args.data_name),
-#                  HaddTriggerEff(force=force_flag, samples=self.args.mc_processes,
-#                                 dataset_name=self.args.mc_name) ]
-
-########################################################################
 ### DRAW VARIABLES' DISTRIBUTIONS ######################################
 ########################################################################
 # class DrawDistributions(luigi.Task):

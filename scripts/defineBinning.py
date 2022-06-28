@@ -1,16 +1,8 @@
-###### DOCSTRING ####################################################
-# Defines the binning to be used for the efficiencies and scale
-#   factors, using only the data. It does nothing if the user
-#   explicitly specifies the binning.
-# Run example:
-# python3 -m scripts.defineBinning
-# --indir /data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_Radion_2018_fixedMETtriggers_mht_16Jun2021/
-# --outdir .
-# --tag binning_test
-# --data MET2018A
-# --variables met_et HT20 mht_et metnomu_et mhtnomu_et
-# --subtag SUBTAG
-####################################################################
+"""
+Defines the binning to be used for the efficiencies and scale
+factors, using only the data. It does nothing if the user
+explicitly specifies the binning.
+"""
 import os
 import glob
 import h5py
@@ -27,7 +19,7 @@ from utils.utils import (
 
 from luigi_conf import _binedges, _sel
 
-def skipDataLoop(args):
+def skip_data_loop(args):
     for var in args.variables:
         if var not in _binedges.keys():
             return False
@@ -56,12 +48,13 @@ def defineBinning(args):
     ###############################################
     ############## Data Loop: Start ###############
     ###############################################
-    if not skipDataLoop(args):
+    if not skip_data_loop(args):
         
         # Loop over all data datasets, calculating the quantiles in each dataset per variable
-        for sample in args.data:
+        for ksample, vsample in args.data_vals:
             #### Input list
-            inputfiles = [ x for idir in args.indir for x in glob.glob(os.path.join(idir, sample + '*/goodfiles.txt')) ]
+            inputfiles = [ x for idir in args.indir
+                           for x in glob.glob(os.path.join(idir, sample + '*/goodfiles.txt')) ]
 
             fexists = []
             for idir in args.indir:
@@ -72,13 +65,13 @@ def defineBinning(args):
                     fexists.append(True)
 
             if sum(fexists) != 1: #check one and only one is True
-                m = '[defineBinning.py] WARNING: More than one file exists for the {} sample.'.format(sample)
+                m = '[defineBinning.py] WARNING: '
+                m += 'More than one file exists for the {} sample.'.format(sample)
                 m += ' Selecting directory {} '.format(args.indir[fexists.index(True)])
                 m += 'from the following list: {}.'.format(args.indir)
 
             inputfiles = glob.glob(os.path.join(args.indir[fexists.index(True)],
                                                 sample + '*/goodfiles.txt'))
-
 
             #### Parse input list
             filelist = []
@@ -87,7 +80,9 @@ def defineBinning(args):
                     for line in fIn:
                         if '.root' in line:
                             if not os.path.exists(line[:-1]):
-                                raise ValueError('[' + os.path.basename(__file__) + '] The input file does not exist: {}'.format(line))
+                                mes = '[' + os.path.basename(__file__) + '] ' +
+                                mes += ' The input file does not exist: {}'.format(line)
+                                raise ValueError(mes)
                             filelist.append(line[:-1] + ':HTauTauTree')
 
             treesize = 0
@@ -180,15 +175,16 @@ def defineBinning(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line parser')
 
-    parser.add_argument('--binedges_filename', dest='binedges_filename', required=True, help='in directory')
-    parser.add_argument('--nbins',             dest='nbins',             required=True, help='number of X bins')
-    parser.add_argument('-a', '--indir',       dest='indir',             required=True, help='in directory')
-    parser.add_argument('-o', '--outdir',      dest='outdir',            required=True, help='out directory')
-    parser.add_argument('-t', '--tag',         dest='tag',               required=True, help='tag')
-    parser.add_argument('--subtag',            dest='subtag',            required=True, help='subtag')
-    parser.add_argument('--data',              dest='data',              required=True, nargs='+', type=str,
+    parser.add_argument('--binedges_filename', dest='binedges_filename',
+                        required=True, help='in directory')
+    parser.add_argument('--nbins', dest='nbins', required=True, help='number of X bins')
+    parser.add_argument('-a', '--indir', dest='indir', required=True, help='in directory')
+    parser.add_argument('-o', '--outdir', dest='outdir', required=True, help='out directory')
+    parser.add_argument('-t', '--tag', dest='tag', required=True, help='tag')
+    parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
+    parser.add_argument('--data_vals', dest='data_vals', required=True, nargs='+', type=str,
                         help='list of datasets')                          
-    parser.add_argument('--variables',        dest='variables',          required=True, nargs='+', type=str,
+    parser.add_argument('--variables', dest='variables', required=True, nargs='+', type=str,
                         help='Select the variables to calculate the binning' )
     parser.add_argument('-c', '--channels',   dest='channels',         required=True, nargs='+', type=str,
                         help='Select the channels over which the workflow will be run.' )

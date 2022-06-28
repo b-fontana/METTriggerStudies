@@ -25,14 +25,14 @@ import ROOT
 from utils import utils
 from scripts.jobWriter import JobWriter
 
-def runTrigger_outputs_sample(args, sample, param):
+def produce_trigger_outputs_sample(args, sample, ext):
     """
     Produces all outputs of the submitTriggerEff task.
     Limitation: As soon as one file is not produced, luigi
     reruns everything.
     """
-    assert(param in ('root', 'txt'))
-    extension = '.' + param
+    assert(ext in ('root', 'txt'))
+    extension = '.' + ext
     t = []
     exp = re.compile('.+output(_[0-9]{1,5}).root')
 
@@ -45,20 +45,19 @@ def runTrigger_outputs_sample(args, sample, param):
         basename = args.tprefix + '_' + proc_folder + number.group(1)
         basename += args.subtag + extension
         t.append( os.path.join(folder, basename) )
-
     return t
     
 @utils.set_pure_input_namespace
-def runTrigger_outputs(args, param='root'):
+def produce_trigger_outputs(args, ext='root'):
     """
     Produces all outputs of the submitTriggerEff task.
     Limitation: As soon as one file is not produced, luigi
     reruns everything.
     """
     t = []
-    _all_processes = args.data + args.mc_processes
-    for proc in _all_processes:
-        t.extend( runTrigger_outputs_sample(args, proc, param) )
+    _all_processes = args.data_vals + args.mc_vals
+    for _,proc in _all_processes:
+        t.extend( produce_trigger_outputs_sample(args, proc, ext) )
     return t
 
 @utils.set_pure_input_namespace
@@ -70,33 +69,38 @@ def writeHTCondorProcessingFiles_outputs(args):
     else:
         raise ValueError('Mode {} is not supported.'.format(args.mode))
 
-    _all_processes = args.data + args.mc_processes
-    data_folders = [ name + '_' + x for x in _all_processes ]
+    _all_keys = args.data_keys + args.mc_keys
+    _all_vals = args.data_vals + args.mc_vals
+    _all_dict = { k:v for k,v in zip(_all_keys,_all_vals) }
+    data_folders = [ name + '_' + v for v in _all_vals ]
     return ( *JobWriter.define_output( localdir=args.localdir,
                                        data_folders=data_folders,
                                        tag=args.tag ),
-             _all_processes )
+             _all_dict )
 
 @utils.set_pure_input_namespace
 def writeHTCondorProcessingFiles(args):
-    prog = utils.build_prog_path(args.localdir, ('produceTriggerHistograms.py' if args.mode == 'histos'
-                                                 else 'produceTriggerCounts.py') )
+    prog = utils.build_prog_path(args.localdir,
+                                 ('produceTriggerHistograms.py' if args.mode == 'histos'
+                                  else 'produceTriggerCounts.py'))
     jw = JobWriter()
 
     outs_job, outs_submit, outs_check, _all_processes = writeHTCondorProcessingFiles_outputs(args)
-    for i,thisProc in enumerate(_all_processes):
-        filelist, inputdir = utils.get_root_input_files(thisProc, args.indir)
+    for i, (kproc, vproc) in enumerate(_all_processes.items()):
+        filelist, inputdir = utils.get_root_input_files(vproc, args.indir)
         
         #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-        command =  ( '{prog} --indir {indir} '.format( prog=prog, indir=inputdir) +
-                     '--outdir {outdir} '.format(outdir=args.outdir) +
-                     '--sample {sample} '.format(sample=thisProc) +
-                     '--isdata {isdata} '.format(isdata=int(thisProc in args.data)) +
+        command =  ( '{prog} ' +
+                     '--indir {} '    .format(prog=prog, indir=inputdir) +
+                     '--outdir {} '   .format(args.outdir) +
+                     '--dataset {} '  .format(kproc) +
+                     '--sample {} '   .format(vproc) +
+                     '--isdata {} '   .format(int(vproc in args.data_vals)) +
                      '--file ${1} ' +
-                     '--subtag {subtag} '.format(subtag=args.subtag) +
-                     '--channels {channels} '.format(channels=' '.join(args.channels,)) +
-                     '--triggers {triggers} '.format(triggers=' '.join(args.triggers,)) +
-                     '--tprefix {tprefix} '.format(tprefix=args.tprefix)
+                     '--subtag {} '   .format(args.subtag) +
+                     '--channels {} ' .format(' '.join(args.channels,)) +
+                     '--triggers {} ' .format(' '.join(args.triggers,)) +
+                     '--tprefix {} '  .format(args.tprefix)
                     )
         
         if args.debug:
@@ -110,7 +114,7 @@ def writeHTCondorProcessingFiles(args):
                         )
 
         jw.write_init(outs_job[i], command, args.localdir)
-        jw.add_string('echo "Process {} done in mode {}."'.format(thisProc,args.mode))
+        jw.add_string('echo "Process {} done in mode {}."'.format(vproc,args.mode))
 
         #### Write submission file
         jw.write_init( filename=outs_submit[i],
@@ -138,8 +142,10 @@ if __name__ == '__main__':
     parser.add_argument('--tprefix', dest='tprefix', required=True, help='target prefix')
     parser.add_argument('--mc_processes', dest='mc_processes', required=True, nargs='+', type=str,
                         help='list of MC process names')                
-    parser.add_argument('--data', dest='data', required=True, nargs='+', type=str,
-                        help='list of dataset s')                       
+    parser.add_argument('--data_keys', dest='data_keys', required=True, nargs='+', type=str,
+                        help='list of datasets')
+    parser.add_argument('--data_vals', dest='data_vals', required=True, nargs='+', type=str,
+                        help='list of datasets')
     parser.add_argument('--channels',   dest='channels', required=True, nargs='+', type=str,
                         help='Select the channels over which the workflow will be run.' )
     parser.add_argument('--triggers', dest='triggers', required=True, nargs='+', type=str,

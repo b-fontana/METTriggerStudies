@@ -318,11 +318,98 @@ def load_binning(afile, key, variables, channels):
 
     return binedges, nbins
 
+def match_inters_with_dataset(tcomb, dataset, channel):
+    if dataset not in _data.keys():
+        raise ValueError('Dataset {} is not supported.'.format(dataset))
+    
+    # Ignore long intersections for simplicity CHANGE !!!!!!! ??
+    if len(trigger_combination) > 3:
+        return False
+
+    wrong_comb = 'Combination {} is not supported for channel {}.'
+
+    # one single reference per trigger combination
+    decision = lambda ds : True if dataset == ds else False
+
+    #general triggers
+    if tcomb in ( ('IsoTau180',),
+                  ('VBFTauCustom'),
+                  ('METNoMu120'),
+                  ('IsoTau180', 'METNoMu120'),
+                  ('IsoTau180', 'VBFTauCustom'),
+                  ('METNoMu120', 'VBFTauCustom'),
+                  ('IsoTau180', 'METNoMu120', 'VBFTauCustom'),
+                 ):
+        return decision('MET')
+    elif tcomb in ( ):
+        return decision('EG')
+
+    # channel-specific triggers
+    if channel == 'etau':
+        if tcomb in ( ('Ele32',),
+                      ('EleIsoTauCustom',),
+                      ('Ele32', 'EleIsoTauCustom'),
+                      ('Ele32', 'VBFTauCustom'),
+                      ('Ele32', 'METNoMu120'),
+                      ('Ele32', 'IsoTau180'),
+                      ('EleIsoTauCustom', 'VBFTauCustom'),
+                      ('EleIsoTauCustom', 'METNoMu120'),
+                      ('EleIsoTauCustom', 'IsoTau180'),
+                      ('EleIsoTauCustom', 'IsoTau180'),
+                      ('Ele32', 'EleIsoTauCustom', 'VBFTauCustom'),
+                      ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
+                      ('Ele32', 'EleIsoTauCustom', 'IsoTau180'),
+                      ('Ele32', 'IsoTau180', 'VBFTauCustom'),
+                     ):
+            return decision('MET')
+        elif tcomb in ( ) :
+            return decision('EG')
+        else:
+            raise ValueError(wrong_comb.format(tcomb, channel))
+        
+    elif channel == 'mutau':
+        if tcomb in ( ('IsoMu24',),
+                      ('IsoMuIsoTauCustom',),
+                      ('IsoMu24', 'IsoMuIsoTauCustom'),
+                      ('IsoMu24', 'VBFTauCustom'),
+                      ('IsoMu24', 'METNoMu120'),
+                      ('IsoMu24', 'IsoTau180'),
+                      ('IsoMuIsoTauCustom', 'VBFTauCustom'),
+                      ('IsoMuIsoTauCustom', 'METNoMu120'),
+                      ('IsoMuIsoTauCustom', 'IsoTau180'),
+                      ('IsoMuIsoTauCustom', 'IsoTau180'),
+                      ('IsoMu24', 'IsoMuIsoTauCustom', 'VBFTauCustom'),
+                      ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
+                      ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180'),
+                      ('IsoMu24', 'IsoTau180', 'VBFTauCustom'),
+                     ):
+            return decision('MET')
+        elif tcomb in ( ) :
+            return decision('EG')
+        else:
+            raise ValueError(wrong_comb.format(tcomb, channel))
+        
+    elif channel == 'tautau':
+        if tcomb in ( ('IsoDoubleTauCustom',),
+                      ('IsoDoubleTauCustom', 'VBFTauCustom'),
+                      ('IsoDoubleTauCustom', 'METNoMu120'),
+                      ('IsoDoubleTauCustom', 'IsoTau180'),
+                      ('IsoDoubleTauCustom', 'IsoTau180', 'VBFTauCustom'),
+                     ):
+            return decision('MET')
+        elif tcomb in ( ) :
+            return decision('EG')
+        else:
+            raise ValueError(wrong_comb.format(tcomb, channel))
+        
+    else:
+        raise ValueError('Channel {} is not supported.'.format(channel))
+    
 def pass_selection_cuts(leaf_manager, iso_cuts=dict(),
                         lepton_veto=True, bjets_cut=True, invert_mass_cut=True):
     """
-    Applies selection cut per TTree entry.
-    Returns `True` only if all selections cuts pass.
+    Applies selection cut to one event.
+    Returns `True` only if all selection cuts pass.
     """
     mhh = leaf_manager.get_leaf('HHKin_mass')
     if mhh<1:
@@ -375,6 +462,22 @@ def pass_selection_cuts(leaf_manager, iso_cuts=dict(),
         return False
 
     return True
+
+def pass_dataset_cuts(leaf_manager, dataset):
+    """
+    Applies selection cuts depending on the reference trigger being considered.
+    Reference triggers tend to be associated with a certain dataset.
+    For instance, the 'MET' dataset is connected to the MET Trigger.
+    """
+    if dataset == 'MET':
+        pass_selection_cuts(leaf_manager, iso_cuts,
+                            lepton_veto, bjets_cut, invert_mass_cut)
+    elif dataset == 'EG':
+        pass_selection_cuts(leaf_manager, iso_cuts,
+                            lepton_veto, bjets_cut, invert_mass_cut)
+    else:
+        mes = 'Dataset {} is not supported.'.format(dataset)
+        raise ValueError(mes)
 
 def redraw_border():
     """
@@ -458,8 +561,11 @@ def set_custom_trigger_bit(trigger, trigBit, run, isData):
 def split_vnames(joinvars):
     return joinvars.split('_VERSUS_')
 
-def pass_any_trigger(trigs, bit, run, isdata):
-    # checks that at least one trigger was fired
+def _pass_triggers(trigs, bit, run, isdata):
+    """
+    Internal only function.
+    Checks at least one trigger was fired.
+    """
     flag = False
     for trig in trigs:
         if trig in _triggers_custom:
@@ -469,6 +575,25 @@ def pass_any_trigger(trigs, bit, run, isdata):
         if flag:
             return True
     return False
+    
+def pass_any_trigger(trigs, bit, run, isdata):
+    """
+    Checks at least one trigger was fired.
+    Considers all framework triggers.
+    """
+    return _pass_triggers(trigs)
+
+def pass_dataset_triggers(dataset, trigs, bit, run, isdata):
+    """
+    Checks at least one trigger was fired.
+    Considers framework triggers for a specific dataset.
+    """
+    dataset_ref_trigs = { 'MET': ('METNoMu120',), # triggers for the MET dataset
+                          'EG':  ('Ele32',) } # triggers for the Ele32 dataset
+    assert( 'METNoMu120' in trigs )
+    assert( 'Ele32' in trigs )
+
+    return _pass_triggers(dataset_ref_trigs[dataset])
 
 def pass_trigger_bits(trig, trig_bit, run, isdata):
     if trig in _triggers_custom:

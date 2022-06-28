@@ -44,9 +44,9 @@ _trigger_shift  = lambda x : {'mc': x, 'data': x+5}
 # https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger
 _triggers_map = {
     'IsoMu24':     _trigger_linear(0),
-    'IsoMu27':     _trigger_linear(1),
+    #'IsoMu27':     _trigger_linear(1),
     'Ele32':       _trigger_linear(2),
-    'Ele35':       _trigger_linear(3),
+    #'Ele35':       _trigger_linear(3),
     'IsoDoubleTauCustom': {'IsoDoubleTau':    {'mc': 4, 'data': (4,5,6)},
                            'IsoDoubleTauHPS': {'mc': 4, 'data': 7}},
     'IsoMuIsoTauCustom': { 'IsoMuIsoTau':    {'mc': 5, 'data': 9},
@@ -126,10 +126,16 @@ for x in _binedges.values():
 #######################################################################################################
 ########### DATA AND MC SAMPLES #######################################################################
 #######################################################################################################
-_inputs = [ '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220420/', ] #data, MC signal and MC backgrounds
+# data, MC signal and MC backgrounds
+_inputs = [ '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220420/', ]
 
-# names of the subfolders under '_inputs' above
-_data = dict( MET = ['SKIM_MET',] )
+# names of the subfolders under '_inputs' above:
+# dictionary that maps specific general triggers to datasets 
+# both set to MET for framework development phase CHANGE!!!!!!!!!
+_data = dict( MET = ['SKIM_MET',],
+              EG  = ['SKIM_MET',]
+              )
+#ADD CHECK THAT MAKES SURE THE DATASETS DO NOT REPEAT CHANGE!!!!!!!
 _mc_processes = dict( ggfRadions = [],
                       ggfBulkGraviton = [],
                       vbfRadion = [],

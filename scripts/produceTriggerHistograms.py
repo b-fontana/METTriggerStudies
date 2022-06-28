@@ -111,9 +111,9 @@ def passes_cuts(trig, variables, leavesmanager, debug):
         res = {args.nocut_dummy_str: True}
     return res
     
-def build_histograms(infile, outdir, sample,
+def build_histograms(infile, outdir, dataset, sample, isdata,
                      channels, variables, triggers,
-                     subtag, tprefix, isdata, binedges_fname):
+                     subtag, tprefix, binedges_fname):
     # -- Check if outdir exists, if not create it
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -174,18 +174,19 @@ def build_histograms(infile, outdir, sample,
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
 
-        if not pass_selection_cuts(lf):
+        if not pass_dataset_cuts(lf, dataset):
             continue
 
         trig_bit = lf.get_leaf('pass_triggerbit')
         run = lf.get_leaf('RunNumber')
-        if not pass_any_trigger(triggers, trig_bit, run, isdata=isdata):
+        if not pass_dataset_triggers( dataset, triggers,
+                                      trig_bit, run, isdata=isdata ):
             continue
 
-        #mcweight   = lf.get_leaf( "MC_weight" )
-        pureweight = lf.get_leaf( "PUReweight" )
-        lumi       = lf.get_leaf( "lumi" )
-        idandiso   = lf.get_leaf( "IdAndIsoSF_deep_pt")
+        #mcweight   = lf.get_leaf('MC_weight')
+        pureweight = lf.get_leaf('PUReweight')
+        lumi       = lf.get_leaf('lumi')
+        idandiso   = lf.get_leaf('IdAndIsoSF_deep_pt')
         
         #if np.isnan(mcweight): mcweight=1
         if np.isnan(pureweight): pureweight=1
@@ -267,7 +268,8 @@ def build_histograms(infile, outdir, sample,
                                 htrig_name = rewrite_cut_string(base_str, key)
                                 hTrig[chn][j][joinNTC(tcomb)][key] = TH1D(htrig_name, '', *binning1D)
 
-                            if val and pass_trigger_intersection[joinNTC(tcomb)]:
+                            ds_flag = match_inters_with_dataset(tcomb, dataset, chn)
+                            if val and pass_trigger_intersection[joinNTC(tcomb)] and ds_flag:
                                 hTrig[chn][j][joinNTC(tcomb)][key].Fill(fill_var[j][chn], evt_weight)
 
                 # fill 2D efficiencies
@@ -311,18 +313,14 @@ def build_histograms(infile, outdir, sample,
                                                       nbins[j[1]][chn], binedges[j[1]][chn] ) 
                                         h2Trig[chn][vname][joinNTC(combtrig)][key] = TH2D(h2name, '',
                                                                                         *binning2D)
-                       
-                                    if val and pass_trigger_intersection[joinNTC(combtrig)]:
+
+                                    ds_flag = match_inters_with_dataset(combtrig, dataset, chn)
+                                    if val and pass_trigger_intersection[joinNTC(combtrig)] and ds_flag:
                                         h2Trig[chn][vname][joinNTC(combtrig)][key].Fill(*fill_info)
 
     file_id = ''.join( c for c in infile[-10:] if c.isdigit() ) 
     outname = os.path.join(outdir, tprefix + sample + '_' + file_id + subtag + '.root')
     print('Saving file {} at {} '.format(file_id, outname) )
-
-    print()
-    print(hTrig['mutau']['dau1_pt']['IsoMu24']['NoCut'].GetEntries())
-    print(hTrig['mutau']['dau1_pt']['IsoMu27']['NoCut'].GetEntries())
-    print(hTrig['mutau']['dau1_pt']['IsoMu27']['NoCut'].GetEntries())    
     
     f_out = TFile(outname, 'RECREATE')
     f_out.cd()
@@ -353,6 +351,8 @@ parser = argparse.ArgumentParser(description='Command line parser')
 parser.add_argument('--binedges_fname', dest='binedges_fname', required=True, help='where the bin edges are stored')
 parser.add_argument('--outdir', dest='outdir', required=True,
                     help='output directory')
+parser.add_argument('--dataset', dest='dataset', required=True,
+                    help='Dataset name as provided by the user: MET, EG, ...')
 parser.add_argument('--sample', dest='sample', required=True,
                     help='Process name as in SKIM directory')
 parser.add_argument('--isdata', dest='isdata', required=True, type=int,
@@ -375,6 +375,6 @@ parser.add_argument('--nocut_dummy_str', dest='nocut_dummy_str', required=True,
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = parse_args(parser)
 
-build_histograms(args.outdir, args.sample, args.fileName,
+build_histograms(args.infile, args.outdir, args.dataset, args.sample, args.isdata,
                  args.channels, args.variables, args.triggers,
-                 args.subtag, args.tprefix, args.isdata, args.binedges_fname)
+                 args.subtag, args.tprefix, args.binedges_fname)
