@@ -32,15 +32,15 @@ def writeHTCondorClosureFiles(args):
                             '--indir_json {} '.format(args.indir_json),
                             '--mc_processes {} '.format(' '.join(args.mc_processes)),
                             '--outdir {} '.format(args.outdir),
-                            '--in_prefix {} '.format(inprefix=args.inprefix),
+                            '--in_prefix {} '.format(args.inprefix),
                             '--channel ${1} ',
                             '--closure_single_trigger ${2} ',
                             '--variables {} '.format(' '.join(args.variables)),
                             '--subtag {} '.format(args.subtag),
                             '--binedges_fname {} '.format(args.binedges_filename),
-                            '--data_name {} '.format(dn=args.data_name),
-                            '--mc_name {} '.format(mn=args.mc_name),
-                            '--eff_prefix {} '.format(effprefix=args.eff_prefix) )
+                            '--data_name {} '.format(args.data_name),
+                            '--mc_name {} '.format(args.mc_name),
+                            '--eff_prefix {} '.format(args.eff_prefix) )
     
     if args.debug:
         command += '--debug '

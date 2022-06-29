@@ -48,7 +48,7 @@ def writeHTCondorHaddCountsFiles(args):
                                  '--outdir {} '.format(args.outdir),
                                  '--subtag {} '.format(args.subtag),
                                  '--tprefix {} '.format(args.tprefix),
-                                 '--dataset_name {} '.format(dn=args.dataset_name),
+                                 '--dataset_name {} '.format(args.dataset_name),
                                  '--outfile_counts ${1} ' )
 
     command_first_step = ( command_base +

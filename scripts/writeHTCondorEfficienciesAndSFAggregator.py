@@ -28,12 +28,12 @@ def writeHTCondorEfficienciesAndSFAggregator(args):
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
     command = join_strings( '{} '.format(prog),
-                            '--indir {} '.format(indir),
-                            '--outdir {} '.format(outdir),
+                            '--indir {} '.format(args.indir),
+                            '--outdir {} '.format(args.outdir),
                             '--channel ${1} ',
                             '--file_prefix {} '.format(args.file_prefix),
                             '--variables {} '.format(' '.join(args.variables,)),
-                            '--subtag {} '.format(subtag=args.subtag) )
+                            '--subtag {} '.format(args.subtag) )
 
     if args.debug:
         command += '--debug '

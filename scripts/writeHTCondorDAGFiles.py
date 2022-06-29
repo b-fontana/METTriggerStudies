@@ -27,8 +27,9 @@ class WriteDAGManager:
         
         self.write_configuration()
 
-        assert set(jobs.keys()) == { 'Histos', 'Counts', 'HaddHistoData', 'HaddHistoMC',
-                                     'HaddCountsData', 'HaddCountsMC', 'EffSF', 'EffSFAgg',
+        assert set(jobs.keys()) == { 'HistosData', 'HistosMC', 'CountsData', 'CountsMC',
+                                     'HaddHistoData', 'HaddHistoMC', 'HaddCountsData', 'HaddCountsMC',
+                                     'EffSF', 'EffSFAgg',
                                      'Discr', 'Union', 'Closure' }
 
         self.jobs = jobs
@@ -76,13 +77,11 @@ class WriteDAGManager:
 
     def write_all(self):
         # histos to hadd for data
-        self.write_parent_child_hierarchy( parents=[x for x in self.jobs['Histos']
-                                                    if self.data_name in os.path.basename(x)],
+        self.write_parent_child_hierarchy( parents=[x for x in self.jobs['HistosData']],
                                            childs=[self.jobs['HaddHistoData'][0]] )
 
         # histos to hadd for MC
-        self.write_parent_child_hierarchy( parents=[x for x in self.jobs['Histos']
-                                                    if self.data_name not in os.path.basename(x)],
+        self.write_parent_child_hierarchy( parents=[x for x in self.jobs['HistosMC']],
                                            childs=[self.jobs['HaddHistoMC'][0]] )
         self.new_line()
 
@@ -96,13 +95,11 @@ class WriteDAGManager:
         self.new_line()
 
         # counts to add for data
-        self.write_parent_child_hierarchy( parents=[x for x in self.jobs['Counts']
-                                                    if self.data_name in os.path.basename(x)],
+        self.write_parent_child_hierarchy( parents=[x for x in self.jobs['CountsData']],
                                            childs=[self.jobs['HaddCountsData'][0]] )
 
         # counts to add for MC
-        self.write_parent_child_hierarchy( parents=[x for x in self.jobs['Counts']
-                                                    if self.data_name not in os.path.basename(x)],
+        self.write_parent_child_hierarchy( parents=[x for x in self.jobs['CountsMC']],
                                            childs=[self.jobs['HaddCountsMC'][0]] )
         self.new_line()
 

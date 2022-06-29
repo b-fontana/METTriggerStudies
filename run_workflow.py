@@ -133,7 +133,9 @@ class WriteHTCondorProcessingFiles(ForceRun):
     def output(self):
         self.params['mode'] = self.mode
         self.params['tprefix'] = lcfg.modes[self.mode]
-        o1, o2, _, _ = writeHTCondorProcessingFiles_outputs(self.params)
+        objData, objMC, _, _ = writeHTCondorProcessingFiles_outputs(self.params)
+        o1, o2, _ = objData
+        o3, o4, _ = objMC
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -141,6 +143,8 @@ class WriteHTCondorProcessingFiles(ForceRun):
         with open( target_path, 'w' ) as f:
             for t in o1: f.write(t + '\n')
             for t in o2: f.write(t + '\n')
+            for t in o3: f.write(t + '\n')
+            for t in o4: f.write(t + '\n')
 
         _c1 = convert_to_luigi_local_targets(o1)
         _c2 = convert_to_luigi_local_targets(o2)
@@ -456,9 +460,14 @@ class WriteDAG(ForceRun):
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         self.pHistos['mode'] = 'histos'
-        _, submHistos, _, _ = writeHTCondorProcessingFiles_outputs(self.pHistos)
+        objHistosData, objHistosMC, _, _ = writeHTCondorProcessingFiles_outputs(self.pHistos)
+        _, submHistosData, _ = objHistosData
+        _, submHistosMC, _ = objHistosMC
+
         self.pHistos['mode'] = 'counts'
-        _, submCounts, _, _ = writeHTCondorProcessingFiles_outputs(self.pHistos)
+        objCountsData, objCountsMC, _, _ = writeHTCondorProcessingFiles_outputs(self.pHistos)
+        _, submCountsData, _ = objCountsData
+        _, submCountsMC, _ = objCountsMC
 
         self.pHaddHisto['dataset_name'] = lcfg.data_name
         _, submHaddHistoData, _   = writeHTCondorHaddHistoFiles_outputs(self.pHaddHisto)
@@ -477,8 +486,10 @@ class WriteDAG(ForceRun):
         _, submUnion, _  = writeHTCondorUnionWeightsCalculatorFiles_outputs(self.pSFCalc)
         _, submClosure, _  = writeHTCondorClosureFiles_outputs(self.pClosure)
 
-        jobs = { 'Histos':         submHistos,
-                 'Counts':         submCounts,
+        jobs = { 'HistosData':     submHistosData,
+                 'HistosMC':       submHistosMC,
+                 'CountsData':     submCountsData,
+                 'CountsMC':       submCountsMC,
                  'HaddHistoData':  submHaddHistoData,
                  'HaddHistoMC':    submHaddHistoMC,
                  'HaddCountsData': submHaddCountsData,

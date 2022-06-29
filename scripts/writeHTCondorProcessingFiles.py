@@ -54,11 +54,12 @@ def produce_trigger_outputs(args, ext='root'):
     Limitation: As soon as one file is not produced, luigi
     reruns everything.
     """
-    t = []
-    _all_processes = args.data_vals + args.mc_vals
-    for _,proc in _all_processes:
-        t.extend( produce_trigger_outputs_sample(args, proc, ext) )
-    return t
+    tdata, tmc = ([] for _ in range(2))
+    for proc in args.data_vals:
+        tdata.extend( produce_trigger_outputs_sample(args, proc, ext) )
+    for proc in args.mc_vals:
+        tmc.extend( produce_trigger_outputs_sample(args, proc, ext) )
+    return tdata, tmc
 
 @utils.set_pure_input_namespace
 def writeHTCondorProcessingFiles_outputs(args):
@@ -69,15 +70,15 @@ def writeHTCondorProcessingFiles_outputs(args):
     else:
         raise ValueError('Mode {} is not supported.'.format(args.mode))
 
-    _all_keys = args.data_keys + args.mc_keys
-    _all_vals = args.data_vals + args.mc_vals
-    _all_dict = tuple((k,v) for k,v in zip(_all_keys,_all_vals))
+    _data_tup = tuple((k,v) for k,v in zip(args.data_keys,args.data_vals))
+    _mc_tup = tuple((k,v) for k,v in zip(args.mc_keys,args.mc_vals))
 
-    data_folders = [ name + '_' + v for v in _all_vals ]
-    return ( *JobWriter.define_output( localdir=args.localdir,
-                                       data_folders=data_folders,
-                                       tag=args.tag ),
-             _all_dict )
+    data_folders = [ name + '_' + v for v in args.data_vals ]
+    mc_folders   = [ name + '_' + v for v in args.mc_vals ]
+    job_opt = dict(localdir=args.localdir, tag=args.tag)
+    return ( JobWriter.define_output( data_folders=data_folders, **job_opt),
+             JobWriter.define_output( data_folders=mc_folders,   **job_opt),
+             _data_tup, _mc_tup )
 
 @utils.set_pure_input_namespace
 def writeHTCondorProcessingFiles(args):
@@ -86,7 +87,15 @@ def writeHTCondorProcessingFiles(args):
                                   else 'produceTriggerCounts.py'))
     jw = JobWriter()
 
-    outs_job, outs_submit, outs_check, _all_processes = writeHTCondorProcessingFiles_outputs(args)
+    outs_data, outs_mc, _data_procs, _mc_procs = writeHTCondorProcessingFiles_outputs(args)
+
+    # unite Data and MC lists
+    outs_job, outs_submit, outs_check = outs_data
+    _outs_job, _outs_submit, _outs_check = outs_mc
+    outs_job += _outs_job
+    outs_submit += _outs_submit
+    outs_check += _outs_check
+    _all_processes = _data_procs + _mc_procs
 
     for i, (kproc, vproc) in enumerate(_all_processes):
         filelist, inputdir = utils.get_root_input_files(vproc, args.indir)
