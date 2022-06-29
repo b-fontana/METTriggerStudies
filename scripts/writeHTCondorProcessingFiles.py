@@ -87,9 +87,8 @@ def writeHTCondorProcessingFiles(args):
     jw = JobWriter()
 
     outs_job, outs_submit, outs_check, _all_processes = writeHTCondorProcessingFiles_outputs(args)
+
     for i, (kproc, vproc) in enumerate(_all_processes):
-        print(kproc, vproc)
-        continue
         filelist, inputdir = utils.get_root_input_files(vproc, args.indir)
         
         #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
@@ -124,14 +123,14 @@ def writeHTCondorProcessingFiles(args):
                        executable=outs_job[i],
                        outfile=outs_check[i],
                        queue='short' )
-
+        
         qlines = []
         for listname in filelist:
             qlines.append(' {}'.format( listname.replace('\n','') ))
         
         jw.write_queue( qvars=('filename',),
                         qlines=qlines )
-    quit()
+
 # -- Parse options
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line parser')

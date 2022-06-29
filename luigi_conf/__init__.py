@@ -133,7 +133,7 @@ _inputs = [ '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220420/', ]
 # dictionary that maps specific general triggers to datasets 
 # both set to MET for framework development phase CHANGE!!!!!!!!!
 _data = dict( MET = ['SKIM_MET',],
-              EG  = ['SKIM_MET',]
+              EG  = ['SKIM_EGamma',]
               )
 #ADD CHECK THAT MAKES SURE THE DATASETS DO NOT REPEAT CHANGE!!!!!!!
 _mc_processes = dict( ggfRadions = [],

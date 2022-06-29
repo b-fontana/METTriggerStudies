@@ -6,6 +6,7 @@ import argparse
 
 from utils.utils import (
     build_prog_path,
+    join_strings,
     set_pure_input_namespace,
 )
 
@@ -25,21 +26,21 @@ def writeHTCondorClosureFiles(args):
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
     prog = build_prog_path(args.localdir, 'runClosure.py')
-    command =  ( '{prog} --indir_eff {inref} '.format(prog=prog, inref=args.indir_eff)
-                 + '--indir_union {inunion} '.format(inunion=args.indir_union)
-                 + '--indir_json {injson} '.format(injson=args.indir_json)
-                 + '--mc_processes {procs} '.format(procs=' '.join(args.mc_processes))
-                 + '--outdir {outdir} '.format(outdir=args.outdir)
-                 + '--in_prefix {inprefix} '.format(inprefix=args.inprefix)
-                 + '--channel ${1} '
-                 + '--closure_single_trigger ${2} '
-                 + '--variables {variables} '.format(variables=' '.join(args.variables))
-                 + '--subtag {subtag} '.format(subtag=args.subtag)
-                 + '--binedges_fname {be} '.format(be=args.binedges_filename)
-                 + '--data_name {dn} '.format(dn=args.data_name)
-                 + '--mc_name {mn} '.format(mn=args.mc_name)
-                 + '--eff_prefix {effprefix} '.format(effprefix=args.eff_prefix)
-                )
+    command = join_strings( '{} '.format(prog),
+                            '--indir_eff {} '.format(args.indir_eff),
+                            '--indir_union {} '.format(args.indir_union),
+                            '--indir_json {} '.format(args.indir_json),
+                            '--mc_processes {} '.format(' '.join(args.mc_processes)),
+                            '--outdir {} '.format(args.outdir),
+                            '--in_prefix {} '.format(inprefix=args.inprefix),
+                            '--channel ${1} ',
+                            '--closure_single_trigger ${2} ',
+                            '--variables {} '.format(' '.join(args.variables)),
+                            '--subtag {} '.format(args.subtag),
+                            '--binedges_fname {} '.format(args.binedges_filename),
+                            '--data_name {} '.format(dn=args.data_name),
+                            '--mc_name {} '.format(mn=args.mc_name),
+                            '--eff_prefix {} '.format(effprefix=args.eff_prefix) )
     
     if args.debug:
         command += '--debug '

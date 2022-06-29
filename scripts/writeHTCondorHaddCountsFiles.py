@@ -1,14 +1,21 @@
 import os
 import sys
-from utils import utils
+import sys
+sys.path.append( os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
+from utils.utils import (
+    build_prog_path,
+    hadd_subpaths,
+    join_strings,
+    set_pure_input_namespace,
+    )
 from scripts.jobWriter import JobWriter
 
-@utils.set_pure_input_namespace
+@set_pure_input_namespace
 def runHaddCounts_outputs(args):
     targets = []
 
     # add the merge of all the samples first
-    _tbase1, _tbase2 = utils.hadd_subpaths(args)
+    _tbase1, _tbase2 = hadd_subpaths(args)
     tbase = _tbase1 + _tbase2
     t = os.path.join( args.indir, tbase + '.csv' )
     targets.append( t )
@@ -21,28 +28,28 @@ def runHaddCounts_outputs(args):
         
     return targets
 
-@utils.set_pure_input_namespace
+@set_pure_input_namespace
 def writeHTCondorHaddCountsFiles_outputs(args):
     return JobWriter.define_output( localdir=args.localdir,
                                     data_folders=['HaddCounts' + args.dataset_name,
                                                   'HaddCountsAgg' + args.dataset_name],
                                     tag=args.tag )
 
-@utils.set_pure_input_namespace
+@set_pure_input_namespace
 def writeHTCondorHaddCountsFiles(args):
     """Adds TXT count files"""
     targets = runHaddCounts_outputs(args)
     outs_job, outs_submit, outs_check = writeHTCondorHaddCountsFiles_outputs(args)
     jw = JobWriter()
     
-    prog = utils.build_prog_path(args.localdir, 'addTriggerCounts.py')
-    command_base =  ( '{prog} --indir {indir} '.format( prog=prog, indir=args.indir) +
-                      '--outdir {outdir} '.format(outdir=args.outdir) +
-                      '--subtag {subtag} '.format(subtag=args.subtag) +
-                      '--tprefix {tprefix} '.format(tprefix=args.tprefix) +
-                      '--dataset_name {dn} '.format(dn=args.dataset_name) +
-                      '--outfile_counts ${1} '
-                     )
+    prog = build_prog_path(args.localdir, 'addTriggerCounts.py')
+    command_base = join_strings( '{} '.format(prog),
+                                 '--indir {} '.format(args.indir),
+                                 '--outdir {} '.format(args.outdir),
+                                 '--subtag {} '.format(args.subtag),
+                                 '--tprefix {} '.format(args.tprefix),
+                                 '--dataset_name {} '.format(dn=args.dataset_name),
+                                 '--outfile_counts ${1} ' )
 
     command_first_step = ( command_base +
                            '--dataset '

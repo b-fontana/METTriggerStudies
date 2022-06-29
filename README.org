@@ -26,7 +26,7 @@ The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KL
 9. *Closure*: perform a simple closure (complete closure is done outside this framework in the HH \rightarrow bb\tau \tau ~C++~ analysis code)
 
 *** Counts Chain
-1. *Counts_SKIM_**: count the number of events that pass a selection identical to the one of the events in the "Efficiencies Chain"
+1. *Counts_SKIM_**: count the number of events that passes a selection identical to the one of the events in the "Efficiencies Chain"
 2. *HaddCounts**: add counters per data type (Data and all MCs)
 3. *HaddCountsAgg**: add counters for Data and MC
 

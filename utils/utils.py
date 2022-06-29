@@ -270,6 +270,9 @@ def join_name_trigger_intersection(tuple_element):
     inters = '_PLUS_'
     return inters.join(tuple_element)
 
+def join_strings(*args):
+    return ''.join(args)
+    
 class LeafManager():
     """
     Class to manage TTree branch leafs, making sure they exist.

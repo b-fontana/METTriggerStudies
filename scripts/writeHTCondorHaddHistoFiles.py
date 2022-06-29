@@ -27,16 +27,19 @@ def writeHTCondorHaddHistoFiles_outputs(args):
     Outputs are guaranteed to have the same length.
     Returns all separate paths to avoid code duplication.
     """
-    return JobWriter.define_output( localdir=args.localdir,
-                                    data_folders=[ 'HaddHisto' + args.dataset_name,
-                                                   'HaddHistoAgg' + args.dataset_name],
-                                    tag=args.tag )
+    ret = JobWriter.define_output( localdir=args.localdir,
+                                   data_folders=['HaddHisto' + args.dataset_name,
+                                                 'HaddHistoAgg' + args.dataset_name],
+                                   tag=args.tag )
+    return ret
+
 
 @utils.set_pure_input_namespace
 def writeHTCondorHaddHistoFiles(args):
     """Adds ROOT histograms"""
     targets = runHaddHisto_outputs(args)
     outs_job, outs_submit, outs_check = writeHTCondorHaddHistoFiles_outputs(args)
+
     jw = JobWriter()
     
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)

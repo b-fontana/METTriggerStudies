@@ -1,4 +1,3 @@
-
 import sys
 sys.path.append("..")
 
@@ -9,6 +8,7 @@ from utils.utils import (
     build_prog_path,
     generate_trigger_combinations,
     join_name_trigger_intersection as joinNTC,
+    join_strings,
     set_pure_input_namespace,
 )
 from scripts.jobWriter import JobWriter
@@ -31,24 +31,20 @@ def writeHTCondorEfficienciesAndScaleFactorsFiles(args):
     jw = JobWriter()
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-    command =  ( ( '{prog} --indir {indir} --outdir {outdir} '
-                   '--mc_processes {mc_processes} '
-                   '--mc_name {mc_name} --data_name {data_name} '
-                   '--triggercomb ${{1}} '
-                   '--channels {channels} --variables {variables} '
-                   '--subtag {subtag} '
-                   '--tprefix {tprefix} '
-                   '--canvas_prefix {cprefix} '
-                  ).format( prog=prog, indir=args.indir, outdir=args.outdir,
-                            mc_processes=' '.join(args.mc_processes,),
-                            mc_name=args.mc_name, data_name=args.data_name,
-                            channels=' '.join(args.channels,), variables=' '.join(args.variables,),
-                            subtag=args.subtag,
-                            draw_independent_MCs=1 if args.draw_independent_MCs else 0,
-                            tprefix=args.tprefix,
-                            cprefix=args.canvas_prefix,
-                           )
-                )
+    command = join_strings( '{} '                .format(prog),
+                            '--indir {} '        .format(args.indir),
+                            '--outdir {} '       .format(args.outdir),
+                            '--mc_keys {} '      .format(' '.join(args.mc_keys)),
+                            '--mc_vals {} '      .format(' '.join(args.mc_vals)),
+                            '--data_keys {} '    .format(' '.join(args.data_keys)),
+                            '--data_vals {} '    .format(' '.join(args.data_vals)),
+                            '--triggercomb ${1} ',
+                            '--channels {} '     .format(' '.join(args.channels)),
+                            '--variables {} '    .format(' '.join(args.variables)),
+                            '--subtag {} '       .format(args.subtag),
+                            '--tprefix {} '      .format(args.tprefix),
+                            '--canvas_prefix {} '.format(args.canvas_prefix),
+                        )
 
     if args.draw_independent_MCs:
         command += '--draw_independent_MCs '

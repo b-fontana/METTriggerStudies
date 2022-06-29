@@ -30,19 +30,14 @@ def writeHTCondorDiscriminatorFiles(args):
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
     for i,chn in enumerate(args.channels):
-        command =  ( ( '{prog} --indir {indir} --outdir {outdir} '
-                       '--channel {channel} --triggers {triggers} '
-                       '--variables {variables} --tag {tag} --subtag {subtag} ' )
-                     .format( prog=prog,
-                              indir=args.indir, outdir=args.outdir,
-                              channel=chn,
-                              tag=args.tag,
-                              subtag=args.subtag,
-                              triggers=' '.join(args.triggers,),
-                              variables=' '.join(args.variables,),
-                              dataname=args.data_name,
-                              mcname=args.mc_name )
-                    )
+        command = utils.join_strings( '{} '.format(prog),
+                                      '--indir {} '.format(args.indir),
+                                      '--outdir {} '.format(args.outdir),
+                                      '--channel {} '.format(chn),
+                                      '--triggers {} '.format(' '.join(args.triggers,)),
+                                      '--variables {} '.format(' '.join(args.variables,)),
+                                      '--tag {} '.format(args.tag),
+                                      '--subtag {} '.format(args.subtag) )
 
         if args.debug:
             command += '--debug '
@@ -61,19 +56,19 @@ def writeHTCondorDiscriminatorFiles(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line parser')
 
-    parser.add_argument('--localdir',         dest='localdir',         default=os.getcwd(),
+    parser.add_argument('--localdir', dest='localdir', default=os.getcwd(),
                         help='out directory')
-    parser.add_argument('--indir',      dest='indir',            required=True, help='in directory')
-    parser.add_argument('--outdir',     dest='outdir',           required=True, help='out directory')
-    parser.add_argument('--tag',        dest='tag',              required=True, help='tag')
-    parser.add_argument('--subtag',           dest='subtag',           required=True, help='subtag')
+    parser.add_argument('--indir', dest='indir', required=True, help='in directory')
+    parser.add_argument('--outdir', dest='outdir', required=True, help='out directory')
+    parser.add_argument('--tag', dest='tag', required=True, help='tag')
+    parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
     parser.add_argument('--data_name', dest='data_name', required=True, help='Data sample name')
     parser.add_argument('--mc_name', dest='mc_name', required=True, help='MC sample name')
-    parser.add_argument('--channels',   dest='channels',         required=True, nargs='+', type=str,
+    parser.add_argument('--channels',   dest='channels', required=True, nargs='+', type=str,
                         help='Select the channels over which the workflow will be run.' )
-    parser.add_argument('--triggers',         dest='triggers',         required=True, nargs='+', type=str,
+    parser.add_argument('--triggers', dest='triggers', required=True, nargs='+', type=str,
                         help='Select the triggers over which the workflow will be run.' )
-    parser.add_argument('--variables',        dest='variables',        required=True, nargs='+', type=str,
+    parser.add_argument('--variables', dest='variables', required=True, nargs='+', type=str,
                         help='Select the variables over which the workflow will be run.' )
     parser.add_argument('--debug', action='store_true', help='debug verbosity')
     args = parser.parse_args()

@@ -144,6 +144,13 @@ class WriteHTCondorProcessingFiles(ForceRun):
 
         _c1 = convert_to_luigi_local_targets(o1)
         _c2 = convert_to_luigi_local_targets(o2)
+        # for elem in o1:
+        #     print(elem, flush=True)
+        # print(flush=True)
+        # for elem in o2:
+        #     print(elem, flush=True)
+        # print('----', flush=True)
+        # print(flush=True)
         return _c1 + _c2
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
@@ -453,14 +460,14 @@ class WriteDAG(ForceRun):
         self.pHistos['mode'] = 'counts'
         _, submCounts, _, _ = writeHTCondorProcessingFiles_outputs(self.pHistos)
 
-        self.pHaddHisto['dataset_name'] = FLAGS.data
+        self.pHaddHisto['dataset_name'] = lcfg.data_name
         _, submHaddHistoData, _   = writeHTCondorHaddHistoFiles_outputs(self.pHaddHisto)
-        self.pHaddHisto['dataset_name'] = FLAGS.mc_processes
+        self.pHaddHisto['dataset_name'] = lcfg.mc_name
         _, submHaddHistoMC, _   = writeHTCondorHaddHistoFiles_outputs(self.pHaddHisto)
 
-        self.pHaddCounts['dataset_name'] = FLAGS.data
+        self.pHaddCounts['dataset_name'] = lcfg.data_name
         _, submHaddCountsData, _   = writeHTCondorHaddCountsFiles_outputs(self.pHaddCounts)
-        self.pHaddCounts['dataset_name'] = FLAGS.mc_processes
+        self.pHaddCounts['dataset_name'] = lcfg.mc_name
         _, submHaddCountsMC, _   = writeHTCondorHaddCountsFiles_outputs(self.pHaddCounts)
 
         

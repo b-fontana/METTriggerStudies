@@ -51,11 +51,14 @@ def defineBinning(args):
     if not skip_data_loop(args):
         
         # Loop over all data datasets, calculating the quantiles in each dataset per variable
-        for ksample, vsample in args.data_vals:
-            #### Input list
-            inputfiles = [ x for idir in args.indir
-                           for x in glob.glob(os.path.join(idir, sample + '*/goodfiles.txt')) ]
+        for sample in args.data_vals:
 
+            # to avoid long waiting times, define the binning using the first dataset only
+            # the MET skims are 2GB, the EGamma one 25GB!
+            if sample != args.data_vals[0]:
+                continue
+            
+            #### Input list
             fexists = []
             for idir in args.indir:
                 g = glob.glob(os.path.join(idir, sample + '*/goodfiles.txt'))

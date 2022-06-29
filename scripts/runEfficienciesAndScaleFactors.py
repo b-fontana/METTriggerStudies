@@ -443,6 +443,9 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
     _name = lambda a,b,c,d : a + b + c + d + '.root'
 
     name_data = os.path.join(indir, _name( tprefix, data_name, '_Sum', subtag ) )
+    print(name_data)
+    quit()
+
     file_data = TFile.Open(name_data, 'READ')
 
     name_mc = os.path.join(indir, _name( tprefix, mc_name, '_Sum', subtag ))
@@ -678,10 +681,10 @@ def _get_canvas_name(prefix, proc, chn, var, trig, data_name, subtag):
     n += _placeholder_cuts + subtag
     return n
 
-def runEffSF_outputs(outdir, mc_processes, data_name,
+def runEffSF_outputs(outdir, data_name, mc_name,
                      trigger_combination, channels, variables, subtag):
     outputs = [[] for _ in range(len(_extensions))]
-    processes = list(set(mc_keys))
+    processes = mc_name #CHANGE !!!! IF STUDYING MCs SEPARATELY
   
     for proc in processes:
         for ch in channels:
@@ -748,16 +751,16 @@ def runEffSF2D_outs(outdir, proc, data_name,
             for o in out:
                 print(o)
                 print()
-                
+
     return outputs
 
 
-def runEffSF(indir, outdir, mc_keys, mc_vals, data_keys, data_vals,
+def runEffSF(indir, outdir, data_name, mc_name,
              trigger_combination, channels, variables, subtag,
              draw_independent_MCs, tprefix, intersection_str, debug):
     
     outs1D, extensions, processes = runEffSF_outputs(outdir,
-                                                     mc_vals, mc_keys, data_keys,
+                                                     mc_name, data_name,
                                                      trigger_combination,
                                                      channels, variables,
                                                      subtag,
@@ -829,15 +832,10 @@ parser.add_argument('--outdir', help='Output directory', required=True, )
 parser.add_argument('--tprefix', help='prefix to the names of the produceyd outputs (targets in luigi lingo)', required=True)
 parser.add_argument('--canvas_prefix', help='canvas prefix', required=True)
 parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
-parser.add_argument('--mc_keys', dest='mc_keys', required=True, nargs='+', type=str,
+parser.add_argument('--mc_name', dest='mc_name', required=True, nargs='+', type=str,
                     help='MC dataset user names')
-parser.add_argument('--mc_vals', dest='mc_vals', required=True, nargs='+', type=str,
-                    help='MC dataset subdirectories',)
-parser.add_argument('--data_keys', dest='data_keys', required=True, nargs='+', type=str,
+parser.add_argument('--data_name', dest='data_name', required=True, nargs='+', type=str,
                     help='Data dataset user names',)
-parser.add_argument('--data_vals', dest='data_vals', required=True, nargs='+', type=str,
-                    help='Data dataset subdirectories',)
-parser.add_argument('--data_keys',  required=True, help='Data sample name')
 parser.add_argument('--triggercomb', dest='triggercomb', required=True,
                     help='Trigger intersection combination.')
 parser.add_argument('--channels',   dest='channels',         required=True, nargs='+', type=str,
@@ -853,8 +851,7 @@ args = parse_args(parser)
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
 runEffSF(args.indir, args.outdir,
-         args.mc_keys, args.mc_vals,
-         args.data_keys, args.data_vals,
+         args.data_name, args.mc_name,
          args.triggercomb,
          args.channels, args.variables,
          args.subtag,

@@ -8,6 +8,7 @@ import argparse
 from utils.utils import (
     build_prog_path,
     join_name_trigger_intersection as joinNTC,
+    join_strings,
     set_pure_input_namespace,
 )
 from scripts.jobWriter import JobWriter
@@ -26,14 +27,13 @@ def writeHTCondorEfficienciesAndSFAggregator(args):
     jw = JobWriter()
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-    command =  ( ('{prog} --indir {indir} --outdir {outdir} '
-                  '--channel ${{1}} '
-                  '--file_prefix {pref} '
-                  '--variables {variables} '
-                  '--subtag {subtag} ').format(prog=prog, indir=args.indir, outdir=args.outdir,
-                                               variables=' '.join(args.variables,),
-                                               subtag=args.subtag,
-                                               pref=args.file_prefix) )
+    command = join_strings( '{} '.format(prog),
+                            '--indir {} '.format(indir),
+                            '--outdir {} '.format(outdir),
+                            '--channel ${1} ',
+                            '--file_prefix {} '.format(args.file_prefix),
+                            '--variables {} '.format(' '.join(args.variables,)),
+                            '--subtag {} '.format(subtag=args.subtag) )
 
     if args.debug:
         command += '--debug '
