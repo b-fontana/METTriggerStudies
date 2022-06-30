@@ -206,7 +206,7 @@ class cfg(luigi.Config):
     #### produceTriggerHistograms
     ####
     histos_params = { 'binedges_filename' : binedges_filename,
-                      'indir'             : _inputs,
+                      #'indir'             : _inputs,
                       'outdir'            : data_storage,
                       'localdir'          : local_folder,
                       'data_keys'         : data_keys,

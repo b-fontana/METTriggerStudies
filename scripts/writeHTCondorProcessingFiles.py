@@ -98,11 +98,10 @@ def writeHTCondorProcessingFiles(args):
     _all_processes = _data_procs + _mc_procs
 
     for i, (kproc, vproc) in enumerate(_all_processes):
-        filelist, inputdir = utils.get_root_input_files(vproc, args.indir)
+        filelist, _ = utils.get_root_input_files(vproc, args.indir)
         
         #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
         command =  ( '{} '            .format(prog) +
-                     '--indir {} '    .format(inputdir) +
                      '--outdir {} '   .format(args.outdir) +
                      '--dataset {} '  .format(kproc) +
                      '--sample {} '   .format(vproc) +

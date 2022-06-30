@@ -23,94 +23,14 @@ from utils.utils import (
     join_name_trigger_intersection as joinNTC,
     LeafManager,
     load_binning,
-    pass_any_trigger,
-    pass_selection_cuts,
     rewrite_cut_string,
     parse_args,
-    pass_trigger_bits,
     print_configuration,
 )
+from utils.selection import EventSelection
 
-from luigi_conf import (
-    _2Dpairs,
-    _cuts,
-    _cuts_ignored,
-)
+from luigi_conf import _2Dpairs
 
-def passes_cuts(trig, variables, leavesmanager, debug):
-    """
-    Handles cuts on trigger variables that enter the histograms. 
-    Variables being displayed are not cut (i.e., they pass the cut).
-    Checks all combinations of cuts specified in '_cuts':
-        example: _cuts = {'A': ('>', [10,20]), 'B': ('<', [50,40]))}
-        `passes_cuts` will check 4 combinations and return a dict of length 4
-        (unless some cuts are ignored according to '_cuts_ignored') 
-    Works for both 1D and 2D efficiencies.
-    """
-    if debug:
-        print('Trigger={}; Variables={}'.format(trig, variables))
-
-    flagnameJoin = lambda var,sign,val: ('_'.join([str(x) for x in [var,sign,val]])).replace('.','p')
-    
-    dflags = defaultdict(lambda: [])
-    
-    try:
-        trig_cuts = _cuts[trig]
-    except KeyError: # the trigger has no cut associated
-        if debug:
-            print('KeyError')            
-        return {args.nocut_dummy_str: True}
-
-    for avar,acut in trig_cuts.items():
-        # ignore cuts according to the user's definition in '_cuts_ignored'
-        # example: do not cut on 'met_et' when displaying 'metnomu_et'
-        ignore = functools.reduce( lambda x, y: x or y,
-                                   [ avar in _cuts_ignored[k] for k in variables
-                                     if k in _cuts_ignored ],
-                                   False
-                                  )
-
-        # additionally, by default do not cut on the variable(s) being plotted
-        if avar not in variables and not ignore:
-            value = leavesmanager.get_leaf(avar) 
-
-            for c in acut[1]:
-                flagname = flagnameJoin(avar, acut[0], c)
-
-                if debug:
-                    print('Cut: {} {} {}'.format(avar, acut[0], c))
-
-                if acut[0]=='>':
-                    dflags[avar].append( (flagname, value > c) )
-                elif acut[0]=='<':
-                    dflags[avar].append( (flagname, value < c) )
-                else:
-                    raise ValueError("The operator for the cut is currently not supported: Use '>' or '<'.")
-
-    def applyCutsCombinations(dflags):
-        tmp = {}
-        allNames = sorted(dflags)
-        combinations = it.product(*(dflags[name] for name in allNames))
-        combinations = list(combinations)
-
-        if debug:
-            print('--------- [applyCutsCombinations] ------------------')
-            print('Variables being cut: {}'.format(allNames))
-            print('All cut combinations: {}'.format(combinations))
-            print('----------------------------------------------------')
-            
-        for comb in combinations:
-            joinFlag = functools.reduce( lambda x,y: x and y, [k[1] for k in comb] )
-            tmp[ '_AND_'.join([k[0] for k in comb]) ] = joinFlag
-
-        return tmp
-
-    if dflags:
-        res = applyCutsCombinations(dflags)
-    else:
-        res = {args.nocut_dummy_str: True}
-    return res
-    
 def build_histograms(infile, outdir, dataset, sample, isdata,
                      channels, variables, triggers,
                      subtag, tprefix, binedges_fname):
@@ -175,13 +95,11 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
 
-        if not pass_dataset_cuts(lf, dataset):
+        sel = EventSelection(lf, dataset, isdata)
+        if not sel.dataset_cuts():
             continue
-
-        trig_bit = lf.get_leaf('pass_triggerbit')
-        run = lf.get_leaf('RunNumber')
-        if not pass_dataset_triggers( dataset, triggers,
-                                      trig_bit, run, isdata=isdata ):
+        print(entry)
+        if not sel.dataset_triggers(triggers):
             continue
 
         #mcweight   = lf.get_leaf('MC_weight')
@@ -211,11 +129,11 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
         for trig in triggers:
             pcuts2D[trig] = {}    
         for trig in triggers:
-            pass_trigger[trig] = pass_trigger_bits(trig, trig_bit, run, isdata)
+            pass_trigger[trig] = sel.trigger_bits(trig)
 
             pcuts1D[trig] = {}
             for var in variables:
-                pcuts1D[trig][var] = passes_cuts(trig, [var], lf, args.debug)
+                pcuts1D[trig][var] = sel.var_cuts(trig, [var], args.nocut_dummy_str)
 
             if trig in _2Dpairs.keys():
                                 # combtrigs = tuple(x for x in triggercomb if trig in x)
@@ -224,7 +142,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                 for j in _2Dpairs[trig]:
                     vname = add_vnames(j[0],j[1])
                     for t in triggers:
-                        pcuts2D[t][vname] = passes_cuts(t, [j[0], j[1]], lf, args.debug)
+                        pcuts2D[t][vname] = sel.var_cuts(t, [j[0], j[1]], args.nocut_dummy_str)
 
         #logic AND to intersect all triggers in this combination
         pass_trigger_intersection = {}
@@ -236,7 +154,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
 
         for chn in channels:
             if is_channel_consistent(chn, lf.get_leaf('pairType')):
-
+                
                 # fill histograms for 1D efficiencies
                 for j in variables:
                     binning1D = (nbins[j][chn], binedges[j][chn])
@@ -269,7 +187,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                                 htrig_name = rewrite_cut_string(base_str, key)
                                 hTrig[chn][j][joinNTC(tcomb)][key] = TH1D(htrig_name, '', *binning1D)
 
-                            ds_flag = match_inters_with_dataset(tcomb, dataset, chn)
+                            ds_flag = sel.match_inters_with_dataset(tcomb, chn)
                             if val and pass_trigger_intersection[joinNTC(tcomb)] and ds_flag:
                                 hTrig[chn][j][joinNTC(tcomb)][key].Fill(fill_var[j][chn], evt_weight)
 
@@ -315,22 +233,27 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                                         h2Trig[chn][vname][joinNTC(combtrig)][key] = TH2D(h2name, '',
                                                                                         *binning2D)
 
-                                    ds_flag = match_inters_with_dataset(combtrig, dataset, chn)
+                                    ds_flag = sel.match_inters_with_dataset(combtrig, chn)
                                     if val and pass_trigger_intersection[joinNTC(combtrig)] and ds_flag:
                                         h2Trig[chn][vname][joinNTC(combtrig)][key].Fill(*fill_info)
 
     file_id = ''.join( c for c in infile[-10:] if c.isdigit() ) 
     outname = os.path.join(outdir, tprefix + sample + '_' + file_id + subtag + '.root')
     print('Saving file {} at {} '.format(file_id, outname) )
+
+    empty_files = True
     
     f_out = TFile(outname, 'RECREATE')
     f_out.cd()
     for chn in channels:
         for j in variables:
-            hRef[chn][j].Write( get_hnames('Ref1D')(i,j) )
+            if hRef[chn][j].GetEntries() > 0:
+                empty_files = False
+                
+            hRef[chn][j].Write( get_hnames('Ref1D')(chn,j) )
             for tcomb in triggercomb[chn]:
                 for khist,vhist in hTrig[chn][j][joinNTC(tcomb)].items():
-                    base_str = get_hnames('Trig1D')(i,j,joinNTC(tcomb))
+                    base_str = get_hnames('Trig1D')(chn,j,joinNTC(tcomb))
                     writename = rewrite_cut_string(base_str, khist)
                     vhist.Write(writename)
 
@@ -338,11 +261,14 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
             h2Ref[chn][vname].Write()
             for tc in h2Trig[chn][vname].keys():
                 for key in h2Trig[chn][vname][tc].keys():
-                    #print('\t|\t'.join([i, vname, tc, key]))
-                    #h2name = get_hnames('Trig2D')(i, vname, joinNTC(tcomb))
                     base_str = h2Trig[chn][vname][tc][key].GetName()
                     writename = rewrite_cut_string(base_str, key)
                     h2Trig[chn][vname][tc][key].Write(writename)
+
+    if empty_files:
+        mes = 'All 1D histograms are empty.'
+        raise RuntimeError(mes)
+    
     f_out.Close()
     f_in.Close()
 

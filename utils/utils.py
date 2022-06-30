@@ -40,11 +40,6 @@ def build_prog_path(base, script_name):
     script = os.path.join(base, 'scripts')
     script = os.path.join(script, script_name)
     return 'python3 {}'.format(script)
-
-def check_bit(number, bitpos):
-    bitdigit = 1
-    res = bool(number&(bitdigit<<bitpos))
-    return res
             
 def create_single_dir(p):
     """Creates a directory if it does not exist"""
@@ -239,19 +234,6 @@ def get_root_object(name, afile):
         raise ValueError(msg)
     return afile.Get(name)
 
-def get_trigger_bit(trigger_name, isdata):
-    """
-    Returns the trigger bit corresponding to '_triggers_map'
-    """
-    s = 'data' if isdata else 'mc'
-    res = _triggers_map[trigger_name]
-    try:
-        res = res[s]
-    except KeyError:
-        print('You likely forgot to add your custom trigger to _triggers_custom.')
-        raise
-    return res
-
 def hadd_subpaths(args, channel=''):
     channel_str = '' if channel=='' else channel+'_'
     _tbase1 = args.tprefix + channel_str + args.dataset_name
@@ -320,168 +302,7 @@ def load_binning(afile, key, variables, channels):
                 nbins[var][chn] = len(binedges[var][chn]) - 1
 
     return binedges, nbins
-
-def match_inters_with_dataset(tcomb, dataset, channel):
-    if dataset not in _data.keys():
-        raise ValueError('Dataset {} is not supported.'.format(dataset))
     
-    # Ignore long intersections for simplicity CHANGE !!!!!!! ??
-    if len(trigger_combination) > 3:
-        return False
-
-    wrong_comb = 'Combination {} is not supported for channel {}.'
-
-    # one single reference per trigger combination
-    decision = lambda ds : True if dataset == ds else False
-
-    #general triggers
-    if tcomb in ( ('IsoTau180',),
-                  ('VBFTauCustom'),
-                  ('METNoMu120'),
-                  ('IsoTau180', 'METNoMu120'),
-                  ('IsoTau180', 'VBFTauCustom'),
-                  ('METNoMu120', 'VBFTauCustom'),
-                  ('IsoTau180', 'METNoMu120', 'VBFTauCustom'),
-                 ):
-        return decision('MET')
-    elif tcomb in ( ):
-        return decision('EG')
-
-    # channel-specific triggers
-    if channel == 'etau':
-        if tcomb in ( ('Ele32',),
-                      ('EleIsoTauCustom',),
-                      ('Ele32', 'EleIsoTauCustom'),
-                      ('Ele32', 'VBFTauCustom'),
-                      ('Ele32', 'METNoMu120'),
-                      ('Ele32', 'IsoTau180'),
-                      ('EleIsoTauCustom', 'VBFTauCustom'),
-                      ('EleIsoTauCustom', 'METNoMu120'),
-                      ('EleIsoTauCustom', 'IsoTau180'),
-                      ('EleIsoTauCustom', 'IsoTau180'),
-                      ('Ele32', 'EleIsoTauCustom', 'VBFTauCustom'),
-                      ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
-                      ('Ele32', 'EleIsoTauCustom', 'IsoTau180'),
-                      ('Ele32', 'IsoTau180', 'VBFTauCustom'),
-                     ):
-            return decision('MET')
-        elif tcomb in ( ) :
-            return decision('EG')
-        else:
-            raise ValueError(wrong_comb.format(tcomb, channel))
-        
-    elif channel == 'mutau':
-        if tcomb in ( ('IsoMu24',),
-                      ('IsoMuIsoTauCustom',),
-                      ('IsoMu24', 'IsoMuIsoTauCustom'),
-                      ('IsoMu24', 'VBFTauCustom'),
-                      ('IsoMu24', 'METNoMu120'),
-                      ('IsoMu24', 'IsoTau180'),
-                      ('IsoMuIsoTauCustom', 'VBFTauCustom'),
-                      ('IsoMuIsoTauCustom', 'METNoMu120'),
-                      ('IsoMuIsoTauCustom', 'IsoTau180'),
-                      ('IsoMuIsoTauCustom', 'IsoTau180'),
-                      ('IsoMu24', 'IsoMuIsoTauCustom', 'VBFTauCustom'),
-                      ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
-                      ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180'),
-                      ('IsoMu24', 'IsoTau180', 'VBFTauCustom'),
-                     ):
-            return decision('MET')
-        elif tcomb in ( ) :
-            return decision('EG')
-        else:
-            raise ValueError(wrong_comb.format(tcomb, channel))
-        
-    elif channel == 'tautau':
-        if tcomb in ( ('IsoDoubleTauCustom',),
-                      ('IsoDoubleTauCustom', 'VBFTauCustom'),
-                      ('IsoDoubleTauCustom', 'METNoMu120'),
-                      ('IsoDoubleTauCustom', 'IsoTau180'),
-                      ('IsoDoubleTauCustom', 'IsoTau180', 'VBFTauCustom'),
-                     ):
-            return decision('MET')
-        elif tcomb in ( ) :
-            return decision('EG')
-        else:
-            raise ValueError(wrong_comb.format(tcomb, channel))
-        
-    else:
-        raise ValueError('Channel {} is not supported.'.format(channel))
-    
-def pass_selection_cuts(leaf_manager, iso_cuts=dict(),
-                        lepton_veto=True, bjets_cut=True, invert_mass_cut=True):
-    """
-    Applies selection cut to one event.
-    Returns `True` only if all selection cuts pass.
-    """
-    mhh = leaf_manager.get_leaf('HHKin_mass')
-    if mhh<1:
-        return False
-
-    pairtype = leaf_manager.get_leaf('pairType')
-    dau1_eleiso = leaf_manager.get_leaf('dau1_eleMVAiso')
-    dau1_muiso  = leaf_manager.get_leaf('dau1_iso')
-    dau1_tauiso = leaf_manager.get_leaf('dau1_deepTauVsJet')
-    dau2_tauiso = leaf_manager.get_leaf('dau2_deepTauVsJet')
-
-    # third lepton veto
-    nleps = leaf_manager.get_leaf('nleps')
-    if nleps > 0 and lepton_veto:
-        return False
-
-    # require at least two b jet candidates
-    nbjetscand = leaf_manager.get_leaf('nbjetscand')
-    if nbjetscand <= 1 and bjet_cuts:
-        return False
-
-    # Loose / Medium / Tight
-    iso_allowed = { 'dau1_ele': 1., 'dau1_mu': 0.15,
-                    'dau1_tau': 5., 'dau2_tau': 5. }
-    if any(x not in iso_allowed for x in iso_cuts.keys()):
-        mes = 'At least one of the keys is not allowed. '
-        mes += 'Keys introduced: {}.'.format(iso_cuts.keys())
-        raise ValueError(mes)
-
-    # setting to the defaults in case the user did not specify the values
-    for k, v in iso_allowed:
-        if k not in iso_cuts: iso_cuts[k] = v
-        
-    bool0 = pairtype==0 and (dau1_muiso >= iso_cuts['dau1_mu'] or
-                             dau2_tauiso < iso_cuts['dau2_tau'])
-    bool1 = pairtype==1 and (dau1_eleiso != iso_cuts['dau1_ele'] or
-                             dau2_tauiso < iso_cuts['dau2_tau'])
-    bool2 = pairtype==2 and (dau1_tauiso < iso_cuts['dau1_tau'] or
-                             dau2_tauiso < iso_cuts['dau2_tau'])
-    if bool0 or bool1 or bool2:
-        return False
-
-    #((tauH_SVFIT_mass-116.)*(tauH_SVFIT_mass-116.))/(35.*35.) + ((bH_mass_raw-111.)*(bH_mass_raw-111.))/(45.*45.) <  1.0
-    svfit_mass = leaf_manager.get_leaf('tauH_SVFIT_mass')
-    bh_mass    = leaf_manager.get_leaf('bH_mass_raw')
-
-    mcut = ( (svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
-             (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) <  1.0
-    if mcut and invert_mass_cut: # inverted elliptical mass cut (-> ttCR)
-        return False
-
-    return True
-
-def pass_dataset_cuts(leaf_manager, dataset):
-    """
-    Applies selection cuts depending on the reference trigger being considered.
-    Reference triggers tend to be associated with a certain dataset.
-    For instance, the 'MET' dataset is connected to the MET Trigger.
-    """
-    if dataset == 'MET':
-        pass_selection_cuts(leaf_manager, iso_cuts,
-                            lepton_veto, bjets_cut, invert_mass_cut)
-    elif dataset == 'EG':
-        pass_selection_cuts(leaf_manager, iso_cuts,
-                            lepton_veto, bjets_cut, invert_mass_cut)
-    else:
-        mes = 'Dataset {} is not supported.'.format(dataset)
-        raise ValueError(mes)
-
 def redraw_border():
     """
     this little macro redraws the axis tick marks and the pad border lines.
@@ -526,83 +347,8 @@ def set_pure_input_namespace(func):
 
     return wrapper
 
-def set_custom_trigger_bit(trigger, trigBit, run, isData):
-    """
-    The VBF trigger was updated during data taking, adding HPS
-    https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger
-    """
-    if trigger not in _triggers_custom:
-        import inspect
-        currentFunction = inspect.getframeinfo(frame).function
-        raise ValueError('[{}] option not supported.'.format(currentFunction))
-
-    if run < 317509 and isData:
-        if trigger == 'VBFTauCustom':
-            bits = check_bit(trigBit, _triggers_map[trigger]['VBFTau']['data'])
-        elif trigger == 'IsoDoubleTauCustom':
-            bits = ( check_bit(trigBit, _triggers_map[trigger]['IsoDoubleTau']['data'][0]) or
-                     check_bit(trigBit, _triggers_map[trigger]['IsoDoubleTau']['data'][1]) or
-                     check_bit(trigBit, _triggers_map[trigger]['IsoDoubleTau']['data'][2]) )
-        elif trigger == 'IsoMuIsoTauCustom':
-            bits = check_bit(trigBit, _triggers_map[trigger]['IsoMuIsoTau']['data'])
-        elif trigger == 'EleIsoTauCustom':
-            bits = check_bit(trigBit, _triggers_map[trigger]['EleIsoTau']['data'])
-
-    else:
-        s = 'data' if isData else 'mc'
-        if trigger == 'VBFTauCustom':
-            bits = check_bit(trigBit, _triggers_map[trigger]['VBFTauHPS'][s])
-        elif trigger == 'IsoDoubleTauCustom':
-            bits = check_bit(trigBit, _triggers_map[trigger]['IsoDoubleTauHPS'][s])
-        elif trigger == 'IsoMuIsoTauCustom':
-            bits = check_bit(trigBit, _triggers_map[trigger]['IsoMuIsoTauHPS'][s])
-        elif trigger == 'EleIsoTauCustom':
-            bits = check_bit(trigBit, _triggers_map[trigger]['EleIsoTauHPS'][s])
-
-    return bits
-
 def split_vnames(joinvars):
     return joinvars.split('_VERSUS_')
-
-def _pass_triggers(trigs, bit, run, isdata):
-    """
-    Internal only function.
-    Checks at least one trigger was fired.
-    """
-    flag = False
-    for trig in trigs:
-        if trig in _triggers_custom:
-            flag = set_custom_trigger_bit(trig, bit, run, isdata)
-        else:
-            flag = check_bit(bit, get_trigger_bit(trig, isdata))
-        if flag:
-            return True
-    return False
-    
-def pass_any_trigger(trigs, bit, run, isdata):
-    """
-    Checks at least one trigger was fired.
-    Considers all framework triggers.
-    """
-    return _pass_triggers(trigs)
-
-def pass_dataset_triggers(dataset, trigs, bit, run, isdata):
-    """
-    Checks at least one trigger was fired.
-    Considers framework triggers for a specific dataset.
-    """
-    dataset_ref_trigs = { 'MET': ('METNoMu120',), # triggers for the MET dataset
-                          'EG':  ('Ele32',) } # triggers for the Ele32 dataset
-    assert( 'METNoMu120' in trigs )
-    assert( 'Ele32' in trigs )
-
-    return _pass_triggers(dataset_ref_trigs[dataset])
-
-def pass_trigger_bits(trig, trig_bit, run, isdata):
-    if trig in _triggers_custom:
-        return set_custom_trigger_bit(trig, trig_bit, run, isdata)
-    else:
-        return check_bit(trig_bit, get_trigger_bit(trig, isdata))
 
 def print_configuration(parse_args):
     filename = inspect.stack()[1].filename 
