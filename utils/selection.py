@@ -32,24 +32,26 @@ class EventSelection:
         res = bool(self.bit&(bitdigit<<bitpos))
         return res
 
-    def dataset_cuts(self):
+    def dataset_cuts(self, tcomb, channel):
         """
         Applies selection cuts depending on the reference trigger being considered.
         Reference triggers tend to be associated with a certain dataset.
         For instance, the 'MET' dataset is connected to the MET Trigger.
         """
-        if self.dataset == 'MET':
+        reference = ind_inters_for_dataset(self, tcomb, channel)
+        
+        if reference == 'MET':
             return self.selection_cuts(lepton_veto=True)
-        elif self.dataset == 'EG':
+        elif reference == 'EG':
             return self.selection_cuts(lepton_veto=True)
         else:
-            if self.dataset in _data.keys():
+            if reference in _data.keys():
                 mes = 'You forgot to include dataset {} in EventSelection!'
             else:
                 mes = 'Dataset {} is not supported.'
-            raise ValueError(mes.format(self.dataset))
+            raise ValueError(mes.format(reference))
 
-    def dataset_triggers(self, trigs):
+    def dataset_triggers(self, trigs, tcomb, channel):
         """
         Checks at least one trigger was fired.
         Considers framework triggers for a specific dataset.
@@ -66,7 +68,8 @@ class EventSelection:
                     mes = 'Reference trigger {} is not part of triggers {}.'
                     raise ValueError(mes.format(v,trigs))
 
-        return self._pass_triggers(dataset_ref_trigs[self.dataset])
+        reference = find_inters_for_dataset(self, tcomb, channel)
+        return self._pass_triggers(dataset_ref_trigs[reference])
 
     def get_trigger_bit(self, trigger_name):
         """
@@ -81,19 +84,8 @@ class EventSelection:
             raise
         return res
 
-    def match_inters_with_dataset(self, tcomb, channel):
-        """Matches a trigger intersection with a reference trigger."""
-        if self.dataset not in _data.keys():
-            raise ValueError('Dataset {} is not supported.'.format(self.dataset))
-        
-        # Ignore long intersections for simplicity CHANGE !!!!!!! ??
-        if len(tcomb) > 3:
-            return False
-     
+    def find_inters_for_dataset(self, tcomb, channel):
         wrong_comb = 'Combination {} is not supported for channel {}.'
-     
-        # one single reference per trigger combination
-        decision = lambda ds : True if self.dataset == ds else False
      
         #general triggers
         if tcomb in ( ('IsoTau180',),
@@ -104,9 +96,9 @@ class EventSelection:
                       ('METNoMu120', 'VBFTauCustom'),
                       ('IsoTau180', 'METNoMu120', 'VBFTauCustom'),
                      ):
-            return decision('MET')
+            return 'MET' if self.isdata else 'TT'
         elif tcomb in ( ):
-            return decision('EG')
+            return 'EG' if self.isdata else 'TT'
      
         # channel-specific triggers
         if channel == 'etau':
@@ -130,9 +122,9 @@ class EventSelection:
                           ('EleIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
                           ('EleIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
                          ):
-                return decision('MET')
+                return 'MET' if self.isdata else 'TT'
             elif tcomb in ( ) :
-                return decision('EG')
+                return 'EG' if self.isdata else 'TT'
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -157,9 +149,9 @@ class EventSelection:
                           ('IsoMuIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
                           ('IsoMuIsoTauCustom', 'METNoMu120', 'VBFTauCustom')
                          ):
-                return decision('MET')
+                return 'MET' if self.isdata else 'TT'
             elif tcomb in ( ) :
-                return decision('EG')
+                return 'EG' if self.isdata else 'TT'
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -172,14 +164,30 @@ class EventSelection:
                           ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
                           ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
                          ):
-                return decision('MET')
+                return 'MET' if self.isdata else 'TT'
             elif tcomb in ( ) :
-                return decision('EG')
+                return 'EG' if self.isdata else 'TT'
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
         else:
             raise ValueError('Channel {} is not supported.'.format(channel))
+
+    def match_inters_with_dataset(self, tcomb, channel):
+        """Matches a trigger intersection with a reference trigger."""
+        if self.dataset not in _data.keys():
+            raise ValueError('Dataset {} is not supported.'.format(self.dataset))
+        
+        # Ignore long intersections for simplicity CHANGE !!!!!!! ??
+        if len(tcomb) > 3:
+            return False
+
+        # one single reference per trigger combination
+        decision = lambda ds : True if self.dataset == ds else False
+
+        reference = find_inters_for_dataset(tcomb, channel)
+        return decision(reference)
+
 
     def _pass_triggers(self, trigs):
         """

@@ -96,10 +96,6 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
         t_in.GetEntry(entry)
 
         sel = EventSelection(lf, dataset, isdata)
-        if not sel.dataset_cuts():
-            continue
-        if not sel.dataset_triggers(triggers):
-            continue
 
         #mcweight   = lf.get_leaf('MC_weight')
         pureweight = lf.get_leaf('PUReweight')
@@ -135,7 +131,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                 pcuts1D[trig][var] = sel.var_cuts(trig, [var], args.nocut_dummy_str)
 
             if trig in _2Dpairs.keys():
-                                # combtrigs = tuple(x for x in triggercomb if trig in x)
+                # combtrigs = tuple(x for x in triggercomb if trig in x)
                 # for combtrig in combtrigs:
                 # pcuts2D[joinNTC(combtrig)] = {}
                 for j in _2Dpairs[trig]:
@@ -157,7 +153,6 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                 # fill histograms for 1D efficiencies
                 for j in variables:
                     binning1D = (nbins[j][chn], binedges[j][chn])
-                    hRef[chn][j].Fill(fill_var[j][chn], evt_weight)
 
                     # The following is tricky, as we are considering, simultaneously:
                     # - all trigger intersection combinations
@@ -167,6 +162,16 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                     # Each element will contain one possible cut combination
                     # for the trigger combination 'tcomb' being considered
                     for tcomb in triggercomb[chn]:
+
+                        if not sel.dataset_cuts(tcomb, chn)
+                            continue
+                        if not sel.dataset_triggers(triggers, tcomb, chn):
+                            continue
+                        if not sel.match_inters_with_dataset(tcomb, chn):
+                            continue
+
+                        hRef[chn][j][joinNTC(tcomb)].Fill(fill_var[j][chn], evt_weight)
+                        
                         cuts_combinations = list(it.product( *(pcuts1D[atrig][j].items()
                                                              for atrig in tcomb) ))
 
@@ -186,8 +191,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                                 htrig_name = rewrite_cut_string(base_str, key)
                                 hTrig[chn][j][joinNTC(tcomb)][key] = TH1D(htrig_name, '', *binning1D)
 
-                            ds_flag = sel.match_inters_with_dataset(tcomb, chn)
-                            if val and pass_trigger_intersection[joinNTC(tcomb)] and ds_flag:
+                            if val and pass_trigger_intersection[joinNTC(tcomb)]:
                                 hTrig[chn][j][joinNTC(tcomb)][key].Fill(fill_var[j][chn], evt_weight)
 
                 # fill 2D efficiencies
