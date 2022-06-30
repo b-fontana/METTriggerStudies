@@ -19,33 +19,35 @@ class EventSelection:
         if self.dataset not in _data:
             mes = 'Dataset {} is not supported.'.format(self.dataset)
             raise ValueError(mes)
-        
-    def check_bit(self, bitpos):
-        bitdigit = 1
-        res = bool(self.bit&(bitdigit<<bitpos))
-        return res
 
-    def _pass_triggers(self, trigs):
-        """
-        Internal only function.
-        Checks at least one trigger was fired.
-        """
-        flag = False
-        for trig in trigs:
-            if trig in tcust:
-                flag = set_custom_trigger_bit(trig, self.bit, self.run)
-            else:
-                flag = self.check_bit(self.get_trigger_bit(trig))
-            if flag:
-                return True
-        return False
-    
     def any_trigger(self, trigs):
         """
         Checks at least one trigger was fired.
         Considers all framework triggers.
         """
         return self._pass_triggers(trigs)
+
+    def check_bit(self, bitpos):
+        bitdigit = 1
+        res = bool(self.bit&(bitdigit<<bitpos))
+        return res
+
+    def dataset_cuts(self):
+        """
+        Applies selection cuts depending on the reference trigger being considered.
+        Reference triggers tend to be associated with a certain dataset.
+        For instance, the 'MET' dataset is connected to the MET Trigger.
+        """
+        if self.dataset == 'MET':
+            return self.selection_cuts(lepton_veto=True)
+        elif self.dataset == 'EG':
+            return self.selection_cuts(lepton_veto=True)
+        else:
+            if self.dataset in _data.keys():
+                mes = 'You forgot to include dataset {} in EventSelection!'
+            else:
+                mes = 'Dataset {} is not supported.'
+            raise ValueError(mes.format(self.dataset))
 
     def dataset_triggers(self, trigs):
         """
@@ -66,11 +68,133 @@ class EventSelection:
 
         return self._pass_triggers(dataset_ref_trigs[self.dataset])
 
-    def trigger_bits(self, trig):
-        if trig in tcust:
-            return self.set_custom_trigger_bit(trig)
+    def get_trigger_bit(self, trigger_name):
+        """
+        Returns the trigger bit corresponding to 'tmap'
+        """
+        s = 'data' if self.isdata else 'mc'
+        res = tmap[trigger_name]
+        try:
+            res = res[s]
+        except KeyError:
+            print('You likely forgot to add your custom trigger to tcust.')
+            raise
+        return res
+
+    def match_inters_with_dataset(self, tcomb, channel):
+        """Matches a trigger intersection with a reference trigger."""
+        if self.dataset not in _data.keys():
+            raise ValueError('Dataset {} is not supported.'.format(self.dataset))
+        
+        # Ignore long intersections for simplicity CHANGE !!!!!!! ??
+        if len(tcomb) > 3:
+            return False
+     
+        wrong_comb = 'Combination {} is not supported for channel {}.'
+     
+        # one single reference per trigger combination
+        decision = lambda ds : True if self.dataset == ds else False
+     
+        #general triggers
+        if tcomb in ( ('IsoTau180',),
+                      ('VBFTauCustom',),
+                      ('METNoMu120',),
+                      ('IsoTau180', 'METNoMu120'),
+                      ('IsoTau180', 'VBFTauCustom'),
+                      ('METNoMu120', 'VBFTauCustom'),
+                      ('IsoTau180', 'METNoMu120', 'VBFTauCustom'),
+                     ):
+            return decision('MET')
+        elif tcomb in ( ):
+            return decision('EG')
+     
+        # channel-specific triggers
+        if channel == 'etau':
+            if tcomb in ( ('Ele32',),
+                          ('EleIsoTauCustom',),
+                          ('Ele32', 'EleIsoTauCustom'),
+                          ('Ele32', 'VBFTauCustom'),
+                          ('Ele32', 'METNoMu120'),
+                          ('Ele32', 'IsoTau180'),
+                          ('EleIsoTauCustom', 'VBFTauCustom'),
+                          ('EleIsoTauCustom', 'METNoMu120'),
+                          ('EleIsoTauCustom', 'IsoTau180'),
+                          ('EleIsoTauCustom', 'IsoTau180'),
+                          ('Ele32', 'EleIsoTauCustom', 'VBFTauCustom'),
+                          ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
+                          ('Ele32', 'EleIsoTauCustom', 'IsoTau180'),
+                          ('Ele32', 'IsoTau180', 'VBFTauCustom'),
+                          ('Ele32', 'IsoTau180', 'METNoMu120'),
+                          ('Ele32', 'METNoMu120', 'VBFTauCustom'),
+                          ('EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
+                          ('EleIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
+                          ('EleIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
+                         ):
+                return decision('MET')
+            elif tcomb in ( ) :
+                return decision('EG')
+            else:
+                raise ValueError(wrong_comb.format(tcomb, channel))
+            
+        elif channel == 'mutau':
+            if tcomb in ( ('IsoMu24',),
+                          ('IsoMuIsoTauCustom',),
+                          ('IsoMu24', 'IsoMuIsoTauCustom'),
+                          ('IsoMu24', 'VBFTauCustom'),
+                          ('IsoMu24', 'METNoMu120'),
+                          ('IsoMu24', 'IsoTau180'),
+                          ('IsoMuIsoTauCustom', 'VBFTauCustom'),
+                          ('IsoMuIsoTauCustom', 'METNoMu120'),
+                          ('IsoMuIsoTauCustom', 'IsoTau180'),
+                          ('IsoMuIsoTauCustom', 'IsoTau180'),
+                          ('IsoMu24', 'IsoMuIsoTauCustom', 'VBFTauCustom'),
+                          ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
+                          ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180'),
+                          ('IsoMu24', 'IsoTau180', 'METNoMu120'),
+                          ('IsoMu24', 'IsoTau180', 'VBFTauCustom'),
+                          ('IsoMu24', 'METNoMu120', 'VBFTauCustom'),
+                          ('IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
+                          ('IsoMuIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
+                          ('IsoMuIsoTauCustom', 'METNoMu120', 'VBFTauCustom')
+                         ):
+                return decision('MET')
+            elif tcomb in ( ) :
+                return decision('EG')
+            else:
+                raise ValueError(wrong_comb.format(tcomb, channel))
+            
+        elif channel == 'tautau':
+            if tcomb in ( ('IsoDoubleTauCustom',),
+                          ('IsoDoubleTauCustom', 'VBFTauCustom'),
+                          ('IsoDoubleTauCustom', 'METNoMu120'),
+                          ('IsoDoubleTauCustom', 'IsoTau180'),
+                          ('IsoDoubleTauCustom', 'IsoTau180', 'VBFTauCustom'),
+                          ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
+                          ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
+                         ):
+                return decision('MET')
+            elif tcomb in ( ) :
+                return decision('EG')
+            else:
+                raise ValueError(wrong_comb.format(tcomb, channel))
+            
         else:
-            return self.check_bit(self.get_trigger_bit(trig))
+            raise ValueError('Channel {} is not supported.'.format(channel))
+
+    def _pass_triggers(self, trigs):
+        """
+        Internal only function.
+        Checks at least one trigger was fired.
+        """
+        flag = False
+        for trig in trigs:
+            if trig in tcust:
+                flag = set_custom_trigger_bit(trig, self.bit, self.run)
+            else:
+                flag = self.check_bit(self.get_trigger_bit(trig))
+            if flag:
+                return True
+        return False    
 
     def selection_cuts(self, iso_cuts=dict(), lepton_veto=True,
                        bjets_cut=True, invert_mass_cut=True):
@@ -130,23 +254,6 @@ class EventSelection:
 
         return True
 
-    def dataset_cuts(self):
-        """
-        Applies selection cuts depending on the reference trigger being considered.
-        Reference triggers tend to be associated with a certain dataset.
-        For instance, the 'MET' dataset is connected to the MET Trigger.
-        """
-        if self.dataset == 'MET':
-            return self.selection_cuts(lepton_veto=True)
-        elif self.dataset == 'EG':
-            return self.selection_cuts(lepton_veto=True)
-        else:
-            if self.dataset in _data.keys():
-                mes = 'You forgot to include dataset {} in EventSelection!'
-            else:
-                mes = 'Dataset {} is not supported.'
-            raise ValueError(mes.format(self.dataset))
-
     def set_custom_trigger_bit(self, trigger):
         """
         The VBF trigger was updated during data taking, adding HPS
@@ -182,106 +289,11 @@ class EventSelection:
 
         return bits
 
-    def get_trigger_bit(self, trigger_name):
-        """
-        Returns the trigger bit corresponding to 'tmap'
-        """
-        s = 'data' if self.isdata else 'mc'
-        res = tmap[trigger_name]
-        try:
-            res = res[s]
-        except KeyError:
-            print('You likely forgot to add your custom trigger to tcust.')
-            raise
-        return res
-
-    def match_inters_with_dataset(self, tcomb, channel):
-        """Matches a trigger intersection with a reference trigger."""
-        if self.dataset not in _data.keys():
-            raise ValueError('Dataset {} is not supported.'.format(self.dataset))
-        
-        # Ignore long intersections for simplicity CHANGE !!!!!!! ??
-        if len(tcomb) > 3:
-            return False
-     
-        wrong_comb = 'Combination {} is not supported for channel {}.'
-     
-        # one single reference per trigger combination
-        decision = lambda ds : True if self.dataset == ds else False
-     
-        #general triggers
-        if tcomb in ( ('IsoTau180',),
-                      ('VBFTauCustom'),
-                      ('METNoMu120'),
-                      ('IsoTau180', 'METNoMu120'),
-                      ('IsoTau180', 'VBFTauCustom'),
-                      ('METNoMu120', 'VBFTauCustom'),
-                      ('IsoTau180', 'METNoMu120', 'VBFTauCustom'),
-                     ):
-            return decision('MET')
-        elif tcomb in ( ):
-            return decision('EG')
-     
-        # channel-specific triggers
-        if channel == 'etau':
-            if tcomb in ( ('Ele32',),
-                          ('EleIsoTauCustom',),
-                          ('Ele32', 'EleIsoTauCustom'),
-                          ('Ele32', 'VBFTauCustom'),
-                          ('Ele32', 'METNoMu120'),
-                          ('Ele32', 'IsoTau180'),
-                          ('EleIsoTauCustom', 'VBFTauCustom'),
-                          ('EleIsoTauCustom', 'METNoMu120'),
-                          ('EleIsoTauCustom', 'IsoTau180'),
-                          ('EleIsoTauCustom', 'IsoTau180'),
-                          ('Ele32', 'EleIsoTauCustom', 'VBFTauCustom'),
-                          ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
-                          ('Ele32', 'EleIsoTauCustom', 'IsoTau180'),
-                          ('Ele32', 'IsoTau180', 'VBFTauCustom'),
-                         ):
-                return decision('MET')
-            elif tcomb in ( ) :
-                return decision('EG')
-            else:
-                raise ValueError(wrong_comb.format(tcomb, channel))
-            
-        elif channel == 'mutau':
-            if tcomb in ( ('IsoMu24',),
-                          ('IsoMuIsoTauCustom',),
-                          ('IsoMu24', 'IsoMuIsoTauCustom'),
-                          ('IsoMu24', 'VBFTauCustom'),
-                          ('IsoMu24', 'METNoMu120'),
-                          ('IsoMu24', 'IsoTau180'),
-                          ('IsoMuIsoTauCustom', 'VBFTauCustom'),
-                          ('IsoMuIsoTauCustom', 'METNoMu120'),
-                          ('IsoMuIsoTauCustom', 'IsoTau180'),
-                          ('IsoMuIsoTauCustom', 'IsoTau180'),
-                          ('IsoMu24', 'IsoMuIsoTauCustom', 'VBFTauCustom'),
-                          ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
-                          ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180'),
-                          ('IsoMu24', 'IsoTau180', 'VBFTauCustom'),
-                         ):
-                return decision('MET')
-            elif tcomb in ( ) :
-                return decision('EG')
-            else:
-                raise ValueError(wrong_comb.format(tcomb, channel))
-            
-        elif channel == 'tautau':
-            if tcomb in ( ('IsoDoubleTauCustom',),
-                          ('IsoDoubleTauCustom', 'VBFTauCustom'),
-                          ('IsoDoubleTauCustom', 'METNoMu120'),
-                          ('IsoDoubleTauCustom', 'IsoTau180'),
-                          ('IsoDoubleTauCustom', 'IsoTau180', 'VBFTauCustom'),
-                         ):
-                return decision('MET')
-            elif tcomb in ( ) :
-                return decision('EG')
-            else:
-                raise ValueError(wrong_comb.format(tcomb, channel))
-            
+    def trigger_bits(self, trig):
+        if trig in tcust:
+            return self.set_custom_trigger_bit(trig)
         else:
-            raise ValueError('Channel {} is not supported.'.format(channel))
+            return self.check_bit(self.get_trigger_bit(trig))
 
     def var_cuts(self, trig, variables, nocut_dummy_str):
         """

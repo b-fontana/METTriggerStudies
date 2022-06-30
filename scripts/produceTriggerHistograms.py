@@ -60,35 +60,35 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
     #  hTrig: pass the reference trigger + trigger under study
     hRef, hTrig = ({} for _ in range(2))
 
-    for i in channels:
-        hRef[i], hTrig[i] = ({} for _ in range(2))
+    for chn in channels:
+        hRef[chn], hTrig[chn] = ({} for _ in range(2))
         for j in variables:
-            binning1D = (nbins[j][i], binedges[j][i])
-            hTrig[i][j]={}
-            hRef[i][j] = TH1D( get_hnames('Ref1D')(i, j), '', *binning1D)
-            for tcomb in triggercomb[i]:
-                hTrig[i][j][joinNTC(tcomb)]={}
+            binning1D = (nbins[j][chn], binedges[j][chn])
+            hTrig[chn][j]={}
+            hRef[chn][j] = TH1D( get_hnames('Ref1D')(chn, j), '', *binning1D)
+            for tcomb in triggercomb[chn]:
+                hTrig[chn][j][joinNTC(tcomb)]={}
 
     # Define 2D histograms
     #  h2Ref: pass the reference trigger
     #  h2Trig: pass the reference trigger + trigger under study
     h2Ref, h2Trig = ({} for _ in range(2))
     
-    for i in channels:
-        h2Ref[i], h2Trig[i] = ({} for _ in range(2))
+    for chn in channels:
+        h2Ref[chn], h2Trig[chn] = ({} for _ in range(2))
         for onetrig in triggers:
             if onetrig in _2Dpairs.keys():
-                combtrigs = {x for x in triggercomb[i] if onetrig in x}
+                combtrigs = {x for x in triggercomb[chn] if onetrig in x}
                 for combtrig in combtrigs:
                     for j in _2Dpairs[onetrig]:
-                        binning2D = ( nbins[j[0]][i], binedges[j[0]][i],
-                                      nbins[j[1]][i], binedges[j[1]][i] )
+                        binning2D = ( nbins[j[0]][chn], binedges[j[0]][chn],
+                                      nbins[j[1]][chn], binedges[j[1]][chn] )
                         vname = add_vnames(j[0],j[1])
-                        if vname not in h2Ref[i]:
-                            h2Ref[i][vname] = TH2D(get_hnames('Ref2D')(i, vname), '', *binning2D)
-                        if vname not in h2Trig[i]:
-                            h2Trig[i][vname] = {}
-                        h2Trig[i][vname][joinNTC(combtrig)] = {}
+                        if vname not in h2Ref[chn]:
+                            h2Ref[chn][vname] = TH2D(get_hnames('Ref2D')(chn, vname), '', *binning2D)
+                        if vname not in h2Trig[chn]:
+                            h2Trig[chn][vname] = {}
+                        h2Trig[chn][vname][joinNTC(combtrig)] = {}
 
     lf = LeafManager(infile, t_in)
     
@@ -98,7 +98,6 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
         sel = EventSelection(lf, dataset, isdata)
         if not sel.dataset_cuts():
             continue
-        print(entry)
         if not sel.dataset_triggers(triggers):
             continue
 
@@ -183,7 +182,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
 
                         for key,val in pcuts_inters.items():
                             if key not in hTrig[chn][j][joinNTC(tcomb)]:
-                                base_str = get_hnames('Trig1D')(i,j,joinNTC(tcomb))
+                                base_str = get_hnames('Trig1D')(chn,j,joinNTC(tcomb))
                                 htrig_name = rewrite_cut_string(base_str, key)
                                 hTrig[chn][j][joinNTC(tcomb)][key] = TH1D(htrig_name, '', *binning1D)
 
@@ -226,7 +225,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
     
                                 for key,val in pcuts_inters.items():
                                     if key not in h2Trig[chn][vname][joinNTC(combtrig)]:
-                                        base_str = get_hnames('Trig2D')(i, vname, joinNTC(combtrig))
+                                        base_str = get_hnames('Trig2D')(chn, vname, joinNTC(combtrig))
                                         h2name = rewrite_cut_string(base_str, key)
                                         binning2D = ( nbins[j[0]][chn], binedges[j[0]][chn],  
                                                       nbins[j[1]][chn], binedges[j[1]][chn] ) 

@@ -11,7 +11,6 @@ import pandas as pd
 import argparse
 
 from utils.utils import (
-    get_trigger_bit,
     LeafManager,
     parse_args,
     set_pure_input_namespace,
@@ -99,9 +98,9 @@ def defineBinning(args):
                 df_chn = {}
                 for chn in args.channels:
                     if chn == 'all':
-                        sel_chn = batch['pairType']<_sel[chn]['pairType'][1]
+                        sel_chn = batch['pairType'] <  _sel[chn]['pairType'][1]
                     else:
-                        sel_chn = batch['pairType']==_sel[chn]['pairType'][1]
+                        sel_chn = batch['pairType'] == _sel[chn]['pairType'][1]
                         
                     df_chn = batch[ sel_chn ]
                     quantiles[chn].append( df_chn.quantile([quant_down, quant_up]) )
