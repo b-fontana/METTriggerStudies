@@ -154,11 +154,11 @@ def get_key_list(afile, inherits=['TH1']):
 
 def get_hnames(opt):
     if opt == 'Ref1D':
-        return lambda a,b : 'Ref1D_{}_{}'.format(a,b)
+        return lambda a,b,c : 'Ref1D_{}_{}_{}'.format(a,b,c)
     elif opt == 'Trig1D':
         return lambda a,b,c : 'Trig1D_{}_{}_{}{}'.format(a,b,c,pholdc)
     elif opt == 'Ref2D':
-        return lambda a,b : 'Ref2D_{}_{}'.format(a,b)
+        return lambda a,b,c : 'Ref2D_{}_{}_{}'.format(a,b,c)
     elif opt == 'Trig2D':
         return lambda a,b,c : 'Trig2D_{}_{}_{}{}'.format(a,b,c,pholdc)
     elif opt == 'Canvas2D':

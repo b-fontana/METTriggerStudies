@@ -87,7 +87,7 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         print('[=debug=]  - Args: proc={proc}, channel={channel}, variable={variable}, trig={trig}'
               .format(proc=proc, channel=channel, variable=variable, trig=trig))
    
-    hnames1D = { 'ref':  get_hnames('Ref1D')(channel, variable),
+    hnames1D = { 'ref':  get_hnames('Ref1D')(channel, variable, trig),
                  'trig': get_hnames('Trig1D')(channel, variable, trig) }
    
     keylist_data = get_key_list(file_data, inherits=['TH1'])
@@ -460,7 +460,7 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
         print('[=debug=]  - Args: joinvars={}, trig_inters={}'
               .format(joinvars, trig))
    
-    hnames2D = { 'ref':  get_hnames('Ref2D')(channel, joinvars),
+    hnames2D = { 'ref':  get_hnames('Ref2D')(channel, joinvars, trig),
                  'trig': get_hnames('Trig2D')(channel, joinvars, trig) }
    
     keylist_data = get_key_list(file_data, inherits=['TH1'])
