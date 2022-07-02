@@ -8,11 +8,11 @@ BASE="jobs/${TAG}/submission/"
 # condor_submit "${BASE}"Histos_SKIM_TT_semiLep/Histos_SKIM_TT_semiLep.condor
 # condor_submit "${BASE}"Histos_SKIM_TT_fullyHad/Histos_SKIM_TT_fullyHad.condor
 
-# condor_submit "${BASE}"Counts_SKIM_MET/Counts_SKIM_MET.condor
-# condor_submit "${BASE}"Counts_SKIM_EGamma/Counts_SKIM_EGamma.condor
-# condor_submit "${BASE}"Counts_SKIM_TT_fullyLep/Counts_SKIM_TT_fullyLep.condor
-# condor_submit "${BASE}"Counts_SKIM_TT_semiLep/Counts_SKIM_TT_semiLep.condor
-# condor_submit "${BASE}"Counts_SKIM_TT_fullyHad/Counts_SKIM_TT_fullyHad.condor
+condor_submit "${BASE}"Counts_SKIM_MET/Counts_SKIM_MET.condor
+condor_submit "${BASE}"Counts_SKIM_EGamma/Counts_SKIM_EGamma.condor
+condor_submit "${BASE}"Counts_SKIM_TT_fullyLep/Counts_SKIM_TT_fullyLep.condor
+condor_submit "${BASE}"Counts_SKIM_TT_semiLep/Counts_SKIM_TT_semiLep.condor
+condor_submit "${BASE}"Counts_SKIM_TT_fullyHad/Counts_SKIM_TT_fullyHad.condor
 
 #condor_submit "${BASE}"HaddHistoMET/HaddHistoMET.condor
 #condor_submit "${BASE}"HaddHistoTT/HaddHistoTT.condor

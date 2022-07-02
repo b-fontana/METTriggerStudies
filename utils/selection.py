@@ -16,7 +16,7 @@ class EventSelection:
         self.isdata = isdata
         self.debug = debug
 
-        self.ref_trigs_data = ('MET', 'EG')
+        self.ref_trigs_data = ('Data_MET', 'Data_EG')
         self.ref_trigs_mc   = ('TT_MET', 'TT_EG')
         
         self.dataset = dataset
@@ -46,9 +46,9 @@ class EventSelection:
         """
         reference = self.find_inters_for_reference(tcomb, channel)
         
-        if reference == 'MET' or reference == 'TT_MET':
+        if reference == 'Data_MET' or reference == 'TT_MET':
             return self.selection_cuts(lepton_veto=True)
-        elif reference == 'EG' or reference == 'TT_EG':
+        elif reference == 'Data_EG' or reference == 'TT_EG':
             return self.selection_cuts(lepton_veto=True)
         elif reference == self.noref_str:
             return False
@@ -66,9 +66,9 @@ class EventSelection:
         """
         dataset_ref_trigs = {
             # trigs for the MET dataset with data
-            'MET': ('METNoMu120',),
+            'Data_MET': ('METNoMu120',),
             # triggers for the EGamma dataset with data
-            'EG':  ('Ele32',),
+            'Data_EG':  ('Ele32',),
             # triggers for the MET dataset with MC
             'TT_MET': ('METNoMu120',),
             # triggers for the EGamma dataset with MC
@@ -91,9 +91,10 @@ class EventSelection:
 
         reference = self.find_inters_for_reference(tcomb, channel)
         if reference == self.noref_str:
-            return False
+            raise OverflowError('Intersection is too long.')
 
-        return self._pass_triggers(dataset_ref_trigs[reference])
+        return ( self._pass_triggers(dataset_ref_trigs[reference]),
+                 dataset_ref_trigs[reference] )
 
     def get_trigger_bit(self, trigger_name):
         """
@@ -150,9 +151,9 @@ class EventSelection:
                           ('EleIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
                           ('EleIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
                          ):
-                return 'MET' if self.isdata else 'TT_MET'
+                return 'Data_MET' if self.isdata else 'TT_MET'
             elif tcomb in ( ) :
-                return 'EG' if self.isdata else 'TT_EG'
+                return 'Data_EG' if self.isdata else 'TT_EG'
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -177,9 +178,9 @@ class EventSelection:
                           ('IsoMuIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
                           ('IsoMuIsoTauCustom', 'METNoMu120', 'VBFTauCustom')
                          ):
-                return 'MET' if self.isdata else 'TT_MET'
+                return 'Data_MET' if self.isdata else 'TT_MET'
             elif tcomb in ( ) :
-                return 'EG' if self.isdata else 'TT_EG'
+                return 'Data_EG' if self.isdata else 'TT_EG'
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -192,9 +193,9 @@ class EventSelection:
                           ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
                           ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
                          ):
-                return 'MET' if self.isdata else 'TT_MET'
+                return 'Data_MET' if self.isdata else 'TT_MET'
             elif tcomb in ( ) :
-                return 'EG' if self.isdata else 'TT_EG'
+                return 'Data_EG' if self.isdata else 'TT_EG'
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             

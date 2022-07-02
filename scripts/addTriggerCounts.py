@@ -46,25 +46,35 @@ def addTriggerCounts(args):
             are_there_files(files, regex)
 
     sep = ','
-    counter, counter_ref = ({} for _ in range(2))
+    reftrigs = {}
+    c_ref, c_inters = ({} for _ in range(2))
     for afile in inputs_join:
         with open(afile, 'r') as f:
             for line in f.readlines():
                 if line.strip(): #ignore empty lines
-                    trig, chn, count = [x.replace('\n', '') for x in line.split(sep)]
-                    print(trig, chn, count)
-                    
-                    if trig != 'Total':
-                        counter.setdefault(chn, {})
-                        counter[chn].setdefault(trig, 0)
-                        counter[chn][trig] += int(count)
+                    title, comb, chn, reftrig, count = [x.replace('\n', '') for x in line.split(sep)]
+                    print(title, comb, chn, reftrig, count)
+
+                    if chn not in reftrigs:
+                        reftrigs[chn] = {}
+                    if comb not in reftrigs[chn]:
+                        reftrigs[chn][comb] = reftrig
+                        
+                    if title == 'Reference':
+                        c_ref.setdefault(chn, {})
+                        c_ref[chn].setdefault(comb, 0)
+                        c_ref[chn][comb] += int(count)
+                    elif title == 'Intersection':
+                        c_inters.setdefault(chn, {})
+                        c_inters[chn].setdefault(comb, 0)
+                        c_inters[chn][comb] += int(count)
                     else:
-                        counter_ref.setdefault(chn, 0)
-                        counter_ref[chn] += int(count)
+                        mes = 'Column {} is not supported.'
+                        raise ValueError(mes.format(mes))
 
     outs = dict()
     outputs_csv = args.outfile_counts
-    channels = list(counter.keys())
+    channels = list(c_inters.keys())
     for chn in channels:
         if args.aggr:
             suboutdir = os.path.join(args.outdir, chn, 'Counts_' + args.dataset_name)
@@ -75,36 +85,49 @@ def addTriggerCounts(args):
             pref, suf = outputs_csv.split('.')
             outs[chn] = pref + '_' + chn + '.' + suf
         
-    for ic,chn in enumerate(counter):
-
+    for ic,chn in enumerate(channels):
         with open(outs[chn], 'w') as fcsv:
-            trigs, vals = ([] for _ in range(2))
-            trigs.append('Total')
-            vals.append(counter_ref[chn])
-            for trig,val in counter[chn].items():
-                trigs.append(trig)
-                vals.append(val)
+            ref_combs, ref_vals = ([] for _ in range(2))
+            int_combs, int_vals = ([] for _ in range(2))
+            for comb, val in c_inters[chn].items():
+                ref_combs.append('Reference_' + comb)
+                ref_vals.append(c_ref[chn][comb])
+                int_combs.append(comb)
+                int_vals.append(val)
 
-            trigs = np.array(trigs)
-            vals = np.array(vals)
+            ref_combs = np.array(ref_combs)
+            ref_vals  = np.array(ref_vals)
+            int_combs = np.array(int_combs)
+            int_vals  = np.array(int_vals)
             
             #sort
-            vals, trigs = (np.array(t[::-1]) for t in zip(*sorted(zip(vals, trigs))))
+            ref_vals, ref_combs = (np.array(t[::-1])
+                                   for t in zip(*sorted(zip(ref_vals, ref_combs))))
+            int_vals, int_combs = (np.array(t[::-1])
+                                   for t in zip(*sorted(zip(int_vals, int_combs))))
 
             #remove zeros
-            zeromask = vals == 0
-            vals = vals[~zeromask]
-            trigs = trigs[~zeromask]
-            refval = vals[trigs.tolist().index('Total')]
+            zeromask = ref_vals == 0
+            ref_vals     = ref_vals[~zeromask]
+            ref_combs    = ref_combs[~zeromask]
+            inters_vals  = inters_vals[~zeromask]
+            inters_combs = inters_combs[~zeromask]
+            if not all(inters_vals):
+                mes = 'At least one of the trigger intersections has zero entries.'
+                mes += ' This should not happen after filtering using the reference '
+                mes += '(denominator of the efficiency).\n'
+                mess += 'Intersections: {}\n'
+                mess += 'Counts: {}\n'
+                raise RuntimeError(mes.format(inters_combs, inters_vals))
+            #refval = vals[trigs.tolist().index('Total')]
 
-            fcsv.write('Trigger Intersection' + sep + 'Counts' + sep + 'Efficiency' + '\n')
-            for i,j in zip(vals,trigs):
-                if i != 0: #do not print the padding
-                    #remove the extra info after the line break
-                    eff = float(i) / refval
-                    newline = ( str(j).replace('_PLUS_', '  AND  ') + sep + str(i) +
-                                sep + str(round(eff,4)) + '\n' )
-                    fcsv.write(newline)
+            line = sep.join('Trigger Intersection', 'Reference', 'Counts', 'Efficiency\n')
+            fcsv.write(line)
+            for refv, refc, intv, intc in zip(ref_vals, ref_combs, inters_vals, inters_combs):
+                eff = float(intv) / float(refv)
+                newline = ( str(refc).replace('_PLUS_', '  AND  ') + sep + str(i) +
+                           sep + str(round(eff,4)) + '\n' )
+                fcsv.write(newline)
 
             fcsv.write('\n')
                     

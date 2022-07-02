@@ -171,12 +171,10 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
 
                         if not sel.dataset_cuts(tcomb, chn):
                             continue
-                        if not sel.dataset_triggers(triggers, tcomb, chn):
+                        if not sel.dataset_triggers(triggers, tcomb, chn)[0]:
                             continue
-                        #print('check2')
                         if not sel.match_inters_with_dataset(tcomb, chn):
                             continue
-                        #print('check3')
 
                         hRef[chn][j][cstr].Fill(fill_var[j][chn], evt_weight)
                         
@@ -212,11 +210,12 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                             
                             if not sel.dataset_cuts(combtrig, chn):
                                 continue
-                            if not sel.dataset_triggers(triggers, combtrig, chn):
+                            if not sel.dataset_triggers(triggers, combtrig, chn)[0]:
                                 continue
                             if not sel.match_inters_with_dataset(combtrig, chn):
                                 continue
-
+                            print('check3', flush=True)
+                            
                             for j in _2Dpairs[onetrig]:
                                 vname = add_vnames(j[0],j[1])
                                 fill_info = ( fill_var[j[0]][chn], fill_var[j[1]][chn],
