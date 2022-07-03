@@ -214,7 +214,6 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                                 continue
                             if not sel.match_inters_with_dataset(combtrig, chn):
                                 continue
-                            print('check3', flush=True)
                             
                             for j in _2Dpairs[onetrig]:
                                 vname = add_vnames(j[0],j[1])

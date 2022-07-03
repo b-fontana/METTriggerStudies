@@ -69,14 +69,13 @@ def getTriggerCounts(outdir, dataset, sample, filename,
                         lambda x,y: x and y, #logic AND to join all triggers in this option
                         [ pass_trigger[x] for x in tcomb ]
                     )
-                    
+
                     if not sel.dataset_cuts(tcomb, chn):
                         continue
                     if not sel.dataset_triggers(triggers, tcomb, chn)[0]:
                         continue
                     if not sel.match_inters_with_dataset(tcomb, chn):
                         continue
-                    print('check', flush=True)
                     
                     tcomb_str = joinNTC(tcomb)
                     c_ref[chn][tcomb_str] += 1

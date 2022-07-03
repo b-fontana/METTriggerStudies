@@ -16,12 +16,16 @@ class EventSelection:
         self.isdata = isdata
         self.debug = debug
 
-        self.ref_trigs_data = ('Data_MET', 'Data_EG')
-        self.ref_trigs_mc   = ('TT_MET', 'TT_EG')
+        self.prefix = 'Data_' if self.isdata else 'TT_'
+        self.datasets = ('MET', 'EG',)
+        self.dataset = self.prefix + dataset
+        for d in self.datasets:
+            assert( d in _data )
+        self.ref_trigs = tuple(self.prefix + x for x in self.datasets)
         
-        self.dataset = dataset
-        if self.dataset not in _data and self.dataset not in _mc_processes:
-            mes = 'Dataset {} is not supported.'.format(self.dataset)
+        if dataset not in _data and dataset not in _mc_processes:
+            mes = 'Dataset {} is not supported '.format(dataset)
+            mes += '(prefix `{}` added).'.format(self.prefix)
             raise ValueError(mes)
 
         self.noref_str = 'NoReference'
@@ -46,14 +50,14 @@ class EventSelection:
         """
         reference = self.find_inters_for_reference(tcomb, channel)
         
-        if reference == 'Data_MET' or reference == 'TT_MET':
+        if reference == self.prefix + 'MET':
             return self.selection_cuts(lepton_veto=True)
-        elif reference == 'Data_EG' or reference == 'TT_EG':
+        elif reference == self.prefix + 'EG':
             return self.selection_cuts(lepton_veto=True)
         elif reference == self.noref_str:
             return False
         else:
-            if reference in self.ref_trigs_data or reference in self.ref_trigs_mc:
+            if reference in self.ref_trigs:
                 mes = 'You forgot to include dataset {} in EventSelection!'
             else:
                 mes = 'Dataset {} is not supported.'
@@ -65,21 +69,17 @@ class EventSelection:
         Considers framework triggers for a specific dataset.
         """
         dataset_ref_trigs = {
-            # trigs for the MET dataset with data
-            'Data_MET': ('METNoMu120',),
-            # triggers for the EGamma dataset with data
-            'Data_EG':  ('Ele32',),
-            # triggers for the MET dataset with MC
-            'TT_MET': ('METNoMu120',),
-            # triggers for the EGamma dataset with MC
-            'TT_EG':  ('Ele32',)
+            # trigs for the MET dataset
+            self.prefix + 'MET': ('METNoMu120',),
+            # triggers for the EGamma dataset
+            self.prefix +  'EG':  ('Ele32',),
             }
         for k in dataset_ref_trigs:
-            if k not in self.ref_trigs_data and k not in self.ref_trigs_mc:
+            if k not in self.ref_trigs:
                 mes = 'Reference trigger {} is being set but not defined.'
                 raise ValueError(mes.format(k))
 
-        for k in self.ref_trigs_data + self.ref_trigs_mc:
+        for k in self.ref_trigs:
             if k not in dataset_ref_trigs:
                 mes = 'Specify the reference trigger for dataset {}!'
                 raise ValueError(mes.format(self.dataset))
@@ -125,9 +125,9 @@ class EventSelection:
                       ('METNoMu120', 'VBFTauCustom'),
                       ('IsoTau180', 'METNoMu120', 'VBFTauCustom'),
                      ):
-            return 'Data_MET' if self.isdata else 'TT_MET'
+            return self.prefix + 'MET'
         elif tcomb in ( ):
-            return 'Data_EG' if self.isdata else 'TT_EG'
+            return self.prefix + 'EG'
      
         # channel-specific triggers
         if channel == 'etau':
@@ -151,9 +151,9 @@ class EventSelection:
                           ('EleIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
                           ('EleIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
                          ):
-                return 'Data_MET' if self.isdata else 'TT_MET'
+                return self.prefix + 'MET'
             elif tcomb in ( ) :
-                return 'Data_EG' if self.isdata else 'TT_EG'
+                return self.prefix + 'EG'
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -178,9 +178,9 @@ class EventSelection:
                           ('IsoMuIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
                           ('IsoMuIsoTauCustom', 'METNoMu120', 'VBFTauCustom')
                          ):
-                return 'Data_MET' if self.isdata else 'TT_MET'
+                return self.prefix + 'MET'
             elif tcomb in ( ) :
-                return 'Data_EG' if self.isdata else 'TT_EG'
+                return self.prefix + 'EG'
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -193,9 +193,9 @@ class EventSelection:
                           ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
                           ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
                          ):
-                return 'Data_MET' if self.isdata else 'TT_MET'
+                return self.prefix + 'MET'
             elif tcomb in ( ) :
-                return 'Data_EG' if self.isdata else 'TT_EG'
+                return self.prefix + 'EG'
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -205,7 +205,11 @@ class EventSelection:
     def match_inters_with_dataset(self, tcomb, channel):
         """Matches a trigger intersection with a reference trigger."""
         # one single reference per trigger combination
-        decision = lambda ds : True if self.dataset == ds else False
+        def decision(ds):
+            if self.isdata:
+                return True if self.dataset == ds else False
+            else:
+                return True if self.prefix in ds else False
 
         reference = self.find_inters_for_reference(tcomb, channel)
         if reference == self.noref_str:
