@@ -230,7 +230,7 @@ class cfg(luigi.Config):
         default={ 'indir'    : data_storage,
                   'localdir' : local_folder,
                   'tag'      : tag,
-                  'subtag'   : subtag } )
+                  'subtag'   : subtag, } )
 
     ####
     #### haddCounts
@@ -240,7 +240,8 @@ class cfg(luigi.Config):
                   'outdir'   : out_storage,
                   'localdir' : local_folder,
                   'tag'      : tag,
-                  'subtag'   : subtag } )
+                  'subtag'   : subtag,
+                  'channels' : FLAGS.channels, } )
 
     ####
     #### drawTriggerScaleFactors

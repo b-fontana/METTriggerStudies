@@ -17,15 +17,16 @@ def runHaddCounts_outputs(args):
     # add the merge of all the samples first
     _tbase1, _tbase2 = hadd_subpaths(args)
     tbase = _tbase1 + _tbase2
-    t = os.path.join( args.indir, tbase + '.csv' )
-    targets.append( t )
+    for chn in args.channels:
+        t = os.path.join( args.indir, tbase + '_' + chn + '.csv' )
+        targets.append( t )
 
     # add individual sample merges
     for smpl in args.samples:
         tbase = _tbase1 + '_' + smpl + _tbase2
-        t = os.path.join( args.indir, tbase + '.csv' )
-        targets.append( t )
-        
+        for chn in args.channels:
+            t = os.path.join( args.indir, tbase + '_' + chn + '.csv' )
+            targets.append( t )
     return targets
 
 @set_pure_input_namespace
@@ -52,10 +53,10 @@ def writeHTCondorHaddCountsFiles(args):
                                  '--outfile_counts ${1} ' )
 
     command_first_step = ( command_base +
-                           '--dataset '
                            '--sample ${2} ' +
-                           ' --aggregation_step 0' )
-    command_aggregation_step = ( command_base + '--infile_counts ${2} --aggregation_step 1')
+                           '--channel ${3} ' +
+                           '--aggregation_step 0' )
+    command_aggregation_step = ( command_base + '--infile_counts ${2} --channel ${3} --aggregation_step 1')
     
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
     for out in outs_job:
@@ -67,8 +68,8 @@ def writeHTCondorHaddCountsFiles(args):
             jw.add_string('echo "HaddCounts Agg {} done."'.format(args.dataset_name))
 
     #### Write submission file
-    inputs_join = []
-
+    inputs_join = {}
+    nchannels = len(args.channels)
     for out1,out2,out3 in zip(outs_job,outs_submit,outs_check):
         jw.write_init( filename=out2,
                        executable=out1,
@@ -78,14 +79,18 @@ def writeHTCondorHaddCountsFiles(args):
         qvars = None
         qlines = []
         if out1 == outs_job[0]:
-            qvars = ('myoutput', 'sample')
-            for t,smpl in zip(targets[1:], args.samples):
-                inputs = os.path.join(args.indir, smpl, args.tprefix + '*' + args.subtag + '.csv')
-                inputs_join.append(t)
-                qlines.append('  {}, {}'.format(t,smpl))
+            qvars = ('myoutput', 'sample', 'channel')
+            for it,t in enumerate(targets[nchannels:]):
+                smpl = args.samples[ int(it/nchannels) ]
+                chn = args.channels[ int(it%nchannels) ]
+                if chn not in inputs_join:
+                    inputs_join[chn] = []
+                inputs_join[chn].append(t)
+                qlines.append('  {}, {}, {}'.format(t,smpl,chn))
 
         elif out1 == outs_job[1]:
-            qvars = ('myoutput', 'myinputs')
-            qlines.append('  {}, {}'.format(targets[0], ' '.join(inputs_join)))
-            
+            qvars = ('myoutput', 'myinputs', 'channel')
+            for ichn,chn in enumerate(args.channels):
+                qlines.append('  {}, {}, {}'.format(targets[ichn], ' '.join(inputs_join[chn]), chn))
+
         jw.write_queue( qvars=qvars, qlines=qlines )
