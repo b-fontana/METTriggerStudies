@@ -122,22 +122,25 @@ class JobWriter:
               self.endl )
         self.f.write(m)
 
-    def llr_condor_specific_content(self, queue):
-        m = ( self.endl + 'T3Queue = {}'.format(queue) +
-              self.endl + 'WNTag=el7' +
-              self.endl + '+SingularityCmd = ""' +
-              self.endl + 'include : /opt/exp_soft/cms/t3_tst/t3queue |' +
-              self.endl )
+    def condor_specific_content(self, queue, machine='llr'):
+        if machine == 'llr':
+            m = ( self.endl + 'T3Queue = {}'.format(queue) +
+                  self.endl + 'WNTag=el7' +
+                  self.endl + '+SingularityCmd = ""' +
+                  self.endl + 'include : /opt/exp_soft/cms/t3_tst/t3queue |' +
+                  self.endl )
+        else:
+            raise ValueError('Machine {} is not supported.'.format(machine))
         return m
 
-    def write_condor_(self, executable, outfile, queue):
+    def write_condor_(self, executable, outfile, queue, machine='llr'):
         m = ( 'Universe = vanilla' +
               self.endl + 'Executable = {}'.format(executable) +
               self.endl + 'input = /dev/null' +
               self.endl + 'output = {}'.format(outfile) +
               self.endl + 'error  = {}'.format(outfile.replace('.o', '.e')) +
               self.endl + 'getenv = true' +
-              self.llr_condor_specific_content(queue) +
+              self.condor_specific_content(queue, machine) +
              self.endl )
         self.f.write(m)
 

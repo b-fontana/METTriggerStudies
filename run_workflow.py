@@ -516,7 +516,8 @@ class SubmitDAG(ForceRun):
         with open(out, 'r') as f:
             contents = f.readlines()
         ncontents = len(contents)
-        new_content = jw.llr_condor_specific_content(queue='short')
+        new_content = jw.condor_specific_content(queue='short',
+                                                 machine='llr')
         contents.insert(ncontents-1, new_content + '\n')
         with open(out, 'w') as f:
             contents = "".join(contents)
