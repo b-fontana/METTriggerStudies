@@ -33,6 +33,9 @@ def addTriggerCounts(args):
                             inputs_join.append( afile_full )
 
         are_there_files(files, regex)
+        print('outfile_counts: ', args.outfile_counts)
+        print('infile_counts: ', args.infile_counts)
+        print('channel: ', args.channel)
         assert set(inputs_join) == set(args.infile_counts)
 
     else:
@@ -43,18 +46,22 @@ def addTriggerCounts(args):
                 if regex.match( os.path.basename(afile) ):
                     inputs_join.append( os.path.join(root, afile) )
             are_there_files(files, regex)
-
+            
+    regex2 = re.compile(args.tprefix + '(.+)_Sum.*' + args.subtag + '_' + args.channel + '.csv')
     aggr_outs = []
     sep = ','
     reftrigs = {}
     c_ref, c_inters = ({} for _ in range(2))
+    
     for afile in inputs_join:
+        filetype = regex2.findall(afile)
+
         with open(afile, 'r') as f:
             for line in f.readlines():
                 if line.strip(): #ignore empty lines
                     if args.aggr:
-                        aggr_outs.append( line )
-                        
+                        aggr_outs.append( filetype[0] + sep + line )
+
                     else:
                         title, comb, chn, reftrig, count = [x.replace('\n', '') for x in line.split(sep)]
 
@@ -66,7 +73,7 @@ def addTriggerCounts(args):
 
                         if comb not in reftrigs:
                             reftrigs[comb] = reftrig                        
-                        
+
                         if title == 'Reference':
                             c_ref.setdefault(comb, 0)
                             c_ref[comb] += int(count)
@@ -90,16 +97,26 @@ def addTriggerCounts(args):
     if args.aggr:
         with open(outs, 'w') as fcsv:
             for il,l in enumerate(aggr_outs):
-                atype, _, _, _, _ = [x.replace('\n', '') for x in l.split(sep)]
+                ftype, atype, comb, ref, c, eff = [x.replace('\n', '') for x in l.split(sep)]
+                
+                if ( atype == '' and comb == '' and ref == '' and
+                     c == '' and eff == '' ):
+                    fcsv.write(',,,,,\n')
+                    continue
 
-                if atype != 'Type' or (atype == 'Type' and il==0):
+                if atype != 'Type':
                     fcsv.write(l)
+
+                if atype == 'Type' and il==0:
+                    newline = ( 'File Type' + sep + atype + sep + comb + sep +
+                                ref + sep + c + sep + eff + '\n')
+                    fcsv.write(newline)
 
     else:
         with open(outs, 'w') as fcsv:
             ref_combs, ref_vals = ([] for _ in range(2))
             int_combs, int_vals = ([] for _ in range(2))
-            references = []
+            references, ftypes = ([] for _ in range(2))
             for comb, val in c_inters.items():
                 ref_combs.append(comb)
                 ref_vals.append(c_ref[comb])
@@ -139,7 +156,9 @@ def addTriggerCounts(args):
             gzip = zip(ref_vals, ref_combs, int_vals, int_combs, references)
             for refv, refc, intv, intc, refref in gzip:
                 eff = float(intv) / float(refv)
-                newline = ( 'Numerator' + sep + str(intc).replace('_PLUS_', '  AND  ') + sep +
+
+                newline = ( 'Numerator' + sep +
+                            str(intc).replace('_PLUS_', '  AND  ') + sep +
                             refref + sep + str(intv) +
                             sep + str(round(eff,4)) + '\n' )
                 fcsv.write(newline)
@@ -150,11 +169,11 @@ def addTriggerCounts(args):
                 fcsv.write(newline)
      
                 fcsv.write(',,,,\n')
-                fcsv.write(',,,,\n')
-                
+                fcsv.write(',,,,\n')        
                 fcsv.write('\n')
+
     print('Save file {}.'.format(outs))
-            
+        
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line parser')
 
@@ -172,7 +191,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample',     dest='sample',       required=False,
                         help='Process name as in SKIM directory. Used for the first step only.')
     
-    parser.add_argument('--infile_counts',  dest='infile_counts', required=False, nargs='+', type=str,
+    parser.add_argument('--infile_counts', dest='infile_counts', required=False, nargs='+', type=str,
                         help='Name of input csv files with counts. Used for the aggrgeation step only.')
     parser.add_argument('--outfile_counts', dest='outfile_counts', required=True,
                         help='Name of output csv files with counts.')

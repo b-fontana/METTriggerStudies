@@ -79,7 +79,7 @@ def writeHTCondorHaddCountsFiles(args):
         qvars = None
         qlines = []
         if out1 == outs_job[0]:
-            qvars = ('myoutput', 'sample', 'channel')
+            qvars = ('myoutput', 'channel', 'sample')
             for it,t in enumerate(targets[nchannels:]):
                 smpl = args.samples[ int(it/nchannels) ]
                 chn = args.channels[ int(it%nchannels) ]
@@ -91,6 +91,6 @@ def writeHTCondorHaddCountsFiles(args):
         elif out1 == outs_job[1]:
             qvars = ('myoutput', 'myinputs', 'channel')
             for ichn,chn in enumerate(args.channels):
-                qlines.append('  {}, {}, {}'.format(targets[ichn], ' '.join(inputs_join[chn]), chn))
+                qlines.append('  {}, {}, {}'.format(targets[ichn], chn, ' '.join(inputs_join[chn])))
 
         jw.write_queue( qvars=qvars, qlines=qlines )
