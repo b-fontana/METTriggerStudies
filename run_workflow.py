@@ -483,8 +483,8 @@ class WriteDAG(ForceRun):
         _, submEffSF, _  = writeHTCondorEfficienciesAndScaleFactorsFiles_outputs(self.pEffSF)
         _, submEffSFAgg, _  = writeHTCondorEfficienciesAndSFAggregator_outputs(self.pEffSFAgg)
         _, submDisc, _  = writeHTCondorDiscriminatorFiles_outputs(self.pDisc)
-        _, submUnion, _  = writeHTCondorUnionWeightsCalculatorFiles_outputs(self.pSFCalc)
-        _, submClosure, _  = writeHTCondorClosureFiles_outputs(self.pClosure)
+        # _, submUnion, _  = writeHTCondorUnionWeightsCalculatorFiles_outputs(self.pSFCalc)
+        # _, submClosure, _  = writeHTCondorClosureFiles_outputs(self.pClosure)
 
         jobs = { 'HistosData':     submHistosData,
                  'HistosMC':       submHistosMC,
@@ -497,14 +497,15 @@ class WriteDAG(ForceRun):
                  'EffSF':          [ submEffSF ],
                  'EffSFAgg':       [ submEffSFAgg ],
                  'Discr':          submDisc,
-                 'Union':          submUnion,
-                 'Closure':        [ submClosure ],
+                 #'Union':          submUnion,
+                 #'Closure':        [ submClosure ],
                 }
 
         dag_manager = WriteDAGManager( self.params['localdir'],
                                        self.params['tag'],
                                        self.params['data_name'],
-                                       jobs )
+                                       jobs,
+                                       mode='short' )
         dag_manager.write_all()
         
 class SubmitDAG(ForceRun):

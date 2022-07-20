@@ -16,7 +16,11 @@ def writeHTCondorDAGFiles_outputs(args):
                                         name='workflow' )
 
 class WriteDAGManager:
-    def __init__(self, localdir, tag, data_name, jobs):
+    def __init__(self, localdir, tag, data_name, jobs, mode='long'):
+        if mode not in ('short', 'long'):
+            raise ValueError('Mode {} is not supported.'.format(mode))
+        self.mode = mode
+        
         self.data_name = data_name
         
         out = writeHTCondorDAGFiles_outputs( {'localdir': localdir, 'tag': tag} )
@@ -27,10 +31,14 @@ class WriteDAGManager:
         
         self.write_configuration()
 
-        assert set(jobs.keys()) == { 'HistosData', 'HistosMC', 'CountsData', 'CountsMC',
-                                     'HaddHistoData', 'HaddHistoMC', 'HaddCountsData', 'HaddCountsMC',
-                                     'EffSF', 'EffSFAgg',
-                                     'Discr', 'Union', 'Closure' }
+        job_keys = { 'HistosData', 'HistosMC',
+                     'CountsData', 'CountsMC',
+                     'HaddHistoData', 'HaddHistoMC',
+                     'HaddCountsData', 'HaddCountsMC',
+                     'EffSF', 'EffSFAgg', 'Discr' }
+        if mode == 'long': #add steps not strictly required
+            job_keys.update(('Union', 'Closure'))
+        assert set(jobs.keys()) == job_keys
 
         self.jobs = jobs
         self.define_all_job_names(self.jobs)
@@ -125,16 +133,18 @@ class WriteDAGManager:
         # variable discriminator
         self.write_parent_child_hierarchy( parents=self.jobs['EffSF'],
                                            childs=[x for x in self.jobs['Discr']] )
-        self.new_line()
 
-        # union weights calculator
-        self.write_parent_child_hierarchy( parents=[x for x in self.jobs['Discr']],
-                                           childs=[x for x in self.jobs['Union']] )
-        self.new_line()
+        if self.mode == 'long':
+            self.new_line()
+            
+            # union weights calculator
+            self.write_parent_child_hierarchy( parents=[x for x in self.jobs['Discr']],
+                                               childs=[x for x in self.jobs['Union']] )
+            self.new_line()
 
-        # hadd union efficiencies (only MC)
-        self.write_parent_child_hierarchy( parents=[x for x in self.jobs['Union']],
-                                           childs=[x for x in self.jobs['Closure']] )
+            # hadd union efficiencies (only MC)
+            self.write_parent_child_hierarchy( parents=[x for x in self.jobs['Union']],
+                                               childs=[x for x in self.jobs['Closure']] )
 
 # condor_submit_dag -no_submit diamond.dag
 # condor_submit diamond.dag.condor.sub
