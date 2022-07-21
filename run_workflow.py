@@ -526,13 +526,15 @@ class SubmitDAG(ForceRun):
         
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        out = self.input()[-1][0].path
-        os.system('condor_submit_dag -no_submit -f {}'.format(out))
-        os.system('sleep 1')
-        self.edit_condor_submission_file(out + '.condor.sub')
-        os.system('sleep 1')
-        os.system('condor_submit {}.condor.sub'.format(out))
-        os.system('sleep 1')
+        outfile = self.input()[-1][0].path
+        com = 'condor_submit_dag -no_submit -f '
+        com += '-outfile_dir {} {}'.format(os.path.basename(outfile), outfile)
+        os.system(com)
+        time.sleep(0.5)
+        self.edit_condor_submission_file(outfile + '.condor.sub')
+        time.sleep(0.5)
+        os.system('condor_submit {}.condor.sub'.format(outfile))
+        time.sleep(0.5)
         os.system('condor_q')
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)

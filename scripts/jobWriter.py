@@ -53,7 +53,8 @@ class JobWriter:
           terms of length, so that each name will correspond to a different folder. This
           has a consequence on the HTCondor output files only.
         """
-        base_d = os.path.join(localdir, 'jobs', tag)    
+        base_d = os.path.join(localdir, 'jobs', tag)
+        mkdir = lambda d : os.system('mkdir -p {}'.format(d))
 
         # type checks
         if not isinstance(data_folders, (tuple,list)):
@@ -72,14 +73,14 @@ class JobWriter:
         job_d, check_d = ([] for _ in range(2))
         for dataf in data_folders:
             job_d.append( os.path.join(base_d, 'submission', dataf) )
-            os.system('mkdir -p {}'.format(job_d[-1]))
+            mkdir(job_d[-1])
 
             check_d.append( os.path.join(base_d, 'outputs', dataf) )
-            os.system('mkdir -p {}'.format(check_d[-1]))
+            mkdir(check_d[-1])
 
         job_f, subm_f, check_f = ([] for _ in range(3))
         for jd, cd, name in zip(job_d,check_d,names):
-            os.system('mkdir -p {}'.format(cd))
+            mkdir(cd)
             job_f.append(  os.path.join(jd, name + '.sh') )
             subm_f.append( os.path.join(jd, name + '.condor') )
             
@@ -92,8 +93,11 @@ class JobWriter:
     @staticmethod
     def define_dag_output(localdir, tag, name):
         assert '.' not in name
-        subm_d = os.path.join(localdir, 'jobs', tag, 'submission')
-        os.system('mkdir -p {}'.format(subm_d))
+        mkdir = lambda d : os.system('mkdir -p {}'.format(d))
+        subm_d = os.path.join(localdir, 'jobs', tag, 'outputs')
+        mkdir(subm_d)
+        subm_d = os.path.join(subm_d, 'CondorDAG')
+        mkdir(subm_d)
         return os.path.join(subm_d, name + '.dag')
 
     def extension_exception(self):
