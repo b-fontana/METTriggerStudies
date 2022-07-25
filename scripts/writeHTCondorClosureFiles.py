@@ -45,14 +45,15 @@ def writeHTCondorClosureFiles(args):
     if args.debug:
         command += '--debug '
 
-    jw.write_init(outs_job, command, args.localdir)
+    jw.write_shell(filename=outs_job, command=command, localdir=args.localdir)
     jw.add_string('echo "runClosure for channel ${1} and single trigger ${2} done."')
 
     #### Write submission file
-    jw.write_init( filename=outs_submit,
-                   executable=outs_job,
-                   outfile=outs_check,
-                   queue='short' )
+    jw.write_condor( filename=outs_submit,
+                     executable=outs_job,
+                     outfile=outs_check,
+                     queue='short',
+                     machine='llrt3condor7' )
 
     qlines = []
     for chn in args.channels:

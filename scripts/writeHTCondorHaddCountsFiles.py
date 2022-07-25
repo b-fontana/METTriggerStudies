@@ -61,20 +61,21 @@ def writeHTCondorHaddCountsFiles(args):
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
     for out in outs_job:
         if out == outs_job[0]:
-            jw.write_init(out, command_first_step, args.localdir)
+            jw.write_shell(filename=out, command=command_first_step, localdir=args.localdir)
             jw.add_string('echo "HaddCounts {} done."'.format(args.dataset_name))
         elif out == outs_job[1]:
-            jw.write_init(out, command_aggregation_step, args.localdir)
+            jw.write_shell(filename=out, command=command_aggregation_step, localdir=args.localdir)
             jw.add_string('echo "HaddCounts Agg {} done."'.format(args.dataset_name))
 
     #### Write submission file
     inputs_join = {}
     nchannels = len(args.channels)
     for out1,out2,out3 in zip(outs_job,outs_submit,outs_check):
-        jw.write_init( filename=out2,
-                       executable=out1,
-                       outfile=out3,
-                       queue='short' )
+        jw.write_condor( filename=out2,
+                         executable=out1,
+                         outfile=out3,
+                         queue='short',
+                         machine='llrt3condor7' )
 
         qvars = None
         qlines = []

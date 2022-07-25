@@ -123,14 +123,15 @@ def writeHTCondorProcessingFiles(args):
                          '--nocut_dummy_str {}'.format(args.nocut_dummy_str)
                         )
 
-        jw.write_init(outs_job[i], command, args.localdir)
+        jw.write_shell(filename=outs_job[i], command=command, localdir=args.localdir)
         jw.add_string('echo "Process {} done in mode {}."'.format(vproc,args.mode))
 
         #### Write submission file
-        jw.write_init( filename=outs_submit[i],
-                       executable=outs_job[i],
-                       outfile=outs_check[i],
-                       queue='short' )
+        jw.write_condor( filename=outs_submit[i],
+                         executable=outs_job[i],
+                         outfile=outs_check[i],
+                         queue='short',
+                         machine='llrt3condor7' )
         
         qlines = []
         for listname in filelist:

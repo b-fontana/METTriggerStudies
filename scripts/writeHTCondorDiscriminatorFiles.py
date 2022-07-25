@@ -42,14 +42,15 @@ def writeHTCondorDiscriminatorFiles(args):
         if args.debug:
             command += '--debug '
 
-        jw.write_init(outs_job[i], command, args.localdir)
+        jw.write_shell(filename=outs_job[i], command=command, localdir=args.localdir)
         jw.add_string('echo "Channel {} done."'.format(args.channels[i]))
 
         #### Write submission file
-        jw.write_init( filename=outs_submit[i],
-                       executable=outs_job[i],
-                       outfile=outs_check[i],
-                       queue='short' )
+        jw.write_condor( filename=outs_submit[i],
+                         executable=outs_job[i],
+                         outfile=outs_check[i],
+                         queue='short',
+                         machine='llrt3condor7' )
         jw.write_queue()
 
 # -- Parse options

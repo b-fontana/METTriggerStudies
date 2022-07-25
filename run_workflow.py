@@ -518,7 +518,7 @@ class SubmitDAG(ForceRun):
             contents = f.readlines()
         ncontents = len(contents)
         new_content = jw.condor_specific_content(queue='short',
-                                                 machine='llr')
+                                                 machine='llrt3condor7')
         contents.insert(ncontents-1, new_content + '\n')
         with open(out, 'w') as f:
             contents = "".join(contents)
@@ -528,7 +528,8 @@ class SubmitDAG(ForceRun):
     def run(self):
         outfile = self.input()[-1][0].path
         com = 'condor_submit_dag -no_submit -f '
-        com += '-outfile_dir {} {}'.format(os.path.basename(outfile), outfile)
+        com += '-outfile_dir {} {}'.format(os.path.dirname(outfile), outfile)
+
         os.system(com)
         time.sleep(0.5)
         self.edit_condor_submission_file(outfile + '.condor.sub')

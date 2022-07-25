@@ -58,14 +58,15 @@ def writeHTCondorUnionWeightsCalculatorFiles(args):
         if args.debug:
             command += '--debug '
 
-        jw.write_init(jobs[i], command, args.localdir)
+        jw.write_shell(filename=jobs[i], command=command, localdir=args.localdir)
         jw.add_string('echo "Process {} done."'.format(proc))
 
         #### Write submission file
-        jw.write_init( filename=subs[i],
-                       executable=jobs[i],
-                       outfile=checks[i],
-                       queue='short' )
+        jw.write_condor( filename=subs[i],
+                         executable=jobs[i],
+                         outfile=checks[i],
+                         queue='short',
+                         machine='llrt3condor7' )
 
         qlines = []
         for listname in filelist:

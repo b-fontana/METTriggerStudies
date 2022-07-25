@@ -67,7 +67,7 @@ def writeHTCondorHaddEffFiles(args):
     command = 'hadd -f ${1} ${@:2}' #bash: ${@:POS} captures all arguments starting from POS
 
     for out in outs_job:
-        jw.write_init(out, command, args.localdir)
+        jw.write_shell(filename=out, command=command, localdir=args.localdir)
         if out == outs_job[0]:
             jw.add_string('echo "HaddEff done."')
         elif out == outs_job[1]:
@@ -76,10 +76,11 @@ def writeHTCondorHaddEffFiles(args):
     #### Write submission file
     inputs_join = []
     for out1,out2,out3 in zip(outs_job,outs_submit,outs_check):
-        jw.write_init( filename=out2,
-                       executable=out1,
-                       outfile=out3,
-                       queue='short' )
+        jw.write_condor( filename=out2,
+                         executable=out1,
+                         outfile=out3,
+                         queue='short',
+                         machine='llrt3condor7' )
 
         qlines = []
         if out1 == outs_job[0]:
