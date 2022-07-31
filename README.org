@@ -36,6 +36,10 @@ Run ~dot -Tpng dag.dot -o dag.png~ as explained [[https://research.cs.wisc.edu/h
 
 [[./dag.png]]
 
+*** Job resubmission
+
+HTCondor DAGs support by default an automatic resubmission mechanism. Whenever a DAG is interrupted or exists unsuccessfully, a ~*rescue*~ file is created, specifying which jobs were "DONE" by the time the DAG stopped. This file is picked up automatically if the DAG is resubmitted (using the standard ~condor_submit~ command); jobs with "DONE" status are not resubmitted. More information [[https://htcondor.readthedocs.io/en/latest/users-manual/dagman-workflows.html?highlight=rescue#the-rescue-dag][here]].
+
 ** Luigi/HTCondor Workflow
 
 Run the submission workflow (check the meaning of the arguments by adding ~--help~):
@@ -49,11 +53,12 @@ If everything runs as expected, the above should run locally all local tasks (cu
 
 The HTCondor files are written using the =scripts/writeHTCondorDAGFiles.py= and =scripts/jobWriter.sh= files.
 
-| Output files              | Destination folder                                           |
-|---------------------------+--------------------------------------------------------------|
-| ~ROOT~                      | ~/data_CMS/cms/<llr username>/TriggerScaleFactors/<some tag>/~ |
-| Submission                | ~$HOME/jobs/<some tag>/<process>/submission/~                  |
-| Condor (output and error) | ~$HOME/jobs/<some tag>/<process>/outputs/~                     |
+| Output files    | Destination folder                                           |
+|-----------------+--------------------------------------------------------------|
+| ~ROOT~            | ~/data_CMS/cms/<llr username>/TriggerScaleFactors/<some tag>/~ |
+| Submission      | ~$HOME/jobs/<some tag>/<process>/submission/~                  |
+| Output          | ~$HOME/jobs/<some tag>/<process>/outputs/~                     |
+| DAG             | ~$HOME/jobs/<some tag>/<process>/outputs/CondorDAG/~           |
 
 You can also run each ~luigi~ task separately by running its corresponding ~python~ scripts (all support ~--help~). Inspect HTCondor's output shell and condor files for the full commands. For instance:
 
