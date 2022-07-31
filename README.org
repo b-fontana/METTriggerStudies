@@ -53,12 +53,13 @@ If everything runs as expected, the above should run locally all local tasks (cu
 
 The HTCondor files are written using the =scripts/writeHTCondorDAGFiles.py= and =scripts/jobWriter.sh= files.
 
-| Output files    | Destination folder                                           |
-|-----------------+--------------------------------------------------------------|
-| ~ROOT~            | ~/data_CMS/cms/<llr username>/TriggerScaleFactors/<some tag>/~ |
-| Submission      | ~$HOME/jobs/<some tag>/<process>/submission/~                  |
-| Output          | ~$HOME/jobs/<some tag>/<process>/outputs/~                     |
-| DAG             | ~$HOME/jobs/<some tag>/<process>/outputs/CondorDAG/~           |
+| Output files | Destination folder                                                   |
+|--------------+----------------------------------------------------------------------|
+| ~ROOT~         | ~/data_CMS/cms/<llr_username>/TriggerScaleFactors/<some_tag>/Data/~    |
+| Plots        | ~/data_CMS/cms/<llr_username>/TriggerScaleFactors/<some_tag>/Outputs/~ |
+| Submission   | ~$HOME/jobs/<some_tag>/submission/~                                    |
+| Output       | ~$HOME/jobs/<some_tag>/outputs/~                                       |
+| DAG          | ~$HOME/jobs/<some_tag>/outputs/CondorDAG/~                             |
 
 You can also run each ~luigi~ task separately by running its corresponding ~python~ scripts (all support ~--help~). Inspect HTCondor's output shell and condor files for the full commands. For instance:
 
@@ -68,6 +69,16 @@ python3 scripts/getTriggerEffSig.py --indir /data_CMS/cms/portales/HHresonant_SK
 #+END_SRC
 
 Variables can be configured in ~luigi_conf/__init__.py~.
+
+*** Visualize plots
+
+One can copy the folder with the plots to CERN's available website for easier inspection. Using my ~bfontana~ CERN username as an example:
+
+#+BEGIN_SRC shell
+cp /data_CMS/cms/<llr username>/TriggerScaleFactors/<some_tag>/Outputs/ /eos/user/b/bfontana/www/TriggerScaleFactors/<some_tag>
+#+END_SRC
+
+One can then visualize the plots [[https://bfontana.web.cern.ch/bfontana/TriggerScaleFactors/][here]].
 
 ** Cleanup
 
