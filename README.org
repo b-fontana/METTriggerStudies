@@ -75,14 +75,15 @@ In order to avoid cluttering the local area with output files, a =bash= script w
 
 #+NAME: clean
 #+BEGIN_SRC shell
-bash triggerClean.sh --tag <any tag>
+bash workflowClean.sh -t <any_tag> -f -d
 #+END_SRC
 
 with options:
 
-- ~-d~: debug mode, where all commands are printed to the screen and nothing is run
-- ~-f~: full delete, including data produced by the HTCondor jobs (this flag is required to avoid data deletions by mistake)
-- ~--tag~: tag used when producing the files (remove this options to print a message displaying all tags used in the past which were not yet removed)
+- ~-h/--help~: prints help message
+- ~-d/--debug~: debug mode, where all commands are printed to the screen and nothing is run
+- ~-f/--full~: full delete, including data produced by the HTCondor jobs (this flag is required to avoid data deletions by mistake)
+- ~-t/--tag~: tag used when producing the files (remove this options to print a message displaying all tags used in the past which were not yet removed)
 
 -------------------------------------
 
