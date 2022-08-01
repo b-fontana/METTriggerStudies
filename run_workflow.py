@@ -21,43 +21,43 @@ from scripts.defineBinning import (
     defineBinning,
     defineBinning_outputs,
 )
-from scripts.writeHTCondorProcessingFiles import (
+from condor.writeHTCondorProcessingFiles import (
     writeHTCondorProcessingFiles,
     writeHTCondorProcessingFiles_outputs,
 )
-from scripts.writeHTCondorHaddHistoFiles import (
+from condor.writeHTCondorHaddHistoFiles import (
     writeHTCondorHaddHistoFiles,
     writeHTCondorHaddHistoFiles_outputs,
 )
-from scripts.writeHTCondorHaddCountsFiles import (
+from condor.writeHTCondorHaddCountsFiles import (
     writeHTCondorHaddCountsFiles,
     writeHTCondorHaddCountsFiles_outputs,
 )
-from scripts.writeHTCondorEfficienciesAndScaleFactorsFiles import (
+from condor.writeHTCondorEfficienciesAndScaleFactorsFiles import (
     writeHTCondorEfficienciesAndScaleFactorsFiles,
     writeHTCondorEfficienciesAndScaleFactorsFiles_outputs,
 )
-from scripts.writeHTCondorEfficienciesAndSFAggregator import (
+from condor.writeHTCondorEfficienciesAndSFAggregator import (
     writeHTCondorEfficienciesAndSFAggregator,
     writeHTCondorEfficienciesAndSFAggregator_outputs,
 )
-from scripts.writeHTCondorDiscriminatorFiles import (
+from condor.writeHTCondorDiscriminatorFiles import (
     writeHTCondorDiscriminatorFiles,
     writeHTCondorDiscriminatorFiles_outputs,
 )
-from scripts.writeHTCondorUnionWeightsCalculatorFiles import (
+from condor.writeHTCondorUnionWeightsCalculatorFiles import (
     writeHTCondorUnionWeightsCalculatorFiles,
     writeHTCondorUnionWeightsCalculatorFiles_outputs,
 )
-# from scripts.writeHTCondorHaddEffFiles import (
+# from condor.writeHTCondorHaddEffFiles import (
 #     writeHTCondorHaddEffFiles,
 #     writeHTCondorHaddEffFiles_outputs,
 # )
-from scripts.writeHTCondorClosureFiles import (
+from condor.writeHTCondorClosureFiles import (
     writeHTCondorClosureFiles,
     writeHTCondorClosureFiles_outputs,
 )
-from scripts.writeHTCondorDAGFiles import (
+from condor.writeHTCondorDAGFiles import (
     WriteDAGManager,
     writeHTCondorDAGFiles_outputs,
 )
@@ -69,7 +69,7 @@ from scripts.writeHTCondorDAGFiles import (
 # from scripts.drawDistributions import drawDistributions, drawDistributions_outputs
 
 from utils import utils
-from scripts.jobWriter import JobWriter
+from condor.jobWriter import JobWriter
 
 import re
 re_txt = re.compile('\.txt')
@@ -518,7 +518,7 @@ class SubmitDAG(ForceRun):
             contents = f.readlines()
         ncontents = len(contents)
         new_content = jw.condor_specific_content(queue='short',
-                                                 machine='llrt3condor7')
+                                                 machine='llrt3condor')
         contents.insert(ncontents-1, new_content + '\n')
         with open(out, 'w') as f:
             contents = "".join(contents)

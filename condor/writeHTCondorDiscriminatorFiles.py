@@ -50,7 +50,7 @@ def writeHTCondorDiscriminatorFiles(args):
                          executable=outs_job[i],
                          outfile=outs_check[i],
                          queue='short',
-                         machine='llrt3condor7' )
+                         machine='llrt3condor' )
         jw.write_queue()
 
 # -- Parse options

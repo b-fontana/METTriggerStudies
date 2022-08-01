@@ -51,7 +51,7 @@ python3 run_workflow.py --tag FullWorkflowTest --data MET --mc_process TT
 
 If everything runs as expected, the above should run locally all local tasks (currently ~DefineBinning~ only) and launch a HTCondor DAG which encodes de dependencies of the remaining tasks and runs them in the server.
 
-The HTCondor files are written using the =scripts/writeHTCondorDAGFiles.py= and =scripts/jobWriter.sh= files.
+The HTCondor files are written using the =condor/writeHTCondorDAGFiles.py= and =condor/jobWriter.sh= files.
 
 | Output files | Destination folder                                                   |
 |--------------+----------------------------------------------------------------------|

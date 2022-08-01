@@ -131,7 +131,7 @@ def writeHTCondorProcessingFiles(args):
                          executable=outs_job[i],
                          outfile=outs_check[i],
                          queue='short',
-                         machine='llrt3condor7' )
+                         machine='llrt3condor' )
         
         qlines = []
         for listname in filelist:

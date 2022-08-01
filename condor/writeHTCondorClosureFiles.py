@@ -53,7 +53,7 @@ def writeHTCondorClosureFiles(args):
                      executable=outs_job,
                      outfile=outs_check,
                      queue='short',
-                     machine='llrt3condor7' )
+                     machine='llrt3condor' )
 
     qlines = []
     for chn in args.channels:

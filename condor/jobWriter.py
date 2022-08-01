@@ -10,10 +10,11 @@ class JobWriter:
         self.filenames = []
         self.exts = ('sh', 'condor')
         self.endl = '\n'
+        self.par = lambda s : s + self.endl
 
     def add_string(self, string):
         with open(self.filenames[-1], 'a') as self.f:
-            self.f.write(string + self.endl)
+            self.f.write( self.par(string) )
 
     @staticmethod
     def define_output(localdir, data_folders, tag, names=None):
@@ -83,13 +84,13 @@ class JobWriter:
 
     def write_condor(self, filename, executable, outfile, queue, machine='llrt3condor'):
         self.filenames.append( filename )
-        m = ( 'Universe = vanilla' +
-              self.endl + 'Executable = {}'.format(executable) +
-              self.endl + 'input = /dev/null' +
-              self.endl + 'output = {}'.format(outfile) +
-              self.endl + 'error  = {}'.format(outfile.replace('.o', '.e')) +
-              self.endl + 'getenv = true' +
-              self.condor_specific_content(queue, machine) +
+        m = ( self.par('Universe = vanilla') +
+              self.par('Executable = {}'.format(executable)) +
+              self.par('input = /dev/null') +
+              self.par('output = {}'.format(outfile)) +
+              self.par('error  = {}'.format(outfile.replace('.o', '.e'))) +
+              self.par('getenv = true') +
+              self.condor_specific_content(queue=queue, machine=machine) +
               self.endl )
         with open(filename, 'w') as self.f:
             self.f.write(m)
@@ -137,11 +138,25 @@ class JobWriter:
         os.system('chmod u+rwx '+ filename)
 
     def condor_specific_content(self, queue, machine='llrt3condor'):
-        m = ( self.endl + 'T3Queue = {}'.format(queue) +
-              self.endl + 'WNTag=el7' +
-              self.endl + '+SingularityCmd = ""' )
+        m = ( self.par('T3Queue = {}'.format(queue)) +
+              self.par('WNTag=el7') +
+              self.par('+SingularityCmd = ""') )
         if machine == 'llrt3condor':
             m += self.endl + 'include : /opt/exp_soft/cms/t3/t3queue |'
+            # m += ( self.par('UNIX_GROUP = cms') +
+            #        self.par('if !defined T3Queue') +
+            #        self.par('  T3Queue=short') +
+            #        self.par('endif') +
+
+            #        self.par('accounting_group = $(UNIX_GROUP)') +
+
+            #        self.par('concurrency_limits_expr = strcat(T3Queue,":",RequestCpus," ",AcctGroupUser,":",RequestCpus)') +
+
+            #        self.par('+T3Queue="$(T3Queue)"') +
+            #        self.par('+T3Group="$(UNIX_GROUP)"') +
+            #        self.par('+WNTag="$(WNTag)"') +
+            #        self.par('T3Submit=true') )
+                  
         elif machine == 'llrt3condor7':
             m += self.endl + 'include : /opt/exp_soft/cms/t3_tst/t3queue |'
         else:

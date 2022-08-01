@@ -75,7 +75,7 @@ def writeHTCondorHaddCountsFiles(args):
                          executable=out1,
                          outfile=out3,
                          queue='short',
-                         machine='llrt3condor7' )
+                         machine='llrt3condor' )
 
         qvars = None
         qlines = []

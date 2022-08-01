@@ -66,7 +66,7 @@ def writeHTCondorUnionWeightsCalculatorFiles(args):
                          executable=jobs[i],
                          outfile=checks[i],
                          queue='short',
-                         machine='llrt3condor7' )
+                         machine='llrt3condor' )
 
         qlines = []
         for listname in filelist:

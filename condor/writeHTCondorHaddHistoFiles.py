@@ -59,7 +59,7 @@ def writeHTCondorHaddHistoFiles(args):
                          executable=out1,
                          outfile=out3,
                          queue='short',
-                         machine='llrt3condor7' )
+                         machine='llrt3condor' )
 
         qlines = []
         if out1 == outs_job[0]:
