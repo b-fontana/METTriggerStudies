@@ -12,20 +12,20 @@ from luigi_conf.luigi_cfg import cfg, FLAGS
 
 lcfg = cfg() #luigi configuration
 
-from scripts.defineBinning import *
-
-from condor.processing       import *
-from condor.hadd_histo       import *
-from condor.hadd_counts      import *
-from condor.eff_and_sf       import *
-from condor.eff_and_sf_aggr  import *
-from condor.discriminator    import *
-from condor.union_calculator import *
-from condor.closure          import *
-from condor.dag              import *
-from condor.job_writer       import JobWriter
-
 from utils import utils
+from scripts import defineBinning
+from condor import (
+    closure,
+    dag,
+    discriminator,   
+    eff_and_sf,
+    eff_and_sf_aggr,
+    hadd_counts,
+    hadd_histo,
+    job_writer,
+    processing,
+    union_calculator,
+    )
 
 ########################################################################
 ### HELPER FUNCTIONS ###################################################
@@ -60,7 +60,7 @@ class DefineBinning(luigi.Task):
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        target = defineBinning_outputs( self.args )
+        target = defineBinning.defineBinning_outputs( self.args )
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -72,7 +72,7 @@ class DefineBinning(luigi.Task):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        defineBinning( self.args )
+        defineBinning.defineBinning( self.args )
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR TOTAL AND PASSED TRIGGER HISTOGRAMS #######
@@ -87,7 +87,7 @@ class Processing(ForceRun):
     def output(self):
         self.params['mode'] = self.mode
         self.params['tprefix'] = lcfg.modes[self.mode]
-        objData, objMC, _, _ = processing_outputs(self.params)
+        objData, objMC, _, _ = processing.processing_outputs(self.params)
         o1, o2, _ = objData
         o3, o4, _ = objMC
 
@@ -115,7 +115,7 @@ class Processing(ForceRun):
     def run(self):
         self.params['mode'] = self.mode
         self.params['tprefix'] = lcfg.modes[self.mode]
-        processing(self.params)
+        processing.processing(self.params)
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def requires(self):
@@ -135,7 +135,7 @@ class HaddHisto(ForceRun):
     def output(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
-        o1, o2, _ = hadd_histo_outputs( self.args )
+        o1, o2, _ = hadd_histo.hadd_histo_outputs( self.args )
         
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -152,7 +152,7 @@ class HaddHisto(ForceRun):
     def run(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
-        hadd_histo( self.args )
+        hadd_histo.hadd_histo( self.args )
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR HADDING TXT COUNT FILES ###################
@@ -167,7 +167,7 @@ class HaddCounts(ForceRun):
     def output(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
-        o1, o2, _ = hadd_counts_outputs( self.args )
+        o1, o2, _ = hadd_counts.hadd_counts_outputs( self.args )
         
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -184,7 +184,7 @@ class HaddCounts(ForceRun):
     def run(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
-        hadd_counts( self.args )
+        hadd_counts.hadd_counts( self.args )
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR EFFICIENCIES AND SCALE FACTORS ############
@@ -195,7 +195,7 @@ class EffAndSF(ForceRun):
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = eff_and_sf_outputs(self.params)
+        o1, o2, _ = eff_and_sf.eff_and_sf_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -210,7 +210,7 @@ class EffAndSF(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        eff_and_sf(self.params)
+        eff_and_sf.eff_and_sf(self.params)
 
 ########################################################################
 ### AGGREGATE HTCONDOR FILES FOR EFFICIENCIES AND SCALE FACTORS ########
@@ -224,7 +224,7 @@ class EffAndSFAggr(ForceRun):
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = eff_and_sf_aggr_outputs(self.params)
+        o1, o2, _ = eff_and_sf_aggr.eff_and_sf_aggr_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -239,7 +239,7 @@ class EffAndSFAggr(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        eff_and_sf_aggr(self.params)
+        eff_and_sf_aggr.eff_and_sf_aggr(self.params)
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR THE VARIABLE DISCRIMINATOR ################
@@ -249,7 +249,7 @@ class Discriminator(ForceRun):
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = discriminator_outputs(self.params)
+        o1, o2, _ = discriminator.discriminator_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -264,7 +264,7 @@ class Discriminator(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        discriminator(self.params)
+        discriminator.discriminator(self.params)
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR SCALE FACTOR CALCULATOR ###################
@@ -274,7 +274,7 @@ class UnionCalculator(ForceRun):
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = union_calculator_outputs(self.params)
+        o1, o2, _ = union_calculator.union_calculator_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -289,7 +289,7 @@ class UnionCalculator(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        union_calculator(self.params)
+        union_calculator.union_calculator(self.params)
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR DISPLAYING CLOSURE PLOTS ##################
@@ -299,7 +299,7 @@ class Closure(ForceRun):
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = closure_outputs(self.params)
+        o1, o2, _ = closure.closure_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -314,7 +314,7 @@ class Closure(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        closure(self.params)
+        closure.closure(self.params)
 
 ########################################################################
 ### TRIGGERING ALL HTCONDOR WRITING CLASSES ############################
@@ -335,7 +335,7 @@ class Dag(ForceRun):
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1 = dag_outputs(self.params)
+        o1 = dag.dag_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -349,30 +349,30 @@ class Dag(ForceRun):
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         self.pHistos['mode']             = 'histos'
-        objHistosData, objHistosMC, _, _ = processing_outputs(self.pHistos)
+        objHistosData, objHistosMC, _, _ = processing.processing_outputs(self.pHistos)
         _, submHistosData, _             = objHistosData
         _, submHistosMC, _               = objHistosMC
 
         self.pHistos['mode']             = 'counts'
-        objCountsData, objCountsMC, _, _ = processing_outputs(self.pHistos)
+        objCountsData, objCountsMC, _, _ = processing.processing_outputs(self.pHistos)
         _, submCountsData, _             = objCountsData
         _, submCountsMC, _               = objCountsMC
 
         self.pHaddHisto['dataset_name']  = lcfg.data_name
-        _, submHaddHistoData, _          = hadd_histo_outputs(self.pHaddHisto)
+        _, submHaddHistoData, _          = hadd_histo.hadd_histo_outputs(self.pHaddHisto)
         self.pHaddHisto['dataset_name']  = lcfg.mc_name
-        _, submHaddHistoMC, _            = hadd_histo_outputs(self.pHaddHisto)
+        _, submHaddHistoMC, _            = hadd_histo.hadd_histo_outputs(self.pHaddHisto)
 
         self.pHaddCounts['dataset_name'] = lcfg.data_name
-        _, submHaddCountsData, _         = hadd_counts_outputs(self.pHaddCounts)
+        _, submHaddCountsData, _         = hadd_counts.hadd_counts_outputs(self.pHaddCounts)
         self.pHaddCounts['dataset_name'] = lcfg.mc_name
-        _, submHaddCountsMC, _           = hadd_counts_outputs(self.pHaddCounts)
+        _, submHaddCountsMC, _           = hadd_counts.hadd_counts_outputs(self.pHaddCounts)
         
-        _, submEffSF, _                  = eff_and_sf_outputs(self.pEffSF)
-        _, submEffSFAgg, _               = eff_and_sf_aggr_outputs(self.pEffSFAgg)
-        _, submDisc, _                   = discriminator_outputs(self.pDisc)
-        # _, submUnion, _                = union_calculator_outputs(self.pSFCalc)
-        # _, submClosure, _              = closure_outputs(self.pClosure)
+        _, submEffSF, _                  = eff_and_sf.eff_and_sf_outputs(self.pEffSF)
+        _, submEffSFAgg, _               = eff_and_sf_aggr.eff_and_sf_aggr_outputs(self.pEffSFAgg)
+        _, submDisc, _                   = discriminator.discriminator_outputs(self.pDisc)
+        # _, submUnion, _                = union_calculator.union_calculator_outputs(self.pSFCalc)
+        # _, submClosure, _              = closure.closure_outputs(self.pClosure)
 
         jobs = { 'HistosData':     submHistosData,
                  'HistosMC':       submHistosMC,
@@ -389,11 +389,11 @@ class Dag(ForceRun):
                  #'Closure':        [ submClosure ],
                 }
 
-        dag_manager = WriteDAGManager( self.params['localdir'],
-                                       self.params['tag'],
-                                       self.params['data_name'],
-                                       jobs,
-                                       mode='short' )
+        dag_manager = dag.WriteDAGManager( self.params['localdir'],
+                                           self.params['tag'],
+                                           self.params['data_name'],
+                                           jobs,
+                                           mode='short' )
         dag_manager.write_all()
         
 class SubmitDAG(ForceRun):
@@ -401,7 +401,7 @@ class SubmitDAG(ForceRun):
     Submission class.
     """
     def edit_condor_submission_file(self, out):
-        jw = JobWriter()
+        jw = job_writer.JobWriter()
         with open(out, 'r') as f:
             contents = f.readlines()
         ncontents = len(contents)
