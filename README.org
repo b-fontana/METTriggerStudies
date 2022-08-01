@@ -1,5 +1,5 @@
 #+latex_header: \usepackage[utf8]{inputenc}
-[[logo.png]]
+[[pics/logo.png]]
 
 * /H H \rightarrow b b \tau \tau/ Resonant Analysis
 
@@ -30,7 +30,7 @@ The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KL
 
 Run ~dot -Tpng dag.dot -o dag.png~ as explained [[https://research.cs.wisc.edu/htcondor/manual/v7.8/2_10DAGMan_Applications.html#SECTION0031010000000000000000][here]] (a ~dot~ file was previously created by the DAG with ~DOT dag.dot~ [[https://github.com/b-fontana/METTriggerStudies/blob/main/scripts/writeHTCondorDAGFiles.py#L73][here]]).
 
-[[./dag.png]]
+[[pics/dag.png]]
 
 *** Job resubmission
 
