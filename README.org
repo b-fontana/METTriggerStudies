@@ -77,7 +77,7 @@ In order to avoid cluttering the local area with output files, a =bash= script w
 
 #+NAME: clean
 #+BEGIN_SRC shell
-bash clean.sh -t <any_tag> -f -d
+bash sf_inclusion/clean.sh -t <any_tag> -f -d
 #+END_SRC
 
 with options:
