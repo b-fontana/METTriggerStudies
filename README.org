@@ -1,16 +1,11 @@
 #+latex_header: \usepackage[utf8]{inputenc}
 [[logo.png]]
 
-* Trigger Scale Factors for the /H H \rightarrow b b \tau \tau/ Resonant Analysis
+* /H H \rightarrow b b \tau \tau/ Resonant Analysis
 
 This framework calculates and stores "intersection efficiencies" for the application of the "inclusion method" [1], to be used for the /H H \rightarrow b b \tau \tau/ resonant analysis by the CMS experiment. More details available in [[https://indico.cern.ch/event/1143576/#13-trigger-sf-update][this presentation]].
 
-The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KLUB]]) Ntuples. The framework is managed by [[https://github.com/spotify/luigi][luigi]] (see ~run_workflow.py~), which runs local tasks and creates a Direct Acyclic Graph (DAG) which runs on [[https://htcondor.readthedocs.io/en/latest/index.html][HTCondor]].
-
-** Requirements
-
-- ~python3~ (tested on ~3.9.6~)
-- ~luigi~ (available in ~CMSSW~ after running ~cmsenv~ and using ~python3~).
+The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KLUB]]) Ntuples. The framework is managed by [[https://github.com/spotify/luigi][luigi]] (see ~run.py~), which runs local tasks and creates a Direct Acyclic Graph (DAG) which runs on [[https://htcondor.readthedocs.io/en/latest/index.html][HTCondor]].
 
 ** Tasks
 
@@ -47,12 +42,12 @@ Run the submission workflow (check the meaning of the arguments by adding ~--hel
 
 #+NAME: running_command
 #+BEGIN_SRC shell
-python3 run_workflow.py --tag FullWorkflowTest --data MET --mc_process TT
+python3 sf_inclusion/run.py --tag FullWorkflowTest --data MET EGamma --mc_process TT
 #+END_SRC
 
 If everything runs as expected, the above should run locally all local tasks (currently ~DefineBinning~ only) and launch a HTCondor DAG which encodes de dependencies of the remaining tasks and runs them in the server.
 
-The HTCondor files are written using the =condor/writeHTCondorDAGFiles.py= and =condor/jobWriter.sh= files.
+The HTCondor files are written using the =condor/dag.py= and =condor/job_writer.py= files.
 
 | Output files | Destination folder                                                   |
 |--------------+----------------------------------------------------------------------|
@@ -62,14 +57,9 @@ The HTCondor files are written using the =condor/writeHTCondorDAGFiles.py= and =
 | Output       | ~$HOME/jobs/<some_tag>/outputs/~                                       |
 | DAG          | ~$HOME/jobs/<some_tag>/outputs/CondorDAG/~                             |
 
-You can also run each ~luigi~ task separately by running its corresponding ~python~ scripts (all support ~--help~). Inspect HTCondor's output shell and condor files for the full commands. For instance:
+You can also run each ~luigi~ task separately by running its corresponding ~python~ scripts (all support ~--help~). Inspect HTCondor's output shell and condor files for the full commands.
 
-#+NAME: single_task
-#+BEGIN_SRC shell 
-python3 scripts/getTriggerEffSig.py --indir /data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_2018_UL_backgrounds_test11Jan22/ --outdir /data_CMS/cms/alves/TriggerScaleFactors/UL_v1 --sample SKIMfix_TT_fullyHad --isData 0 --file output_2.root --subtag _default --channels all etau mutau tautau mumu --triggers METNoMu120 IsoTau50 --variables mht_et mhtnomu_et met_et dau2_eta dau2_pt HH_mass metnomu_et dau1_eta dau1_pt HT20 --tprefix hist_ --binedges_fname /data_CMS/cms/alves/TriggerScaleFactors/UL_v1/binedges.hdf
-#+END_SRC
-
-Variables can be configured in ~luigi_conf/__init__.py~.
+Variables can be configured in ~sf_inclusion/luigi_conf/__init__.py~.
 
 *** Visualize plots
 
@@ -87,7 +77,7 @@ In order to avoid cluttering the local area with output files, a =bash= script w
 
 #+NAME: clean
 #+BEGIN_SRC shell
-bash workflowClean.sh -t <any_tag> -f -d
+bash clean.sh -t <any_tag> -f -d
 #+END_SRC
 
 with options:
@@ -99,14 +89,7 @@ with options:
 
 -------------------------------------
 
-** Notes on ~luigi~
-
-The advantages of using a workflow management system as ~luigi~ are the following:
-
-- the whole chain can be run at once
-- the workflow is clearer from a code point of view
-- the configuration is accessible from within a single file (~luigi.cfg~)
-- when two tasks do not share dependencies they can run in parallel
+** ~luigi~ related
 
 *** Debugging
 
@@ -114,4 +97,4 @@ By passing ~--debug_workflow~, the user can obtain more information regarding th
 
 *** Visualizing the workflow
 
-When using ```--scheduler central```, one can visualize the ```luigi``` workflow by accessing the correct port in the browser, specified with ```luigid --port <port_number> &```. If using ```ssh```, the port will have to be forwarded
+When using ~--scheduler central~, one can visualize the ~luigi~ workflow by accessing the correct port in the browser, specified with ~luigid --port <port_number> &~. If using ~ssh~, the port will have to be forwarded.
