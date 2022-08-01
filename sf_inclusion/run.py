@@ -3,11 +3,6 @@ import time
 import inspect
 import re
 
-import luigi
-from luigi_conf import luigi_utils as lutils
-from luigi_conf.luigi_cfg import cfg, FLAGS
-lcfg = cfg() #luigi configuration
-
 from utils import utils
 from scripts import defineBinning
 from condor import (
@@ -22,6 +17,12 @@ from condor import (
     processing,
     union_calculator,
     )
+
+import luigi
+from luigi_conf import luigi_utils as lutils
+from luigi_conf.luigi_cfg import cfg, FLAGS
+lcfg = cfg() #luigi configuration
+
 
 ### Helper functions 
 
@@ -53,7 +54,7 @@ class DefineBinning(luigi.Task):
     """Calculate the most adequate binning based on data."""
     args = utils.dot_dict(lcfg.bins_params)
     
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         target = defineBinning.defineBinning_outputs( self.args )
 
@@ -65,19 +66,19 @@ class DefineBinning(luigi.Task):
 
         return luigi.LocalTarget(target)
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         defineBinning.defineBinning( self.args )
 
 
-class Processing(ForceRun):
+class Processing(lutils.ForceRun):
     """Write htcondor files for total and passed trigger histograms."""
     params = utils.dot_dict(lcfg.histos_params)
 
     mode = luigi.ChoiceParameter(choices=lcfg.modes.keys(),
                                  var_type=str)
     
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         self.params['mode'] = self.mode
         self.params['tprefix'] = lcfg.modes[self.mode]
@@ -97,25 +98,25 @@ class Processing(ForceRun):
         _c2 = convert_to_luigi_local_targets(o2)
         return _c1 + _c2
     
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         self.params['mode'] = self.mode
         self.params['tprefix'] = lcfg.modes[self.mode]
         processing.processing(self.params)
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def requires(self):
         return DefineBinning()
 
 
-class HaddHisto(ForceRun):
+class HaddHisto(lutils.ForceRun):
     """Write htcondor files for hadd'ing histograms in root files."""
     samples = luigi.ListParameter()
     dataset_name = luigi.Parameter()
     args = utils.dot_dict(lcfg.haddhisto_params)
     args['tprefix'] = lcfg.modes['histos']
     
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
@@ -131,21 +132,21 @@ class HaddHisto(ForceRun):
         _c2 = convert_to_luigi_local_targets(o2)
         return _c1 + _c2
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
         hadd_histo.hadd_histo( self.args )
 
 
-class HaddCounts(ForceRun):
+class HaddCounts(lutils.ForceRun):
     """Write htcondor files for hadding txt count files."""
     samples = luigi.ListParameter()
     dataset_name = luigi.Parameter()
     args = utils.dot_dict(lcfg.haddcounts_params)
     args['tprefix'] = lcfg.modes['counts']
     
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
@@ -161,19 +162,19 @@ class HaddCounts(ForceRun):
         _c2 = convert_to_luigi_local_targets(o2)
         return _c1 + _c2
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
         hadd_counts.hadd_counts( self.args )
 
 
-class EffAndSF(ForceRun):
+class EffAndSF(lutils.ForceRun):
     """Write htcondor files for efficiencies and scale factors."""
     params = utils.dot_dict(lcfg.sf_params)
     params['tprefix'] = lcfg.modes['histos']
     
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         o1, o2, _ = eff_and_sf.eff_and_sf_outputs(self.params)
 
@@ -187,11 +188,11 @@ class EffAndSF(ForceRun):
         _c2 = convert_to_luigi_local_targets(o2)
         return _c1 + _c2
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         eff_and_sf.eff_and_sf(self.params)
 
-class EffAndSFAggr(ForceRun):
+class EffAndSFAggr(lutils.ForceRun):
     """
     Aggregate htcondor files for efficiencies and scale factors.
     Useful for transfering the intersection efficiencies to the KLUB framework.
@@ -199,7 +200,7 @@ class EffAndSFAggr(ForceRun):
     """
     params = utils.dot_dict(lcfg.sfagg_params)
     
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         o1, o2, _ = eff_and_sf_aggr.eff_and_sf_aggr_outputs(self.params)
 
@@ -213,16 +214,16 @@ class EffAndSFAggr(ForceRun):
         _c2 = convert_to_luigi_local_targets(o2)
         return _c1 + _c2
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         eff_and_sf_aggr.eff_and_sf_aggr(self.params)
 
 
-class Discriminator(ForceRun):
+class Discriminator(lutils.ForceRun):
     """Write htcondor files for the variable discriminator."""
     params = utils.dot_dict(lcfg.discriminator_params)
     
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         o1, o2, _ = discriminator.discriminator_outputs(self.params)
 
@@ -236,16 +237,16 @@ class Discriminator(ForceRun):
         _c2 = convert_to_luigi_local_targets(o2)
         return _c1 + _c2
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         discriminator.discriminator(self.params)
 
 
-class UnionCalculator(ForceRun):
+class UnionCalculator(lutils.ForceRun):
     """Write htcondor files for scale factor calculator."""
     params = utils.dot_dict(lcfg.calculator_params)
     
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         o1, o2, _ = union_calculator.union_calculator_outputs(self.params)
 
@@ -260,16 +261,16 @@ class UnionCalculator(ForceRun):
         _c2 = convert_to_luigi_local_targets(o2)
         return _c1 + _c2
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         union_calculator.union_calculator(self.params)
 
 
-class Closure(ForceRun):
+class Closure(lutils.ForceRun):
     """Write htcondor files for displaying closure plots."""
     params = utils.dot_dict(lcfg.closure_params)
     
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         o1, o2, _ = closure.closure_outputs(self.params)
 
@@ -283,12 +284,12 @@ class Closure(ForceRun):
         _c2 = convert_to_luigi_local_targets(o2)
         return _c1 + _c2
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         closure.closure(self.params)
 
 
-class Dag(ForceRun):
+class Dag(lutils.ForceRun):
     """Triggering all htcondor writing classes."""
     params      = utils.dot_dict(lcfg.write_params)
     pHistos     = utils.dot_dict(lcfg.histos_params)
@@ -303,7 +304,7 @@ class Dag(ForceRun):
     pHaddHisto['tprefix']  = lcfg.modes['histos']
     pEffSF['tprefix'] =  lcfg.modes['histos']
     
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         o1 = dag.dag_outputs(self.params)
 
@@ -315,7 +316,7 @@ class Dag(ForceRun):
         _c1 = convert_to_luigi_local_targets(o1)
         return _c1
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         self.pHistos['mode']             = 'histos'
         objHistosData, objHistosMC, _, _ = processing.processing_outputs(self.pHistos)
@@ -365,7 +366,7 @@ class Dag(ForceRun):
                                            mode='short' )
         dag_manager.write_all()
         
-class SubmitDAG(ForceRun):
+class SubmitDAG(lutils.ForceRun):
     """Submission class."""
     def edit_condor_submission_file(self, out):
         jw = job_writer.JobWriter()
@@ -379,7 +380,7 @@ class SubmitDAG(ForceRun):
             contents = "".join(contents)
             f.write(contents)
         
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         outfile = self.input()[-1][0].path
         com = 'condor_submit_dag -no_submit -f '
@@ -393,13 +394,13 @@ class SubmitDAG(ForceRun):
         time.sleep(0.5)
         os.system('condor_q')
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         # WriteDag dependency is the last one
         target = self.input()[-1][0].path + '.condor.sub'
         return luigi.LocalTarget(target)
 
-    @WorkflowDebugger(flag=FLAGS.debug_workflow)
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def requires(self):
         return [ Processing(mode='histos'),
                  Processing(mode='counts'),
