@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "get_trig_counts" ]
+
 import re
 import os
 import sys
@@ -21,9 +25,9 @@ from utils.selection import EventSelection
 
 from luigi_conf import _triggers_custom
 
-def getTriggerCounts(outdir, dataset, sample, filename,
-                     channels, triggers,
-                     subtag, tprefix, isdata):
+def get_trig_counts(outdir, dataset, sample, filename,
+                    channels, triggers,
+                    subtag, tprefix, isdata):
     # -- Check if outdir exists, if not create it
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -127,6 +131,6 @@ parser.add_argument('--triggers',    dest='triggers',    required=True, nargs='+
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = parse_args(parser)
 
-getTriggerCounts( outdir=args.outdir, dataset=args.dataset, sample=args.sample,
-                  filename=args.filename, channels=args.channels, triggers=args.triggers,
-                  subtag=args.subtag, tprefix=args.tprefix, isdata=args.isdata )
+get_trig_counts( outdir=args.outdir, dataset=args.dataset, sample=args.sample,
+                 filename=args.filename, channels=args.channels, triggers=args.triggers,
+                 subtag=args.subtag, tprefix=args.tprefix, isdata=args.isdata )

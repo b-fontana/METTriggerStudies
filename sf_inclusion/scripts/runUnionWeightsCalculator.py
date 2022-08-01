@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "run_union_weights_calculator", "run_union_weights_calculator_outputs" ]
+
 import os
 import h5py
 import re
@@ -93,7 +97,7 @@ def eff_extractor(args, chn, effvars, nbins):
                     elif obj.GetName() == 'SF1D':
                         pass
                     else:
-                        raise ValueError('[runUnionWeightsCalculator.py] It must be either Data or MC. It was {}.'.format(obj.GetName()))
+                        raise ValueError('It must be either Data or MC. It was {}.'.format(obj.GetName()))
                 assert len(efficiencies_data[tcstr][var]) > 0
                 assert len(efficiencies_mc[tcstr][var]) > 0
 
@@ -144,7 +148,7 @@ def prob_calculator(efficiencies, effvars, leaf_manager, channel, closure_single
 
     return prob_data, prob_mc
 
-def runUnionWeightsCalculator_outputs(args, proc):
+def run_union_weights_calculator_outputs(args, proc):
     outputs = []
 
     exp = re.compile('output(_[0-9]{1,5}).root')
@@ -160,8 +164,8 @@ def runUnionWeightsCalculator_outputs(args, proc):
         outputs.append( os.path.join(folder, basename) )
     return outputs
 
-def runUnionWeightsCalculator(args, single_trigger_closure=False):
-    output = runUnionWeightsCalculator_outputs(args, args.sample)
+def run_union_weights_calculator(args, single_trigger_closure=False):
+    output = run_union_weights_calculator_outputs(args, args.sample)
     number = re.search('(_[0-9]{1,5}).root', args.file_name)
     r = re.compile('.*/' + args.outprefix + '_' + args.sample + number.group(1) + args.subtag + '\.hdf5')
     output = list(filter(r.match, output))
@@ -307,4 +311,4 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true', help='debug verbosity')
     args = parse_args(parser)
     
-    runUnionWeightsCalculator(args)
+    run_union_weights_calculator(args)

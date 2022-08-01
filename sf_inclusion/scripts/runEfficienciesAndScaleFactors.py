@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "run_eff_sf_1d", "run_eff_sf_1d_outputs", "run_eff_sf_2d_outputs" ]
+
 import os
 import argparse
 import ctypes
@@ -49,7 +53,7 @@ from luigi_conf import (
     _triggers_map,
 )
 
-def paint2D(channel, trig):
+def paint2d(channel, trig):
     lX1, lX2, lY, lYstep = 0.04, 0.7, 0.96, 0.03
     l = TLatex()
     l.SetNDC()
@@ -67,7 +71,7 @@ def paint2D(channel, trig):
 
 
 
-def drawEffAndSF1D(proc, channel, variable, trig,
+def draw_eff_and_sf_1d(proc, channel, variable, trig,
                    save_names_1D,
                    tprefix, indir, subtag, mc_name, data_name,
                    intersection_str, debug):
@@ -225,8 +229,7 @@ def drawEffAndSF1D(proc, channel, variable, trig,
             try:
                 y.sf[i] = y.dt[i] / y.mc[i]
             except ZeroDivisionError:
-                print(('[runEfficienciesAndScaleFactors.py] WARNING: ' +
-                       'There was a division by zero!'), flush=True)
+                print('There was a division by zero!', flush=True)
                 y.sf[i] = 0
    
             if y.sf[i] == 0:
@@ -436,10 +439,10 @@ def drawEffAndSF1D(proc, channel, variable, trig,
         print('[=debug=] 2D Plotting...', flush=True)
 
 
-def drawEffAndSF2D(proc, channel, joinvars, trig,
-                   save_names_2D,
-                   tprefix, indir, subtag, mc_name, data_name,
-                   intersection_str, debug):
+def draw_eff_and_sf_2d(proc, channel, joinvars, trig,
+                       save_names_2D,
+                       tprefix, indir, subtag, mc_name, data_name,
+                       intersection_str, debug):
     _name = lambda a,b,c,d : a + b + c + d + '.root'
 
     name_data = os.path.join(indir, _name( tprefix, data_name, '_Sum', subtag ) )
@@ -663,7 +666,7 @@ def drawEffAndSF2D(proc, channel, joinvars, trig,
                                            items_per_line=2)
             l.DrawLatex(lX, lY, n2[itype].replace('2D',''))
       
-            paint2D(channel, textrig)
+            paint2d(channel, textrig)
             redraw_border()
 
             for full in save_names_2D[joinvars][n2[itype]]:
@@ -681,8 +684,8 @@ def _get_canvas_name(prefix, proc, chn, var, trig, data_name, subtag):
     n += _placeholder_cuts + subtag
     return n
 
-def runEffSF_outputs(outdir, data_name, mc_name,
-                     trigger_combination, channels, variables, subtag):
+def run_eff_sf_1d_outputs(outdir, data_name, mc_name,
+                       trigger_combination, channels, variables, subtag):
     outputs = [[] for _ in range(len(_extensions))]
     processes = mc_name #CHANGE !!!! IF STUDYING MCs SEPARATELY
   
@@ -703,9 +706,9 @@ def runEffSF_outputs(outdir, data_name, mc_name,
     #join all outputs in the same list
     return sum(outputs, []), _extensions, processes
 
-def runEffSF2D_outs(outdir, proc, data_name,
-                    trigger_combination, channel, subtag,
-                    intersection_str, draw_independent_MCs, debug):
+def run_eff_sf_2d_outputs(outdir, proc, data_name,
+                          trigger_combination, channel, subtag,
+                          intersection_str, draw_independent_MCs, debug):
     """
     This output function is not ready to be used in the luigi framework.
     It returns the outputs corresponding to a single trigger combination.
@@ -755,16 +758,16 @@ def runEffSF2D_outs(outdir, proc, data_name,
     return outputs
 
 
-def runEffSF(indir, outdir, data_name, mc_name,
-             trigger_combination, channels, variables, subtag,
-             draw_independent_MCs, tprefix, intersection_str, debug):
+def run_eff_sf_1d(indir, outdir, data_name, mc_name,
+                  trigger_combination, channels, variables, subtag,
+                  draw_independent_MCs, tprefix, intersection_str, debug):
     
-    outs1D, extensions, processes = runEffSF_outputs(outdir,
-                                                     mc_name, data_name,
-                                                     trigger_combination,
-                                                     channels, variables,
-                                                     subtag,
-                                                     draw_independent_MCs)
+    outs1D, extensions, processes = run_eff_sf_1d_outputs(outdir,
+                                                          mc_name, data_name,
+                                                          trigger_combination,
+                                                          channels, variables,
+                                                          subtag,
+                                                          draw_independent_MCs)
   
     dv = len(args.variables)
     dc = len(args.channels) * dv
@@ -806,13 +809,13 @@ def runEffSF(indir, outdir, data_name, mc_name,
             for ic,chn in enumerate(channels):
                 for onetrig in splits:
                     if onetrig in _2Dpairs:
-                        names2D = runEffSF2D_outs(outdir, proc, data_name,
-                                                  trigger_combination,
-                                                  chn,
-                                                  subtag,
-                                                  intersection_str,
-                                                  draw_independent_MCs,
-                                                  debug)
+                        names2D = run_eff_sf_2d_outputs(outdir, proc, data_name,
+                                                        trigger_combination,
+                                                        chn,
+                                                        subtag,
+                                                        intersection_str,
+                                                        draw_independent_MCs,
+                                                        debug)
 
                         for j in _2Dpairs[onetrig]:
                             vname = add_vnames(j[0],j[1])
@@ -850,12 +853,12 @@ args = parse_args(parser)
 
 ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
-runEffSF(args.indir, args.outdir,
-         args.data_name, args.mc_name,
-         args.triggercomb,
-         args.channels, args.variables,
-         args.subtag,
-         args.draw_independent_MCs,
-         args.tprefix,
-         args.intersection_str,
-         args.debug)
+run_eff_sf_1d(args.indir, args.outdir,
+              args.data_name, args.mc_name,
+              args.triggercomb,
+              args.channels, args.variables,
+              args.subtag,
+              args.draw_independent_MCs,
+              args.tprefix,
+              args.intersection_str,
+              args.debug)

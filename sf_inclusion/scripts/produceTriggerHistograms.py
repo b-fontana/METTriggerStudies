@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "build_histograms" ]
+
 import re
 import os
 import functools

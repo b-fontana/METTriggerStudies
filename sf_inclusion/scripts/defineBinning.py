@@ -1,8 +1,7 @@
-"""
-Defines the binning to be used for the efficiencies and scale
-factors, using only the data. It does nothing if the user
-explicitly specifies the binning.
-"""
+# coding: utf-8
+
+_all_ = [ "define_binning", "define_binning_outputs" ]
+
 import os
 import glob
 import h5py
@@ -25,12 +24,12 @@ def skip_data_loop(args):
     return True
 
 @set_pure_input_namespace
-def defineBinning_outputs(args):
+def define_binning_outputs(args):
     assert os.path.splitext(args.binedges_filename)[1] == '.hdf5'
     return os.path.join(args.outdir, args.binedges_filename)
 
 @set_pure_input_namespace
-def defineBinning(args):
+def define_binning(args):
     """
     Determine histogram quantiles
     """

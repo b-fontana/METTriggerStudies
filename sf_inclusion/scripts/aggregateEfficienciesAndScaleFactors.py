@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "aggregate_eff_and_sf" ]
+
 import os
 import re
 import argparse
@@ -21,7 +25,7 @@ from utils.utils import (
     parse_args,
     )
 
-def convertGraphToHist(graph):
+def convert_graph_to_hist(graph):
     """
     Converts 1D TGraphAsymmErrors to TH1D.
     TODO: support 2D graphs [3D histograms hopefully not...]
@@ -50,7 +54,7 @@ def convertGraphToHist(graph):
 
     return histo
 
-def aggregateEfficienciesAndScaleFactors(indir, outdir, channel, subtag, prefix, variables, debug):
+def aggregate_eff_and_sf(indir, outdir, channel, subtag, prefix, variables, debug):
     extension = 'root'
     _outname = os.path.join(outdir, prefix + channel + '.' + extension)
     fout = ROOT.TFile.Open(_outname , 'RECREATE')
@@ -80,7 +84,7 @@ def aggregateEfficienciesAndScaleFactors(indir, outdir, channel, subtag, prefix,
                         raise ValueError(mess)
 
                     if h.InheritsFrom(TGraphAsymmErrors.Class()):
-                        h = convertGraphToHist(h)
+                        h = convert_graph_to_hist(h)
 
                     try:
                         var, trigger, cut = regex.match(afile).groups()
@@ -108,5 +112,5 @@ parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = parse_args(parser)
 
-aggregateEfficienciesAndScaleFactors(args.indir, args.outdir, args.channel, args.subtag,
-                                     args.file_prefix, args.variables, args.debug)
+aggregate_eff_and_sf(args.indir, args.outdir, args.channel, args.subtag,
+                     args.file_prefix, args.variables, args.debug)

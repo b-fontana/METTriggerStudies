@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "hadd_histo", "hadd_histo_outputs" ]
+
 import os
 import sys
 from utils import utils

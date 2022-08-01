@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "discriminator" ]
+
 import os
 import glob
 import re
@@ -32,17 +36,17 @@ def discriminator(args, chn):
 
     return result
 
-def discriminatorExecutor_outputs(args, chn):
+def discriminator_exec_outputs(args, chn):
     out = os.path.join(args.outdir, '{}_{}.json'.format( os.path.basename(__file__).split('.')[0], chn))
     return out
 
-def discriminatorExecutor(args, chn):
+def discriminator_exec(args, chn):
     match = re.compile('')
     
     if args.debug:
         print('[=debug=] Open file: {}'.format(name_data))
 
-    out = discriminatorExecutor_outputs(args, chn)
+    out = discriminator_exec_outputs(args, chn)
     ordered_vars = discriminator(args, chn)
 
     with open(out, 'w') as f:
@@ -66,4 +70,4 @@ parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = parse_args(parser)
 
-discriminatorExecutor(args, args.channel)
+discriminator_exec(args, args.channel)

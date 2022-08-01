@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "add_trigger_counts" ]
+
 import os
 import re
 import numpy as np
@@ -9,7 +13,7 @@ from pathlib import Path
 from utils import utils
 
 @utils.set_pure_input_namespace
-def addTriggerCounts(args):
+def add_trigger_counts(args):
     def are_there_files(files, regex):
         if len(files)==0:
             m =  '\nThe walk was performed in {} .\n'.format(os.path.join(args.indir, smpl))
@@ -200,4 +204,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
     utils.print_configuration(args)
     
-    addTriggerCounts(args)
+    add_trigger_counts(args)

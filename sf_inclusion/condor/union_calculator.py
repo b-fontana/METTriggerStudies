@@ -1,7 +1,6 @@
-###### DOCSTRING ####################################################
-# Submits all the jobs required to obtain the trigger scale factors
-# Run example:
-####################################################################
+# coding: utf-8
+
+_all_ = [ "union_calculator", "union_calculator_outputs" ]
 
 import sys
 sys.path.append("..")

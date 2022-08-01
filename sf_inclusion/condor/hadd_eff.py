@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "hadd_eff", "hadd_eff_outputs" ]
+
 import os
 import sys
 from utils import utils

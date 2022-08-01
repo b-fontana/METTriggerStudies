@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ ]
+    
 import os
 import time
 import inspect

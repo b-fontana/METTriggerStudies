@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "draw_2D_sf", "draw_2D_sf_outputs" ]
+
 import os
 import argparse
 import numpy as np
@@ -21,7 +25,7 @@ from ROOT import TString
 from utils import utils
 from luigi_conf import _2Dpairs, _extensions
 
-def setHistoProperties(histo, variables):
+def set_histo_props(histo, variables):
     histo.GetYaxis().SetNdivisions(6)
     histo.GetXaxis().SetNdivisions(6)
     histo.GetYaxis().SetLabelSize(0.04)
@@ -33,11 +37,11 @@ def setHistoProperties(histo, variables):
     histo.GetXaxis().SetTitle(variables[0])
     histo.GetYaxis().SetTitle(variables[1])
 
-def setHisto(histo, variables):
-    setHistoProperties(histo, variables)
+def set_histo(histo, variables):
+    set_histo_props(histo, variables)
     return histo
 
-def paintChannelAndTrigger(channel, trig):
+def paint_channel_and_trigger(channel, trig):
     lX, lY, lYstep = 0.06, 0.96, 0.03
     l = TLatex()
     l.SetNDC()
@@ -52,7 +56,7 @@ def paintChannelAndTrigger(channel, trig):
     l.DrawLatex( lX, lY, 'Channel: '+latexChannel)
     l.DrawLatex( lX, lY-lYstep, 'Trigger: '+trig)
 
-def check2DTrigger(args, proc, channel, var, trig, save_names):
+def check_2D_trigger(args, proc, channel, var, trig, save_names):
     _name = lambda a,b,c,d : a + b + c + d + '.root'
     histo_options = 'colz text'
     name_data = os.path.join(args.indir, _name( args.targetsPrefix, args.data_name,
@@ -94,7 +98,7 @@ def check2DTrigger(args, proc, channel, var, trig, save_names):
         
         thiseff2D['ref_vs_trig'].Draw('colz')
         ROOT.gPad.Update()
-        histos.append( setHisto(thiseff2D['ref_vs_trig'].GetPaintedHistogram(), var) )
+        histos.append( set_histo(thiseff2D['ref_vs_trig'].GetPaintedHistogram(), var) )
 
         histos_eu.append( histos[-1].Clone(effname+'_eu') )
         histos_ed.append( histos[-1].Clone(effname+'_ed') )
@@ -116,7 +120,7 @@ def check2DTrigger(args, proc, channel, var, trig, save_names):
                     histos_ed[-1].SetBinContent(abin, 1.e-10)
                     
         histo_pass = thiseff2D['ref_vs_trig'].GetCopyPassedHisto()
-        histo_tot = setHisto( thiseff2D['ref_vs_trig'].GetCopyTotalHisto(), var )
+        histo_tot = set_histo( thiseff2D['ref_vs_trig'].GetCopyTotalHisto(), var )
 
         histo_tot.SetMarkerSize(.75)
         histo_tot.SetMarkerColor(ROOT.kOrange+10)
@@ -151,7 +155,7 @@ def check2DTrigger(args, proc, channel, var, trig, save_names):
         l.SetTextColor(2)
         l.DrawLatex(lX, lY, effname)
 
-        paintChannelAndTrigger(channel, trig)
+        paint_channel_and_trigger(channel, trig)
         utils.redrawBorder()
 
     canvas_sf = TCanvas(os.path.basename(save_names[0][2]).split('.')[0],
@@ -214,7 +218,7 @@ def check2DTrigger(args, proc, channel, var, trig, save_names):
     l.SetTextColor(2)
     l.DrawLatex(lX, lY, 'Data / {}'.format(proc))
 
-    paintChannelAndTrigger(channel, trig)
+    paint_channel_and_trigger(channel, trig)
     utils.redrawBorder()
 
     for aname in save_names:
@@ -223,7 +227,7 @@ def check2DTrigger(args, proc, channel, var, trig, save_names):
         canvas_sf.SaveAs( aname[2] )
   
 @utils.set_pure_input_namespace
-def draw2DTriggerSF_outputs(args):
+def draw_2D_sf_outputs(args):
     outputs = [[] for _ in range(len(_extensions))]
     processes = args.mc_processes if args.draw_independent_MCs else [args.mc_name]
   
@@ -248,11 +252,11 @@ def draw2DTriggerSF_outputs(args):
     return sum(outputs, []), _extensions
     
 @utils.set_pure_input_namespace
-def draw2DTriggerSF(args):
+def draw_2D_sf(args):
     ROOT.gStyle.SetOptStat(0)
     ROOT.gStyle.SetOptTitle(0)
 
-    outputs, extensions = draw2DTriggerSF_outputs(args)
+    outputs, extensions = draw_2D_sf_outputs(args)
     processes = args.mc_processes if args.draw_independent_MCs else [args.mc_name]
 
     # loop through variables, triggers, channels and processes
@@ -277,7 +281,7 @@ def draw2DTriggerSF(args):
                             print("process={}, channel={}, variables={}, trigger={}".format(proc, ch, variables, trig))
                             print()
                        
-                        check2DTrigger( args, proc, ch, variables, trig, names )
+                        check_2D_trigger( args, proc, ch, variables, trig, names )
           
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Draw trigger scale factors')
@@ -292,4 +296,4 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true', help='debug verbosity')
     args = parser.parse_args()
 
-    draw2DTriggerSF(args)
+    draw_2D_sf(args)

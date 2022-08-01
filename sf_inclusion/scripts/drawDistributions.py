@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "draw_distr", "draw_distr_outputs" ]
+
 import os
 import sys
 import functools
@@ -14,7 +18,7 @@ from ROOT import THStack
 from luigi_conf import _extensions
 from utils import utils
 
-def getHistogramMaxCounts(h):
+def get_histogram_max_counts(h):
   """
   Receives a TH1 object and returns:
   - its maximum number of counts in a single bin
@@ -30,7 +34,7 @@ def getHistogramMaxCounts(h):
       ret_error = h.GetBinError(ibin)
   return ret_content, ret_error
 
-def plotDist(args, channel, variable, trig, save_names, binedges, nbins):
+def plot_dist(args, channel, variable, trig, save_names, binedges, nbins):
   _name_join = lambda l: functools.reduce(lambda x,y: x + y, l)
   _name_data = _name_join([args.targetsPrefix, args.data_name, args.tsuffix, args.subtag])
   name_data = os.path.join(args.indir, _name_data + '.root')
@@ -103,8 +107,8 @@ def plotDist(args, channel, variable, trig, save_names, binedges, nbins):
     h.SetMarkerStyle(22)
     h.Scale(histo_data_int/histo_mc_int);
 
-  _data_maxcount, _data_error = getHistogramMaxCounts(histo_data)
-  _mc_maxcount, _mc_error     = getHistogramMaxCounts(histos_mc[-1]) #normalized MC histo 
+  _data_maxcount, _data_error = get_histogram_max_counts(histo_data)
+  _mc_maxcount, _mc_error     = get_histogram_max_counts(histos_mc[-1]) #normalized MC histo 
   _max = ( _data_maxcount + 1.5*_data_error
            if _data_maxcount >= _mc_maxcount else _mc_maxcount + 1.5*_mc_error )
   
@@ -161,7 +165,7 @@ def plotDist(args, channel, variable, trig, save_names, binedges, nbins):
 
 
 @utils.set_pure_input_namespace
-def drawDistributions_outputs(args):
+def draw_distr_outputs(args):
   def _save_figures(base, figname, outputs, extensions):
     """Saves the output names, modifying the list in-place"""
     utils.createSingleDir( base )   
@@ -189,8 +193,8 @@ def drawDistributions_outputs(args):
   return sum(outputs, []), extensions
 
 @utils.set_pure_input_namespace
-def drawDistributions(args):
-  outputs, extensions = drawDistributions_outputs(args)
+def draw_distr(args):
+  outputs, extensions = draw_distr_outputs(args)
   
   # Recover binning
   binedges, nbins = ({} for _ in range(2))
@@ -217,7 +221,7 @@ def drawDistributions(args):
             print("channel={}, variable={}, trigger=Reference".format(chn, var))
             print()
 
-        plotDist( args, chn, var, 'Reference', names,
+        plot_dist( args, chn, var, 'Reference', names,
                   binedges[var][chn], nbins[var][chn] )
 
         for it,trig in enumerate(args.triggers):
@@ -230,8 +234,8 @@ def drawDistributions(args):
               print("channel={}, variable={}, trigger={}".format(chn, var, trig))
               print()
                   
-          plotDist( args, chn, var, trig, names,
-                    binedges[var][chn], nbins[var][chn] )
+          plot_dist( args, chn, var, trig, names,
+                     binedges[var][chn], nbins[var][chn] )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Draw variables distributions')
@@ -246,4 +250,4 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true', help='debug verbosity')
     args = parser.parse_args()
 
-    drawDistributions(args)
+    draw_distr(args)

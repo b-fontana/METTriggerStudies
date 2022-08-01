@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "eff_and_sf", "eff_and_sf_outputs" ]
+
 import sys
 sys.path.append("..")
 

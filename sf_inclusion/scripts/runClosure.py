@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "run_closure", "run_closure_outputs" ]
+
 import os
 import json
 import glob

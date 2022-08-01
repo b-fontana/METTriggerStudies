@@ -1,18 +1,6 @@
-###### DOCSTRING ####################################################
-# Submits all the jobs required to obtain the trigger scale factors
-# Run example:
-# python3 -m scripts.submitTriggerEff
-# --indir /data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_Radion_2018_fixedMETtriggers_mht_16Jun2021/
-# --outdir .
-# --tag test_cuts
-# --mc_processes TT_fullyHad
-# --data MET2018A
-# --triggers METNoMu120 METNoMu120_HT60 HT500
-# --variables met_et HT20 mht_et metnomu_et mhtnomu_et
-# --channels mutau
-# --subtag SUBTAG
-# --tprefix histos_
-####################################################################
+# coding: utf-8
+
+_all_ = [ "processing", "processing_outputs" ]
 
 import sys
 sys.path.append("..")

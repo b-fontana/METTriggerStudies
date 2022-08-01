@@ -1,3 +1,7 @@
+# coding: utf-8
+
+_all_ = [ "hadd_counts", "hadd_counts_outputs" ]
+
 import os
 import sys
 import sys
