@@ -1,7 +1,7 @@
 import os
 import sys
 from utils import utils
-from scripts.jobWriter import JobWriter
+from condor.jobWriter import JobWriter
 
 @utils.set_pure_input_namespace
 def runHaddHisto_outputs(args):

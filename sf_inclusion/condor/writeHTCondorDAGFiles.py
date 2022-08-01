@@ -7,7 +7,7 @@ import atexit # https://stackoverflow.com/questions/865115/how-do-i-correctly-cl
 from utils.utils import (
   set_pure_input_namespace,
 )
-from scripts.jobWriter import JobWriter
+from condor.jobWriter import JobWriter
 
 @set_pure_input_namespace
 def writeHTCondorDAGFiles_outputs(args):

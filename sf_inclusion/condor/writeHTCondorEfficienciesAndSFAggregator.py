@@ -11,7 +11,7 @@ from utils.utils import (
     join_strings,
     set_pure_input_namespace,
 )
-from scripts.jobWriter import JobWriter
+from condor.jobWriter import JobWriter
 
 @set_pure_input_namespace
 def writeHTCondorEfficienciesAndSFAggregator_outputs(args):

@@ -11,7 +11,7 @@ import argparse
 import ROOT
 
 from utils import utils
-from scripts.jobWriter import JobWriter
+from condor.jobWriter import JobWriter
 
 @utils.set_pure_input_namespace
 def writeHTCondorUnionWeightsCalculatorFiles_outputs(args):

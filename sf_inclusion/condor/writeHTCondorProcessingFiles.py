@@ -23,7 +23,7 @@ import argparse
 import ROOT
 
 from utils import utils
-from scripts.jobWriter import JobWriter
+from condor.jobWriter import JobWriter
 
 def produce_trigger_outputs_sample(args, sample, ext):
     """

@@ -10,7 +10,7 @@ from utils.utils import (
     set_pure_input_namespace,
 )
 
-from scripts.jobWriter import JobWriter
+from condor.jobWriter import JobWriter
 
 @set_pure_input_namespace
 def writeHTCondorClosureFiles_outputs(args):

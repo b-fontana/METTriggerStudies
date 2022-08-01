@@ -1,10 +1,8 @@
 import os
 import time
-import utils
 import inspect
+import re
 
-os.environ['LUIGI_CONFIG_PATH'] = os.environ['PWD']+'/luigi_conf/luigi.cfg'
-assert os.path.exists(os.environ['LUIGI_CONFIG_PATH'])
 import luigi
 from luigi_conf.luigi_utils import  (
     ForceRun,
@@ -12,21 +10,22 @@ from luigi_conf.luigi_utils import  (
 )
 from luigi_conf.luigi_cfg import cfg, FLAGS
 
-from luigi_conf import (
-    _placeholder_cuts,
-)
 lcfg = cfg() #luigi configuration
 
-from scripts.defineBinning import (
-    defineBinning,
-    defineBinning_outputs,
-)
+from scripts.defineBinning import *
 
-from utils import utils
+from condor.writeHTCondorProcessingFiles import *
+from condor.writeHTCondorHaddHistoFiles import *
+from condor.writeHTCondorHaddCountsFiles import *
+from condor.writeHTCondorEfficienciesAndScaleFactorsFiles import *
+from condor.writeHTCondorEfficienciesAndSFAggregator import *
+from condor.writeHTCondorDiscriminatorFiles import *
+from condor.writeHTCondorUnionWeightsCalculatorFiles import *
+from condor.writeHTCondorClosureFiles import *
+from condor.writeHTCondorDAGFiles import *
 from condor.jobWriter import JobWriter
 
-import re
-re_txt = re.compile('\.txt')
+from utils import utils
 
 ########################################################################
 ### HELPER FUNCTIONS ###################################################
@@ -38,8 +37,9 @@ def convert_to_luigi_local_targets(targets):
     return [ luigi.LocalTarget(t) for t in targets ]
 
 def get_target_path(taskname):
-    target_path = os.path.join(lcfg.targets_folder, re_txt.sub( '_'+taskname+'.txt',
-                                                                lcfg.targets_default_name ) ) 
+    re_txt = re.compile('\.txt')
+    target_path = os.path.join(lcfg.targets_folder,
+                               re_txt.sub( '_'+taskname+'.txt', lcfg.targets_default_name) ) 
     return target_path
 
 def luigi_to_raw( param ):
