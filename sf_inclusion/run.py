@@ -4,12 +4,8 @@ import inspect
 import re
 
 import luigi
-from luigi_conf.luigi_utils import  (
-    ForceRun,
-    WorkflowDebugger,
-)
+from luigi_conf import luigi_utils as lutils
 from luigi_conf.luigi_cfg import cfg, FLAGS
-
 lcfg = cfg() #luigi configuration
 
 from utils import utils
@@ -27,9 +23,8 @@ from condor import (
     union_calculator,
     )
 
-########################################################################
-### HELPER FUNCTIONS ###################################################
-########################################################################
+### Helper functions 
+
 def convert_to_luigi_local_targets(targets):
     """Converts a list of files into a list of luigi targets."""
     if not isinstance(targets, (tuple,list,set)):
@@ -51,11 +46,11 @@ def luigi_to_raw( param ):
         return [x for x in param]
     else:
         raise NotImplementedError('[' + inspect.stack()[0][3] + ']: ' + 'only tuples/lists implemented so far!')
-    
-########################################################################
-### CALCULATE THE MOST ADEQUATE BINNING BASED ON DATA ##################
-########################################################################
+
+### Tasks
+
 class DefineBinning(luigi.Task):
+    """Calculate the most adequate binning based on data."""
     args = utils.dot_dict(lcfg.bins_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
@@ -74,10 +69,9 @@ class DefineBinning(luigi.Task):
     def run(self):
         defineBinning.defineBinning( self.args )
 
-########################################################################
-### WRITE HTCONDOR FILES FOR TOTAL AND PASSED TRIGGER HISTOGRAMS #######
-########################################################################
+
 class Processing(ForceRun):
+    """Write htcondor files for total and passed trigger histograms."""
     params = utils.dot_dict(lcfg.histos_params)
 
     mode = luigi.ChoiceParameter(choices=lcfg.modes.keys(),
@@ -91,7 +85,6 @@ class Processing(ForceRun):
         o1, o2, _ = objData
         o3, o4, _ = objMC
 
-        #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
@@ -102,13 +95,6 @@ class Processing(ForceRun):
 
         _c1 = convert_to_luigi_local_targets(o1)
         _c2 = convert_to_luigi_local_targets(o2)
-        # for elem in o1:
-        #     print(elem, flush=True)
-        # print(flush=True)
-        # for elem in o2:
-        #     print(elem, flush=True)
-        # print('----', flush=True)
-        # print(flush=True)
         return _c1 + _c2
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
@@ -122,10 +108,8 @@ class Processing(ForceRun):
         return DefineBinning()
 
 
-########################################################################
-### WRITE HTCONDOR FILES FOR HADD'ING HISTOGRAMS IN ROOT FILES #########
-########################################################################
 class HaddHisto(ForceRun):
+    """Write htcondor files for hadd'ing histograms in root files."""
     samples = luigi.ListParameter()
     dataset_name = luigi.Parameter()
     args = utils.dot_dict(lcfg.haddhisto_params)
@@ -137,7 +121,6 @@ class HaddHisto(ForceRun):
         self.args['dataset_name'] = self.dataset_name
         o1, o2, _ = hadd_histo.hadd_histo_outputs( self.args )
         
-        #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
@@ -154,10 +137,9 @@ class HaddHisto(ForceRun):
         self.args['dataset_name'] = self.dataset_name
         hadd_histo.hadd_histo( self.args )
 
-########################################################################
-### WRITE HTCONDOR FILES FOR HADDING TXT COUNT FILES ###################
-########################################################################
+
 class HaddCounts(ForceRun):
+    """Write htcondor files for hadding txt count files."""
     samples = luigi.ListParameter()
     dataset_name = luigi.Parameter()
     args = utils.dot_dict(lcfg.haddcounts_params)
@@ -169,7 +151,6 @@ class HaddCounts(ForceRun):
         self.args['dataset_name'] = self.dataset_name
         o1, o2, _ = hadd_counts.hadd_counts_outputs( self.args )
         
-        #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
@@ -186,10 +167,9 @@ class HaddCounts(ForceRun):
         self.args['dataset_name'] = self.dataset_name
         hadd_counts.hadd_counts( self.args )
 
-########################################################################
-### WRITE HTCONDOR FILES FOR EFFICIENCIES AND SCALE FACTORS ############
-########################################################################
+
 class EffAndSF(ForceRun):
+    """Write htcondor files for efficiencies and scale factors."""
     params = utils.dot_dict(lcfg.sf_params)
     params['tprefix'] = lcfg.modes['histos']
     
@@ -197,7 +177,6 @@ class EffAndSF(ForceRun):
     def output(self):
         o1, o2, _ = eff_and_sf.eff_and_sf_outputs(self.params)
 
-        #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
@@ -212,11 +191,9 @@ class EffAndSF(ForceRun):
     def run(self):
         eff_and_sf.eff_and_sf(self.params)
 
-########################################################################
-### AGGREGATE HTCONDOR FILES FOR EFFICIENCIES AND SCALE FACTORS ########
-########################################################################
 class EffAndSFAggr(ForceRun):
     """
+    Aggregate htcondor files for efficiencies and scale factors.
     Useful for transfering the intersection efficiencies to the KLUB framework.
     Not needed for the following steps.
     """
@@ -226,7 +203,6 @@ class EffAndSFAggr(ForceRun):
     def output(self):
         o1, o2, _ = eff_and_sf_aggr.eff_and_sf_aggr_outputs(self.params)
 
-        #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
@@ -241,17 +217,15 @@ class EffAndSFAggr(ForceRun):
     def run(self):
         eff_and_sf_aggr.eff_and_sf_aggr(self.params)
 
-########################################################################
-### WRITE HTCONDOR FILES FOR THE VARIABLE DISCRIMINATOR ################
-########################################################################
+
 class Discriminator(ForceRun):
+    """Write htcondor files for the variable discriminator."""
     params = utils.dot_dict(lcfg.discriminator_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         o1, o2, _ = discriminator.discriminator_outputs(self.params)
 
-        #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
@@ -266,10 +240,9 @@ class Discriminator(ForceRun):
     def run(self):
         discriminator.discriminator(self.params)
 
-########################################################################
-### WRITE HTCONDOR FILES FOR SCALE FACTOR CALCULATOR ###################
-########################################################################
+
 class UnionCalculator(ForceRun):
+    """Write htcondor files for scale factor calculator."""
     params = utils.dot_dict(lcfg.calculator_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
@@ -291,17 +264,15 @@ class UnionCalculator(ForceRun):
     def run(self):
         union_calculator.union_calculator(self.params)
 
-########################################################################
-### WRITE HTCONDOR FILES FOR DISPLAYING CLOSURE PLOTS ##################
-########################################################################
+
 class Closure(ForceRun):
+    """Write htcondor files for displaying closure plots."""
     params = utils.dot_dict(lcfg.closure_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         o1, o2, _ = closure.closure_outputs(self.params)
 
-        #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
@@ -316,10 +287,9 @@ class Closure(ForceRun):
     def run(self):
         closure.closure(self.params)
 
-########################################################################
-### TRIGGERING ALL HTCONDOR WRITING CLASSES ############################
-########################################################################
+
 class Dag(ForceRun):
+    """Triggering all htcondor writing classes."""
     params      = utils.dot_dict(lcfg.write_params)
     pHistos     = utils.dot_dict(lcfg.histos_params)
     pHaddHisto  = utils.dot_dict(lcfg.haddhisto_params)
@@ -337,7 +307,6 @@ class Dag(ForceRun):
     def output(self):
         o1 = dag.dag_outputs(self.params)
 
-        #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
@@ -397,9 +366,7 @@ class Dag(ForceRun):
         dag_manager.write_all()
         
 class SubmitDAG(ForceRun):
-    """
-    Submission class.
-    """
+    """Submission class."""
     def edit_condor_submission_file(self, out):
         jw = job_writer.JobWriter()
         with open(out, 'r') as f:
@@ -448,30 +415,12 @@ class SubmitDAG(ForceRun):
                  Dag(),
                 ]
    
-########################################################################
-### MAIN ###############################################################
-########################################################################
 if __name__ == "__main__":
     utils.create_single_dir( lcfg.data_storage )
     utils.create_single_dir( lcfg.targets_folder )
     
     last_tasks = [ SubmitDAG() ]
-        
-    # if FLAGS.distributions:
-    #     last_tasks += [ DrawDistributions() ]
-
-    # if FLAGS.distributions != 2:
-    #     triggercomb = utils.generateTriggerCombinations(FLAGS.triggers)
-
-    #     #one task per trigger combination
-    #     for tcomb in triggercomb:
-    #         last_tasks += [
-    #             Draw1DTriggerScaleFactors(trigger_combination=tcomb)
-    #         ]
-
-    # if FLAGS.counts: #overwrites
-    #     last_tasks = count_tasks
-            
+                    
     if FLAGS.scheduler == 'central':
         luigi.build(last_tasks,
                     workers=FLAGS.workers, local_scheduler=False, log_level='INFO')
