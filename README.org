@@ -1,4 +1,5 @@
 #+latex_header: \usepackage[utf8]{inputenc}
+[[logo.png]]
 
 * Trigger Scale Factors for the /H H \rightarrow b b \tau \tau/ Resonant Analysis
 
