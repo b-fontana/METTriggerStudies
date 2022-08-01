@@ -7,10 +7,10 @@ import atexit # https://stackoverflow.com/questions/865115/how-do-i-correctly-cl
 from utils.utils import (
   set_pure_input_namespace,
 )
-from condor.jobWriter import JobWriter
+from condor.job_writer import JobWriter
 
 @set_pure_input_namespace
-def writeHTCondorDAGFiles_outputs(args):
+def dag_outputs(args):
     return JobWriter.define_dag_output( localdir=args.localdir,
                                         tag=args.tag,
                                         name='workflow' )
@@ -23,7 +23,7 @@ class WriteDAGManager:
         
         self.data_name = data_name
         
-        out = writeHTCondorDAGFiles_outputs( {'localdir': localdir, 'tag': tag} )
+        out = dag_outputs( {'localdir': localdir, 'tag': tag} )
         self.this_file = open(out, 'w')
         atexit.register(self.cleanup)
         
@@ -64,7 +64,7 @@ class WriteDAGManager:
 
     def write_parent_child_hierarchy(self, parents, childs):
         if not isinstance(parents, (list,tuple)):
-            m = '[writeHTCondorDAGFiles] Please pass lists to the '
+            m = ' Please pass lists to the '
             m += ' `write_parent_child_hierarchy method.'
             raise TypeError(m)
         

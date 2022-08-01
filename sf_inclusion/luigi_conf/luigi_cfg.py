@@ -196,7 +196,7 @@ class cfg(luigi.Config):
                   'debug'             : FLAGS.debug_workflow} )
 
     ####
-    #### writeHTCondorDAGFiles
+    #### dag
     ####
     write_params = { 'data_name' : data_name,
                      'localdir'  : local_folder,

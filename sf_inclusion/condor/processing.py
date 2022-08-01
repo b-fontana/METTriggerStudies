@@ -23,7 +23,7 @@ import argparse
 import ROOT
 
 from utils import utils
-from condor.jobWriter import JobWriter
+from condor.job_writer import JobWriter
 
 def produce_trigger_outputs_sample(args, sample, ext):
     """
@@ -62,7 +62,7 @@ def produce_trigger_outputs(args, ext='root'):
     return tdata, tmc
 
 @utils.set_pure_input_namespace
-def writeHTCondorProcessingFiles_outputs(args):
+def processing_outputs(args):
     if args.mode == 'histos':
         name = 'Histos'
     elif args.mode == 'counts':
@@ -81,13 +81,13 @@ def writeHTCondorProcessingFiles_outputs(args):
              _data_tup, _mc_tup )
 
 @utils.set_pure_input_namespace
-def writeHTCondorProcessingFiles(args):
+def processing(args):
     prog = utils.build_prog_path(args.localdir,
                                  ('produceTriggerHistograms.py' if args.mode == 'histos'
                                   else 'produceTriggerCounts.py'))
     jw = JobWriter()
 
-    outs_data, outs_mc, _data_procs, _mc_procs = writeHTCondorProcessingFiles_outputs(args)
+    outs_data, outs_mc, _data_procs, _mc_procs = processing_outputs(args)
 
     # unite Data and MC lists
     outs_job, outs_submit, outs_check = outs_data

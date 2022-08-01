@@ -11,19 +11,19 @@ from utils.utils import (
     join_strings,
     set_pure_input_namespace,
 )
-from condor.jobWriter import JobWriter
+from condor.job_writer import JobWriter
 
 @set_pure_input_namespace
-def writeHTCondorEfficienciesAndSFAggregator_outputs(args):
+def eff_and_sf_aggr_outputs(args):
     job_f, subm_f, check_f = JobWriter.define_output( localdir=args.localdir,
                                                       data_folders='EffAndSFAgg',
                                                       tag=args.tag )
     return job_f[0], subm_f[0], check_f[0]
 
 @set_pure_input_namespace
-def writeHTCondorEfficienciesAndSFAggregator(args):
+def eff_and_sf_aggr(args):
     prog = build_prog_path(args.localdir, 'aggregateEfficienciesAndScaleFactors.py')
-    outs_job, outs_submit, outs_check = writeHTCondorEfficienciesAndSFAggregator_outputs(args)
+    outs_job, outs_submit, outs_check = eff_and_sf_aggr_outputs(args)
     jw = JobWriter()
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)

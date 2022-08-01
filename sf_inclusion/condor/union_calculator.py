@@ -11,10 +11,10 @@ import argparse
 import ROOT
 
 from utils import utils
-from condor.jobWriter import JobWriter
+from condor.job_writer import JobWriter
 
 @utils.set_pure_input_namespace
-def writeHTCondorUnionWeightsCalculatorFiles_outputs(args):
+def union_calculator_outputs(args):
     """
     Outputs are guaranteed to have the same length.
     Returns all separate paths to avoid code duplication.
@@ -28,9 +28,9 @@ def writeHTCondorUnionWeightsCalculatorFiles_outputs(args):
                                     names=names )
 
 @utils.set_pure_input_namespace
-def writeHTCondorUnionWeightsCalculatorFiles(args):
+def union_calculator(args):
     prog = utils.build_prog_path(args.localdir, 'runUnionWeightsCalculator.py')
-    jobs, subs, checks = writeHTCondorUnionWeightsCalculatorFiles_outputs(args)
+    jobs, subs, checks = union_calculator_outputs(args)
     jw = JobWriter()
 
     for i,proc in enumerate(args.mc_processes):

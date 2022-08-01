@@ -26,7 +26,7 @@ def runHaddEff_outputs(args):
     return targets
 
 @utils.set_pure_input_namespace
-def writeHTCondorHaddEffFiles_outputs(args):
+def hadd_eff_outputs(args):
     """
     Outputs are guaranteed to have the same length.
     Returns all separate paths to avoid code duplication.
@@ -57,10 +57,10 @@ def writeHTCondorHaddEffFiles_outputs(args):
     # return jobFiles, submFiles, checkFiles
 
 @utils.set_pure_input_namespace
-def writeHTCondorHaddEffFiles(args):
+def hadd_eff(args):
     """Adds ROOT histograms"""
     targets = runHaddEff_outputs(args)
-    outs_job, outs_submit, outs_check = writeHTCondorHaddEffFiles_outputs(args)
+    outs_job, outs_submit, outs_check = hadd_eff_outputs(args)
     jw = JobWriter()
         
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)

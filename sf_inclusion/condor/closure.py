@@ -10,18 +10,18 @@ from utils.utils import (
     set_pure_input_namespace,
 )
 
-from condor.jobWriter import JobWriter
+from condor.job_writer import JobWriter
 
 @set_pure_input_namespace
-def writeHTCondorClosureFiles_outputs(args):
+def closure_outputs(args):
     job_f, subm_f, check_f = JobWriter.define_output( localdir=args.localdir,
                                                       data_folders='Closure',
                                                       tag=args.tag )
     return job_f[0], subm_f[0], check_f[0]
 
 @set_pure_input_namespace
-def writeHTCondorClosureFiles(args):
-    outs_job, outs_submit, outs_check = writeHTCondorClosureFiles_outputs(args)
+def closure(args):
+    outs_job, outs_submit, outs_check = closure_outputs(args)
     jw = JobWriter()
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)

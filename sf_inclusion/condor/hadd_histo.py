@@ -1,10 +1,10 @@
 import os
 import sys
 from utils import utils
-from condor.jobWriter import JobWriter
+from condor.job_writer import JobWriter
 
 @utils.set_pure_input_namespace
-def runHaddHisto_outputs(args):
+def run_hadd_histo_outputs(args):
     targets = []
 
     # add the merge of all the samples first
@@ -22,7 +22,7 @@ def runHaddHisto_outputs(args):
     return targets
 
 @utils.set_pure_input_namespace
-def writeHTCondorHaddHistoFiles_outputs(args):
+def hadd_histo_outputs(args):
     """
     Outputs are guaranteed to have the same length.
     Returns all separate paths to avoid code duplication.
@@ -35,10 +35,10 @@ def writeHTCondorHaddHistoFiles_outputs(args):
 
 
 @utils.set_pure_input_namespace
-def writeHTCondorHaddHistoFiles(args):
+def hadd_histo(args):
     """Adds ROOT histograms"""
-    targets = runHaddHisto_outputs(args)
-    outs_job, outs_submit, outs_check = writeHTCondorHaddHistoFiles_outputs(args)
+    targets = run_hadd_histo_outputs(args)
+    outs_job, outs_submit, outs_check = hadd_histo_outputs(args)
 
     jw = JobWriter()
     

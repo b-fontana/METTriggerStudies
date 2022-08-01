@@ -14,16 +14,16 @@ lcfg = cfg() #luigi configuration
 
 from scripts.defineBinning import *
 
-from condor.writeHTCondorProcessingFiles import *
-from condor.writeHTCondorHaddHistoFiles import *
-from condor.writeHTCondorHaddCountsFiles import *
-from condor.writeHTCondorEfficienciesAndScaleFactorsFiles import *
-from condor.writeHTCondorEfficienciesAndSFAggregator import *
-from condor.writeHTCondorDiscriminatorFiles import *
-from condor.writeHTCondorUnionWeightsCalculatorFiles import *
-from condor.writeHTCondorClosureFiles import *
-from condor.writeHTCondorDAGFiles import *
-from condor.jobWriter import JobWriter
+from condor.processing       import *
+from condor.hadd_histo       import *
+from condor.hadd_counts      import *
+from condor.eff_and_sf       import *
+from condor.eff_and_sf_aggr  import *
+from condor.discriminator    import *
+from condor.union_calculator import *
+from condor.closure          import *
+from condor.dag              import *
+from condor.job_writer       import JobWriter
 
 from utils import utils
 
@@ -77,7 +77,7 @@ class DefineBinning(luigi.Task):
 ########################################################################
 ### WRITE HTCONDOR FILES FOR TOTAL AND PASSED TRIGGER HISTOGRAMS #######
 ########################################################################
-class WriteHTCondorProcessingFiles(ForceRun):
+class Processing(ForceRun):
     params = utils.dot_dict(lcfg.histos_params)
 
     mode = luigi.ChoiceParameter(choices=lcfg.modes.keys(),
@@ -87,7 +87,7 @@ class WriteHTCondorProcessingFiles(ForceRun):
     def output(self):
         self.params['mode'] = self.mode
         self.params['tprefix'] = lcfg.modes[self.mode]
-        objData, objMC, _, _ = writeHTCondorProcessingFiles_outputs(self.params)
+        objData, objMC, _, _ = processing_outputs(self.params)
         o1, o2, _ = objData
         o3, o4, _ = objMC
 
@@ -115,7 +115,7 @@ class WriteHTCondorProcessingFiles(ForceRun):
     def run(self):
         self.params['mode'] = self.mode
         self.params['tprefix'] = lcfg.modes[self.mode]
-        writeHTCondorProcessingFiles(self.params)
+        processing(self.params)
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def requires(self):
@@ -125,7 +125,7 @@ class WriteHTCondorProcessingFiles(ForceRun):
 ########################################################################
 ### WRITE HTCONDOR FILES FOR HADD'ING HISTOGRAMS IN ROOT FILES #########
 ########################################################################
-class WriteHTCondorHaddHistoFiles(ForceRun):
+class HaddHisto(ForceRun):
     samples = luigi.ListParameter()
     dataset_name = luigi.Parameter()
     args = utils.dot_dict(lcfg.haddhisto_params)
@@ -135,7 +135,7 @@ class WriteHTCondorHaddHistoFiles(ForceRun):
     def output(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
-        o1, o2, _ = writeHTCondorHaddHistoFiles_outputs( self.args )
+        o1, o2, _ = hadd_histo_outputs( self.args )
         
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -152,12 +152,12 @@ class WriteHTCondorHaddHistoFiles(ForceRun):
     def run(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
-        writeHTCondorHaddHistoFiles( self.args )
+        hadd_histo( self.args )
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR HADDING TXT COUNT FILES ###################
 ########################################################################
-class WriteHTCondorHaddCountsFiles(ForceRun):
+class HaddCounts(ForceRun):
     samples = luigi.ListParameter()
     dataset_name = luigi.Parameter()
     args = utils.dot_dict(lcfg.haddcounts_params)
@@ -167,7 +167,7 @@ class WriteHTCondorHaddCountsFiles(ForceRun):
     def output(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
-        o1, o2, _ = writeHTCondorHaddCountsFiles_outputs( self.args )
+        o1, o2, _ = hadd_counts_outputs( self.args )
         
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -184,18 +184,18 @@ class WriteHTCondorHaddCountsFiles(ForceRun):
     def run(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
-        writeHTCondorHaddCountsFiles( self.args )
+        hadd_counts( self.args )
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR EFFICIENCIES AND SCALE FACTORS ############
 ########################################################################
-class WriteHTCondorEfficienciesAndScaleFactorsFiles(ForceRun):
+class EffAndSF(ForceRun):
     params = utils.dot_dict(lcfg.sf_params)
     params['tprefix'] = lcfg.modes['histos']
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = writeHTCondorEfficienciesAndScaleFactorsFiles_outputs(self.params)
+        o1, o2, _ = eff_and_sf_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -210,12 +210,12 @@ class WriteHTCondorEfficienciesAndScaleFactorsFiles(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        writeHTCondorEfficienciesAndScaleFactorsFiles(self.params)
+        eff_and_sf(self.params)
 
 ########################################################################
 ### AGGREGATE HTCONDOR FILES FOR EFFICIENCIES AND SCALE FACTORS ########
 ########################################################################
-class WriteHTCondorEfficienciesAndSFAggregator(ForceRun):
+class EffAndSFAggr(ForceRun):
     """
     Useful for transfering the intersection efficiencies to the KLUB framework.
     Not needed for the following steps.
@@ -224,7 +224,7 @@ class WriteHTCondorEfficienciesAndSFAggregator(ForceRun):
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = writeHTCondorEfficienciesAndSFAggregator_outputs(self.params)
+        o1, o2, _ = eff_and_sf_aggr_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -239,17 +239,17 @@ class WriteHTCondorEfficienciesAndSFAggregator(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        writeHTCondorEfficienciesAndSFAggregator(self.params)
+        eff_and_sf_aggr(self.params)
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR THE VARIABLE DISCRIMINATOR ################
 ########################################################################
-class WriteHTCondorDiscriminatorFiles(ForceRun):
+class Discriminator(ForceRun):
     params = utils.dot_dict(lcfg.discriminator_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = writeHTCondorDiscriminatorFiles_outputs(self.params)
+        o1, o2, _ = discriminator_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -264,17 +264,17 @@ class WriteHTCondorDiscriminatorFiles(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        writeHTCondorDiscriminatorFiles(self.params)
+        discriminator(self.params)
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR SCALE FACTOR CALCULATOR ###################
 ########################################################################
-class WriteHTCondorUnionWeightsCalculatorFiles(ForceRun):
+class UnionCalculator(ForceRun):
     params = utils.dot_dict(lcfg.calculator_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = writeHTCondorUnionWeightsCalculatorFiles_outputs(self.params)
+        o1, o2, _ = union_calculator_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -289,46 +289,17 @@ class WriteHTCondorUnionWeightsCalculatorFiles(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        writeHTCondorUnionWeightsCalculatorFiles(self.params)
-
-
-########################################################################
-### WRITE HTCONDOR FILES FOR HADD'ING EFFICIENCIES IN ROOT FILES #######
-########################################################################
-# class WriteHTCondorHaddEffFiles(ForceRun):
-#     samples = luigi.ListParameter()
-#     args = utils.dot_dict(lcfg.haddeff_params)
-    
-#     @WorkflowDebugger(flag=FLAGS.debug_workflow)
-#     def output(self):
-#         self.args['samples'] = luigi_to_raw( self.samples )
-#         o1, o2, _ = writeHTCondorHaddEffFiles_outputs( self.args )
-        
-#         #write the target files for debugging
-#         target_path = get_target_path( self.__class__.__name__ )
-#         utils.remove( target_path )
-#         with open( target_path, 'w' ) as f:
-#             for t in o1: f.write( t + '\n' )
-#             for t in o2: f.write( t + '\n' )
-
-#         _c1 = convert_to_luigi_local_targets(o1)
-#         _c2 = convert_to_luigi_local_targets(o2)
-#         return _c1 + _c2
-
-#     @WorkflowDebugger(flag=FLAGS.debug_workflow)
-#     def run(self):
-#         self.args['samples'] = luigi_to_raw( self.samples )
-#         writeHTCondorHaddEffFiles( self.args )
+        union_calculator(self.params)
 
 ########################################################################
 ### WRITE HTCONDOR FILES FOR DISPLAYING CLOSURE PLOTS ##################
 ########################################################################
-class WriteHTCondorClosureFiles(ForceRun):
+class Closure(ForceRun):
     params = utils.dot_dict(lcfg.closure_params)
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = writeHTCondorClosureFiles_outputs(self.params)
+        o1, o2, _ = closure_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -343,48 +314,12 @@ class WriteHTCondorClosureFiles(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        writeHTCondorClosureFiles(self.params)
-
-########################################################################
-### DRAW VARIABLES' DISTRIBUTIONS ######################################
-########################################################################
-# class DrawDistributions(luigi.Task):
-#     args = utils.dot_dict(lcfg.drawcounts_params)
-#     args.update( {'tprefix': lcfg.modes['histos'], } )
-#     target_path = get_target_path( args.taskname )
-    
-#     @WorkflowDebugger(flag=FLAGS.debug_workflow)
-#     def output(self):
-#         targets = []
-#         targets_list, _ = drawDistributions_outputs( self.args )
-
-#         #define luigi targets
-#         for t in targets_list:
-#             targets.append( luigi.LocalTarget(t) )
-
-#         #write the target files for debugging
-#         utils.remove( target_path )
-#         with open( target_path, 'w' ) as f:
-#             for t in targets_list:
-#                 f.write( t + '\n' )
-                
-#         return targets
-
-#     @WorkflowDebugger(flag=FLAGS.debug_workflow)
-#     def run(self):
-#         drawDistributions( self.args )
-
-#     @WorkflowDebugger(flag=FLAGS.debug_workflow)
-#     def requires(self):
-#         return [ HaddTriggerEff(samples=self.args.data,
-#                                 dataset_name=self.args.data_name),
-#                  HaddTriggerEff(samples=self.args.mc_processes,
-#                                 dataset_name=self.args.mc_name) ]
+        closure(self.params)
 
 ########################################################################
 ### TRIGGERING ALL HTCONDOR WRITING CLASSES ############################
 ########################################################################
-class WriteDAG(ForceRun):
+class Dag(ForceRun):
     params      = utils.dot_dict(lcfg.write_params)
     pHistos     = utils.dot_dict(lcfg.histos_params)
     pHaddHisto  = utils.dot_dict(lcfg.haddhisto_params)
@@ -400,7 +335,7 @@ class WriteDAG(ForceRun):
     
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1 = writeHTCondorDAGFiles_outputs(self.params)
+        o1 = dag_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -413,32 +348,31 @@ class WriteDAG(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        self.pHistos['mode'] = 'histos'
-        objHistosData, objHistosMC, _, _ = writeHTCondorProcessingFiles_outputs(self.pHistos)
-        _, submHistosData, _ = objHistosData
-        _, submHistosMC, _ = objHistosMC
+        self.pHistos['mode']             = 'histos'
+        objHistosData, objHistosMC, _, _ = processing_outputs(self.pHistos)
+        _, submHistosData, _             = objHistosData
+        _, submHistosMC, _               = objHistosMC
 
-        self.pHistos['mode'] = 'counts'
-        objCountsData, objCountsMC, _, _ = writeHTCondorProcessingFiles_outputs(self.pHistos)
-        _, submCountsData, _ = objCountsData
-        _, submCountsMC, _ = objCountsMC
+        self.pHistos['mode']             = 'counts'
+        objCountsData, objCountsMC, _, _ = processing_outputs(self.pHistos)
+        _, submCountsData, _             = objCountsData
+        _, submCountsMC, _               = objCountsMC
 
-        self.pHaddHisto['dataset_name'] = lcfg.data_name
-        _, submHaddHistoData, _   = writeHTCondorHaddHistoFiles_outputs(self.pHaddHisto)
-        self.pHaddHisto['dataset_name'] = lcfg.mc_name
-        _, submHaddHistoMC, _   = writeHTCondorHaddHistoFiles_outputs(self.pHaddHisto)
+        self.pHaddHisto['dataset_name']  = lcfg.data_name
+        _, submHaddHistoData, _          = hadd_histo_outputs(self.pHaddHisto)
+        self.pHaddHisto['dataset_name']  = lcfg.mc_name
+        _, submHaddHistoMC, _            = hadd_histo_outputs(self.pHaddHisto)
 
         self.pHaddCounts['dataset_name'] = lcfg.data_name
-        _, submHaddCountsData, _   = writeHTCondorHaddCountsFiles_outputs(self.pHaddCounts)
+        _, submHaddCountsData, _         = hadd_counts_outputs(self.pHaddCounts)
         self.pHaddCounts['dataset_name'] = lcfg.mc_name
-        _, submHaddCountsMC, _   = writeHTCondorHaddCountsFiles_outputs(self.pHaddCounts)
-
+        _, submHaddCountsMC, _           = hadd_counts_outputs(self.pHaddCounts)
         
-        _, submEffSF, _  = writeHTCondorEfficienciesAndScaleFactorsFiles_outputs(self.pEffSF)
-        _, submEffSFAgg, _  = writeHTCondorEfficienciesAndSFAggregator_outputs(self.pEffSFAgg)
-        _, submDisc, _  = writeHTCondorDiscriminatorFiles_outputs(self.pDisc)
-        # _, submUnion, _  = writeHTCondorUnionWeightsCalculatorFiles_outputs(self.pSFCalc)
-        # _, submClosure, _  = writeHTCondorClosureFiles_outputs(self.pClosure)
+        _, submEffSF, _                  = eff_and_sf_outputs(self.pEffSF)
+        _, submEffSFAgg, _               = eff_and_sf_aggr_outputs(self.pEffSFAgg)
+        _, submDisc, _                   = discriminator_outputs(self.pDisc)
+        # _, submUnion, _                = union_calculator_outputs(self.pSFCalc)
+        # _, submClosure, _              = closure_outputs(self.pClosure)
 
         jobs = { 'HistosData':     submHistosData,
                  'HistosMC':       submHistosMC,
@@ -500,22 +434,18 @@ class SubmitDAG(ForceRun):
 
     @WorkflowDebugger(flag=FLAGS.debug_workflow)
     def requires(self):
-        return [ WriteHTCondorProcessingFiles( mode='histos' ),
-                 WriteHTCondorProcessingFiles( mode='counts' ),
-                 WriteHTCondorHaddHistoFiles( dataset_name=lcfg.data_name,
-                                              samples=lcfg.data_vals ),
-                 WriteHTCondorHaddHistoFiles( dataset_name=lcfg.mc_name,
-                                              samples=lcfg.mc_vals ),
-                 WriteHTCondorHaddCountsFiles( dataset_name=lcfg.data_name,
-                                               samples=lcfg.data_vals ),
-                 WriteHTCondorHaddCountsFiles( dataset_name=lcfg.mc_name,
-                                               samples=lcfg.mc_vals ),
-                 WriteHTCondorEfficienciesAndScaleFactorsFiles(),
-                 WriteHTCondorEfficienciesAndSFAggregator(),
-                 WriteHTCondorDiscriminatorFiles(),
-                 WriteHTCondorUnionWeightsCalculatorFiles(),
-                 WriteHTCondorClosureFiles(),
-                 WriteDAG(),
+        return [ Processing(mode='histos'),
+                 Processing(mode='counts'),
+                 HaddHisto(dataset_name=lcfg.data_name, samples=lcfg.data_vals),
+                 HaddHisto(dataset_name=lcfg.mc_name, samples=lcfg.mc_vals),
+                 HaddCounts(dataset_name=lcfg.data_name, samples=lcfg.data_vals),
+                 HaddCounts(dataset_name=lcfg.mc_name, samples=lcfg.mc_vals ),
+                 EffAndSF(),
+                 EffAndSFAggr(),
+                 Discriminator(),
+                 UnionCalculator(),
+                 Closure(),
+                 Dag(),
                 ]
    
 ########################################################################

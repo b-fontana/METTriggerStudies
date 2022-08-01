@@ -8,10 +8,10 @@ from utils.utils import (
     join_strings,
     set_pure_input_namespace,
     )
-from condor.jobWriter import JobWriter
+from condor.job_writer import JobWriter
 
 @set_pure_input_namespace
-def runHaddCounts_outputs(args):
+def run_hadd_counts_outputs(args):
     targets = []
 
     # add the merge of all the samples first
@@ -30,17 +30,17 @@ def runHaddCounts_outputs(args):
     return targets
 
 @set_pure_input_namespace
-def writeHTCondorHaddCountsFiles_outputs(args):
+def hadd_counts_outputs(args):
     return JobWriter.define_output( localdir=args.localdir,
                                     data_folders=['HaddCounts' + args.dataset_name,
                                                   'HaddCountsAgg' + args.dataset_name],
                                     tag=args.tag )
 
 @set_pure_input_namespace
-def writeHTCondorHaddCountsFiles(args):
+def hadd_counts(args):
     """Adds TXT count files"""
-    targets = runHaddCounts_outputs(args)
-    outs_job, outs_submit, outs_check = writeHTCondorHaddCountsFiles_outputs(args)
+    targets = run_hadd_counts_outputs(args)
+    outs_job, outs_submit, outs_check = hadd_counts_outputs(args)
     jw = JobWriter()
     
     prog = build_prog_path(args.localdir, 'addTriggerCounts.py')

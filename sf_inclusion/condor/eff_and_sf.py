@@ -11,10 +11,10 @@ from utils.utils import (
     join_strings,
     set_pure_input_namespace,
 )
-from condor.jobWriter import JobWriter
+from condor.job_writer import JobWriter
 
 @set_pure_input_namespace
-def writeHTCondorEfficienciesAndScaleFactorsFiles_outputs(args):
+def eff_and_sf_outputs(args):
     """
     Outputs are guaranteed to have the same length.
     Returns all separate paths to avoid code duplication.
@@ -25,9 +25,9 @@ def writeHTCondorEfficienciesAndScaleFactorsFiles_outputs(args):
     return job_f[0], subm_f[0], check_f[0]
 
 @set_pure_input_namespace
-def writeHTCondorEfficienciesAndScaleFactorsFiles(args):
+def eff_and_sf(args):
     prog = build_prog_path(args.localdir, 'runEfficienciesAndScaleFactors.py')
-    outs_job, outs_submit, outs_check = writeHTCondorEfficienciesAndScaleFactorsFiles_outputs(args)
+    outs_job, outs_submit, outs_check = eff_and_sf_outputs(args)
     jw = JobWriter()
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
