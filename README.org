@@ -1,7 +1,7 @@
 #+latex_header: \usepackage[utf8]{inputenc}
 [[pics/logo.png]]
 
-* /H H \rightarrow b b \tau \tau/ Resonant Analysis
+* HH\rightarrow bbττ Resonant Analysis
 
 This framework calculates and stores "intersection efficiencies" for the application of the "inclusion method" [1], to be used for the /H H \rightarrow b b \tau \tau/ resonant analysis by the CMS experiment. More details available in [[https://indico.cern.ch/event/1143576/#13-trigger-sf-update][this presentation]].
 
