@@ -21,52 +21,6 @@ from scripts.defineBinning import (
     defineBinning,
     defineBinning_outputs,
 )
-from condor.writeHTCondorProcessingFiles import (
-    writeHTCondorProcessingFiles,
-    writeHTCondorProcessingFiles_outputs,
-)
-from condor.writeHTCondorHaddHistoFiles import (
-    writeHTCondorHaddHistoFiles,
-    writeHTCondorHaddHistoFiles_outputs,
-)
-from condor.writeHTCondorHaddCountsFiles import (
-    writeHTCondorHaddCountsFiles,
-    writeHTCondorHaddCountsFiles_outputs,
-)
-from condor.writeHTCondorEfficienciesAndScaleFactorsFiles import (
-    writeHTCondorEfficienciesAndScaleFactorsFiles,
-    writeHTCondorEfficienciesAndScaleFactorsFiles_outputs,
-)
-from condor.writeHTCondorEfficienciesAndSFAggregator import (
-    writeHTCondorEfficienciesAndSFAggregator,
-    writeHTCondorEfficienciesAndSFAggregator_outputs,
-)
-from condor.writeHTCondorDiscriminatorFiles import (
-    writeHTCondorDiscriminatorFiles,
-    writeHTCondorDiscriminatorFiles_outputs,
-)
-from condor.writeHTCondorUnionWeightsCalculatorFiles import (
-    writeHTCondorUnionWeightsCalculatorFiles,
-    writeHTCondorUnionWeightsCalculatorFiles_outputs,
-)
-# from condor.writeHTCondorHaddEffFiles import (
-#     writeHTCondorHaddEffFiles,
-#     writeHTCondorHaddEffFiles_outputs,
-# )
-from condor.writeHTCondorClosureFiles import (
-    writeHTCondorClosureFiles,
-    writeHTCondorClosureFiles_outputs,
-)
-from condor.writeHTCondorDAGFiles import (
-    WriteDAGManager,
-    writeHTCondorDAGFiles_outputs,
-)
-# from scripts.addTriggerCounts import (
-#     addTriggerCounts,
-#     addTriggerCounts_outputs
-#     )
-# from scripts.draw2DTriggerSF import draw2DTriggerSF, draw2DTriggerSF_outputs
-# from scripts.drawDistributions import drawDistributions, drawDistributions_outputs
 
 from utils import utils
 from condor.jobWriter import JobWriter
