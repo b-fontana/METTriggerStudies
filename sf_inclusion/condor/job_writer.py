@@ -14,11 +14,10 @@ class JobWriter:
         self.filenames = []
         self.exts = ('sh', 'condor')
         self.endl = '\n'
-        self.par = lambda s : s + self.endl
 
     def add_string(self, string):
         with open(self.filenames[-1], 'a') as self.f:
-            self.f.write( self.par(string) )
+            self.f.write( string + self.endl )
 
     @staticmethod
     def define_output(localdir, data_folders, tag, names=None):
@@ -46,25 +45,27 @@ class JobWriter:
         if len(data_folders) == 1 and len(names) > 1:
             data_folders = len(names)*data_folders
 
-        job_d, check_d = ([] for _ in range(2))
+        job_d, out_d = ([] for _ in range(2))
         for dataf in data_folders:
             job_d.append( os.path.join(base_d, 'submission', dataf) )
             mkdir(job_d[-1])
 
-            check_d.append( os.path.join(base_d, 'outputs', dataf) )
-            mkdir(check_d[-1])
+            out_d.append( os.path.join(out_d, 'outputs', dataf) )
+            mkdir(out_d[-1])
 
-        job_f, subm_f, check_f = ([] for _ in range(3))
-        for jd, cd, name in zip(job_d,check_d,names):
+        job_f, subm_f, out_f, log_f = ([] for _ in range(4))
+        for jd, cd, name in zip(job_d,out_d,names):
             mkdir(cd)
             job_f.append( os.path.join(jd, name + '.sh') )
             subm_f.append( os.path.join(jd, name + '.condor') )
-            
-            check_name = '{name}_C$(Cluster)P$(Process).o'
-            check_name = check_name.format(name=name)
-            check_f.append( os.path.join(cd, check_name) )
+
+            base_name = 'C$(Cluster)_P$(Process)'
+            out_name = '{}.out'.format(base_name)
+            log_name = '{}.log'.format(base_name)
+            out_f.append( os.path.join(cd, out_name) )
+            log_f.append( os.path.join(cd, log_name) )
                 
-        return job_f, subm_f, check_f
+        return job_f, subm_f, out_f, log_f
 
     @staticmethod
     def define_dag_output(localdir, tag, name):
@@ -88,14 +89,17 @@ class JobWriter:
 
     def write_condor(self, filename, executable, outfile, queue, machine='llrt3condor'):
         self.filenames.append( filename )
-        m = ( self.par('Universe = vanilla') +
-              self.par('Executable = {}'.format(executable)) +
-              self.par('input = /dev/null') +
-              self.par('output = {}'.format(outfile)) +
-              self.par('error  = {}'.format(outfile.replace('.o', '.e'))) +
-              self.par('getenv = true') +
-              self.condor_specific_content(queue=queue, machine=machine) +
-              self.endl )
+        batch_name = os.path.splitext(os.path.basename(executable))[0]
+        m = self.endl.join(('Universe = vanilla',
+                            'Executable = {}'.format(executable),
+                            'input = /dev/null',
+                            'output = {}'.format(outfile),
+                            'error = {}'.format(outfile.replace('.out', '.err')),
+                            'log = {}'.format(logfile),
+                            'getenv = true',
+                            '+JobBatchName="{}"'.format(batch_name),
+                            self.condor_specific_content(queue=queue, machine=machine)))
+        m += self.endl
         with open(filename, 'w') as self.f:
             self.f.write(m)
         os.system('chmod u+rwx '+ filename)

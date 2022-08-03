@@ -48,7 +48,7 @@ def discriminator(args):
         jw.write_condor( filename=outs_submit[i],
                          executable=outs_job[i],
                          outfile=outs_check[i],
-                         queue='short',
+                         queue='long',
                          machine='llrt3condor' )
         jw.write_queue()
 

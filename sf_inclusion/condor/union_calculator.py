@@ -64,7 +64,7 @@ def union_calculator(args):
         jw.write_condor( filename=subs[i],
                          executable=jobs[i],
                          outfile=checks[i],
-                         queue='short',
+                         queue='long',
                          machine='llrt3condor' )
 
         qlines = []

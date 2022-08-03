@@ -62,7 +62,7 @@ def hadd_histo(args):
         jw.write_condor( filename=out2,
                          executable=out1,
                          outfile=out3,
-                         queue='short',
+                         queue='long',
                          machine='llrt3condor' )
 
         qlines = []

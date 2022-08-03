@@ -78,11 +78,10 @@ def processing(args):
     outs_data, outs_mc, _data_procs, _mc_procs = processing_outputs(args)
 
     # unite Data and MC lists
-    outs_job, outs_submit, outs_check = outs_data
-    _outs_job, _outs_submit, _outs_check = outs_mc
-    outs_job += _outs_job
-    outs_submit += _outs_submit
-    outs_check += _outs_check
+    outs_job    = outs_data[0] + outs_mc[0]
+    outs_submit = outs_data[1] + outs_mc[1]
+    outs_check  = outs_data[2] + outs_mc[2]
+    outs_log    = outs_data[3] + outs_mc[3]
     _all_processes = _data_procs + _mc_procs
 
     for i, (kproc, vproc) in enumerate(_all_processes):
@@ -118,7 +117,8 @@ def processing(args):
         jw.write_condor( filename=outs_submit[i],
                          executable=outs_job[i],
                          outfile=outs_check[i],
-                         queue='short',
+                         logfile=outs_log[i],
+                         queue='long',
                          machine='llrt3condor' )
         
         qlines = []
