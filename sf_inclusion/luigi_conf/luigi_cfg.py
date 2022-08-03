@@ -11,7 +11,8 @@ from . import _trigger_shift, _triggers_map
 ######################################################################## 
 ### ARGUMENT PARSING ###################################################
 ########################################################################
-parser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
+descr = 'Run example: `copython sf_inclusion/run.py --tag abc --data MET EG --mc_process TT`'
+parser = argparse.ArgumentParser(description=descr, formatter_class=RawTextHelpFormatter)
 parser.add_argument(
     '--nbins',
     type=int,
