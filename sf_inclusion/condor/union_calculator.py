@@ -29,7 +29,7 @@ def union_calculator_outputs(args):
 @utils.set_pure_input_namespace
 def union_calculator(args):
     prog = utils.build_prog_path(args.localdir, 'runUnionWeightsCalculator.py')
-    jobs, subs, checks = union_calculator_outputs(args)
+    jobs, subs, checks, logs = union_calculator_outputs(args)
     jw = JobWriter()
 
     for i,proc in enumerate(args.mc_processes):
@@ -64,6 +64,7 @@ def union_calculator(args):
         jw.write_condor( filename=subs[i],
                          executable=jobs[i],
                          outfile=checks[i],
+                         logfile=logs[i],
                          queue='long',
                          machine='llrt3condor' )
 

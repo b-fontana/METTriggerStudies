@@ -44,7 +44,7 @@ def hadd_counts_outputs(args):
 def hadd_counts(args):
     """Adds TXT count files"""
     targets = run_hadd_counts_outputs(args)
-    outs_job, outs_submit, outs_check = hadd_counts_outputs(args)
+    outs_job, outs_submit, outs_check, outs_log = hadd_counts_outputs(args)
     jw = JobWriter()
     
     prog = build_prog_path(args.localdir, 'addTriggerCounts.py')
@@ -74,10 +74,11 @@ def hadd_counts(args):
     #### Write submission file
     inputs_join = {}
     nchannels = len(args.channels)
-    for out1,out2,out3 in zip(outs_job,outs_submit,outs_check):
+    for out1,out2,out3,out4 in zip(outs_job,outs_submit,outs_check,outs_log):
         jw.write_condor( filename=out2,
                          executable=out1,
                          outfile=out3,
+                         logfile=out4,
                          queue='long',
                          machine='llrt3condor' )
 

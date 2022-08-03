@@ -64,7 +64,7 @@ def hadd_eff_outputs(args):
 def hadd_eff(args):
     """Adds ROOT histograms"""
     targets = runHaddEff_outputs(args)
-    outs_job, outs_submit, outs_check = hadd_eff_outputs(args)
+    outs_job, outs_submit, outs_check, outs_log = hadd_eff_outputs(args)
     jw = JobWriter()
         
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
@@ -79,10 +79,11 @@ def hadd_eff(args):
 
     #### Write submission file
     inputs_join = []
-    for out1,out2,out3 in zip(outs_job,outs_submit,outs_check):
+    for out1,out2,out3,out4 in zip(outs_job,outs_submit,outs_check,outs_log):
         jw.write_condor( filename=out2,
                          executable=out1,
                          outfile=out3,
+                         logfile=out4,
                          queue='long',
                          machine='llrt3condor' )
 

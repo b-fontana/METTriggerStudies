@@ -23,15 +23,16 @@ def eff_and_sf_outputs(args):
     Outputs are guaranteed to have the same length.
     Returns all separate paths to avoid code duplication.
     """
-    job_f, subm_f, check_f = JobWriter.define_output( localdir=args.localdir,
-                                                      data_folders='EffAndScaleFactors',
-                                                      tag=args.tag )
-    return job_f[0], subm_f[0], check_f[0]
+    tmp = JobWriter.define_output( localdir=args.localdir,
+                                   data_folders='EffAndScaleFactors',
+                                   tag=args.tag )
+    job_f, subm_f, check_f, log_f = tmp
+    return job_f[0], subm_f[0], check_f[0], log_f[0]
 
 @set_pure_input_namespace
 def eff_and_sf(args):
     prog = build_prog_path(args.localdir, 'runEfficienciesAndScaleFactors.py')
-    outs_job, outs_submit, outs_check = eff_and_sf_outputs(args)
+    outs_job, outs_submit, outs_check, outs_log = eff_and_sf_outputs(args)
     jw = JobWriter()
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
@@ -62,6 +63,7 @@ def eff_and_sf(args):
     jw.write_condor( filename=outs_submit,
                      executable=outs_job,
                      outfile=outs_check,
+                     logfile=outs_log,
                      queue='long',
                      machine='llrt3condor' )
 

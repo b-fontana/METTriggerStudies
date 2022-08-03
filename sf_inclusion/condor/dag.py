@@ -21,7 +21,7 @@ def dag_outputs(args):
 
 class WriteDAGManager:
     def __init__(self, localdir, tag, data_name, jobs, mode='long'):
-        if mode not in ('long', 'long'):
+        if mode not in ('short', 'long'):
             raise ValueError('Mode {} is not supported.'.format(mode))
         self.mode = mode
         

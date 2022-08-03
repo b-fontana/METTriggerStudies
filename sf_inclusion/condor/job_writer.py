@@ -49,8 +49,7 @@ class JobWriter:
         for dataf in data_folders:
             job_d.append( os.path.join(base_d, 'submission', dataf) )
             mkdir(job_d[-1])
-
-            out_d.append( os.path.join(out_d, 'outputs', dataf) )
+            out_d.append( os.path.join(base_d, 'outputs', dataf) )
             mkdir(out_d[-1])
 
         job_f, subm_f, out_f, log_f = ([] for _ in range(4))
@@ -87,7 +86,8 @@ class JobWriter:
         if mode not in self.exts:
             raise ValueError('The mode {} is not supported.'.format(mode))
 
-    def write_condor(self, filename, executable, outfile, queue, machine='llrt3condor'):
+    def write_condor(self, filename, executable, outfile, logfile,
+                     queue, machine='llrt3condor'):
         self.filenames.append( filename )
         batch_name = os.path.splitext(os.path.basename(executable))[0]
         m = self.endl.join(('Universe = vanilla',
@@ -146,24 +146,11 @@ class JobWriter:
         os.system('chmod u+rwx '+ filename)
 
     def condor_specific_content(self, queue, machine='llrt3condor'):
-        m = ( self.par('T3Queue = {}'.format(queue)) +
-              self.par('WNTag=el7') +
-              self.par('+SingularityCmd = ""') )
+        m = self.endl.join(('T3Queue = {}'.format(queue),
+                            'WNTag=el7',
+                            '+SingularityCmd = ""'))
         if machine == 'llrt3condor':
             m += self.endl + 'include : /opt/exp_soft/cms/t3/t3queue |'
-            # m += ( self.par('UNIX_GROUP = cms') +
-            #        self.par('if !defined T3Queue') +
-            #        self.par('  T3Queue=short') +
-            #        self.par('endif') +
-
-            #        self.par('accounting_group = $(UNIX_GROUP)') +
-
-            #        self.par('concurrency_limits_expr = strcat(T3Queue,":",RequestCpus," ",AcctGroupUser,":",RequestCpus)') +
-
-            #        self.par('+T3Queue="$(T3Queue)"') +
-            #        self.par('+T3Group="$(UNIX_GROUP)"') +
-            #        self.par('+WNTag="$(WNTag)"') +
-            #        self.par('T3Submit=true') )
                   
         elif machine == 'llrt3condor7':
             m += self.endl + 'include : /opt/exp_soft/cms/t3_tst/t3queue |'

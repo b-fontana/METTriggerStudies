@@ -18,14 +18,14 @@ from condor.job_writer import JobWriter
 
 @set_pure_input_namespace
 def closure_outputs(args):
-    job_f, subm_f, check_f = JobWriter.define_output( localdir=args.localdir,
-                                                      data_folders='Closure',
-                                                      tag=args.tag )
-    return job_f[0], subm_f[0], check_f[0]
+    job_f, subm_f, check_f, log_f = JobWriter.define_output( localdir=args.localdir,
+                                                             data_folders='Closure',
+                                                             tag=args.tag )
+    return job_f[0], subm_f[0], check_f[0], log_f[0]
 
 @set_pure_input_namespace
 def closure(args):
-    outs_job, outs_submit, outs_check = closure_outputs(args)
+    outs_job, outs_submit, outs_check, outs_log = closure_outputs(args)
     jw = JobWriter()
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
@@ -56,6 +56,7 @@ def closure(args):
     jw.write_condor( filename=outs_submit,
                      executable=outs_job,
                      outfile=outs_check,
+                     logfile=outs_log,
                      queue='long',
                      machine='llrt3condor' )
 

@@ -8,7 +8,7 @@ import inspect
 import re
 
 from utils import utils
-from scripts import defineBinning
+from scripts import def_bins
 from condor import (
     closure,
     dag,
@@ -60,7 +60,7 @@ class DefineBinning(luigi.Task):
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        target = defineBinning.defineBinning_outputs( self.args )
+        target = def_bins.define_binning_outputs( self.args )
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -72,7 +72,7 @@ class DefineBinning(luigi.Task):
 
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        defineBinning.defineBinning( self.args )
+        def_bins.define_binning( self.args )
 
 
 class Processing(lutils.ForceRun):
@@ -86,21 +86,20 @@ class Processing(lutils.ForceRun):
     def output(self):
         self.params['mode'] = self.mode
         self.params['tprefix'] = lcfg.modes[self.mode]
-        objData, objMC, _, _ = processing.processing_outputs(self.params)
-        o1, o2, _ = objData
-        o3, o4, _ = objMC
+        obj_data, obj_mc, _, _ = processing.processing_outputs(self.params)
+        o1_1, o1_2, _, _ = obj_data
+        o2_1, o2_2, _, _ = obj_mc
 
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
-        with open( target_path, 'w' ) as f:
-            for t in o1: f.write(t + '\n')
-            for t in o2: f.write(t + '\n')
-            for t in o3: f.write(t + '\n')
-            for t in o4: f.write(t + '\n')
 
-        _c1 = convert_to_luigi_local_targets(o1)
-        _c2 = convert_to_luigi_local_targets(o2)
-        return _c1 + _c2
+        objs = (o1_1, o1_2, o2_1, o2_2)
+        with open( target_path, 'w' ) as f:
+            for x in objs:
+                for t in x:
+                    f.write(t + '\n')
+
+        return sum([convert_to_luigi_local_targets(x) for x in objs], [])
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
@@ -124,7 +123,7 @@ class HaddHisto(lutils.ForceRun):
     def output(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
-        o1, o2, _ = hadd_histo.hadd_histo_outputs( self.args )
+        o1, o2, _, _ = hadd_histo.hadd_histo_outputs( self.args )
         
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
@@ -154,7 +153,7 @@ class HaddCounts(lutils.ForceRun):
     def output(self):
         self.args['samples'] = luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
-        o1, o2, _ = hadd_counts.hadd_counts_outputs( self.args )
+        o1, o2, _, _ = hadd_counts.hadd_counts_outputs( self.args )
         
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
@@ -180,7 +179,7 @@ class EffAndSF(lutils.ForceRun):
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = eff_and_sf.eff_and_sf_outputs(self.params)
+        o1, o2, _, _ = eff_and_sf.eff_and_sf_outputs(self.params)
 
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
@@ -206,7 +205,7 @@ class EffAndSFAggr(lutils.ForceRun):
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = eff_and_sf_aggr.eff_and_sf_aggr_outputs(self.params)
+        o1, o2, _, _ = eff_and_sf_aggr.eff_and_sf_aggr_outputs(self.params)
 
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
@@ -229,7 +228,7 @@ class Discriminator(lutils.ForceRun):
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = discriminator.discriminator_outputs(self.params)
+        o1, o2, _, _ = discriminator.discriminator_outputs(self.params)
 
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
@@ -252,7 +251,7 @@ class UnionCalculator(lutils.ForceRun):
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = union_calculator.union_calculator_outputs(self.params)
+        o1, o2, _, _ = union_calculator.union_calculator_outputs(self.params)
 
         #write the target files for debugging
         target_path = get_target_path( self.__class__.__name__ )
@@ -276,7 +275,7 @@ class Closure(lutils.ForceRun):
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        o1, o2, _ = closure.closure_outputs(self.params)
+        o1, o2, _, _ = closure.closure_outputs(self.params)
 
         target_path = get_target_path( self.__class__.__name__ )
         utils.remove( target_path )
@@ -295,18 +294,18 @@ class Closure(lutils.ForceRun):
 
 class Dag(lutils.ForceRun):
     """Triggering all htcondor writing classes."""
-    params      = utils.dot_dict(lcfg.write_params)
-    pHistos     = utils.dot_dict(lcfg.histos_params)
-    pHaddHisto  = utils.dot_dict(lcfg.haddhisto_params)
-    pHaddCounts = utils.dot_dict(lcfg.haddhisto_params)
-    pEffSF      = utils.dot_dict(lcfg.sf_params)
-    pEffSFAgg   = utils.dot_dict(lcfg.sfagg_params)
-    pDisc       = utils.dot_dict(lcfg.discriminator_params)
-    pSFCalc     = utils.dot_dict(lcfg.calculator_params)
-    pClosure    = utils.dot_dict(lcfg.closure_params)
+    params        = utils.dot_dict(lcfg.write_params)
+    p_histos      = utils.dot_dict(lcfg.histos_params)
+    p_hadd_histo  = utils.dot_dict(lcfg.haddhisto_params)
+    p_hadd_counts = utils.dot_dict(lcfg.haddhisto_params)
+    p_eff_sf      = utils.dot_dict(lcfg.sf_params)
+    p_eff_sf_agg  = utils.dot_dict(lcfg.sfagg_params)
+    p_disc        = utils.dot_dict(lcfg.discriminator_params)
+    p_calc        = utils.dot_dict(lcfg.calculator_params)
+    p_closure     = utils.dot_dict(lcfg.closure_params)
     
-    pHaddHisto['tprefix']  = lcfg.modes['histos']
-    pEffSF['tprefix'] =  lcfg.modes['histos']
+    p_hadd_histo['tprefix'] = lcfg.modes['histos']
+    p_eff_sf['tprefix'] = lcfg.modes['histos']
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
@@ -322,45 +321,45 @@ class Dag(lutils.ForceRun):
 
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        self.pHistos['mode']             = 'histos'
-        objHistosData, objHistosMC, _, _ = processing.processing_outputs(self.pHistos)
-        _, submHistosData, _             = objHistosData
-        _, submHistosMC, _               = objHistosMC
+        self.p_histos['mode'] = 'histos'
+        obj_hdata, obj_hmc, _, _ = processing.processing_outputs(self.p_histos)
+        subm_hdata = obj_hdata[1]
+        subm_hmc = obj_hmc[1]
 
-        self.pHistos['mode']             = 'counts'
-        objCountsData, objCountsMC, _, _ = processing.processing_outputs(self.pHistos)
-        _, submCountsData, _             = objCountsData
-        _, submCountsMC, _               = objCountsMC
+        self.p_histos['mode'] = 'counts'
+        obj_cdata, obj_cmc, _, _ = processing.processing_outputs(self.p_histos)
+        subm_cdata = obj_cdata[1]
+        subm_cmc = obj_cmc[1]
 
-        self.pHaddHisto['dataset_name']  = lcfg.data_name
-        _, submHaddHistoData, _          = hadd_histo.hadd_histo_outputs(self.pHaddHisto)
-        self.pHaddHisto['dataset_name']  = lcfg.mc_name
-        _, submHaddHistoMC, _            = hadd_histo.hadd_histo_outputs(self.pHaddHisto)
+        self.p_hadd_histo['dataset_name']  = lcfg.data_name
+        subm_hadd_hdata = hadd_histo.hadd_histo_outputs(self.p_hadd_histo)[1]
+        self.p_hadd_histo['dataset_name']  = lcfg.mc_name
+        subm_hadd_hmc = hadd_histo.hadd_histo_outputs(self.p_hadd_histo)[1]
 
-        self.pHaddCounts['dataset_name'] = lcfg.data_name
-        _, submHaddCountsData, _         = hadd_counts.hadd_counts_outputs(self.pHaddCounts)
-        self.pHaddCounts['dataset_name'] = lcfg.mc_name
-        _, submHaddCountsMC, _           = hadd_counts.hadd_counts_outputs(self.pHaddCounts)
+        self.p_hadd_counts['dataset_name'] = lcfg.data_name
+        subm_hadd_cdata = hadd_counts.hadd_counts_outputs(self.p_hadd_counts)[1]
+        self.p_hadd_counts['dataset_name'] = lcfg.mc_name
+        subm_hadd_cmc = hadd_counts.hadd_counts_outputs(self.p_hadd_counts)[1]
         
-        _, submEffSF, _                  = eff_and_sf.eff_and_sf_outputs(self.pEffSF)
-        _, submEffSFAgg, _               = eff_and_sf_aggr.eff_and_sf_aggr_outputs(self.pEffSFAgg)
-        _, submDisc, _                   = discriminator.discriminator_outputs(self.pDisc)
-        # _, submUnion, _                = union_calculator.union_calculator_outputs(self.pSFCalc)
-        # _, submClosure, _              = closure.closure_outputs(self.pClosure)
+        subm_eff_sf = eff_and_sf.eff_and_sf_outputs(self.p_eff_sf)[1]
+        subm_eff_sf_agg = eff_and_sf_aggr.eff_and_sf_aggr_outputs(self.p_eff_sf_agg)[1]
+        subm_disc = discriminator.discriminator_outputs(self.p_disc)[1]
+        # subm_union = union_calculator.union_calculator_outputs(self.p_calc)[1]
+        # subm_closure = closure.closure_outputs(self.p_closure)
 
-        jobs = { 'HistosData':     submHistosData,
-                 'HistosMC':       submHistosMC,
-                 'CountsData':     submCountsData,
-                 'CountsMC':       submCountsMC,
-                 'HaddHistoData':  submHaddHistoData,
-                 'HaddHistoMC':    submHaddHistoMC,
-                 'HaddCountsData': submHaddCountsData,
-                 'HaddCountsMC':   submHaddCountsMC,
-                 'EffSF':          [ submEffSF ],
-                 'EffSFAgg':       [ submEffSFAgg ],
-                 'Discr':          submDisc,
-                 #'Union':          submUnion,
-                 #'Closure':        [ submClosure ],
+        jobs = { 'HistosData':     subm_hdata,
+                 'HistosMC':       subm_hmc,
+                 'CountsData':     subm_cdata,
+                 'CountsMC':       subm_cmc,
+                 'HaddHistoData':  subm_hadd_hdata,
+                 'HaddHistoMC':    subm_hadd_hmc,
+                 'HaddCountsData': subm_hadd_cdata,
+                 'HaddCountsMC':   subm_hadd_cmc,
+                 'EffSF':          [ subm_eff_sf ],
+                 'EffSFAgg':       [ subm_eff_sf_agg ],
+                 'Discr':          subm_disc,
+                 #'Union':          subm_union,
+                 #'Closure':        [ subm_closure ],
                 }
 
         dag_manager = dag.WriteDAGManager( self.params['localdir'],

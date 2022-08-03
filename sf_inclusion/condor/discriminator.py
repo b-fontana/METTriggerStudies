@@ -24,7 +24,7 @@ def discriminator_outputs(args):
 @utils.set_pure_input_namespace
 def discriminator(args):
     prog = utils.build_prog_path(args.localdir, 'runVariableImportanceDiscriminator.py')
-    outs_job, outs_submit, outs_check = discriminator_outputs(args)
+    outs_job, outs_submit, outs_check, outs_log = discriminator_outputs(args)
     jw = JobWriter()
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
@@ -48,6 +48,7 @@ def discriminator(args):
         jw.write_condor( filename=outs_submit[i],
                          executable=outs_job[i],
                          outfile=outs_check[i],
+                         logfile=outs_log[i],
                          queue='long',
                          machine='llrt3condor' )
         jw.write_queue()
