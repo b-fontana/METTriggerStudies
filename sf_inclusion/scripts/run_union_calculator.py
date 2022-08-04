@@ -1,6 +1,8 @@
 # coding: utf-8
 
-_all_ = [ "run_union_weights_calculator", "run_union_weights_calculator_outputs" ]
+# Note: this script could be outdated given to changes in the selection procedure
+
+_all_ = [ 'run_union_weights_calculator', 'run_union_weights_calculator_outputs' ]
 
 import os
 import h5py
@@ -22,6 +24,7 @@ gROOT.SetBatch(True)
 from utils import utils
 from utils.utils import generate_trigger_combinations as gtc
 from utils.utils import join_name_trigger_intersection as joinNTC
+from utils.selection import EventSelection
 
 from luigi_conf import _variables_unionweights
 
@@ -32,18 +35,16 @@ def eff_extractor(args, chn, effvars, nbins):
     """
     efficiencies_data, efficiencies_data_ehigh, efficiencies_data_elow = ({} for _ in range(3))
     efficiencies_mc, efficiencies_mc_ehigh, efficiencies_mc_elow = ({} for _ in range(3)) 
-    
-    triggercomb = gtc(chn, args.triggers)
         
-    for tcomb in triggercomb:
+    for tcomb in gtc(chn, args.triggers):
         tcstr = joinNTC(tcomb)
         comb_vars = effvars[tcstr][0]
 
         assert len(comb_vars)==4
 
         for var in comb_vars:        
-            in_base_name = ( args.data_name + '_' + args.mc_name + '_' +
-                             chn + '_' + var + '_TRG_' + tcstr + '_CUTS*' + args.subtag + '.root' )
+            in_base_name = ( '_'.join(args.data_name, args.mc_name, chn, var, 'TRG', tcstr, 'CUTS*') +
+                             args.subtag + '.root' )
             in_name = os.path.join(args.indir_eff, chn, var, in_base_name)
             glob_name = glob.glob(in_name)
 
@@ -69,11 +70,7 @@ def eff_extractor(args, chn, effvars, nbins):
                 key_list = TIter(in_file.GetListOfKeys())
                 for key in key_list:
                     obj = key.ReadObj()
-                    # print(obj.GetName())
-                    # print(in_file_name)
-                    # print(nbins[var][chn], obj.GetN(), var, chn)
                     
-                    #assert nbins[var][chn] == obj.GetN()
                     if obj.GetName() == 'Data1D':
                         for datapoint in range(obj.GetN()):
                             efficiencies_data[tcstr][var].append( obj.GetPointY(datapoint) )
@@ -108,9 +105,7 @@ def prob_calculator(efficiencies, effvars, leaf_manager, channel, closure_single
     nweight_vars = 4 #dau1_pt, dau1_eta, dau2_pt, dau2_eta
     prob_data, prob_mc = ([0 for _ in range(nweight_vars)] for _ in range(2))
 
-    triggercomb = utils.gtc(channel, closure_single_trigger)
-
-    for tcomb in triggercomb:
+    for tcomb in gtc(channel, closure_single_trigger):
         joincomb = joinNTC(tcomb)
 
         if joincomb in efficiencies[1][0] and joincomb not in efficiencies[0][0]:
@@ -214,9 +209,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
         t_in.GetEntry(entry)
 
         sel = EventSelection(lf, dataset, isdata)
-        if not utils.pass_selection_cuts(lfm):
-            continue
-
+        
         trig_bit = lfm.get_leaf('pass_triggerbit')
         run = lfm.get_leaf('RunNumber')
         if not utils.pass_any_trigger(args.triggers, trig_bit, run, isdata=False):
@@ -225,6 +218,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
         for chn in args.channels:
             if not utils.is_channel_consistent(chn, lfm.get_leaf('pairType')):
                 continue
+
             #triggers_for_master_formula = args.closure_single_trigger if single_trigger_closure else args.triggers
             triggers_for_master_formula = ['IsoMu24', 'METNoMu120']
 
@@ -246,7 +240,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
                 else:
                     prob_ratio.append( pd/pm )
             assert len(effvars[chn][gtc(chn, args.triggers)[0][0]][0]) == len(prob_ratio)
-            print() #new line
+            print('\n')
 
             if single_trigger_closure:
                 for var in _variables_unionweights:
@@ -255,7 +249,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
                     for iw,weightvar in enumerate(effvars[chn][gtc(chn, args.triggers)[0][0]][0]): #any trigger works for the constant list
                         ref_prob_ratios[chn][var][weightvar][str(binid-1)].append(prob_ratio[iw])
                         for trig in args.triggers:
-                            ptb = utils.pass_trigger_bits(trig, trig_bit, run, isdata=False)
+                            ptb = sel.trigger_bits(trig)
                             if ptb:
                                 prob_ratios[chn][var][weightvar][trig][str(binid-1)].append(prob_ratio[iw])
 

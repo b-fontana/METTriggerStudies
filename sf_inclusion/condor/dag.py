@@ -2,18 +2,15 @@
 
 _all_ = [ "WriteDAGManager", "dag_outputs" ]
 
+import os
+import atexit # https://stackoverflow.com/questions/865115/how-do-i-correctly-clean-up-a-python-object
 import sys
 sys.path.append("..")
 
-import os
-import atexit # https://stackoverflow.com/questions/865115/how-do-i-correctly-clean-up-a-python-object
-
-from utils.utils import (
-  set_pure_input_namespace,
-)
+from utils import utils
 from condor.job_writer import JobWriter
 
-@set_pure_input_namespace
+@utils.set_pure_input_namespace
 def dag_outputs(args):
     return JobWriter.define_dag_output( localdir=args.localdir,
                                         tag=args.tag,

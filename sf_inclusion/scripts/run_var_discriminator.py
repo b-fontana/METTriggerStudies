@@ -1,6 +1,6 @@
 # coding: utf-8
 
-_all_ = [ "discriminator" ]
+_all_ = [ 'discriminator' ]
 
 import os
 import glob
@@ -11,13 +11,10 @@ import argparse
 import sys
 sys.path.append( os.environ['PWD'] ) 
 
-from utils.utils import (
-    generate_trigger_combinations,
-    join_name_trigger_intersection as joinNTC,
-    parse_args,
-    print_configuration,
-)
+from utils import utils
+from utils.utils import join_name_trigger_intersection as joinNTC
 
+# This function is very much prone to change depending on the results obtained
 def discriminator(args, chn):
     """
     Associates each trigger combination to a set of variables, ordered by importance.
@@ -25,10 +22,8 @@ def discriminator(args, chn):
     """
     result = {}
 
-    triggercomb = generate_trigger_combinations(chn, args.triggers)
     constant_list = ['dau1_pt', 'dau1_eta', 'dau2_pt', 'dau2_eta']
-    for tcomb in triggercomb:
-        # CHANGE!!!!!!!!!!!!!!!!!!!
+    for tcomb in utils.generate_trigger_combinations(chn, args.triggers):        
         result[joinNTC(tcomb)] = [ constant_list, #always the same 1D variables
                                    [], #1D changing variables
                                    [], #2D pairs of changing variables
@@ -68,6 +63,6 @@ parser.add_argument('--variables',   dest='variables', required=True, nargs='+',
 parser.add_argument('--tag', help='string to differentiate between different workflow runs', required=True)
 parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
-args = parse_args(parser)
+args = utils.parse_args(parser)
 
 discriminator_exec(args, args.channel)
