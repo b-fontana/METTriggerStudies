@@ -1,6 +1,8 @@
 #+latex_header: \usepackage[utf8]{inputenc}
 [[pics/logo.png]]
 
+#+CAPTION: license
+#+NAME:   fig:license
 [[https://img.shields.io/github/license/bfonta/sf_inclusion.svg]]
 
 * HH\rightarrow bbττ Resonant Analysis
