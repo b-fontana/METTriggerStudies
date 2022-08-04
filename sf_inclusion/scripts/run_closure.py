@@ -3,16 +3,15 @@
 _all_ = [ "run_closure", "run_closure_outputs" ]
 
 import os
+import sys
+sys.path.append( os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
 import json
 import glob
 import h5py
 import argparse
 import ctypes
 import numpy as np
-from copy import copy
 import array
-import sys
-sys.path.append( os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
 
 import ROOT
 ROOT.gROOT.SetBatch(True)
@@ -33,25 +32,8 @@ from ROOT import (
     kRed,
 )
 
-from utils.utils import (
-    create_single_dir,
-    find_bin,
-    generate_trigger_combinations,
-    get_display_variable_name,
-    get_histo_names,
-    get_obj_max_min,
-    get_root_object,
-    load_binning,
-    parse_args,
-    print_configuration,
-    redraw_border,
-    uniformize_bin_width,
-)
-from luigi_conf import (
-    _placeholder_cuts,
-    _variables_unionweights,
-    _extensions,
-)
+from utils import utils
+import luigi_conf as lc
 
 def get_div_error_propagation(num, den, enum, eden):
     """Ratio propagation of errors (numerator and denominator as arguments)"""
@@ -210,7 +192,7 @@ def draw_single_eff( ref_obj, indir_union, indir_eff, channel, var, weightvar, t
     ref_obj.SetMarkerSize(1.3)
     ref_obj.SetMarkerStyle(20)
     ref_obj.SetLineColor(kRed)
-    ref_obj.GetXaxis().SetTitle( get_display_variable_name(channel, var) )
+    ref_obj.GetXaxis().SetTitle( utils.get_display_variable_name(channel, var) )
     ref_obj.Draw('ap')
 
     eff_prof.SetLineColor(1)
@@ -228,7 +210,7 @@ def draw_single_eff( ref_obj, indir_union, indir_eff, channel, var, weightvar, t
     l.SetTextColor(1)
     l.SetTextSize(0.03)
     l.DrawLatex( lX, lY, 'Single Trigger Closure, MC weighted by {}'
-                 .format( get_display_variable_name(channel, weightvar)))
+                 .format( utils.get_display_variable_name(channel, weightvar)))
     l.DrawLatex( lX, lY-lYstep, 'Channel: {}   /   Single Trigger: {} '.format(channel,trig))
 
     leg = TLegend(0.62, 0.7, 0.96, 0.9)
@@ -275,7 +257,7 @@ def draw_single_eff( ref_obj, indir_union, indir_eff, channel, var, weightvar, t
     l.SetTextSize(0.03)
     l.DrawLatex( lX, lY,        'Channel: {}   /   Single Trigger: {} '.format(channel,trig))
     l.DrawLatex( lX, lY-lYstep, 'MC weighted by {}'
-                 .format( get_display_variable_name(channel, weightvar)) )
+                 .format( utils.get_display_variable_name(channel, weightvar)) )
 
     for aname in weights2d_names:
       weights2d_canvas.SaveAs( aname )
@@ -294,8 +276,8 @@ def draw_single_eff( ref_obj, indir_union, indir_eff, channel, var, weightvar, t
     eff1d_name = min(glob_name, key=len) #select the shortest string (NoCut)
     eff1d_file = TFile.Open(eff1d_name)
 
-    eff1d_data = get_root_object('Data', eff1d_file)
-    eff1d_mc = get_root_object('MC', eff1d_file)
+    eff1d_data = utils.get_root_object('Data', eff1d_file)
+    eff1d_mc = utils.get_root_object('MC', eff1d_file)
 
     for point in range(nbins):
         orig_yvalue = eff_prof.GetPointY(point)
@@ -327,9 +309,9 @@ def draw_single_eff( ref_obj, indir_union, indir_eff, channel, var, weightvar, t
     pad1.Draw()
     pad1.cd()
 
-    max1, min1 = get_obj_max_min(eff_prof,   is_histo=False)
-    max2, min2 = get_obj_max_min(eff1d_data, is_histo=False)
-    max3, min3 = get_obj_max_min(eff1d_mc,   is_histo=False)
+    max1, min1 = utils.get_obj_max_min(eff_prof,   is_histo=False)
+    max2, min2 = utils.get_obj_max_min(eff1d_data, is_histo=False)
+    max3, min3 = utils.get_obj_max_min(eff1d_mc,   is_histo=False)
     prof_max = max([ max1, max2, max3 ])
     prof_min = min([ min1, min2, min3 ])
     
@@ -348,9 +330,9 @@ def draw_single_eff( ref_obj, indir_union, indir_eff, channel, var, weightvar, t
     axor.GetYaxis().SetLabelSize(0.06)
     axor.Draw()
     
-    eff_prof_new = uniformize_bin_width(eff_prof)
-    eff1d_mc_new = uniformize_bin_width(eff1d_mc)
-    eff1d_data_new = uniformize_bin_width(eff1d_data)
+    eff_prof_new = utils.uniformize_bin_width(eff_prof)
+    eff1d_mc_new = utils.uniformize_bin_width(eff1d_mc)
+    eff1d_data_new = utils.uniformize_bin_width(eff1d_data)
 
     eff_prof_new.SetLineColor(kGreen+3)
     eff_prof_new.SetLineWidth(2)
@@ -375,7 +357,7 @@ def draw_single_eff( ref_obj, indir_union, indir_eff, channel, var, weightvar, t
 
     l.DrawLatex( lX, lY,        'Channel: {}   /   Single Trigger: {} '.format(channel,trig))
     l.DrawLatex( lX, lY-lYstep, 'MC weighted by {}'
-                 .format( get_display_variable_name(channel, weightvar)) )
+                 .format( utils.get_display_variable_name(channel, weightvar)) )
 
     pad1.RedrawAxis()
     l = TLine()
@@ -537,20 +519,20 @@ def draw_single_eff( ref_obj, indir_union, indir_eff, channel, var, weightvar, t
     axor2.GetYaxis().SetTitleOffset(.5)
     axor2.GetYaxis().SetTitleSize(0.1)
     axor2.GetYaxis().SetTitle('Data/MC')
-    axor2.GetXaxis().SetTitle( get_display_variable_name(channel, var) )
+    axor2.GetXaxis().SetTitle( utils.get_display_variable_name(channel, var) )
     axor2.GetXaxis().SetTickLength(0)
     axor2.Draw()
 
-    sf1_new = uniformize_bin_width(sf1)
+    sf1_new = utils.uniformize_bin_width(sf1)
     sf1_new.SetLineColor(kRed)
     sf1_new.SetLineWidth(2)
     sf1_new.SetMarkerColor(kRed)
     sf1_new.SetMarkerSize(1.3)
     sf1_new.SetMarkerStyle(22)
-    sf1_new.GetXaxis().SetTitle( get_display_variable_name(channel, var) )
+    sf1_new.GetXaxis().SetTitle( utils.get_display_variable_name(channel, var) )
     sf1_new.Draw('same p0')
 
-    sf2_new = uniformize_bin_width(sf2)
+    sf2_new = utils.uniformize_bin_width(sf2)
     sf2_new.SetLineColor(ROOT.kGreen+3)
     sf2_new.SetLineWidth(2)
     sf2_new.SetMarkerColor(ROOT.kGreen+3)
@@ -569,7 +551,7 @@ def draw_single_eff( ref_obj, indir_union, indir_eff, channel, var, weightvar, t
       l.DrawLine(x,padmin-fraction,x,padmin+fraction)
     l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
 
-    redraw_border()
+    utils.redraw_border()
 
     for aname in prof_names:
       prof_canvas.SaveAs( aname )
@@ -584,12 +566,12 @@ def _get_plot_name(chn, var, wvar, trig, subtag, prefix):
     add = chn + '_' + var + '_' + wvar + '_' + trig
     prefix = 'Closure' + prefix + '_'
     n = prefix + add + subtag
-    n += _placeholder_cuts
+    n += lc._placeholder_cuts
     return n
 
 #@set_pure_input_namespace
 def run_closure_outputs(outdir, channel, variables, weightvars, triggers, subtag):
-    outputs = [[] for _ in range(len(_extensions[:-1]))]
+    outputs = [[] for _ in range(len(lc._extensions[:-1]))]
     outdict = {} #redundant but convenient
 
     for var in variables:
@@ -605,9 +587,9 @@ def run_closure_outputs(outdir, channel, variables, weightvars, triggers, subtag
                 ref_name = outname('Ref')
                 
                 thisbase = os.path.join(outdir, channel, var, 'Closure')
-                create_single_dir( thisbase )
+                utils.create_single_dir( thisbase )
 
-                for ext,out in zip(_extensions[:-1], outputs):
+                for ext,out in zip(lc._extensions[:-1], outputs):
                     outdict[var][weightvar][trig][ext] = {}
 
                     weights2d_full = os.path.join( thisbase, weights2d_name + '.' + ext )
@@ -639,8 +621,8 @@ def run_closure( indir_union,
     gStyle.SetOptTitle(0)
     gStyle.SetPaintTextFormat("4.4f");
 
-    edges, nbins = load_binning(afile=args.binedges_fname, key=args.subtag,
-                                variables=args.variables, channels=[channel])
+    edges, nbins = utils.load_binning(afile=args.binedges_fname, key=args.subtag,
+                                      variables=args.variables, channels=[channel])
 
     # load efficiency variables obtained previously
     effvars = {}
@@ -648,11 +630,11 @@ def run_closure( indir_union,
                              'runVariableImportanceDiscriminator_{}.json'.format(channel))
     with open(json_name, 'r') as f:
         effvars[channel] = json.load(f)
-    weightvars = effvars[channel][generate_trigger_combinations(channel, triggers)[0][0]][0]
+    weightvars = effvars[channel][utils.generate_trigger_combinations(channel, triggers)[0][0]][0]
     
     _, outs = run_closure_outputs(outdir, channel, variables, weightvars, triggers, subtag)
     
-    for ivar,var in enumerate(_variables_unionweights):
+    for ivar,var in enumerate(lc._variables_unionweights):
         #any trigger works for the constant list
         for weightvar in weightvars:
             ref_obj = get_ref_obj( indir_union, channel, var, weightvar,
@@ -660,9 +642,9 @@ def run_closure( indir_union,
                                    subtag )
 
             for trig in triggers:
-                weights2d_names  = [ outs[var][weightvar][trig][x]['weights2d']  for x in _extensions[:-1] ]
-                prof_names = [ outs[var][weightvar][trig][x]['prof'] for x in _extensions[:-1] ]
-                ref_names = [ outs[var][weightvar][trig][x]['ref'] for x in _extensions[:-1] ]
+                weights2d_names  = [ outs[var][weightvar][trig][x]['weights2d']  for x in lc._extensions[:-1] ]
+                prof_names = [ outs[var][weightvar][trig][x]['prof'] for x in lc._extensions[:-1] ]
+                ref_names = [ outs[var][weightvar][trig][x]['ref'] for x in lc._extensions[:-1] ]
                 draw_single_eff( ref_obj, indir_union, indir_eff, channel, var, weightvar, trig,
                                  nbins[var][channel], edges[var][channel],
                                  in_prefix, eff_prefix,
@@ -699,7 +681,7 @@ parser.add_argument('--data_name', dest='data_name', required=True, help='Data s
 parser.add_argument('--mc_name', dest='mc_name', required=True, help='MC sample name')
 
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
-args = parse_args(parser)
+args = utils.parse_args(parser)
 
 run_closure( args.indir_union, args.indir_eff,
              args.outdir,

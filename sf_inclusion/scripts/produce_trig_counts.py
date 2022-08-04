@@ -14,13 +14,8 @@ from ROOT import TFile
 import sys
 sys.path.append( os.environ['PWD'] ) 
 
-from utils.utils import (
-    generate_trigger_combinations,
-    is_channel_consistent,
-    join_name_trigger_intersection as joinNTC,
-    LeafManager,
-    parse_args,
-)
+from utils import utils
+from utils.utils import join_name_trigger_intersection as joinNTC
 from utils.selection import EventSelection
 
 from luigi_conf import _triggers_custom
@@ -44,7 +39,7 @@ def get_trig_counts(outdir, dataset, sample, filename,
 
     triggercomb = {}
     for chn in channels:
-        triggercomb[chn] = generate_trigger_combinations(chn, triggers)
+        triggercomb[chn] = utils.generate_trigger_combinations(chn, triggers)
 
     c_ref, c_inters = ({} for _ in range(2))
     for chn in channels:
@@ -54,7 +49,7 @@ def get_trig_counts(outdir, dataset, sample, filename,
             c_ref[chn][tcomb_str] = 0
             c_inters[chn][tcomb_str] = 0
 
-    lf = LeafManager(filename, t_in)
+    lf = utils.LeafManager(filename, t_in)
     
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
@@ -66,7 +61,7 @@ def get_trig_counts(outdir, dataset, sample, filename,
             pass_trigger[trig] = sel.trigger_bits(trig)
 
         for chn in channels:
-            if is_channel_consistent(chn, lf.get_leaf('pairType')):
+            if utils.is_channel_consistent(chn, lf.get_leaf('pairType')):
 
                 for tcomb in triggercomb[chn]:                
                     pass_trigger_intersection = functools.reduce(
@@ -129,7 +124,7 @@ parser.add_argument('--channels',    dest='channels',    required=True, nargs='+
 parser.add_argument('--triggers',    dest='triggers',    required=True, nargs='+', type=str,
                     help='Select the triggers over which the workflow will be run.' )
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
-args = parse_args(parser)
+args = utils.parse_args(parser)
 
 get_trig_counts( outdir=args.outdir, dataset=args.dataset, sample=args.sample,
                  filename=args.filename, channels=args.channels, triggers=args.triggers,

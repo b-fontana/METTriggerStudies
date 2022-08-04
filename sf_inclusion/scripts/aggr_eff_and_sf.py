@@ -21,9 +21,7 @@ from array import array
 
 import sys
 sys.path.append( os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
-from utils.utils import (
-    parse_args,
-    )
+from utils import utils
 
 def convert_graph_to_hist(graph):
     """
@@ -110,7 +108,7 @@ parser.add_argument('--variables', dest='variables', required=True, type=str, na
                     help='Select the variables over which the workflow will be run.' )
 parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
-args = parse_args(parser)
+args = utils.parse_args(parser)
 
 aggregate_eff_and_sf(args.indir, args.outdir, args.channel, args.subtag,
                      args.file_prefix, args.variables, args.debug)

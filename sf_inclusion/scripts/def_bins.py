@@ -9,12 +9,7 @@ import uproot as up
 import pandas as pd
 import argparse
 
-from utils.utils import (
-    LeafManager,
-    parse_args,
-    set_pure_input_namespace,
-)
-
+from utils import utils
 from luigi_conf import _binedges, _sel
 
 def skip_data_loop(args):
@@ -23,12 +18,12 @@ def skip_data_loop(args):
             return False
     return True
 
-@set_pure_input_namespace
+@utils.set_pure_input_namespace
 def define_binning_outputs(args):
     assert os.path.splitext(args.binedges_filename)[1] == '.hdf5'
     return os.path.join(args.outdir, args.binedges_filename)
 
-@set_pure_input_namespace
+@utils.set_pure_input_namespace
 def define_binning(args):
     """
     Determine histogram quantiles
@@ -190,6 +185,6 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--channels',   dest='channels',         required=True, nargs='+', type=str,
                         help='Select the channels over which the workflow will be run.' )
     parser.add_argument('--debug', action='store_true', help='debug verbosity')
-    args = parse_args(parser)
+    args = utils.parse_args(parser)
 
     define_binning( args )

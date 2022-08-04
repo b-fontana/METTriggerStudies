@@ -9,19 +9,20 @@ from copy import copy
 
 import ROOT
 ROOT.gROOT.SetBatch(True)
-from ROOT import TCanvas
-from ROOT import TPad
-from ROOT import TStyle
-from ROOT import TFile
-from ROOT import TEfficiency
-from ROOT import TGraphAsymmErrors
-from ROOT import TH1D
-from ROOT import TH2D
-from ROOT import TLatex
-from ROOT import TLine
-from ROOT import TLegend
-from ROOT import TString
-
+from ROOT import (
+    TCanvas
+    TPad,
+    TStyle,
+    TFile,
+    TEfficiency,
+    TGraphAsymmErrors,
+    TH1D,
+    TH2D,
+    TLatex,
+    TLine,
+    TLegend,
+    TString,
+    )
 from utils import utils
 from luigi_conf import _2Dpairs, _extensions
 

@@ -8,12 +8,13 @@ import functools
 import h5py
 from copy import copy
 
-import ROOT
-from ROOT import TFile
-from ROOT import TCanvas
-from ROOT import TLegend
-from ROOT import TLatex
-from ROOT import THStack
+from ROOT import (
+    TFile,
+    TCanvas,
+    TLegend,
+    TLatex,
+    THStack,
+)
 
 from luigi_conf import _extensions
 from utils import utils

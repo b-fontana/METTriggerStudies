@@ -19,19 +19,9 @@ from ROOT import (
 )
 gROOT.SetBatch(True)
 
-from utils.utils import (
-    find_bin,
-    generate_trigger_combinations,
-    get_root_input_files,
-    is_channel_consistent,
-    join_name_trigger_intersection as joinNTC,
-    LeafManager,
-    load_binning,
-    parse_args,
-    pass_any_trigger,
-    pass_selection_cuts,
-    pass_trigger_bits,
-)
+from utils import utils
+from utils.utils import generate_trigger_combinations as gtc
+from utils.utils import join_name_trigger_intersection as joinNTC
 
 from luigi_conf import _variables_unionweights
 
@@ -43,7 +33,7 @@ def eff_extractor(args, chn, effvars, nbins):
     efficiencies_data, efficiencies_data_ehigh, efficiencies_data_elow = ({} for _ in range(3))
     efficiencies_mc, efficiencies_mc_ehigh, efficiencies_mc_elow = ({} for _ in range(3)) 
     
-    triggercomb = generate_trigger_combinations(chn, args.triggers)
+    triggercomb = gtc(chn, args.triggers)
         
     for tcomb in triggercomb:
         tcstr = joinNTC(tcomb)
@@ -118,7 +108,7 @@ def prob_calculator(efficiencies, effvars, leaf_manager, channel, closure_single
     nweight_vars = 4 #dau1_pt, dau1_eta, dau2_pt, dau2_eta
     prob_data, prob_mc = ([0 for _ in range(nweight_vars)] for _ in range(2))
 
-    triggercomb = generate_trigger_combinations(channel, closure_single_trigger)
+    triggercomb = utils.gtc(channel, closure_single_trigger)
 
     for tcomb in triggercomb:
         joincomb = joinNTC(tcomb)
@@ -135,7 +125,7 @@ def prob_calculator(efficiencies, effvars, leaf_manager, channel, closure_single
 
             for iw,weightvar in enumerate(variables):
                 # The following is 1D only CHANGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                binid = find_bin(binedges[weightvar][channel], values[iw], weightvar)
+                binid = utils.find_bin(binedges[weightvar][channel], values[iw], weightvar)
                 term_data = efficiencies[0][0][joincomb][weightvar][binid-1]
                 term_mc   = efficiencies[1][0][joincomb][weightvar][binid-1]
 
@@ -152,7 +142,7 @@ def run_union_weights_calculator_outputs(args, proc):
     outputs = []
 
     exp = re.compile('output(_[0-9]{1,5}).root')
-    inputs, _ = get_root_input_files(proc, [args.indir_root])
+    inputs, _ = utils.get_root_input_files(proc, [args.indir_root])
     folder = os.path.join( args.outdir, proc, 'Closure_' + args.closure_single_trigger[0] )
     os.system('mkdir -p {}'.format(folder))
     
@@ -173,15 +163,15 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
     assert len(output)==1
     output = output[0]
 
-    binedges, nbins = load_binning(afile=args.binedges_fname, key=args.subtag,
-                                   variables=args.variables, channels=args.channels)
+    binedges, nbins = utils.load_binning(afile=args.binedges_fname, key=args.subtag,
+                                         variables=args.variables, channels=args.channels)
     # open input ROOT file
     fname = os.path.join(args.indir_root, args.sample, args.file_name)
     if not os.path.exists(fname):
         raise ValueError('[' + os.path.basename(__file__) + '] {} does not exist.'.format(fname))
     f_in = TFile( fname )
     t_in = f_in.Get('HTauTauTree')
-    lfm = LeafManager(fname, t_in)
+    lfm = utils.LeafManager(fname, t_in)
 
     outdata = h5py.File(output, mode='w')
     prob_ratios, ref_prob_ratios = ({} for _ in range(2))
@@ -205,7 +195,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
             outdata[chn].create_group(var)
             prob_ratios[chn][var] = {}
             ref_prob_ratios[chn][var] = {}
-            for weightvar in effvars[chn][generate_trigger_combinations(chn, args.triggers)[0][0]][0]: #any trigger works for the constant list
+            for weightvar in effvars[chn][utils.gtc(chn, args.triggers)[0][0]][0]: #any trigger works for the constant list
                 outdata[chn][var].create_group(weightvar)
                 prob_ratios[chn][var][weightvar] = {}
                 ref_prob_ratios[chn][var][weightvar] = {}
@@ -223,16 +213,17 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
 
-        if not pass_selection_cuts(lfm):
+        sel = EventSelection(lf, dataset, isdata)
+        if not utils.pass_selection_cuts(lfm):
             continue
 
         trig_bit = lfm.get_leaf('pass_triggerbit')
         run = lfm.get_leaf('RunNumber')
-        if not pass_any_trigger(args.triggers, trig_bit, run, isdata=False):
+        if not utils.pass_any_trigger(args.triggers, trig_bit, run, isdata=False):
             continue
 
         for chn in args.channels:
-            if not is_channel_consistent(chn, lfm.get_leaf('pairType')):
+            if not utils.is_channel_consistent(chn, lfm.get_leaf('pairType')):
                 continue
             #triggers_for_master_formula = args.closure_single_trigger if single_trigger_closure else args.triggers
             triggers_for_master_formula = ['IsoMu24', 'METNoMu120']
@@ -254,17 +245,17 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
                     print('WARNING: Appending 0 for channel {}.'.format(chn))
                 else:
                     prob_ratio.append( pd/pm )
-            assert len(effvars[chn][generate_trigger_combinations(chn, args.triggers)[0][0]][0]) == len(prob_ratio)
+            assert len(effvars[chn][gtc(chn, args.triggers)[0][0]][0]) == len(prob_ratio)
             print() #new line
 
             if single_trigger_closure:
                 for var in _variables_unionweights:
                     val = lfm.get_leaf(var)
-                    binid = find_bin(binedges[var][chn], val, var)
-                    for iw,weightvar in enumerate(effvars[chn][generate_trigger_combinations(chn, args.triggers)[0][0]][0]): #any trigger works for the constant list
+                    binid = utils.find_bin(binedges[var][chn], val, var)
+                    for iw,weightvar in enumerate(effvars[chn][gtc(chn, args.triggers)[0][0]][0]): #any trigger works for the constant list
                         ref_prob_ratios[chn][var][weightvar][str(binid-1)].append(prob_ratio[iw])
                         for trig in args.triggers:
-                            ptb = pass_trigger_bits(trig, trig_bit, run, isdata=False)
+                            ptb = utils.pass_trigger_bits(trig, trig_bit, run, isdata=False)
                             if ptb:
                                 prob_ratios[chn][var][weightvar][trig][str(binid-1)].append(prob_ratio[iw])
 
@@ -272,7 +263,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
     if single_trigger_closure:
         for chn in args.channels:
             for var in _variables_unionweights:
-                for weightvar in effvars[chn][generate_trigger_combinations(chn, args.triggers)[0][0]][0]: #any trigger works for the constant list
+                for weightvar in effvars[chn][gtc(chn, args.triggers)[0][0]][0]: #any trigger works for the constant list
                     for trig in args.triggers:
                         for ibin in range(nbins[var][chn]):
                             outdata[chn][var][weightvar][trig][str(ibin)]['prob_ratios'] = prob_ratios[chn][var][weightvar][trig][str(ibin)]
@@ -309,6 +300,6 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--tag', help='string to differentiate between different workflow runs', required=True)
     parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
     parser.add_argument('--debug', action='store_true', help='debug verbosity')
-    args = parse_args(parser)
+    args = utils.parse_args(parser)
     
     run_union_weights_calculator(args)
