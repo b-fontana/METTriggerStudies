@@ -8,41 +8,38 @@ sys.path.append("..")
 import os
 import argparse
 
-from utils.utils import (
-    build_prog_path,
-    join_name_trigger_intersection as joinNTC,
-    join_strings,
-    set_pure_input_namespace,
-)
+from utils import utils
 from condor.job_writer import JobWriter
 
-@set_pure_input_namespace
+@utils.set_pure_input_namespace
 def eff_and_sf_aggr_outputs(args):
     job_f, subm_f, check_f, log_f = JobWriter.define_output( localdir=args.localdir,
                                                              data_folders='EffAndSFAgg',
                                                              tag=args.tag )
     return job_f[0], subm_f[0], check_f[0], log_f[0]
 
-@set_pure_input_namespace
+@utils.set_pure_input_namespace
 def eff_and_sf_aggr(args):
-    prog = build_prog_path(args.localdir, 'aggregateEfficienciesAndScaleFactors.py')
+    script = 'aggr_eff_and_sf.py'
+    prog = utils.build_prog_path(args.localdir, script)
     outs_job, outs_submit, outs_check, outs_log = eff_and_sf_aggr_outputs(args)
     jw = JobWriter()
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-    command = join_strings( '{} '.format(prog),
-                            '--indir {} '.format(args.indir),
-                            '--outdir {} '.format(args.outdir),
-                            '--channel ${1} ',
-                            '--file_prefix {} '.format(args.file_prefix),
-                            '--variables {} '.format(' '.join(args.variables,)),
-                            '--subtag {} '.format(args.subtag) )
+    command = utils.join_strings('{}'.format(prog),
+                                 '--indir {}'.format(args.indir),
+                                 '--outdir {}'.format(args.outdir),
+                                 '--channel ${1}',
+                                 '--file_prefix {}'.format(args.file_prefix),
+                                 '--variables {}'.format(' '.join(args.variables,)),
+                                 '--subtag {}'.format(args.subtag),
+                                 sep=' ')
 
     if args.debug:
         command += '--debug '
 
     jw.write_shell(filename=outs_job, command=command, localdir=args.localdir)
-    jw.add_string('echo "aggregateEfficienciesAndScaleFactors done."')
+    jw.add_string('echo "{} done."'.format(script))
 
     #### Write submission file
     jw.write_condor( filename=outs_submit,

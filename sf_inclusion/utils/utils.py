@@ -252,8 +252,8 @@ def join_name_trigger_intersection(tuple_element):
     inters = '_PLUS_'
     return inters.join(tuple_element)
 
-def join_strings(*args):
-    return ''.join(args)
+def join_strings(*args, sep=''):
+    return sep.join(args)
     
 class LeafManager():
     """

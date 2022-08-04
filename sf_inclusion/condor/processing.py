@@ -70,9 +70,8 @@ def processing_outputs(args):
 
 @utils.set_pure_input_namespace
 def processing(args):
-    prog = utils.build_prog_path(args.localdir,
-                                 ('produceTriggerHistograms.py' if args.mode == 'histos'
-                                  else 'produceTriggerCounts.py'))
+    script = 'produce_trig_histos.py' if args.mode == 'histos' else 'produce_trig_counts.py'
+    prog = utils.build_prog_path(args.localdir, script)
     jw = JobWriter()
 
     outs_data, outs_mc, _data_procs, _mc_procs = processing_outputs(args)
@@ -88,17 +87,17 @@ def processing(args):
         filelist, _ = utils.get_root_input_files(vproc, args.indir)
         
         #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-        command =  ( '{} '            .format(prog) +
-                     '--outdir {} '   .format(args.outdir) +
-                     '--dataset {} '  .format(kproc) +
-                     '--sample {} '   .format(vproc) +
-                     '--isdata {} '   .format(int(vproc in args.data_vals)) +
-                     '--file ${1} ' +
-                     '--subtag {} '   .format(args.subtag) +
-                     '--channels {} ' .format(' '.join(args.channels,)) +
-                     '--triggers {} ' .format(' '.join(args.triggers,)) +
-                     '--tprefix {} '  .format(args.tprefix)
-                    )
+        command = utils.join_strings('{}'.format(prog),
+                                     '--outdir {}'   .format(args.outdir),
+                                     '--dataset {}'  .format(kproc),
+                                     '--sample {}'   .format(vproc),
+                                     '--isdata {}'   .format(int(vproc in args.data_vals)),
+                                     '--file ${1}',
+                                     '--subtag {}'   .format(args.subtag),
+                                     '--channels {}' .format(' '.join(args.channels,)),
+                                     '--triggers {}' .format(' '.join(args.triggers,)),
+                                     '--tprefix {}'  .format(args.tprefix),
+                                     sep=' ')
         
         if args.debug:
             command += '--debug '

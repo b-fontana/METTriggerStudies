@@ -69,8 +69,6 @@ def paint2d(channel, trig):
     latexChannel.replace('Tau','#tau_{h}')
     l.DrawLatex( lX2, lY, 'Channel: '+latexChannel)
 
-
-
 def draw_eff_and_sf_1d(proc, channel, variable, trig,
                    save_names_1D,
                    tprefix, indir, subtag, mc_name, data_name,

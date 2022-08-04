@@ -12,7 +12,7 @@ def _subpaths(args):
     return _tbase1, _tbase2
 
 @utils.set_pure_input_namespace
-def runHaddEff_outputs(args):
+def run_hadd_eff_outputs(args):
     targets = []
 
     # add the merge of all the samples first
@@ -39,36 +39,14 @@ def hadd_eff_outputs(args):
                                     data_folders='HaddEff',
                                     tag=args.tag )
 
-    # base_dir = os.path.join(args.localdir, 'jobs', args.tag)
-    
-    # jobDir = os.path.join(base_dir, 'submission')
-    # os.system('mkdir -p {}'.format(jobDir))
-
-    # dataset_folder = 'HaddEff'
-    # checkDir = os.path.join(base_dir, 'outputs', dataset_folder)
-    # os.system('mkdir -p {}'.format(checkDir))
-
-    # name = 'HaddEff{}.{}'
-    # check_name = '{}HaddEff_C$(Cluster)P$(Process).o'
-
-    # jobFiles   = [ os.path.join(jobDir, name.format('', 'sh')),
-    #                os.path.join(jobDir, name.format('_Agg', 'sh')) ]
-    # submFiles  = [ os.path.join(jobDir, name.format('', 'condor')),
-    #                os.path.join(jobDir, name.format('_Agg', 'condor')) ]
-    # checkFiles = [ os.path.join(checkDir, check_name.format('')),
-    #                os.path.join(checkDir, check_name.format('Agg_')) ]
-
-    # return jobFiles, submFiles, checkFiles
-
 @utils.set_pure_input_namespace
 def hadd_eff(args):
     """Adds ROOT histograms"""
-    targets = runHaddEff_outputs(args)
+    targets = run_hadd_eff_outputs(args)
     outs_job, outs_submit, outs_check, outs_log = hadd_eff_outputs(args)
     jw = JobWriter()
         
-    #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-    command = 'hadd -f ${1} ${@:2}' #bash: ${@:POS} captures all arguments starting from POS
+    command = 'hadd -f ${1} ${@:2}'
 
     for out in outs_job:
         jw.write_shell(filename=out, command=command, localdir=args.localdir)

@@ -4,22 +4,16 @@ _all_ = [ "hadd_counts", "hadd_counts_outputs" ]
 
 import os
 import sys
-import sys
 sys.path.append( os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
-from utils.utils import (
-    build_prog_path,
-    hadd_subpaths,
-    join_strings,
-    set_pure_input_namespace,
-    )
+from utils import utils
 from condor.job_writer import JobWriter
 
-@set_pure_input_namespace
+@utils.set_pure_input_namespace
 def run_hadd_counts_outputs(args):
     targets = []
 
     # add the merge of all the samples first
-    _tbase1, _tbase2 = hadd_subpaths(args)
+    _tbase1, _tbase2 = utils.hadd_subpaths(args)
     tbase = _tbase1 + _tbase2
     for chn in args.channels:
         t = os.path.join( args.indir, tbase + '_' + chn + '.csv' )
@@ -33,28 +27,30 @@ def run_hadd_counts_outputs(args):
             targets.append( t )
     return targets
 
-@set_pure_input_namespace
+@utils.set_pure_input_namespace
 def hadd_counts_outputs(args):
     return JobWriter.define_output( localdir=args.localdir,
                                     data_folders=['HaddCounts' + args.dataset_name,
                                                   'HaddCountsAgg' + args.dataset_name],
                                     tag=args.tag )
 
-@set_pure_input_namespace
+@utils.set_pure_input_namespace
 def hadd_counts(args):
     """Adds TXT count files"""
     targets = run_hadd_counts_outputs(args)
     outs_job, outs_submit, outs_check, outs_log = hadd_counts_outputs(args)
     jw = JobWriter()
-    
-    prog = build_prog_path(args.localdir, 'addTriggerCounts.py')
-    command_base = join_strings( '{} '.format(prog),
-                                 '--indir {} '.format(args.indir),
-                                 '--outdir {} '.format(args.outdir),
-                                 '--subtag {} '.format(args.subtag),
-                                 '--tprefix {} '.format(args.tprefix),
-                                 '--dataset_name {} '.format(args.dataset_name),
-                                 '--outfile_counts ${1} ' )
+
+    script = 'add_trig_counts.py'
+    prog = utils.build_prog_path(args.localdir, script)
+    command_base = utils.join_strings( '{}'.format(prog),
+                                       '--indir {}'.format(args.indir),
+                                       '--outdir {}'.format(args.outdir),
+                                       '--subtag {}'.format(args.subtag),
+                                       '--tprefix {}'.format(args.tprefix),
+                                       '--dataset_name {}'.format(args.dataset_name),
+                                       '--outfile_counts ${1}',
+                                       sep=' ')
 
     command_first_step = ( command_base +
                            '--sample ${2} ' +
@@ -66,10 +62,10 @@ def hadd_counts(args):
     for out in outs_job:
         if out == outs_job[0]:
             jw.write_shell(filename=out, command=command_first_step, localdir=args.localdir)
-            jw.add_string('echo "HaddCounts {} done."'.format(args.dataset_name))
+            jw.add_string('echo "{} without aggregation (dataset {}) done."'.format(script, args.dataset_name))
         elif out == outs_job[1]:
             jw.write_shell(filename=out, command=command_aggregation_step, localdir=args.localdir)
-            jw.add_string('echo "HaddCounts Agg {} done."'.format(args.dataset_name))
+            jw.add_string('echo "{} with aggregation {} done."'.format(script, args.dataset_name))
 
     #### Write submission file
     inputs_join = {}

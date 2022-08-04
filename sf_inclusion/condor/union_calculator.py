@@ -1,9 +1,9 @@
 # coding: utf-8
 
-_all_ = [ "union_calculator", "union_calculator_outputs" ]
+_all_ = [ 'union_calculator', 'union_calculator_outputs' ]
 
 import sys
-sys.path.append("..")
+sys.path.append('..')
 
 import os
 import argparse
@@ -28,7 +28,8 @@ def union_calculator_outputs(args):
 
 @utils.set_pure_input_namespace
 def union_calculator(args):
-    prog = utils.build_prog_path(args.localdir, 'runUnionWeightsCalculator.py')
+    script = 'run_union_calculator.py'
+    prog = utils.build_prog_path(args.localdir, script)
     jobs, subs, checks, logs = union_calculator_outputs(args)
     jw = JobWriter()
 
@@ -36,24 +37,25 @@ def union_calculator(args):
         filelist, inputdir = utils.get_root_input_files(proc, args.indir_root)
 
         #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-        command =  ( '{prog} --indir_root {indir_root} '.format(prog=prog, indir_root=inputdir)
-                     + '--indir_json {indir_json} '.format(indir_json=args.indir_json)
-                     + '--indir_eff {indir_eff} '.format(indir_eff=args.indir_eff)
-                     + '--outdir {outr} '.format(outr=args.outdir)
-                     + '--outprefix {outprefix} '.format(outprefix=args.outprefix)
-                     + '--sample {sample} '.format(sample=proc)
-                     + '--channels {channels} '.format(channels=' '.join(args.channels,))
-                     + '--triggers {triggers} '.format(triggers=' '.join(args.triggers,))
-                     + '--file_name ${1} '
-                     + '--closure_single_trigger ${2} '
-                     + '--variables {variables} '.format(variables=' '.join(args.variables,))
-                     + '--tag {tag} '.format(tag=args.tag)
-                     + '--subtag {subtag} '.format(subtag=args.subtag)
-                     + '--data_name {dataname} '.format(dataname=args.data_name)
-                     + '--mc_name {mcname} '.format(mcname=args.mc_name)
-                     + '--binedges_fname {be}'.format(be=args.binedges_filename)
-                    )
-
+        command =  utils.join_strings(prog,
+                                      '--indir_root {}'.format(inputdir),
+                                      '--indir_json {}'.format(args.indir_json),
+                                      '--indir_eff {} '.format(args.indir_eff),
+                                      '--outdir {}'.format(args.outdir),
+                                      '--outprefix {}'.format(args.outprefix),
+                                      '--sample {}'.format(sample=proc),
+                                      '--channels {}'.format(' '.join(args.channels,)),
+                                      '--triggers {}'.format(' '.join(args.triggers,)),
+                                      '--file_name ${1}',
+                                      '--closure_single_trigger ${2}',
+                                      '--variables {}'.format(variables=' '.join(args.variables,)),
+                                      '--tag {}'.format(args.tag),
+                                      '--subtag {}'.format(args.subtag),
+                                      '--data_name {}'.format(args.data_name),
+                                      '--mc_name {}'.format(args.mc_name),
+                                      '--binedges_fname {}'.format(args.binedges_filename),
+                                      sep=' ')
+        
         if args.debug:
             command += '--debug '
 

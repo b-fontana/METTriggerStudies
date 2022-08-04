@@ -41,20 +41,19 @@ def hadd_histo_outputs(args):
 @utils.set_pure_input_namespace
 def hadd_histo(args):
     """Adds ROOT histograms"""
+    script = os.path.basename(__file__)
     targets = run_hadd_histo_outputs(args)
     outs_job, outs_submit, outs_check, outs_log = hadd_histo_outputs(args)
-
     jw = JobWriter()
-    
-    #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-    command = 'hadd -f ${1} ${@:2}' #bash: ${@:POS} captures all arguments starting from POS
+
+    command = 'hadd -f ${1} ${@:2}'
 
     for out in outs_job:
         jw.write_shell(filename=out, command=command, localdir=args.localdir)
         if out == outs_job[0]:
-            jw.add_string('echo "HaddHisto {} done."'.format(args.dataset_name))
+            jw.add_string('echo "{} without aggregation (dataset {}) done."'.format(script, args.dataset_name))
         elif out == outs_job[1]:
-            jw.add_string('echo "HaddHisto Agg {} done."'.format(args.dataset_name))
+            jw.add_string('echo "{} with aggregation (dataset {}) done."'.format(script, args.dataset_name))
 
     #### Write submission file
     inputs_join = []
