@@ -70,7 +70,7 @@ def eff_and_sf(args):
             triggercomb += utils.generate_trigger_combinations(chn, args.triggers)
             
     for tcomb in triggercomb:
-        qlines.append('  {}'.format( join_name_trigger_intersection(tcomb)) )
+        qlines.append('  {}'.format( utils.join_name_trigger_intersection(tcomb)) )
 
     jw.write_queue( qvars=('triggercomb',),
                     qlines=qlines )

@@ -46,7 +46,7 @@ def closure(args):
         command += '--debug '
 
     jw.write_shell(filename=outs_job, command=command, localdir=args.localdir)
-    jw.add_string('echo "{} for channel ${1} and single trigger ${2} done."'.format(script))
+    jw.add_string('echo "{} for channel ${{1}} and single trigger ${{2}} done."'.format(script))
 
     #### Write submission file
     jw.write_condor( filename=outs_submit,
