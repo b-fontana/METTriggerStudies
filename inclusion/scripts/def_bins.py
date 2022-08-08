@@ -9,12 +9,19 @@ import uproot as up
 import pandas as pd
 import argparse
 
-from utils import utils
-from luigi_conf import _binedges, _sel
+import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
+
+import inclusion
+from inclusion.utils import utils
+
+from inclusion import config
 
 def skip_data_loop(args):
     for var in args.variables:
-        if var not in _binedges.keys():
+        if var not in config._binedges.keys():
             return False
     return True
 
@@ -92,9 +99,9 @@ def define_binning(args):
                 df_chn = {}
                 for chn in args.channels:
                     if chn == 'all':
-                        sel_chn = batch['pairType'] <  _sel[chn]['pairType'][1]
+                        sel_chn = batch['pairType'] <  config._sel[chn]['pairType'][1]
                     else:
-                        sel_chn = batch['pairType'] == _sel[chn]['pairType'][1]
+                        sel_chn = batch['pairType'] == config._sel[chn]['pairType'][1]
                         
                     df_chn = batch[ sel_chn ]
                     quantiles[chn].append( df_chn.quantile([quant_down, quant_up]) )
@@ -105,7 +112,8 @@ def define_binning(args):
 
             for var in args.variables:
                 for chn in args.channels:
-                    if var not in _binedges or chn not in _binedges[var]:
+                    if (var not in config._binedges or
+                        chn not in config._binedges[var]):
                         _minedge[var][chn][sample] = treesize*quantiles[chn].loc[quant_down, var]
                         _maxedge[var][chn][sample] = treesize*quantiles[chn].loc[quant_up, var]
 
@@ -114,7 +122,7 @@ def define_binning(args):
         for var in args.variables:
             maxedge[var], minedge[var] = ({} for _ in range(2))
             for chn in args.channels:
-                if var not in _binedges or chn not in _binedges[var]:
+                if var not in config._binedges or chn not in config._binedges[var]:
                     maxedge[var].update({chn: sum(_maxedge[var][chn].values()) / nTotEntries})
                     minedge[var].update({chn: sum(_minedge[var][chn].values()) / nTotEntries})
                     if maxedge[var][chn] <= minedge[var][chn]:
@@ -146,14 +154,14 @@ def define_binning(args):
                 vargroup = group.create_group(v)
                 for chn in args.channels:
                     try:
-                        if chn in _binedges[v]:
+                        if chn in config._binedges[v]:
                             dset = vargroup.create_dataset(chn, dtype=float,
-                                                           shape=(len(_binedges[v][chn]),))
+                                                           shape=(len(config._binedges[v][chn]),))
                             if args.debug:
                                 print( '[' + os.path.basename(__file__) + '] ' +
                                        'Using custom binning for variable {}: {}'
-                                       .format(v, _binedges[v][chn]) )
-                            dset[:] = _binedges[v][chn]
+                                       .format(v, config._binedges[v][chn]) )
+                            dset[:] = config._binedges[v][chn]
                         else:
                             raise KeyError #a "go-to" to the except clause
 

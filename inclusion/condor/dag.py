@@ -6,11 +6,14 @@ import os
 import re
 import atexit # https://stackoverflow.com/questions/865115/how-do-i-correctly-clean-up-a-python-object
 
-from utils import utils
-from condor.job_writer import JobWriter
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
 
-from luigi_conf.luigi_cfg import cfg
-lcfg = cfg() #luigi configuration
+import inclusion
+from inclusion.utils import utils
+from inclusion.condor.job_writer import JobWriter
+from inclusion import config
 
 @utils.set_pure_input_namespace
 def dag_outputs(args):
@@ -44,7 +47,7 @@ class WriteDAGManager:
 
     def build_job_id(self, job_path):
         jp = os.path.dirname(job_path)
-        regex = re.compile('.+/{}/(.+)'.format(lcfg.analysis_folders['subm']))
+        regex = re.compile('.+/{}/(.+)'.format(config._analysis_folders['subm']))
         matches = regex.findall(jp)
         assert len(matches) == 1
         matches = matches[0].replace('/', '_')

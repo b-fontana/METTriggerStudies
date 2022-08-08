@@ -5,8 +5,13 @@ _all_ = [ 'JobWriter' ]
 import os
 from functools import wraps
 
-from luigi_conf.luigi_cfg import cfg
-lcfg = cfg() #luigi configuration
+import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
+
+import inclusion
+from inclusion import config
 
 class JobWriter:
     """
@@ -53,10 +58,10 @@ class JobWriter:
         job_d, out_d = ([] for _ in range(2))
         for dataf in data_folders:
             job_d.append(os.path.join(base_d,
-                                      lcfg.analysis_folders['subm'], dataf))
+                                      config._analysis_folders['subm'], dataf))
             mkdir(job_d[-1])
             out_d.append( os.path.join(base_d,
-                                       lcfg.analysis_folders['outs'], dataf) )
+                                       config._analysis_folders['outs'], dataf) )
             mkdir(out_d[-1])
 
         job_f, subm_f, out_f, log_f = ([] for _ in range(4))

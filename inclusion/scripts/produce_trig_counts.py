@@ -14,11 +14,10 @@ from ROOT import TFile
 import sys
 sys.path.append( os.environ['PWD'] ) 
 
-from utils import utils
-from utils.utils import join_name_trigger_intersection as joinNTC
-from utils.selection import EventSelection
-
-from luigi_conf import _triggers_custom
+import inclusion
+from inclusion import selection
+from inclusion.utils import utils
+from inclusion.utils.utils import join_name_trigger_intersection as joinNTC
 
 def get_trig_counts(outdir, dataset, sample, filename,
                     channels, triggers,
@@ -54,7 +53,7 @@ def get_trig_counts(outdir, dataset, sample, filename,
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
 
-        sel = EventSelection(lf, dataset, isdata)
+        sel = selection.EventSelection(lf, dataset, isdata)
         
         pass_trigger = {}
         for trig in triggers:

@@ -19,9 +19,13 @@ from ROOT import (
     )
 from array import array
 
+import os
 import sys
-sys.path.append( os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
-from utils import utils
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
+
+import inclusion
+from inclusion.utils import utils
 
 def convert_graph_to_hist(graph):
     """
