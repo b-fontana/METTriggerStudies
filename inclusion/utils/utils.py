@@ -42,7 +42,7 @@ def at_least_two(x1, x2, x3):
 def build_script_command(name, sep, **kw):
     if name:
         p = build_script_path(name)
-        comm = 'python3 {}'.format(p)
+        comm = 'python3 {} '.format(p)
     else:
         comm = ' '
     for k,v in kw.items():

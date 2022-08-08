@@ -5,6 +5,9 @@ _all_ = [ 'JobWriter' ]
 import os
 from functools import wraps
 
+from luigi_conf.luigi_cfg import cfg
+lcfg = cfg() #luigi configuration
+
 class JobWriter:
     """
     Help writing shell and condor job files.
@@ -49,9 +52,11 @@ class JobWriter:
 
         job_d, out_d = ([] for _ in range(2))
         for dataf in data_folders:
-            job_d.append( os.path.join(base_d, 'submission', dataf) )
+            job_d.append(os.path.join(base_d,
+                                      lcfg.analysis_folders['subm'], dataf))
             mkdir(job_d[-1])
-            out_d.append( os.path.join(base_d, 'outputs', dataf) )
+            out_d.append( os.path.join(base_d,
+                                       lcfg.analysis_folders['outs'], dataf) )
             mkdir(out_d[-1])
 
         job_f, subm_f, out_f, log_f = ([] for _ in range(4))

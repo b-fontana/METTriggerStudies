@@ -163,7 +163,9 @@ class cfg(luigi.Config):
     local_cmssw = os.path.join(os.environ['CMSSW_VERSION'], 'src')
     analysis_folders = {'main'    : 'METTriggerStudies',
                         'scripts' : 'scripts',
-                        'jobs'    : 'condor'}
+                        'jobs'    : 'condor',
+                        'subm'    : 'submission',
+                        'outs'    : 'outputs' }
 
     # general
     modes = {'histos': 'hist_',

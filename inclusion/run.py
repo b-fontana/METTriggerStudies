@@ -364,7 +364,6 @@ class Dag(lutils.ForceRun):
 
         dag_manager = dag.WriteDAGManager( self.params['localdir'],
                                            self.params['tag'],
-                                           self.params['data_name'],
                                            jobs,
                                            mode='short' )
         dag_manager.write_all()

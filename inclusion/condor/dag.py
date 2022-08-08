@@ -3,12 +3,16 @@
 _all_ = [ 'WriteDAGManager', 'dag_outputs' ]
 
 import os
+import re
 import atexit # https://stackoverflow.com/questions/865115/how-do-i-correctly-clean-up-a-python-object
 import sys
 sys.path.append("..")
 
 from utils import utils
 from condor.job_writer import JobWriter
+
+from luigi_conf.luigi_cfg import cfg
+lcfg = cfg() #luigi configuration
 
 @utils.set_pure_input_namespace
 def dag_outputs(args):
@@ -17,18 +21,14 @@ def dag_outputs(args):
                                         name='workflow' )
 
 class WriteDAGManager:
-    def __init__(self, localdir, tag, data_name, jobs, mode='long'):
+    def __init__(self, localdir, tag, jobs, mode='long'):
         if mode not in ('short', 'long'):
             raise ValueError('Mode {} is not supported.'.format(mode))
         self.mode = mode
         
-        self.data_name = data_name
-        
         out = dag_outputs( {'localdir': localdir, 'tag': tag} )
         self.this_file = open(out, 'w')
         atexit.register(self.cleanup)
-        
-        self.rem_ext = lambda x : os.path.basename(x).split('.')[0]
         
         self.write_configuration()
 
@@ -44,6 +44,14 @@ class WriteDAGManager:
         self.jobs = jobs
         self.define_all_job_names(self.jobs)
 
+    def build_job_id(self, job_path):
+        jp = os.path.dirname(job_path)
+        regex = re.compile('.+/{}/(.+)'.format(lcfg.analysis_folders['subm']))
+        matches = regex.findall(jp)
+        assert len(matches) == 1
+        matches = matches[0].replace('/', '_')
+        return matches
+         
     def cleanup(self):
         self.this_file.close()
             
@@ -60,7 +68,8 @@ class WriteDAGManager:
     def define_job_names(self, jobs):
         """First step to build a DAG"""
         for job in jobs:
-            self.write_string('JOB {} {}\n'.format(self.rem_ext(job), job))
+            job_id = self.build_job_id(job)
+            self.write_string('JOB {} {}\n'.format(job_id, job))
         self.new_line()
 
     def write_parent_child_hierarchy(self, parents, childs):
@@ -71,10 +80,12 @@ class WriteDAGManager:
         
         self.write_string('PARENT ')
         for par in parents:
-            self.write_string('{} '.format(self.rem_ext(par)))
+            job_id = self.build_job_id(par)
+            self.write_string('{} '.format(job_id))
         self.write_string('CHILD ')
         for cld in childs:
-            self.write_string('{} '.format(self.rem_ext(cld)))
+            job_id = self.build_job_id(cld)
+            self.write_string('{} '.format(job_id))
         self.new_line()
 
     def write_configuration(self):
