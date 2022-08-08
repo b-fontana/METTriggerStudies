@@ -1,6 +1,6 @@
 # coding: utf-8
 
-_all_ = [ "WriteDAGManager", "dag_outputs" ]
+_all_ = [ 'WriteDAGManager', 'dag_outputs' ]
 
 import os
 import atexit # https://stackoverflow.com/questions/865115/how-do-i-correctly-clean-up-a-python-object

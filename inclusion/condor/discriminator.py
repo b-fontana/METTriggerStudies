@@ -1,6 +1,6 @@
 # coding: utf-8
 
-_all_ = [ "discriminator", "discriminator_outputs" ]
+_all_ = [ 'discriminator', 'discriminator_outputs' ]
 
 import sys
 sys.path.append("..")

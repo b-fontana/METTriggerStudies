@@ -1,6 +1,6 @@
 # coding: utf-8
 
-_all_ = [ "eff_and_sf_aggr", "eff_and_sf_aggr_outputs" ]
+_all_ = [ 'eff_and_sf_aggr', 'eff_and_sf_aggr_outputs' ]
 
 import sys
 sys.path.append("..")

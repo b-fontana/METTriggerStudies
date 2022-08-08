@@ -1,6 +1,6 @@
 # coding: utf-8
 
-_all_ = [ "JobWriter" ]
+_all_ = [ 'JobWriter' ]
 
 import os
 from functools import wraps
