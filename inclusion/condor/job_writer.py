@@ -20,7 +20,7 @@ class JobWriter:
             self.f.write( string + self.endl )
 
     @staticmethod
-    def define_output(localdir, data_folders, tag, names=None):
+    def define_output(localdir, data_folders, tag, names=''):
         """
         Defines where the shell and condor job files, and the HTCondor outputs
         will be stored.
@@ -34,12 +34,14 @@ class JobWriter:
         # type checks
         if not isinstance(data_folders, (tuple,list)):
             data_folders = [ data_folders ]
-        if names is None:
-            names = data_folders
         if not isinstance(names, (tuple,list)):
             names = [ names ]            
-        if len(data_folders) > 1:
-            assert len(data_folders) == len(names)
+        if len(data_folders) != len(names):
+            if len(names) == 1:
+                names = len(data_folders)*names
+            else:
+                raise ValueError('You got the total number of foldernames wrong.')
+        
 
         # ensure the length of the two lists is the same for the `zip` that follows
         if len(data_folders) == 1 and len(names) > 1:
@@ -55,8 +57,8 @@ class JobWriter:
         job_f, subm_f, out_f, log_f = ([] for _ in range(4))
         for jd, cd, name in zip(job_d,out_d,names):
             mkdir(cd)
-            job_f.append( os.path.join(jd, name + '.sh') )
-            subm_f.append( os.path.join(jd, name + '.condor') )
+            job_f.append( os.path.join(jd, 'job{}.sh'.format(name)) )
+            subm_f.append( os.path.join(jd, 'job{}.condor'.format(name)) )
 
             base_name = 'C$(Cluster)_P$(Process)'
             out_name = '{}.out'.format(base_name)
