@@ -70,12 +70,7 @@ def processing_outputs(args):
 
 @utils.set_pure_input_namespace
 def processing(args):
-    script = 'produce_trig_histos.py' if args.mode == 'histos' else 'produce_trig_counts.py'
-    prog = utils.build_prog_path(args.localdir, script)
-    jw = JobWriter()
-
     outs_data, outs_mc, _data_procs, _mc_procs = processing_outputs(args)
-
     # unite Data and MC lists
     outs_job    = outs_data[0] + outs_mc[0]
     outs_submit = outs_data[1] + outs_mc[1]
@@ -87,29 +82,30 @@ def processing(args):
         filelist, _ = utils.get_root_input_files(vproc, args.indir)
         
         #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-        command = utils.join_strings('{}'.format(prog),
-                                     '--outdir {}'   .format(args.outdir),
-                                     '--dataset {}'  .format(kproc),
-                                     '--sample {}'   .format(vproc),
-                                     '--isdata {}'   .format(int(vproc in args.data_vals)),
-                                     '--file ${1}',
-                                     '--subtag {}'   .format(args.subtag),
-                                     '--channels {}' .format(' '.join(args.channels,)),
-                                     '--triggers {}' .format(' '.join(args.triggers,)),
-                                     '--tprefix {}'  .format(args.tprefix),
-                                     sep=' ')
-        
+        pars = {'outdir'   : args.outdir,
+                'dataset'  : kproc,
+                'sample'   : vproc,
+                'isdata'   : int(vproc in args.data_vals),
+                'file'     : '${1}',
+                'subtag'   : args.subtag,
+                'channels' : ' '.join(args.channels),
+                'triggers' : ' '.join(args.triggers),
+                'tprefix'  : args.tprefix }
+        script = ('produce_trig_histos.py' if args.mode == 'histos'
+                  else 'produce_trig_counts.py')
+        comm = utils.build_script_command(name=script, sep=' ', **pars)
         if args.debug:
-            command += '--debug '
+            comm += '--debug '
 
         if args.mode == 'histos':
-            command += ( '--binedges_fname {} '.format(args.binedges_filename) +
-                         '--intersection_str {} '.format(args.intersection_str) +
-                         '--variables {} '.format(' '.join(args.variables,)) +
-                         '--nocut_dummy_str {}'.format(args.nocut_dummy_str)
-                        )
+            pars1 = {'binedges_fname'   : args.binedges_filename,
+                     'intersection_str' : args.intersection_str,
+                     'variables'        : ' '.join(args.variables,),
+                     'nocut_dummy_str'  : args.nocut_dummy_str}
+            comm += utils.build_script_command(name=None, sep=' ', **pars1)
 
-        jw.write_shell(filename=outs_job[i], command=command, localdir=args.localdir)
+        jw = JobWriter()
+        jw.write_shell(filename=outs_job[i], command=comm, localdir=args.localdir)
         jw.add_string('echo "Process {} done in mode {}."'.format(vproc,args.mode))
 
         #### Write submission file

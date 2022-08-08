@@ -6,6 +6,7 @@ import os
 import sys
 sys.path.append( os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
 from utils import utils
+from utils.utils import build_script_command as bsc
 from condor.job_writer import JobWriter
 
 @utils.set_pure_input_namespace
@@ -36,35 +37,38 @@ def hadd_counts_outputs(args):
 
 @utils.set_pure_input_namespace
 def hadd_counts(args):
-    """Adds TXT count files"""
     targets = run_hadd_counts_outputs(args)
     outs_job, outs_submit, outs_check, outs_log = hadd_counts_outputs(args)
-    jw = JobWriter()
 
     script = 'add_trig_counts.py'
-    prog = utils.build_prog_path(args.localdir, script)
-    command_base = utils.join_strings( '{}'.format(prog),
-                                       '--indir {}'.format(args.indir),
-                                       '--outdir {}'.format(args.outdir),
-                                       '--subtag {}'.format(args.subtag),
-                                       '--tprefix {}'.format(args.tprefix),
-                                       '--dataset_name {}'.format(args.dataset_name),
-                                       '--outfile_counts ${1}',
-                                       sep=' ')
+    pars = {'indir'          : args.indir,
+            'outdir'         : args.outdir,
+            'subtag'         : args.subtag,
+            'tprefix'        : args.tprefix,
+            'dataset_name'   : args.dataset_name,
+            'outfile_counts' : '${1}'}
+    comm_base = bsc(name=script, sep=' ', **pars)
 
-    command_first_step = ( command_base +
-                           '--sample ${2} ' +
-                           '--channel ${3} ' +
-                           '--aggregation_step 0' )
-    command_aggregation_step = ( command_base + '--infile_counts ${2} --channel ${3} --aggregation_step 1')
+    pars1 = {'--sample'           : '${2}',
+             '--channel'          : '${3}',
+             '--aggregation_step' : '0'}
+    comm1 = comm_base + bsc(name=None, sep=' ', **pars1)
+
+    pars2 = {'--infile_counts'    : '${2}',
+             '--channel'          : '${3}',
+             '--aggregation_step' : '1'}
+    comm2 = comm_base + bsc(name=None, sep=' ', **pars2)
     
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
+    jw = JobWriter()
     for out in outs_job:
         if out == outs_job[0]:
-            jw.write_shell(filename=out, command=command_first_step, localdir=args.localdir)
+            jw.write_shell(filename=out, command=comm1,
+                           localdir=args.localdir)
             jw.add_string('echo "{} without aggregation (dataset {}) done."'.format(script, args.dataset_name))
         elif out == outs_job[1]:
-            jw.write_shell(filename=out, command=command_aggregation_step, localdir=args.localdir)
+            jw.write_shell(filename=out, command=comm2,
+                           localdir=args.localdir)
             jw.add_string('echo "{} with aggregation {} done."'.format(script, args.dataset_name))
 
     #### Write submission file

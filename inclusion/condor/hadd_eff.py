@@ -45,11 +45,10 @@ def hadd_eff(args):
     targets = run_hadd_eff_outputs(args)
     outs_job, outs_submit, outs_check, outs_log = hadd_eff_outputs(args)
     jw = JobWriter()
-        
-    command = 'hadd -f ${1} ${@:2}'
+    comm = 'hadd -f ${1} ${@:2}'
 
     for out in outs_job:
-        jw.write_shell(filename=out, command=command, localdir=args.localdir)
+        jw.write_shell(filename=out, command=comm, localdir=args.localdir)
         if out == outs_job[0]:
             jw.add_string('echo "HaddEff done."')
         elif out == outs_job[1]:

@@ -11,7 +11,7 @@ from . import _trigger_shift, _triggers_map
 ######################################################################## 
 ### ARGUMENT PARSING ###################################################
 ########################################################################
-descr = 'Run example: `copython sf_inclusion/run.py --tag abc --data MET EG --mc_process TT`'
+descr = 'Run example: `copython inclusion/run.py --tag abc --data MET EG --mc_process TT`'
 parser = argparse.ArgumentParser(description=descr, formatter_class=RawTextHelpFormatter)
 parser.add_argument(
     '--nbins',
@@ -161,7 +161,9 @@ class cfg(luigi.Config):
 
     local_home = os.environ['HOME']
     local_cmssw = os.path.join(os.environ['CMSSW_VERSION'], 'src')
-    local_analysis_folder = 'METTriggerStudies'
+    analysis_folders = {'main'    : 'METTriggerStudies',
+                        'scripts' : 'scripts',
+                        'jobs'    : 'condor'}
 
     # general
     modes = {'histos': 'hist_',
@@ -171,7 +173,7 @@ class cfg(luigi.Config):
 
     subtag = ( FLAGS.subtag if FLAGS.subtag==''
                else ( '_' + FLAGS.subtag if FLAGS.subtag[0] != '_' else FLAGS.subtag ) )
-    local_folder = os.path.join(local_home, local_cmssw, local_analysis_folder)
+    local_folder = os.path.join(local_home, local_cmssw, analysis_folders['main'])
     targets_folder = os.path.join(data_storage, 'targets')
     targets_default_name = 'DefaultTarget.txt'
     intersection_str = '_PLUS_'

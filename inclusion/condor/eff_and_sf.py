@@ -1,6 +1,6 @@
 # coding: utf-8
 
-_all_ = [ "eff_and_sf", "eff_and_sf_outputs" ]
+_all_ = [ 'eff_and_sf', 'eff_and_sf_outputs' ]
 
 import sys
 sys.path.append("..")
@@ -25,33 +25,31 @@ def eff_and_sf_outputs(args):
 
 @utils.set_pure_input_namespace
 def eff_and_sf(args):
-    script = 'run_eff_and_sf.py'
-    prog = utils.build_prog_path(args.localdir, script)
     outs_job, outs_submit, outs_check, outs_log = eff_and_sf_outputs(args)
-    jw = JobWriter()
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-    command = utils.join_strings('{}'                .format(prog),
-                                 '--indir {}'        .format(args.indir),
-                                 '--outdir {}'       .format(args.outdir),
-                                 '--mc_keys {}'      .format(' '.join(args.mc_keys)),
-                                 '--mc_vals {}'      .format(' '.join(args.mc_vals)),
-                                 '--data_keys {}'    .format(' '.join(args.data_keys)),
-                                 '--data_vals {}'    .format(' '.join(args.data_vals)),
-                                 '--triggercomb ${1}',
-                                 '--channels {}'     .format(' '.join(args.channels)),
-                                 '--variables {}'    .format(' '.join(args.variables)),
-                                 '--subtag {}'       .format(args.subtag),
-                                 '--tprefix {}'      .format(args.tprefix),
-                                 '--canvas_prefix {}'.format(args.canvas_prefix),
-                                 sep=' ')
+    pars = {'indir'         : args.indir,
+            'outdir'        : args.outdir,
+            'mc_keys'       : ' '.join(args.mc_keys),
+            'mc_vals'       : ' '.join(args.mc_vals),
+            'data_keys'     : ' '.join(args.data_keys),
+            'data_vals'     : ' '.join(args.data_vals),
+            'triggercomb'   : '${1}',
+            'channels'      : ' '.join(args.channels),
+            'variables'     : ' '.join(args.variables),
+            'subtag'        : args.subtag,
+            'tprefix'       : args.tprefix,
+            'canvas_prefix' : args.canvas_prefix}
 
+    script = 'run_eff_and_sf.py'
+    comm = utils.build_script_command(name=script, sep=' ', **pars)
     if args.draw_independent_MCs:
-        command += '--draw_independent_MCs '
+        comm += '--draw_independent_MCs '
     if args.debug:
-        command += '--debug '
+        comm += '--debug '
 
-    jw.write_shell(outs_job, command=command, localdir=args.localdir)
+    jw = JobWriter()
+    jw.write_shell(outs_job, command=comm, localdir=args.localdir)
     jw.add_string('echo "{} done."'.format(script))
 
     #### Write submission file

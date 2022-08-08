@@ -17,13 +17,16 @@ from ROOT import (
     TLine,
 )
 
+from luigi_conf.luigi_cfg import cfg
+lcfg = cfg() #luigi configuration
+
 from luigi_conf import (
     _placeholder_cuts as pholdc,
     _sel,
     _triggers_map,
     _triggers_custom,
 )
-  
+
 def add_slash(s):
     """Adds single slash to path if absent"""
     s = s if s[-1] == '/' else s + '/'
@@ -35,11 +38,26 @@ def add_vnames(*vnames):
 def at_least_two(x1, x2, x3):
     """Checks if at least two out of the three boleans are True."""
     return x1 if (x2 or x3) else (x2 and x3)
+
+def build_script_command(name, sep, **kw):
+    if name:
+        p = build_script_path(name)
+        comm = 'python3 {}'.format(p)
+    else:
+        comm = ' '
+    for k,v in kw.items():
+        if len(k)==1:
+            comm += '-{} {}'.format(k,v)
+        else:
+            comm += '--{} {}'.format(k,v)
+        comm += sep
+    return comm
     
-def build_prog_path(base, script_name):
-    script = os.path.join(base, 'scripts')
-    script = os.path.join(script, script_name)
-    return 'python3 {}'.format(script)
+def build_script_path(name):
+    path = os.path.join(lcfg.local_folder,
+                        lcfg.analysis_folders['scripts'],
+                        name)
+    return path
             
 def create_single_dir(p):
     """Creates a directory if it does not exist"""

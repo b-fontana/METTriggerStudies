@@ -20,25 +20,23 @@ def eff_and_sf_aggr_outputs(args):
 
 @utils.set_pure_input_namespace
 def eff_and_sf_aggr(args):
-    script = 'aggr_eff_and_sf.py'
-    prog = utils.build_prog_path(args.localdir, script)
     outs_job, outs_submit, outs_check, outs_log = eff_and_sf_aggr_outputs(args)
-    jw = JobWriter()
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-    command = utils.join_strings('{}'.format(prog),
-                                 '--indir {}'.format(args.indir),
-                                 '--outdir {}'.format(args.outdir),
-                                 '--channel ${1}',
-                                 '--file_prefix {}'.format(args.file_prefix),
-                                 '--variables {}'.format(' '.join(args.variables,)),
-                                 '--subtag {}'.format(args.subtag),
-                                 sep=' ')
+    pars = {'--indir'       : args.indir,
+            '--outdir'      : args.outdir,
+            '--channel'     : '${1}',
+            '--file_prefix' : args.file_prefix,
+            '--variables'   : ' '.join(args.variables,),
+            '--subtag'      : args.subtag}
 
+    script = 'aggr_eff_and_sf.py'
+    comm = utils.build_script_command(name=script, sep=' ', **pars)
     if args.debug:
-        command += '--debug '
+        comm += '--debug '
 
-    jw.write_shell(filename=outs_job, command=command, localdir=args.localdir)
+    jw = JobWriter()
+    jw.write_shell(filename=outs_job, command=comm, localdir=args.localdir)
     jw.add_string('echo "{} done."'.format(script))
 
     #### Write submission file

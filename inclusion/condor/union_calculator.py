@@ -28,8 +28,6 @@ def union_calculator_outputs(args):
 
 @utils.set_pure_input_namespace
 def union_calculator(args):
-    script = 'run_union_calculator.py'
-    prog = utils.build_prog_path(args.localdir, script)
     jobs, subs, checks, logs = union_calculator_outputs(args)
     jw = JobWriter()
 
@@ -37,29 +35,29 @@ def union_calculator(args):
         filelist, inputdir = utils.get_root_input_files(proc, args.indir_root)
 
         #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-        command =  utils.join_strings(prog,
-                                      '--indir_root {}'.format(inputdir),
-                                      '--indir_json {}'.format(args.indir_json),
-                                      '--indir_eff {} '.format(args.indir_eff),
-                                      '--outdir {}'.format(args.outdir),
-                                      '--outprefix {}'.format(args.outprefix),
-                                      '--sample {}'.format(proc),
-                                      '--channels {}'.format(' '.join(args.channels,)),
-                                      '--triggers {}'.format(' '.join(args.triggers,)),
-                                      '--file_name ${1}',
-                                      '--closure_single_trigger ${2}',
-                                      '--variables {}'.format(' '.join(args.variables,)),
-                                      '--tag {}'.format(args.tag),
-                                      '--subtag {}'.format(args.subtag),
-                                      '--data_name {}'.format(args.data_name),
-                                      '--mc_name {}'.format(args.mc_name),
-                                      '--binedges_fname {}'.format(args.binedges_filename),
-                                      sep=' ')
-        
-        if args.debug:
-            command += '--debug '
+        pars = {'indir_root'             : inputdir,
+                'indir_json'             : args.indir_json,
+                'indir_eff'              : args.indir_eff,
+                'outdir'                 : args.outdir,
+                'outprefix'              : args.outprefix,
+                'sample'                 : proc,
+                'channels'               : ' '.join(args.channels,),
+                'triggers'               : ' '.join(args.triggers,),
+                'file_name'              : '${1}',
+                'closure_single_trigger' : '${2}',
+                'variables'              : ' '.join(args.variables,),
+                'tag'                    : args.tag,
+                'subtag'                 : args.subtag,
+                'data_name'              : args.data_name,
+                'mc_name'                : args.mc_name,
+                'binedges_fname'         : args.binedges_filename}
 
-        jw.write_shell(filename=jobs[i], command=command, localdir=args.localdir)
+        script = 'run_union_calculator.py'
+        comm = utils.build_script_command(name=script, sep=' ', **pars)
+        if args.debug:
+            comm += '--debug '
+
+        jw.write_shell(filename=jobs[i], command=comm, localdir=args.localdir)
         jw.add_string('echo "Process {} done."'.format(proc))
 
         #### Write submission file
