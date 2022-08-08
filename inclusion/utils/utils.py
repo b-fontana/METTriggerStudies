@@ -17,15 +17,8 @@ from ROOT import (
     TLine,
 )
 
-from luigi_conf.luigi_cfg import cfg
-lcfg = cfg() #luigi configuration
-
-from luigi_conf import (
-    _placeholder_cuts as pholdc,
-    _sel,
-    _triggers_map,
-    _triggers_custom,
-)
+import inclusion
+from inclusion import config
 
 def add_slash(s):
     """Adds single slash to path if absent"""
@@ -54,8 +47,9 @@ def build_script_command(name, sep, **kw):
     return comm
     
 def build_script_path(name):
-    path = os.path.join(lcfg.local_folder,
-                        lcfg.analysis_folders['scripts'],
+    path = os.path.join(config._local_home,
+                        config._local_cmssw, 
+                        config._analysis_folders['scripts'],
                         name)
     return path
             
@@ -133,7 +127,7 @@ def generate_trigger_combinations(channel, trigs):
 
     length1 = list(it.chain.from_iterable(it.combinations(sorted(pruntrigs), 1)))
     for elem in length1:
-        if elem not in _triggers_map.keys():
+        if elem not in config._triggers_map.keys():
             mess = '[utils.generate_trigger_combinations] '
             mess += 'Trigger {} is not supported'.format(elem)
             raise ValueError(mess)
@@ -171,16 +165,17 @@ def get_key_list(afile, inherits=['TH1']):
     return tmp
 
 def get_hnames(opt):
+    ph = config._placeholder_cuts
     if opt == 'Ref1D':
         return lambda a,b,c : 'Ref1D_{}_{}_{}'.format(a,b,c)
     elif opt == 'Trig1D':
-        return lambda a,b,c : 'Trig1D_{}_{}_{}{}'.format(a,b,c,pholdc)
+        return lambda a,b,c : 'Trig1D_{}_{}_{}{}'.format(a,b,c,ph)
     elif opt == 'Ref2D':
         return lambda a,b,c : 'Ref2D_{}_{}_{}'.format(a,b,c)
     elif opt == 'Trig2D':
-        return lambda a,b,c : 'Trig2D_{}_{}_{}{}'.format(a,b,c,pholdc)
+        return lambda a,b,c : 'Trig2D_{}_{}_{}{}'.format(a,b,c,ph)
     elif opt == 'Canvas2D':
-        return lambda a,b,c : 'Canvas2D_{}_{}_{}{}'.format(a,b,c,pholdc)
+        return lambda a,b,c : 'Canvas2D_{}_{}_{}{}'.format(a,b,c,ph)
     elif opt == 'Closure':
         return lambda a,b,c,d : 'Closure{}_{}_{}_{}'.format(a,b,c,d)
     else:
@@ -263,7 +258,7 @@ def is_channel_consistent(chn, pairtype):
                '>':  operator.gt,
                '==': operator.eq }
 
-    op, val = _sel[chn]['pairType']
+    op, val = config._sel[chn]['pairType']
     return opdict[op](pairtype, val)
   
 def join_name_trigger_intersection(tuple_element):
@@ -346,7 +341,7 @@ def rewrite_cut_string(oldstr, newstr, regex=False):
         _regex = _regex[0]
         newstr = _regex.replace('>', 'L').replace('<', 'S').replace('.', 'p')
     
-    res = oldstr.replace(pholdc, '_CUTS_'+newstr)
+    res = oldstr.replace(config._placeholder_cuts, '_CUTS_'+newstr)
     return res
 
 def set_pure_input_namespace(func):

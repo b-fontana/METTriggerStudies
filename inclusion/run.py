@@ -3,6 +3,10 @@
 _all_ = [ ]
     
 import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, parent_dir)
+
 import time
 import inspect
 import re
@@ -23,10 +27,10 @@ from condor import (
     )
 
 import luigi
+from luigi.util import inherits
 from luigi_conf import luigi_utils as lutils
-from luigi_conf.luigi_cfg import cfg, FLAGS
-lcfg = cfg() #luigi configuration
-
+import config
+lcfg = config.cfg() #luigi configuration
 
 ### Helper functions 
 
@@ -391,7 +395,7 @@ class SubmitDAG(lutils.ForceRun):
         os.system(com)
         time.sleep(0.5)
         self.edit_condor_submission_file(outfile + '.condor.sub')
-        time.sleep(0.5)
+        time.sleep(1.5)
         os.system('condor_submit {}.condor.sub'.format(outfile))
         time.sleep(0.5)
         os.system('condor_q')
@@ -418,18 +422,18 @@ class SubmitDAG(lutils.ForceRun):
                  Dag(),
                 ]
    
-if __name__ == "__main__":
-    utils.create_single_dir( lcfg.data_storage )
-    utils.create_single_dir( lcfg.targets_folder )
+
+utils.create_single_dir( lcfg.data_storage )
+utils.create_single_dir( lcfg.targets_folder )
     
-    last_tasks = [ SubmitDAG() ]
-                    
-    if FLAGS.scheduler == 'central':
-        luigi.build(last_tasks,
-                    workers=FLAGS.workers, local_scheduler=False, log_level='INFO')
-    if FLAGS.scheduler == 'local':
-        luigi.build(last_tasks,
-                    local_scheduler=True, log_level='INFO')
+last_tasks = [ SubmitDAG() ]
+
+if FLAGS.scheduler == 'central':
+    luigi.build(last_tasks,
+                workers=FLAGS.workers, local_scheduler=False, log_level='INFO')
+if FLAGS.scheduler == 'local':
+    luigi.build(last_tasks,
+                local_scheduler=True, log_level='INFO')
 
 else:
     raise RuntimeError('This script can only be run directly from the command line.')

@@ -4,8 +4,8 @@ _all_ = [ 'build_histograms' ]
 
 import re
 import os
-import sys
-sys.path.append( os.environ['PWD'] ) 
+# import sys
+# sys.path.append( os.environ['PWD'] ) 
 
 import functools
 import argparse
@@ -19,11 +19,17 @@ from ROOT import (
     TH2D,
 )
 
-from utils import utils
-from utils.utils import join_name_trigger_intersection as joinNTC
-from utils.selection import EventSelection
+import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
 
-from luigi_conf import _2Dpairs
+import inclusion
+from inclusion import selection
+from inclusion.utils import utils
+from inclusion.utils.utils import join_name_trigger_intersection as joinNTC
+
+from inclusion import config
 
 def build_histograms(infile, outdir, dataset, sample, isdata,
                      channels, variables, triggers,
@@ -72,12 +78,12 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
     for chn in channels:
         h2Ref[chn], h2Trig[chn] = ({} for _ in range(2))
         for onetrig in triggers:
-            if onetrig in _2Dpairs.keys():
+            if onetrig in config._2Dpairs.keys():
                 combtrigs = {x for x in triggercomb[chn] if onetrig in x}
                 for combtrig in combtrigs:
                     cstr = joinNTC(combtrig)
                     
-                    for j in _2Dpairs[onetrig]:
+                    for j in config._2Dpairs[onetrig]:
                         bin2D = ( nbins[j[0]][chn], binedges[j[0]][chn],
                                   nbins[j[1]][chn], binedges[j[1]][chn] )
                         vname = utils.add_vnames(j[0], j[1])
@@ -94,7 +100,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
 
-        sel = EventSelection(lf, dataset, isdata)
+        sel = selection.EventSelection(lf, dataset, isdata)
 
         #mcweight   = lf.get_leaf('MC_weight')
         pureweight = lf.get_leaf('PUReweight')
@@ -129,11 +135,11 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
             for var in variables:
                 pcuts1D[trig][var] = sel.var_cuts(trig, [var], args.nocut_dummy_str)
 
-            if trig in _2Dpairs.keys():
+            if trig in config._2Dpairs.keys():
                 # combtrigs = tuple(x for x in triggercomb if trig in x)
                 # for combtrig in combtrigs:
                 # pcuts2D[joinNTC(combtrig)] = {}
-                for j in _2Dpairs[trig]:
+                for j in config._2Dpairs[trig]:
                     vname = utils.add_vnames(j[0],j[1])
                     for t in triggers:
                         pcuts2D[t][vname] = sel.var_cuts(t, [j[0], j[1]], args.nocut_dummy_str)
@@ -196,7 +202,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
 
                 # fill 2D efficiencies
                 for onetrig in triggers:
-                    if onetrig in _2Dpairs.keys():
+                    if onetrig in config._2Dpairs.keys():
                         combtrigs = tuple(x for x in triggercomb[chn] if onetrig in x)
 
                         for combtrig in combtrigs:
@@ -209,7 +215,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                             if not sel.match_inters_with_dataset(combtrig, chn):
                                 continue
                             
-                            for j in _2Dpairs[onetrig]:
+                            for j in config._2Dpairs[onetrig]:
                                 vname = utils.add_vnames(j[0],j[1])
                                 fill_info = ( fill_var[j[0]][chn], fill_var[j[1]][chn],
                                               evt_weight )

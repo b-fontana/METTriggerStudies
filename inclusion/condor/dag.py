@@ -5,8 +5,6 @@ _all_ = [ 'WriteDAGManager', 'dag_outputs' ]
 import os
 import re
 import atexit # https://stackoverflow.com/questions/865115/how-do-i-correctly-clean-up-a-python-object
-import sys
-sys.path.append("..")
 
 from utils import utils
 from condor.job_writer import JobWriter
