@@ -20,11 +20,9 @@ def union_calculator_outputs(args):
     """
     base_name = 'UnionWeightsCalculator'
     data_folders = [ os.path.join( base_name, proc) for proc in args.mc_processes ]
-    names = [ base_name + '_' + x for x in args.mc_processes ]
     return JobWriter.define_output( localdir=args.localdir,
                                     data_folders=data_folders,
-                                    tag=args.tag,
-                                    names=names )
+                                    tag=args.tag )
 
 @utils.set_pure_input_namespace
 def union_calculator(args):
