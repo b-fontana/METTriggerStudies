@@ -24,7 +24,7 @@ from ROOT import (
     TString,
     )
 from utils import utils
-from luigi_conf import _2Dpairs, _extensions
+from luigi_conf import _pairs2D, _extensions
 
 def set_histo_props(histo, variables):
     histo.GetYaxis().SetNdivisions(6)
@@ -235,8 +235,8 @@ def draw_2D_sf_outputs(args):
     for proc in processes:
         for ch in args.channels:
             for trig in args.triggers:
-                if trig in _2Dpairs.keys():
-                    for variables in _2Dpairs[trig]:
+                if trig in _pairs2D.keys():
+                    for variables in _pairs2D[trig]:
                         add = proc + '_' + ch + '_' + trig + '_' + variables[0] + '_VS_' + variables[1]
                         canvas_data_name = 'EffData_' + args.data_name + '_' + add + args.subtag
                         canvas_mc_name = 'EffMC_' + args.data_name + '_' + add + args.subtag
@@ -262,16 +262,16 @@ def draw_2D_sf(args):
 
     # loop through variables, triggers, channels and processes
     dv = 0
-    for key in _2Dpairs:
-        dv += len(_2Dpairs[key])
+    for key in _pairs2D:
+        dv += len(_pairs2D[key])
     dc = len(args.channels) * dv
     dp = len(processes) * dc
     for ip,proc in enumerate(processes):
         for ic,ch in enumerate(args.channels):
             iv = -1
             for trig in args.triggers:
-                 if trig in _2Dpairs.keys():
-                    for variables in _2Dpairs[trig]:
+                 if trig in _pairs2D.keys():
+                    for variables in _pairs2D[trig]:
                         iv += 1
                         index = ip*dc + ic*dv + iv
                         names = [ outputs[index + dp*x] for x in range(len(extensions)) ]

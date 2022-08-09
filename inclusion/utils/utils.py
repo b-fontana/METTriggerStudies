@@ -108,6 +108,18 @@ def find_bin(edges, value, var):
 
     return binid
 
+def flatten_nested_dict(d):
+    """
+    Splits keys and values.
+    Dictionaries are not straightforward to pass as arguments.
+    """
+    keys, vals = ([] for _ in range(2))
+    for k,v in d.items():
+        for x in v:
+            keys.append(k)
+        vals.extend(v)
+    return keys, vals
+
 def generate_trigger_combinations(channel, trigs):
     """
     Set all possible trigger intersection combinations, per channel.

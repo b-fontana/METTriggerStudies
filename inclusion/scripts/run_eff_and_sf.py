@@ -693,14 +693,14 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name,
     outputs = {}
     
     # only running when one of the triggers in the intersection
-    # matches one of the triggers specified by the user with `_2Dpairs`
+    # matches one of the triggers specified by the user with `_pairs2D`
     splits = trigger_combination.split(intersection_str)
-    run = any({x in lc._2Dpairs.keys() for x in splits})
+    run = any({x in lc._pairs2D.keys() for x in splits})
 
     if run:
         for onetrig in splits:
-            if onetrig in lc._2Dpairs:
-                for j in lc._2Dpairs[onetrig]:
+            if onetrig in lc._pairs2D:
+                for j in lc._pairs2D[onetrig]:
                     vname = utils.add_vnames(j[0],j[1])
                     pref2d = args.canvas_prefix.replace('1', '2')
                     cname = _get_canvas_name(pref2d,
@@ -779,12 +779,12 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
             mess = 'Trigger {} was not defined in the configuration.'.format(x)
             raise ValueError(mess)
         
-    run = any({x in lc._2Dpairs for x in splits})
+    run = any({x in lc._pairs2D for x in splits})
     if run:
         for ip,proc in enumerate(processes):
             for ic,chn in enumerate(channels):
                 for onetrig in splits:
-                    if onetrig in lc._2Dpairs:
+                    if onetrig in lc._pairs2D:
                         names2D = run_eff_sf_2d_outputs(outdir, proc, data_name,
                                                         trigger_combination,
                                                         chn,
@@ -793,7 +793,7 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
                                                         draw_independent_MCs,
                                                         debug)
 
-                        for j in lc._2Dpairs[onetrig]:
+                        for j in lc._pairs2D[onetrig]:
                             vname = utils.add_vnames(j[0],j[1])
 
                             drawEffAndSF2D(proc, chn, vname,
