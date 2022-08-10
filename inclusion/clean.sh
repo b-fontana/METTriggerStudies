@@ -4,6 +4,7 @@
 help_description="prints this help message"
 tag_description="select tags"
 full_description="also removes HTCondor outputs"
+eos_description="/eos/ username (same used in lxplus)"
 debug_description="debug: prints everything, runs nothing"
 function print_usage_workflowClean {
     usage=" $(basename "$0") [-h] [-t -d]: removes folders
@@ -11,6 +12,7 @@ where:
     -h / --help  [ ${help_description} ]
     -t / --tag   [ ${tag_description} ]
     -f / --full  [ ${full_description} ]
+    --eos  [ ${eos_description} ]
     -d / --debug [ ${debug_description} ]
 
     Run example: bash $(basename "$0") -t 000 -t 111 -t 222 -t 654 -f -d
@@ -21,6 +23,7 @@ where:
 ### Argument parsing
 DEBUG=false
 FULL=false
+EOS_USER="bfontana"
 declare -a TAGS;
 while [[ $# -gt 0 ]]; do
     key="$1"
@@ -38,6 +41,11 @@ while [[ $# -gt 0 ]]; do
 	-f|--full)
 	    FULL=true
 	    shift # past argument
+	    ;;
+	--eos)
+	    EOS_USER="$2"
+	    shift # past argument
+	    shift # past value
 	    ;;
 	-d|--debug)
 	    DEBUG=true
@@ -80,7 +88,7 @@ function list_ignored_tags() {
 
 ### General parameters
 BASE_PATH="/data_CMS/cms/alves/TriggerScaleFactors"
-EOS_PATH="/eos/home-b/bfontana"
+EOS_PATH="/eos/home-${EOS_USER:0:1}/${EOS_USER}"
 
 declare -a OLD_TAGS=( $(/bin/ls -1 "${BASE_PATH}") )
 
@@ -129,6 +137,9 @@ echo "#############"
 declare -a COMMANDS;
 for tag in ${TAGS[@]}; do
 	if ${FULL}; then
+		### Ensure connection to /eos/ folder
+		[[ ! -d ${EOS_PATH} ]] && /opt/exp_soft/cms/t3/eos-login -username ${EOS_USER} -init
+		exit 1
 		COMMANDS+=( "rm -rf ${EOS_PATH}/www/TriggerScaleFactors/${tag}/"
 					"rm -rf ${BASE_PATH}/${tag}/"
 					"rm -rf jobs/${tag}/" )
