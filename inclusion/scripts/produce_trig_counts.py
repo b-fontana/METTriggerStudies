@@ -52,6 +52,8 @@ def get_trig_counts(outdir, dataset, sample, filename,
     
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
+        if entry%5000==0:
+            print('Processed {} entries.'.format(entry))
 
         sel = selection.EventSelection(lf, dataset, isdata)
         

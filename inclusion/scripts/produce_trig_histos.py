@@ -4,8 +4,6 @@ _all_ = [ 'build_histograms' ]
 
 import re
 import os
-# import sys
-# sys.path.append( os.environ['PWD'] ) 
 
 import functools
 import argparse
@@ -99,6 +97,8 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
     
     for entry in range(0,t_in.GetEntries()):
         t_in.GetEntry(entry)
+        if entry%5000==0:
+            print('Processed {} entries.'.format(entry))
 
         sel = selection.EventSelection(lf, dataset, isdata)
 
