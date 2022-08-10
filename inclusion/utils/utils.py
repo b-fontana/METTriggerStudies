@@ -47,9 +47,8 @@ def build_script_command(name, sep, **kw):
     return comm
     
 def build_script_path(name):
-    path = os.path.join(config._local_home,
-                        config._local_cmssw, 
-                        config._analysis_folders['scripts'],
+    path = os.path.join(config.local_folder,
+                        config.folders['scripts'],
                         name)
     return path
             
@@ -139,7 +138,7 @@ def generate_trigger_combinations(channel, trigs):
 
     length1 = list(it.chain.from_iterable(it.combinations(sorted(pruntrigs), 1)))
     for elem in length1:
-        if elem not in config._triggers_map.keys():
+        if elem not in config.trig_map.keys():
             mess = '[utils.generate_trigger_combinations] '
             mess += 'Trigger {} is not supported'.format(elem)
             raise ValueError(mess)
@@ -177,7 +176,7 @@ def get_key_list(afile, inherits=['TH1']):
     return tmp
 
 def get_hnames(opt):
-    ph = config._placeholder_cuts
+    ph = config.placeholder_cuts
     if opt == 'Ref1D':
         return lambda a,b,c : 'Ref1D_{}_{}_{}'.format(a,b,c)
     elif opt == 'Trig1D':
@@ -270,7 +269,7 @@ def is_channel_consistent(chn, pairtype):
                '>':  operator.gt,
                '==': operator.eq }
 
-    op, val = config._sel[chn]['pairType']
+    op, val = config.sel[chn]['pairType']
     return opdict[op](pairtype, val)
   
 def join_name_trigger_intersection(tuple_element):
@@ -343,8 +342,8 @@ def redraw_border():
     l.DrawLine(ROOT.gPad.GetUxmin(), ROOT.gPad.GetUymin(), ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymin()) #bottom border
 
 def remove(f):
-    if os.path.exists( f ):
-        os.remove( f )
+    if os.path.exists(f):
+        os.remove(f)
 
 def rewrite_cut_string(oldstr, newstr, regex=False):
     if regex:
@@ -353,7 +352,7 @@ def rewrite_cut_string(oldstr, newstr, regex=False):
         _regex = _regex[0]
         newstr = _regex.replace('>', 'L').replace('<', 'S').replace('.', 'p')
     
-    res = oldstr.replace(config._placeholder_cuts, '_CUTS_'+newstr)
+    res = oldstr.replace(config.placeholder_cuts, '_CUTS_'+newstr)
     return res
 
 def set_pure_input_namespace(func):

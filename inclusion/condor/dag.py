@@ -47,7 +47,7 @@ class WriteDAGManager:
 
     def build_job_id(self, job_path):
         jp = os.path.dirname(job_path)
-        regex = re.compile('.+/{}/(.+)'.format(config._analysis_folders['subm']))
+        regex = re.compile('.+/{}/(.+)'.format(config.folders['subm']))
         matches = regex.findall(jp)
         assert len(matches) == 1
         matches = matches[0].replace('/', '_')

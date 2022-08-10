@@ -2,15 +2,17 @@ import os
 
 storage = '/data_CMS/cms/' + os.environ['USER'] + '/TriggerScaleFactors/'
 
-folders = {'main'    : 'METTriggerStudies/inclusion',
+folders = {'base'    : 'METTriggerStudies',
+           'main'    : 'inclusion',
            'scripts' : 'scripts',
            'jobs'    : 'condor',
            'subm'    : 'submission',
            'outs'    : 'outputs' }
 
-local_folder = os.path.join(os.environ['HOME'],
-                            os.environ['CMSSW_VERSION'], 'src',
-                            folders['main'])
+base_folder = os.path.join(os.environ['HOME'],
+                           os.environ['CMSSW_VERSION'], 'src',
+                           folders['base'])
+local_folder = os.path.join(base_folder, folders['main'])
 
 targ_def = 'DefaultTarget.txt'
 inters_str = '_PLUS_'
@@ -35,15 +37,15 @@ sel = {'all':    {'pairType': ('<',  3),},
        'ee':     {'pairType': ('==', 4),} }
 
 # variables considered for calculating and plotting efficiencies
-var_eff = ['HT20', 'met_et', 'mht_et', 'metnomu_et', 'mhtnomu_et',
-           'dau1_pt', 'dau2_pt', 'dau1_eta', 'dau2_eta']
+var_eff = ('HT20', 'met_et', 'mht_et', 'metnomu_et', 'mhtnomu_et',
+           'dau1_pt', 'dau2_pt', 'dau1_eta', 'dau2_eta')
 
 # variables considered for plotting MC/data comparison distributions
-var_dist = ['dau1_pt', 'HH_mass']
+var_dist = ('dau1_pt', 'HH_mass')
 # joining the two lists above
 var_join = set(var_eff + var_dist)
 
-var_unionweights = ['dau1_pt', 'dau2_pt', 'dau1_eta', 'dau2_eta']
+var_unionweights = ('dau1_pt', 'dau2_pt', 'dau1_eta', 'dau2_eta')
 
 trig_linear = lambda x : {'mc': x, 'data': x}
 trig_shift  = lambda x : {'mc': x, 'data': x+5}
@@ -68,13 +70,13 @@ trig_custom = {'VBFTauCustom',
 cuts = {#'METNoMu120': {'metnomu_et': ('>', [120,180]), 'mhtnomu_et': ('>', [100,160])},
          #'IsoTau50':   {'dau1_pt': ('>', [80]), 'dau1_eta': ('<', [2.0]), 'met_et': ('>', [150])},
          }
-cuts_ignored = {'HT20':       [],
-                'met_et':     ['metnomu_et',],
-                'mht_et':     ['mhtnomu_et',],
-                'metnomu_et': ['met_et',],
-                'mhtnomu_et': ['mht_et',],
-                'dau1_pt':    [],
-                'dau2_pt':    []}
+cuts_ignored = {'HT20':       (),
+                'met_et':     ('metnomu_et',),
+                'mht_et':     ('mhtnomu_et',),
+                'metnomu_et': ('met_et',),
+                'mhtnomu_et': ('mht_et',),
+                'dau1_pt':    (),
+                'dau2_pt':    ()}
 
 ### Correlation Matrix
 corr = {'etau': {},
@@ -90,7 +92,7 @@ for x in pairs2D.values():
         assert( pair[0] in var_eff and pair[1] in var_eff )
 
 ### Binning
-pog_pt_binedges = [26., 30., 40., 50., 60., 120., 200]
+pog_pt_binedges = (26., 30., 40., 50., 60., 120., 200)
 binedges = {'dau1_pt': {'etau':   pog_pt_binedges,
                         'mutau':  pog_pt_binedges,
                         'tautau': pog_pt_binedges },
@@ -100,22 +102,20 @@ binedges = {'dau1_pt': {'etau':   pog_pt_binedges,
             }
 
 ### Data and MC samples
-inputs = [ '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220420/', ]
+inputs = ( '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220420/', )
 
 # names of the subfolders under '_inputs' above:
 # dictionary that maps specific general triggers to datasets 
-data = {'MET': ['SKIM_MET',],
-        'EG': ['SKIM_EGamma',]
+data = {'MET': ('SKIM_MET',),
+        'EG': ('SKIM_EGamma',)
         }
 
-mc_processes = {'ggfRadions': [],
-                'ggfBulkGraviton': [],
-                'vbfRadion': [],
-                'vbfBulkRadion': [],
-                'TT': ['SKIM_TT_fullyHad',
-                       'SKIM_TT_fullyLep',
-                       'SKIM_TT_semiLep',],
-                'DY': [],
+mc_processes = {'ggfRadions': (),
+                'ggfBulkGraviton': (),
+                'vbfRadion': (),
+                'vbfBulkRadion': (),
+                'TT': ('SKIM_TT_fullyHad', 'SKIM_TT_fullyLep', 'SKIM_TT_semiLep',),
+                'DY': (),
                 }
 
 

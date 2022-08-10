@@ -128,7 +128,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line parser')
 
     parser.add_argument('--binedges_dataset', dest='binedges_dataset', required=True, help='in directory')
-    parser.add_argument('--localdir', dest='localdir', default=os.getcwd(), help='out directory')
+    parser.add_argument('--localdir', dest='localdir', default=os.getcwd(), help='job out directory')
     parser.add_argument('--indir', dest='indir', required=True, help='in directory')
     parser.add_argument('--outdir', dest='outdir', required=True, help='out directory')
     parser.add_argument('--tag', dest='tag', required=True, help='tag')

@@ -58,10 +58,10 @@ class JobWriter:
         job_d, out_d = ([] for _ in range(2))
         for dataf in data_folders:
             job_d.append(os.path.join(base_d,
-                                      config._analysis_folders['subm'], dataf))
+                                      config.folders['subm'], dataf))
             mkdir(job_d[-1])
             out_d.append( os.path.join(base_d,
-                                       config._analysis_folders['outs'], dataf) )
+                                       config.folders['outs'], dataf) )
             mkdir(out_d[-1])
 
         job_f, subm_f, out_f, log_f = ([] for _ in range(4))

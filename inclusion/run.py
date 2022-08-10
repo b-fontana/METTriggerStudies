@@ -7,12 +7,13 @@ import sys
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, parent_dir)
 
-import time
-import inspect
 import re
+import luigi
+import time
 import argparse
 from argparse import RawTextHelpFormatter
 
+import config
 from utils import utils, luigi_utils as lutils
 from scripts import def_bins
 from condor import (
@@ -27,9 +28,6 @@ from condor import (
     processing,
     union_calculator,
     )
-
-import config
-
 
 descr = 'Run example: `copython inclusion/run.py --tag abc --data MET EG --mc_process TT`'
 parser = argparse.ArgumentParser(description=descr, formatter_class=RawTextHelpFormatter)
@@ -73,7 +71,7 @@ parser.add_argument(
     nargs='+', #1 or more arguments
     type=str,
     required=False,
-    default=list(config.trig_map.keys()),
+    default=tuple(config.trig_map.keys()),
     choices=config.trig_map.keys(),
     help='Select the processes over which the workflow will be run.'
     )
@@ -82,7 +80,7 @@ parser.add_argument(
     nargs='+', #1 or more arguments
     type=str,
     required=False,
-    default=list(config.trig_map.keys()),
+    default=tuple(config.trig_map.keys()),
     choices=config.trig_map.keys(),
     help=( 'Select the triggers considered for the closure.' +
           'The default is to consider all of them.\n' +
@@ -112,6 +110,7 @@ parser.add_argument(
     help='Select the variables to be used for the display of distributions.'
     )
 parser.add_argument(
+    '-t',
     '--tag',
     type=str,
     required=True,
@@ -165,153 +164,150 @@ subtag = ( FLAGS.subtag if FLAGS.subtag==''
            else ( '_' + FLAGS.subtag if FLAGS.subtag[0] != '_' else FLAGS.subtag ) )
 
 
-variables_join = list(set(FLAGS.variables_for_efficiencies + FLAGS.variables_for_distributions))
-
+variables_join = tuple(set(FLAGS.variables_for_efficiencies + FLAGS.variables_for_distributions))
 
 #### scripts/def_bins
-bins_params = luigi.DictParameter(
-    default={ 'nbins'             : FLAGS.nbins,
-              'binedges_filename' : binedges_filename,
-              'indir'             : config.inputs,
-              'outdir'            : data_storage,
-              'data_vals'         : data_vals,
-              'variables'         : variables_join,
-              'channels'          : FLAGS.channels,
-              'tag'               : FLAGS.tag,
-              'subtag'            : subtag,
-              'debug'             : FLAGS.debug_workflow} )
+bins_params = {'nbins'             : FLAGS.nbins,
+               'binedges_filename' : binedges_filename,
+               'indir'             : config.inputs,
+               'outdir'            : data_storage,
+               'data_vals'         : data_vals,
+               'variables'         : variables_join,
+               'channels'          : FLAGS.channels,
+               'tag'               : FLAGS.tag,
+               'subtag'            : subtag,
+               'debug'             : FLAGS.debug_workflow}
 
 
 #### condor/dag
-write_params = { 'data_name' : data_name,
-                 'localdir'  : config.local_folder,
-                 'tag'       : FLAGS.tag }
-
+write_params = {'data_name' : data_name,
+                'localdir'  : config.base_folder,
+                'tag'       : FLAGS.tag}
 
 #### scripts/produce_trig_histos
-histos_params = { 'binedges_filename' : binedges_filename,
-                  'indir'             : config.inputs,
-                  'outdir'            : data_storage,
-                  'localdir'          : config.local_folder,
-                  'data_keys'         : data_keys,
-                  'data_vals'         : data_vals,
-                  'mc_keys'           : mc_keys,
-                  'mc_vals'           : mc_vals,
-                  'triggers'          : FLAGS.triggers,
-                  'channels'          : FLAGS.channels,
-                  'variables'         : variables_join,
-                  'tag'               : FLAGS.tag,
-                  'subtag'            : subtag,
-                  'intersection_str'  : config.inters_str,
-                  'nocut_dummy_str'   : config.nocut_dummy,
-                  'debug'             : FLAGS.debug_workflow,
-                 }
+histos_params = {'binedges_filename' : binedges_filename,
+                 'indir'             : config.inputs,
+                 'outdir'            : data_storage,
+                 'localdir'  : config.base_folder,
+                 'data_keys'         : data_keys,
+                 'data_vals'         : data_vals,
+                 'mc_keys'           : mc_keys,
+                 'mc_vals'           : mc_vals,
+                 'triggers'          : FLAGS.triggers,
+                 'channels'          : FLAGS.channels,
+                 'variables'         : variables_join,
+                 'tag'               : FLAGS.tag,
+                 'subtag'            : subtag,
+                 'intersection_str'  : config.inters_str,
+                 'nocut_dummy_str'   : config.nocut_dummy,
+                 'debug'             : FLAGS.debug_workflow}
 
 #### scripts/hadd_histo
-haddhisto_params = luigi.DictParameter(
-    default={ 'indir'    : data_storage,
-              'localdir' : config.local_folder,
-              'tag'      : FLAGS.tag,
-              'subtag'   : subtag, } )
+haddhisto_params = {'indir'    : data_storage,
+                    'localdir'  : config.base_folder,
+                    'tag'      : FLAGS.tag,
+                    'subtag'   : subtag, }
 
 #### scripts/add_counts
-haddcounts_params = luigi.DictParameter(
-    default={ 'indir'    : data_storage,
-              'outdir'   : out_storage,
-              'localdir' : config.local_folder,
-              'tag'      : FLAGS.tag,
-              'subtag'   : subtag,
-              'channels' : FLAGS.channels, } )
+haddcounts_params = {'indir'    : data_storage,
+                     'outdir'   : out_storage,
+                     'localdir'  : config.base_folder,
+                     'tag'      : FLAGS.tag,
+                     'subtag'   : subtag,
+                     'channels' : FLAGS.channels, }
 
 #### drawTriggerScaleFactors
-sf_params = luigi.DictParameter(
-    default={ 'data_keys'            : data_keys,
-              'mc_keys'              : mc_keys,
-              'data_vals'            : data_vals,
-              'mc_vals'              : mc_vals,
-              'draw_independent_MCs' : False,
-              'indir'                : data_storage,
-              'outdir'               : out_storage,
-              'localdir'             : config.local_folder,
-              'triggers'             : FLAGS.triggers,
-              'channels'             : FLAGS.channels,
-              'variables'            : FLAGS.variables_for_efficiencies,
-              'binedges_filename'    : binedges_filename,
-              'tag'                  : FLAGS.tag,
-              'subtag'               : subtag,
-              'canvas_prefix'        : config.pref['canvas'],
-              'intersection_str'     : config.inters_str,
-              'nocut_dummy_str'      : config.nocut_dummy,
-              'debug'                : FLAGS.debug_workflow,} )
+sf_params = {'data_keys'            : data_keys,
+             'mc_keys'              : mc_keys,
+             'data_vals'            : data_vals,
+             'mc_vals'              : mc_vals,
+             'draw_independent_MCs' : False,
+             'indir'                : data_storage,
+             'outdir'               : out_storage,
+             'localdir'  : config.base_folder,
+             'triggers'             : FLAGS.triggers,
+             'channels'             : FLAGS.channels,
+             'variables'            : FLAGS.variables_for_efficiencies,
+             'binedges_filename'    : binedges_filename,
+             'tag'                  : FLAGS.tag,
+             'subtag'               : subtag,
+             'canvas_prefix'        : config.pref['canvas'],
+             'intersection_str'     : config.inters_str,
+             'nocut_dummy_str'      : config.nocut_dummy,
+             'debug'                : FLAGS.debug_workflow,}
 
-sfagg_params = luigi.DictParameter(
-    default={ 'indir'       : out_storage,
-              'outdir'      : out_storage,
-              'localdir'    : config.local_folder,
-              'channels'    : FLAGS.channels,
-              'variables'   : FLAGS.variables_for_efficiencies,
-              'tag'         : FLAGS.tag,
-              'subtag'      : subtag,
-              'file_prefix' : config.pref['sf'],
-              'debug'       : FLAGS.debug_workflow,} )
+sfagg_params = {'indir'       : out_storage,
+                'outdir'      : out_storage,
+                'localdir'  : config.base_folder,
+                'channels'    : FLAGS.channels,
+                'variables'   : FLAGS.variables_for_efficiencies,
+                'tag'         : FLAGS.tag,
+                'subtag'      : subtag,
+                'file_prefix' : config.pref['sf'],
+                'debug'       : FLAGS.debug_workflow,}
 
 #### scripts/discriminator
-discriminator_params = luigi.DictParameter(
-    default={ 'indir'            : data_storage,
-              'outdir'           : data_storage,
-              'localdir'         : config.local_folder,
-              'triggers'         : FLAGS.triggers,
-              'channels'         : FLAGS.channels,
-              'variables'        : FLAGS.variables_for_efficiencies,
-              'tag'              : FLAGS.tag,
-              'subtag'           : subtag,
-              'intersection_str' : config.inters_str,
-              'debug'            : FLAGS.debug_workflow,} )
+discriminator_params = {'indir'            : data_storage,
+                        'outdir'           : data_storage,
+                        'localdir'  : config.base_folder,
+                        'triggers'         : FLAGS.triggers,
+                        'channels'         : FLAGS.channels,
+                        'variables'        : FLAGS.variables_for_efficiencies,
+                        'tag'              : FLAGS.tag,
+                        'subtag'           : subtag,
+                        'intersection_str' : config.inters_str,
+                        'debug'            : FLAGS.debug_workflow,}
 
 #### scripts/calculator
-calculator_params = luigi.DictParameter(
-    default={ 'binedges_filename'       : binedges_filename,
-              'indir_root'              : config.inputs,
-              'indir_json'              : data_storage,
-              'indir_eff'               : out_storage,
-              'outdir'                  : data_storage,
-              'outprefix'               : config.pref['clos'],
-              'data_name'               : data_name,
-              'mc_name'                 : mc_name,
-              'mc_processes'            : mc_vals,
-              'localdir'                : config.local_folder,
-              'triggers'                : FLAGS.triggers,
-              'closure_single_triggers' : FLAGS.triggers_closure,
-              'channels'                : FLAGS.channels,
-              'variables'               : FLAGS.variables_for_efficiencies,
-              'tag'                     : FLAGS.tag,
-              'subtag'                  : subtag,
-              'debug'                   : FLAGS.debug_workflow,} )
+calculator_params = {'binedges_filename'       : binedges_filename,
+                     'indir_root'              : config.inputs,
+                     'indir_json'              : data_storage,
+                     'indir_eff'               : out_storage,
+                     'outdir'                  : data_storage,
+                     'outprefix'               : config.pref['clos'],
+                     'data_name'               : data_name,
+                     'mc_name'                 : mc_name,
+                     'mc_processes'            : mc_vals,
+                     'localdir'  : config.base_folder,
+                     'triggers'                : FLAGS.triggers,
+                     'closure_single_triggers' : FLAGS.triggers_closure,
+                     'channels'                : FLAGS.channels,
+                     'variables'               : FLAGS.variables_for_efficiencies,
+                     'tag'                     : FLAGS.tag,
+                     'subtag'                  : subtag,
+                     'debug'                   : FLAGS.debug_workflow,}
 
 #### scripts/closure
-closure_params = luigi.DictParameter(
-    default={ 'data_name'               : data_name,
-              'mc_name'                 : mc_name,
-              'binedges_filename'       : binedges_filename,
-              'indir_eff'               : out_storage,
-              'indir_union'             : data_storage,
-              'indir_json'              : data_storage,
-              'outdir'                  : out_storage,
-              'inprefix'                : config.pref['clos'],
-              'eff_prefix'              : config.pref['sf'],
-              'mc_processes'            : mc_vals,
-              'out_weighted_prefix'     : config.pref['clos'],
-              'out_original_prefix'     : config.pref['histos'],
-              'localdir'                : config.local_folder,
-              'closure_single_triggers' : FLAGS.triggers_closure,
-              'channels'                : FLAGS.channels,
-              'variables'               : FLAGS.variables_for_efficiencies,
-              'tag'                     : FLAGS.tag,
-              'subtag'                  : subtag,
-              'debug'                   : FLAGS.debug_workflow } )
- 
+closure_params = {'data_name'               : data_name,
+                  'mc_name'                 : mc_name,
+                  'binedges_filename'       : binedges_filename,
+                  'indir_eff'               : out_storage,
+                  'indir_union'             : data_storage,
+                  'indir_json'              : data_storage,
+                  'outdir'                  : out_storage,
+                  'inprefix'                : config.pref['clos'],
+                  'eff_prefix'              : config.pref['sf'],
+                  'mc_processes'            : mc_vals,
+                  'out_weighted_prefix'     : config.pref['clos'],
+                  'out_original_prefix'     : config.pref['histos'],
+                  'localdir'  : config.base_folder,
+                  'closure_single_triggers' : FLAGS.triggers_closure,
+                  'channels'                : FLAGS.channels,
+                  'variables'               : FLAGS.variables_for_efficiencies,
+                  'tag'                     : FLAGS.tag,
+                  'subtag'                  : subtag,
+                  'debug'                   : FLAGS.debug_workflow }
 
-### Tasks
+#### Helper functions
+
+def get_target_path(taskname, targets_dir):
+    re_txt = re.compile('\.txt')
+    target_path = os.path.join(targets_dir,
+                               re_txt.sub('_'+taskname+'.txt', config.targ_def)) 
+    return target_path
+
+
+#### Tasks
  
 class DefineBinning(luigi.Task):
     """Calculate the most adequate binning based on data."""
@@ -319,19 +315,19 @@ class DefineBinning(luigi.Task):
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
-        target = def_bins.define_binning_outputs( self.args )
+        target = def_bins.define_binning_outputs(self.args)
  
         #write the target files for debugging
-        target_path = lutils.get_target_path( self.__class__.__name__ )
-        utils.remove( target_path )
-        with open( target_path, 'w' ) as f:
+        target_path = get_target_path(self.__class__.__name__, targets_folder)
+        utils.remove(target_path)
+        with open(target_path, 'w') as f:
             f.write( target + '\n' )
  
         return luigi.LocalTarget(target)
  
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        def_bins.define_binning( self.args )
+        def_bins.define_binning(self.args)
  
  
 class Processing(lutils.ForceRun):
@@ -349,7 +345,8 @@ class Processing(lutils.ForceRun):
         o1_1, o1_2, _, _ = obj_data
         o2_1, o2_2, _, _ = obj_mc
  
-        target_path = lutils.get_target_path( self.__class__.__name__ )
+        target_path = get_target_path(self.__class__.__name__,
+                                             targets_folder)
         utils.remove( target_path )
  
         objs = (o1_1, o1_2, o2_1, o2_2)
@@ -382,11 +379,11 @@ class HaddHisto(lutils.ForceRun):
     def output(self):
         self.args['samples'] = lutils.luigi_to_raw( self.samples )
         self.args['dataset_name'] = self.dataset_name
-        o1, o2, _, _ = hadd_histo.hadd_histo_outputs( self.args )
+        o1, o2, _, _ = hadd_histo.hadd_histo_outputs(self.args)
         
-        target_path = lutils.get_target_path( self.__class__.__name__ )
-        utils.remove( target_path )
-        with open( target_path, 'w' ) as f:
+        target_path = get_target_path(self.__class__.__name__, targets_folder)
+        utils.remove(target_path)
+        with open(target_path, 'w') as f:
             for t in o1: f.write( t + '\n' )
             for t in o2: f.write( t + '\n' )
  
@@ -414,7 +411,8 @@ class HaddCounts(lutils.ForceRun):
         self.args['dataset_name'] = self.dataset_name
         o1, o2, _, _ = hadd_counts.hadd_counts_outputs( self.args )
         
-        target_path = lutils.get_target_path( self.__class__.__name__ )
+        target_path = get_target_path(self.__class__.__name__,
+                                             targets_folder)
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
             for t in o1: f.write( t + '\n' )
@@ -440,7 +438,8 @@ class EffAndSF(lutils.ForceRun):
     def output(self):
         o1, o2, _, _ = eff_and_sf.eff_and_sf_outputs(self.params)
  
-        target_path = lutils.get_target_path( self.__class__.__name__ )
+        target_path = get_target_path(self.__class__.__name__,
+                                             targets_folder)
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
             f.write( o1 + '\n' )
@@ -466,7 +465,8 @@ class EffAndSFAggr(lutils.ForceRun):
     def output(self):
         o1, o2, _, _ = eff_and_sf_aggr.eff_and_sf_aggr_outputs(self.params)
  
-        target_path = lutils.get_target_path( self.__class__.__name__ )
+        target_path = get_target_path(self.__class__.__name__,
+                                             targets_folder)
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
             f.write( o1 + '\n' )
@@ -489,7 +489,8 @@ class Discriminator(lutils.ForceRun):
     def output(self):
         o1, o2, _, _ = discriminator.discriminator_outputs(self.params)
  
-        target_path = lutils.get_target_path( self.__class__.__name__ )
+        target_path = get_target_path(self.__class__.__name__,
+                                             targets_folder)
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
             for t in o1: f.write( t + '\n' )
@@ -513,7 +514,7 @@ class UnionCalculator(lutils.ForceRun):
         o1, o2, _, _ = union_calculator.union_calculator_outputs(self.params)
  
         #write the target files for debugging
-        target_path = lutils.get_target_path( self.__class__.__name__ )
+        target_path = get_target_path(self.__class__.__name__,targets_folder)
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
             for t in o1: f.write( t + '\n' )
@@ -536,7 +537,7 @@ class Closure(lutils.ForceRun):
     def output(self):
         o1, o2, _, _ = closure.closure_outputs(self.params)
  
-        target_path = lutils.get_target_path( self.__class__.__name__ )
+        target_path = get_target_path(self.__class__.__name__,targets_folder)
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
             f.write( o1 + '\n' )
@@ -570,7 +571,7 @@ class Dag(lutils.ForceRun):
     def output(self):
         o1 = dag.dag_outputs(self.params)
  
-        target_path = lutils.get_target_path( self.__class__.__name__ )
+        target_path = get_target_path(self.__class__.__name__,targets_folder)
         utils.remove( target_path )
         with open( target_path, 'w' ) as f:
             f.write( o1 + '\n' )
@@ -638,7 +639,7 @@ class SubmitDAG(lutils.ForceRun):
                                                  machine='llrt3condor')
         contents.insert(ncontents-1, new_content + '\n')
         with open(out, 'w') as f:
-            contents = "".join(contents)
+            contents = ''.join(contents)
             f.write(contents)
         
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
@@ -648,12 +649,10 @@ class SubmitDAG(lutils.ForceRun):
         com += '-outfile_dir {} {}'.format(os.path.dirname(outfile), outfile)
  
         os.system(com)
-        time.sleep(0.5)
+        time.sleep(.5)
         self.edit_condor_submission_file(outfile + '.condor.sub')
-        time.sleep(1.5)
+        time.sleep(.5)
         os.system('condor_submit {}.condor.sub'.format(outfile))
-        time.sleep(0.5)
-        os.system('condor_q')
  
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
