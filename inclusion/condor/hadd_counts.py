@@ -80,7 +80,7 @@ def hadd_counts(args):
     for out1,out2,out3,out4 in zip(outs_job,outs_submit,outs_check,outs_log):
         jw.write_condor(filename=out2,
                         real_exec=utils.build_script_path(script),
-                        shell_executable=out1,
+                        shell_exec=out1,
                         outfile=out3,
                         logfile=out4,
                         queue='long',

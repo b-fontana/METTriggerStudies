@@ -98,14 +98,14 @@ class JobWriter:
     def write_condor(self, filename, shell_exec, real_exec, outfile, logfile,
                      queue, machine='llrt3condor'):
         self.filenames.append(filename)
-        batch_name = os.path.splitext(os.path.basename(executable))[0]
+        batch_name = os.path.dirname(shell_exec).split('/')[-1]
         m = self.endl.join(('Universe = vanilla',
                             'Executable = {}'.format(shell_exec),
                             'input = {}'.format(real_exec),
                             'output = {}'.format(outfile),
                             'error = {}'.format(outfile.replace('.out', '.err')),
                             'log = {}'.format(logfile),
-                            'getenv = true',ful
+                            'getenv = true',
                             '+JobBatchName="{}"'.format(batch_name),
                             'should_transfer_files = YES',
                             self.condor_specific_content(queue=queue, machine=machine)))
