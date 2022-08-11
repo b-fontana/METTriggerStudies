@@ -4,7 +4,7 @@ _all_ = [ 'aggregate_eff_and_sf' ]
 
 import os
 import sys
-parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+parent_dir = os.path.abspath(__file__ + 3 * '/..')
 sys.path.insert(0, parent_dir)
 
 import inclusion

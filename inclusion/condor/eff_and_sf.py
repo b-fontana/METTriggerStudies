@@ -2,14 +2,14 @@
 
 _all_ = [ 'eff_and_sf', 'eff_and_sf_outputs' ]
 
-import sys
-sys.path.append("..")
-
 import os
-import argparse
+import sys
+parent_dir = os.path.abspath(__file__ + 3 * '/..')
+sys.path.insert(0, parent_dir)
 
-from utils import utils
-from condor.job_writer import JobWriter
+import inclusion
+from inclusion.utils import utils
+from inclusion.condor.job_writer import JobWriter
 
 @utils.set_pure_input_namespace
 def eff_and_sf_outputs(args):

@@ -2,15 +2,16 @@
 
 _all_ = [ 'discriminator', 'discriminator_outputs' ]
 
-import sys
-sys.path.append("..")
-
 import os
-import argparse
-import ROOT
+import sys
+parent_dir = os.path.abspath(__file__ + 3 * '/..')
+sys.path.insert(0, parent_dir)
 
-from utils import utils
-from condor.job_writer import JobWriter
+import argparse
+
+import inclusion
+from inclusion.utils import utils
+from inclusion.condor.job_writer import JobWriter
 
 @utils.set_pure_input_namespace
 def discriminator_outputs(args):

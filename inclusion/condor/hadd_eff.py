@@ -4,7 +4,12 @@ _all_ = [ 'hadd_eff', 'hadd_eff_outputs' ]
 
 import os
 import sys
-from utils import utils
+parent_dir = os.path.abspath(__file__ + 3 * '/..')
+sys.path.insert(0, parent_dir)
+
+import inclusion
+from inclusion.utils import utils
+from inclusion.condor.job_writer import JobWriter
 
 def _subpaths(args):
     _tbase1 = args.outprefix

@@ -3,12 +3,12 @@
 _all_ = [ 'WriteDAGManager', 'dag_outputs' ]
 
 import os
+import sys
+parent_dir = os.path.abspath(__file__ + 3 * '/..')
+sys.path.insert(0, parent_dir)
+
 import re
 import atexit # https://stackoverflow.com/questions/865115/how-do-i-correctly-clean-up-a-python-object
-
-import sys
-parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, parent_dir)
 
 import inclusion
 from inclusion.utils import utils

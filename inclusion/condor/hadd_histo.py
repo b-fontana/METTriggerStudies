@@ -4,8 +4,12 @@ _all_ = [ 'hadd_histo', 'hadd_histo_outputs' ]
 
 import os
 import sys
-from utils import utils
-from condor.job_writer import JobWriter
+parent_dir = os.path.abspath(__file__ + 3 * '/..')
+sys.path.insert(0, parent_dir)
+
+import inclusion
+from inclusion.utils import utils
+from inclusion.condor.job_writer import JobWriter
 
 @utils.set_pure_input_namespace
 def run_hadd_histo_outputs(args):

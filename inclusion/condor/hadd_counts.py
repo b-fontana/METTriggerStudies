@@ -4,10 +4,13 @@ _all_ = [ 'hadd_counts', 'hadd_counts_outputs' ]
 
 import os
 import sys
-sys.path.append( os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
-from utils import utils
-from utils.utils import build_script_command as bsc
-from condor.job_writer import JobWriter
+parent_dir = os.path.abspath(__file__ + 3 * '/..')
+sys.path.insert(0, parent_dir)
+
+import inclusion
+from inclusion.utils import utils
+from inclusion.condor.job_writer import JobWriter
+from inclusion.utils.utils import build_script_command as bsc
 
 @utils.set_pure_input_namespace
 def run_hadd_counts_outputs(args):

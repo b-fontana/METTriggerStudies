@@ -2,16 +2,17 @@
 
 _all_ = [ 'processing', 'processing_outputs' ]
 
-import sys
-sys.path.append("..")
-
 import os
+import sys
+parent_dir = os.path.abspath(__file__ + 3 * '/..')
+sys.path.insert(0, parent_dir)
+
+import inclusion
+from inclusion.utils import utils
+from inclusion.condor.job_writer import JobWriter
+
 import re
 import argparse
-import ROOT
-
-from utils import utils
-from condor.job_writer import JobWriter
 
 def produce_trigger_outputs_sample(args, sample, ext):
     """
