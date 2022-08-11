@@ -26,7 +26,7 @@ from utils.utils import generate_trigger_combinations as gtc
 from utils.utils import join_name_trigger_intersection as joinNTC
 from utils.selection import EventSelection
 
-from luigi_conf import _variables_unionweights
+import config
 
 def eff_extractor(args, chn, effvars, nbins):
     """
@@ -185,7 +185,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
         efficiencies[chn] = eff_extractor(args, chn, effvars[chn], nbins)
         
         # initialization
-        for var in _variables_unionweights:
+        for var in config.var_unionweights:
             outdata[chn].create_group(var)
             prob_ratios[chn][var] = {}
             ref_prob_ratios[chn][var] = {}
@@ -208,7 +208,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
                 'HHKin_mass', 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
     _entries += args.variables
-    _entries += _variables_unionweights
+    _entries += config.var_unionweights
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
 
@@ -223,7 +223,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
         sel = selection.EventSelection(entries, dataset, isdata)
         
         for chn in args.channels:
-            if not utils.is_channel_consistent(chn, entries.pairType)):
+            if not utils.is_channel_consistent(chn, entries.pairType):
                 continue
 
             #triggers_for_master_formula = args.closure_single_trigger if single_trigger_closure else args.triggers
@@ -250,7 +250,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
             print('\n')
 
             if single_trigger_closure:
-                for var in _variables_unionweights:
+                for var in config.var_unionweights:
                     val = entries[var]
                     binid = utils.find_bin(binedges[var][chn], val, var)
                     for iw,weightvar in enumerate(effvars[chn][gtc(chn, args.triggers)[0][0]][0]): #any trigger works for the constant list
@@ -263,7 +263,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
     # no output if the closure will not be calculated
     if single_trigger_closure:
         for chn in args.channels:
-            for var in _variables_unionweights:
+            for var in config.var_unionweights:
                 for weightvar in effvars[chn][gtc(chn, args.triggers)[0][0]][0]: #any trigger works for the constant list
                     for trig in args.triggers:
                         for ibin in range(nbins[var][chn]):
