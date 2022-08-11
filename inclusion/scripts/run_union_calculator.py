@@ -92,7 +92,7 @@ def eff_extractor(args, chn, effvars, nbins):
              (efficiencies_mc,   efficiencies_mc_ehigh,   efficiencies_mc_elow) )
 
 
-def prob_calculator(efficiencies, effvars, leaf_manager, channel, closure_single_trigger, binedges):
+def prob_calculator(efficiencies, effvars, entries, channel, closure_single_trigger, binedges):
     """
     Calculates the probabilities of this event to fire at least one of the triggers under study.
 
@@ -114,7 +114,7 @@ def prob_calculator(efficiencies, effvars, leaf_manager, channel, closure_single
         #some triggers do not fire for some channels: Ele32 for mutau (for example)
         if joincomb in efficiencies[0][0]:
             variables = effvars[joincomb][0] #constant 1D variables, check [1] and [2] for changing ones
-            values = [ leaf_manager.get_leaf(x) for x in variables ]
+            values = [ entries[x] for x in variables ]
             assert len(variables) == 4 #Change according to the variable discriminator
             assert len(variables) == nweight_vars
 
@@ -166,7 +166,6 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
         raise ValueError('[' + os.path.basename(__file__) + '] {} does not exist.'.format(fname))
     f_in = TFile( fname )
     t_in = f_in.Get('HTauTauTree')
-    lfm = utils.LeafManager(fname, t_in)
 
     outdata = h5py.File(output, mode='w')
     prob_ratios, ref_prob_ratios = ({} for _ in range(2))
@@ -204,19 +203,27 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
                         prob_ratios[chn][var][weightvar][trig][str(ibin)] = []
                         ref_prob_ratios[chn][var][weightvar].setdefault(str(ibin), [])
 
-    # event loop; building scale factor 2D maps
-    for entry in range(0,t_in.GetEntries()):
-        t_in.GetEntry(entry)
+    t_in.SetBranchStatus('*', 0)
+    _entries = ('pass_triggerbit', 'RunNumber',
+                'HHKin_mass', 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
+                'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
+    _entries += args.variables
+    _entries += _variables_unionweights
+    for ientry in _entries:
+        t_in.SetBranchStatus(ientry, 1)
 
-        sel = EventSelection(lf, dataset, isdata)
+    nentries = t_in.GetEntriesFast()
+    for ientry,entry in enumerate(t_in):
+        if ientry%10000==0:
+             print('Processed {} entries out of {}.'.format(ientry, nentries))
+
+        # this is slow: do it once only
+        entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
         
-        trig_bit = lfm.get_leaf('pass_triggerbit')
-        run = lfm.get_leaf('RunNumber')
-        if not utils.pass_any_trigger(args.triggers, trig_bit, run, isdata=False):
-            continue
-
+        sel = selection.EventSelection(entries, dataset, isdata)
+        
         for chn in args.channels:
-            if not utils.is_channel_consistent(chn, lfm.get_leaf('pairType')):
+            if not utils.is_channel_consistent(chn, entries.pairType)):
                 continue
 
             #triggers_for_master_formula = args.closure_single_trigger if single_trigger_closure else args.triggers
@@ -244,7 +251,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
 
             if single_trigger_closure:
                 for var in _variables_unionweights:
-                    val = lfm.get_leaf(var)
+                    val = entries[var]
                     binid = utils.find_bin(binedges[var][chn], val, var)
                     for iw,weightvar in enumerate(effvars[chn][gtc(chn, args.triggers)[0][0]][0]): #any trigger works for the constant list
                         ref_prob_ratios[chn][var][weightvar][str(binid-1)].append(prob_ratio[iw])
