@@ -188,7 +188,7 @@ write_params = {'data_name' : data_name,
 histos_params = {'binedges_filename' : binedges_filename,
                  'indir'             : config.inputs,
                  'outdir'            : data_storage,
-                 'localdir'  : config.base_folder,
+                 'localdir'          : config.base_folder,
                  'data_keys'         : data_keys,
                  'data_vals'         : data_vals,
                  'mc_keys'           : mc_keys,
@@ -204,7 +204,7 @@ histos_params = {'binedges_filename' : binedges_filename,
 
 #### scripts/hadd_histo
 haddhisto_params = {'indir'    : data_storage,
-                    'localdir'  : config.base_folder,
+                    'localdir' : config.base_folder,
                     'tag'      : FLAGS.tag,
                     'subtag'   : subtag, }
 

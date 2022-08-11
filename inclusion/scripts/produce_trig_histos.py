@@ -98,11 +98,12 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
     _entries += tuple(variables)
     for ientry in _entries:
-        t_in.SetBranchStatus(ientry, 1)    
+        t_in.SetBranchStatus(ientry, 1)
 
+    nentries = t_in.GetEntriesFast()
     for ientry,entry in enumerate(t_in):
-        if ientry%1000==0:
-             print('Processed {} entries out of {}.'.format(ientry, t_in.GetEntries()))
+        if ientry%10000==0:
+             print('Processed {} entries out of {}.'.format(ientry, nentries))
 
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})

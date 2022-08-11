@@ -48,21 +48,29 @@ def get_trig_counts(outdir, dataset, sample, filename,
             c_ref[chn][tcomb_str] = 0
             c_inters[chn][tcomb_str] = 0
 
-    lf = utils.LeafManager(filename, t_in)
-    
-    for entry in range(0,t_in.GetEntries()):
-        t_in.GetEntry(entry)
-        if entry%5000==0:
-            print('Processed {} entries.'.format(entry))
+    t_in.SetBranchStatus('*', 0)
+    _entries = ('pass_triggerbit', 'RunNumber',
+                'HHKin_mass', 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
+                'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
+    for ientry in _entries:
+        t_in.SetBranchStatus(ientry, 1)
 
-        sel = selection.EventSelection(lf, dataset, isdata)
+    nentries = t_in.GetEntriesFast()
+    for ientry,entry in enumerate(t_in):
+        if ientry%10000==0:
+             print('Processed {} entries out of {}.'.format(ientry, nentries))
+
+        # this is slow: do it once only
+        entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
+        
+        sel = selection.EventSelection(entries, dataset, isdata)
         
         pass_trigger = {}
         for trig in triggers:
             pass_trigger[trig] = sel.trigger_bits(trig)
 
         for chn in channels:
-            if utils.is_channel_consistent(chn, lf.get_leaf('pairType')):
+            if utils.is_channel_consistent(chn, entries.pairType):
 
                 for tcomb in triggercomb[chn]:                
                     pass_trigger_intersection = functools.reduce(
