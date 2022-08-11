@@ -13,10 +13,10 @@ import inclusion
 from inclusion import config
 
 class EventSelection:
-    def __init__(self, entry, dataset, isdata, debug=False):
-        self.entry = entry
-        self.bit = self.entry.pass_triggerbit
-        self.run = self.entry.RunNumber
+    def __init__(self, entries, dataset, isdata, debug=False):
+        self.entries = entries
+        self.bit = self.entries.pass_triggerbit
+        self.run = self.entries.RunNumber
         self.isdata = isdata
         self.debug = debug
 
@@ -53,13 +53,13 @@ class EventSelection:
         For instance, the 'MET' dataset is connected to the MET Trigger.
         """
         reference = self.find_inters_for_reference(tcomb, channel)
-        
-        if reference == self.prefix + 'MET':
+
+        if reference == self.noref_str:
+            return False
+        elif reference == self.prefix + 'MET':
             return self.selection_cuts(lepton_veto=True)
         elif reference == self.prefix + 'EG':
             return self.selection_cuts(lepton_veto=True)
-        elif reference == self.noref_str:
-            return False
         else:
             if reference in self.ref_trigs:
                 mes = 'You forgot to include dataset {} in EventSelection!'
@@ -242,23 +242,23 @@ class EventSelection:
         Applies selection cut to one event.
         Returns `True` only if all selection cuts pass.
         """
-        mhh = self.entry.HHKin_mass
+        mhh = self.entries.HHKin_mass
         if mhh < 1:
             return False
 
-        pairtype = self.entry.pairType
-        dau1_eleiso = self.entry.dau1_eleMVAiso
-        dau1_muiso  = self.entry.dau1_iso
-        dau1_tauiso = self.entry.dau1_deepTauVsJet
-        dau2_tauiso = self.entry.dau2_deepTauVsJet
+        pairtype    = self.entries.pairType
+        dau1_eleiso = self.entries.dau1_eleMVAiso
+        dau1_muiso  = self.entries.dau1_iso
+        dau1_tauiso = self.entries.dau1_deepTauVsJet
+        dau2_tauiso = self.entries.dau2_deepTauVsJet
 
         # third lepton veto
-        nleps = self.entry.nleps
+        nleps = self.entries.nleps
         if nleps > 0 and lepton_veto:
             return False
 
         # require at least two b jet candidates
-        nbjetscand = self.entry.nbjetscand
+        nbjetscand = self.entries.nbjetscand
         if nbjetscand <= 1 and bjet_cuts:
             return False
 
@@ -284,8 +284,8 @@ class EventSelection:
             return False
 
         #((tauH_SVFIT_mass-116.)*(tauH_SVFIT_mass-116.))/(35.*35.) + ((bH_mass_raw-111.)*(bH_mass_raw-111.))/(45.*45.) <  1.0
-        svfit_mass = self.entry.tauH_SVFIT_mass
-        bh_mass    = self.entry.bH_mass_raw
+        svfit_mass = self.entries.tauH_SVFIT_mass
+        bh_mass    = self.entries.bH_mass_raw
 
         mcut = ( (svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
                  (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) <  1.0
@@ -370,7 +370,7 @@ class EventSelection:
 
             # additionally, by default do not cut on the variable(s) being plotted
             if avar not in variables and not ignore:
-                value = getattr(self.entry, avar) 
+                value = self.entries[avar]
 
                 for c in acut[1]:
                     flagname = flagnameJoin(avar, acut[0], c)

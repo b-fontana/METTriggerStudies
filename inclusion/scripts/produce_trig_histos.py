@@ -91,16 +91,28 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                             h2Trig[chn][vname] = {}
                         h2Trig[chn][vname][cstr] = {}
 
+    t_in.SetBranchStatus('*', 0)
+    _entries = ('pass_triggerbit', 'RunNumber',
+                'PUReweight', 'lumi', 'IdAndIsoSF_deep_pt',
+                'HHKin_mass', 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
+                'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
+    _entries += tuple(variables)
+    for ientry in _entries:
+        t_in.SetBranchStatus(ientry, 1)    
+
     for ientry,entry in enumerate(t_in):
         if ientry%1000==0:
              print('Processed {} entries out of {}.'.format(ientry, t_in.GetEntries()))
 
-        sel = selection.EventSelection(entry, dataset, isdata)
+        # this is slow: do it once only
+        entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
+        
+        sel = selection.EventSelection(entries, dataset, isdata)
 
-        #mcweight   = entry.MC_weight
-        pureweight = entry.PUReweight
-        lumi       = entry.lumi
-        idandiso   = entry.IdAndIsoSF_deep_pt
+        #mcweight   = entries.MC_weight
+        pureweight = entries.PUReweight
+        lumi       = entries.lumi
+        idandiso   = entries.IdAndIsoSF_deep_pt
         
         #if utils.is_nan(mcweight): mcweight=1
         if utils.is_nan(pureweight): pureweight=1
@@ -115,7 +127,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
         for v in variables:
             fill_var[v] = {}
             for chn in channels:
-                fill_var[v].update({chn: getattr(entry, v)})
+                fill_var[v].update({chn: entries[v]})
                 if fill_var[v][chn]>binedges[v][chn][-1]:
                     fill_var[v][chn]=binedges[v][chn][-1] # include overflow
 
@@ -148,7 +160,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                     [ pass_trigger[x] for x in tcomb ] )
 
         for chn in channels:
-            if utils.is_channel_consistent(chn, entry.pairType):
+            if utils.is_channel_consistent(chn, entries.pairType):
                 
                 # fill histograms for 1D efficiencies
                 for j in variables:
@@ -247,8 +259,6 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                                         
                                     if val and pass_trigger_intersection[cstr]:
                                         h2Trig[chn][vname][cstr][key].Fill(*fill_info)
-
-    f_in.Close()
     
     file_id = ''.join( c for c in infile[-10:] if c.isdigit() ) 
     outname = os.path.join(outdir, tprefix + sample + '_' + file_id + subtag + '.root')
@@ -283,7 +293,8 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
     if empty_files:
         mes = 'All 1D histograms are empty.'
         print('WARNING: ' + mes)
-    
+
+    f_in.Close()
     f_out.Close()
     print('Saving file {} at {} '.format(file_id, outname) )
 
@@ -308,7 +319,7 @@ parser.add_argument('--channels', dest='channels', required=True, nargs='+', typ
                     help='Select the channels over which the workflow will be run.' )
 parser.add_argument('--triggers', dest='triggers', required=True, nargs='+', type=str,
                     help='Select the triggers over which the workflow will be run.' )
-parser.add_argument('--variables',   dest='variables',   required=True, nargs='+', type=str,
+parser.add_argument('--variables',   dest='variables', required=True, nargs='+', type=str,
                     help='Select the variables over which the workflow will be run.' )
 parser.add_argument('--intersection_str', dest='intersection_str', required=False, default='_PLUS_',
                     help='String used to represent set intersection between triggers.')
