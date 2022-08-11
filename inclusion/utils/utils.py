@@ -282,32 +282,6 @@ def join_name_trigger_intersection(tuple_element):
 def join_strings(*args, sep=''):
     return sep.join(args)
     
-class LeafManager():
-    """
-    Class to manage TTree branch leafs, making sure they exist.
-    """
-    def __init__(self, fname, t_in):
-        self.fname = fname
-        self.tree = t_in
-        self.absent_leaves = set()
-        self.error_prefix = '[LeafManager]: '
-        
-    def get_leaf(self, leaf):
-        if not isinstance(leaf, str):
-            m = 'The leaf must be a string.'
-            raise TypeError(self.error_prefix + m)
-        try:
-            obj = self.tree.GetListOfBranches().FindObject(leaf)
-            name = obj.GetName()
-            getAttr = lambda x : getattr(self.tree, x)
-            return getAttr(leaf)
-        except ReferenceError:
-            if leaf not in self.absent_leaves:
-                m = 'WARNING: leaf ' + leaf + ' does not exist in file ' + self.fname
-                print(self.error_prefix + m)
-                self.absent_leaves.add(leaf)
-            return 0.
-
 def load_binning(afile, key, variables, channels):
     """
     Load the Binning stored in a previous task.
