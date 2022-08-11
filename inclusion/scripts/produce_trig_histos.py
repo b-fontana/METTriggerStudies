@@ -6,10 +6,8 @@ import re
 import os
 import functools
 import argparse
-import numpy as np
 import h5py
 import itertools as it
-from tqdm import tqdm
 
 from ROOT import (
     TFile,
@@ -93,34 +91,31 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                             h2Trig[chn][vname] = {}
                         h2Trig[chn][vname][cstr] = {}
 
-    lf = utils.LeafManager(infile, t_in)
+    for ientry,entry in enumerate(t_in):
+        if ientry%1000==0:
+             print('Processed {} entries out of {}.'.format(ientry, t_in.GetEntries()))
 
-    for entry in tqdm(range(0,t_in.GetEntries())):
-        t_in.GetEntry(entry)
-        # if entry%50==0:
-        #     print('Processed {} entries.'.format(entry))
+        sel = selection.EventSelection(entry, dataset, isdata)
 
-        sel = selection.EventSelection(lf, dataset, isdata)
-
-        #mcweight   = lf.get_leaf('MC_weight')
-        pureweight = lf.get_leaf('PUReweight')
-        lumi       = lf.get_leaf('lumi')
-        idandiso   = lf.get_leaf('IdAndIsoSF_deep_pt')
+        #mcweight   = entry.MC_weight
+        pureweight = entry.PUReweight
+        lumi       = entry.lumi
+        idandiso   = entry.IdAndIsoSF_deep_pt
         
-        #if np.isnan(mcweight): mcweight=1
-        if np.isnan(pureweight): pureweight=1
-        if np.isnan(lumi): lumi=1
-        if np.isnan(idandiso): idandiso=1
+        #if utils.is_nan(mcweight): mcweight=1
+        if utils.is_nan(pureweight): pureweight=1
+        if utils.is_nan(lumi): lumi=1
+        if utils.is_nan(idandiso): idandiso=1
 
         evt_weight = pureweight*lumi*idandiso
-        if np.isnan(evt_weight) or isdata:
+        if utils.is_nan(evt_weight) or isdata:
             evt_weight = 1
 
         fill_var = {}
         for v in variables:
             fill_var[v] = {}
             for chn in channels:
-                fill_var[v].update({chn: lf.get_leaf(v)})
+                fill_var[v].update({chn: getattr(entry, v)})
                 if fill_var[v][chn]>binedges[v][chn][-1]:
                     fill_var[v][chn]=binedges[v][chn][-1] # include overflow
 
@@ -153,7 +148,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                     [ pass_trigger[x] for x in tcomb ] )
 
         for chn in channels:
-            if utils.is_channel_consistent(chn, lf.get_leaf('pairType')):
+            if utils.is_channel_consistent(chn, entry.pairType):
                 
                 # fill histograms for 1D efficiencies
                 for j in variables:

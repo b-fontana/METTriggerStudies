@@ -13,10 +13,10 @@ import inclusion
 from inclusion import config
 
 class EventSelection:
-    def __init__(self, leaf_manager, dataset, isdata, debug=False):
-        self.bit = leaf_manager.get_leaf('pass_triggerbit')
-        self.run = leaf_manager.get_leaf('RunNumber')
-        self.lm = leaf_manager
+    def __init__(self, entry, dataset, isdata, debug=False):
+        self.entry = entry
+        self.bit = self.entry.pass_triggerbit
+        self.run = self.entry.RunNumber
         self.isdata = isdata
         self.debug = debug
 
@@ -242,23 +242,23 @@ class EventSelection:
         Applies selection cut to one event.
         Returns `True` only if all selection cuts pass.
         """
-        mhh = self.lm.get_leaf('HHKin_mass')
+        mhh = self.entry.HHKin_mass
         if mhh < 1:
             return False
 
-        pairtype = self.lm.get_leaf('pairType')
-        dau1_eleiso = self.lm.get_leaf('dau1_eleMVAiso')
-        dau1_muiso  = self.lm.get_leaf('dau1_iso')
-        dau1_tauiso = self.lm.get_leaf('dau1_deepTauVsJet')
-        dau2_tauiso = self.lm.get_leaf('dau2_deepTauVsJet')
+        pairtype = self.entry.pairType
+        dau1_eleiso = self.entry.dau1_eleMVAiso
+        dau1_muiso  = self.entry.dau1_iso
+        dau1_tauiso = self.entry.dau1_deepTauVsJet
+        dau2_tauiso = self.entry.dau2_deepTauVsJet
 
         # third lepton veto
-        nleps = self.lm.get_leaf('nleps')
+        nleps = self.entry.nleps
         if nleps > 0 and lepton_veto:
             return False
 
         # require at least two b jet candidates
-        nbjetscand = self.lm.get_leaf('nbjetscand')
+        nbjetscand = self.entry.nbjetscand
         if nbjetscand <= 1 and bjet_cuts:
             return False
 
@@ -284,8 +284,8 @@ class EventSelection:
             return False
 
         #((tauH_SVFIT_mass-116.)*(tauH_SVFIT_mass-116.))/(35.*35.) + ((bH_mass_raw-111.)*(bH_mass_raw-111.))/(45.*45.) <  1.0
-        svfit_mass = self.lm.get_leaf('tauH_SVFIT_mass')
-        bh_mass    = self.lm.get_leaf('bH_mass_raw')
+        svfit_mass = self.entry.tauH_SVFIT_mass
+        bh_mass    = self.entry.bH_mass_raw
 
         mcut = ( (svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
                  (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) <  1.0
@@ -370,7 +370,7 @@ class EventSelection:
 
             # additionally, by default do not cut on the variable(s) being plotted
             if avar not in variables and not ignore:
-                value = self.lm.get_leaf(avar) 
+                value = getattr(self.entry, avar) 
 
                 for c in acut[1]:
                     flagname = flagnameJoin(avar, acut[0], c)

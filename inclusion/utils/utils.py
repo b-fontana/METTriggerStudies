@@ -271,7 +271,10 @@ def is_channel_consistent(chn, pairtype):
 
     op, val = config.sel[chn]['pairType']
     return opdict[op](pairtype, val)
-  
+
+def is_nan(num):
+    return num!= num
+
 def join_name_trigger_intersection(tuple_element):
     inters = '_PLUS_'
     return inters.join(tuple_element)
