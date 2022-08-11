@@ -4,12 +4,12 @@ _all_ = [ 'build_histograms' ]
 
 import re
 import os
-
 import functools
 import argparse
 import numpy as np
 import h5py
 import itertools as it
+from tqdm import tqdm
 
 from ROOT import (
     TFile,
@@ -94,11 +94,11 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                         h2Trig[chn][vname][cstr] = {}
 
     lf = utils.LeafManager(infile, t_in)
-    
-    for entry in range(0,t_in.GetEntries()):
+
+    for entry in tqdm(range(0,t_in.GetEntries())):
         t_in.GetEntry(entry)
-        if entry%5000==0:
-            print('Processed {} entries.'.format(entry))
+        # if entry%50==0:
+        #     print('Processed {} entries.'.format(entry))
 
         sel = selection.EventSelection(lf, dataset, isdata)
 
@@ -127,7 +127,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
         # whether the event passes cuts (1 and 2-dimensional_ and single triggers
         pass_trigger, pcuts1D, pcuts2D = ({} for _ in range(3))
         for trig in triggers:
-            pcuts2D[trig] = {}    
+            pcuts2D[trig] = {}
         for trig in triggers:
             pass_trigger[trig] = sel.trigger_bits(trig)
 
@@ -253,10 +253,10 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                                     if val and pass_trigger_intersection[cstr]:
                                         h2Trig[chn][vname][cstr][key].Fill(*fill_info)
 
+    f_in.Close()
+    
     file_id = ''.join( c for c in infile[-10:] if c.isdigit() ) 
     outname = os.path.join(outdir, tprefix + sample + '_' + file_id + subtag + '.root')
-    print('Saving file {} at {} '.format(file_id, outname) )
-
     empty_files = True
     
     f_out = TFile(outname, 'RECREATE')
@@ -290,7 +290,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
         print('WARNING: ' + mes)
     
     f_out.Close()
-    f_in.Close()
+    print('Saving file {} at {} '.format(file_id, outname) )
 
 # Parse input arguments
 parser = argparse.ArgumentParser(description='Command line parser')

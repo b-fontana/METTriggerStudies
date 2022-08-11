@@ -1,6 +1,6 @@
 # coding: utf-8
 
-_all_ = [ ]
+_all_ = [ 'EventSelection' ]
 
 from collections import defaultdict
 

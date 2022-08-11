@@ -1,6 +1,6 @@
 # coding: utf-8
 
-_all_ = [ "processing", "processing_outputs" ]
+_all_ = [ 'processing', 'processing_outputs' ]
 
 import sys
 sys.path.append("..")
