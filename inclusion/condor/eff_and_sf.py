@@ -53,12 +53,13 @@ def eff_and_sf(args):
     jw.add_string('echo "{} done."'.format(script))
 
     #### Write submission file
-    jw.write_condor( filename=outs_submit,
-                     executable=outs_job,
-                     outfile=outs_check,
-                     logfile=outs_log,
-                     queue='long',
-                     machine='llrt3condor' )
+    jw.write_condor(filename=outs_submit,
+                    real_exec=utils.build_script_path(script),
+                    shell_exec=outs_job,
+                    outfile=outs_check,
+                    logfile=outs_log,
+                    queue='long',
+                    machine='llrt3condor')
 
     qlines = []
     for chn in args.channels:

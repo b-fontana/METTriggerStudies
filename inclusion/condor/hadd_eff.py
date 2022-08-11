@@ -57,12 +57,13 @@ def hadd_eff(args):
     #### Write submission file
     inputs_join = []
     for out1,out2,out3,out4 in zip(outs_job,outs_submit,outs_check,outs_log):
-        jw.write_condor( filename=out2,
-                         executable=out1,
-                         outfile=out3,
-                         logfile=out4,
-                         queue='long',
-                         machine='llrt3condor' )
+        jw.write_condor(filename=out2,
+                        real_exec='dev/null/',
+                        shell_exec=out1,
+                        outfile=out3,
+                        logfile=out4,
+                        queue='long',
+                        machine='llrt3condor')
 
         qlines = []
         if out1 == outs_job[0]:

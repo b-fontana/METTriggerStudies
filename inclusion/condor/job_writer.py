@@ -98,18 +98,19 @@ class JobWriter:
         if mode not in self.exts:
             raise ValueError('The mode {} is not supported.'.format(mode))
 
-    def write_condor(self, filename, executable, outfile, logfile,
+    def write_condor(self, filename, shell_exec, real_exec, outfile, logfile,
                      queue, machine='llrt3condor'):
-        self.filenames.append( filename )
+        self.filenames.append(filename)
         batch_name = os.path.splitext(os.path.basename(executable))[0]
         m = self.endl.join(('Universe = vanilla',
-                            'Executable = {}'.format(executable),
-                            'input = /dev/null',
+                            'Executable = {}'.format(shell_exec),
+                            'input = {}'.format(real_exec),
                             'output = {}'.format(outfile),
                             'error = {}'.format(outfile.replace('.out', '.err')),
                             'log = {}'.format(logfile),
-                            'getenv = true',
+                            'getenv = true',ful
                             '+JobBatchName="{}"'.format(batch_name),
+                            'should_transfer_files = YES',
                             self.condor_specific_content(queue=queue, machine=machine)))
         m += self.endl
         with open(filename, 'w') as self.f:

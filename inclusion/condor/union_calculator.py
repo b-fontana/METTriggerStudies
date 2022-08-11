@@ -59,12 +59,13 @@ def union_calculator(args):
         jw.add_string('echo "Process {} done."'.format(proc))
 
         #### Write submission file
-        jw.write_condor( filename=subs[i],
-                         executable=jobs[i],
-                         outfile=checks[i],
-                         logfile=logs[i],
-                         queue='long',
-                         machine='llrt3condor' )
+        jw.write_condor(filename=subs[i],
+                        real_exec=utils.build_script_path(script),
+                        shell_exec=jobs[i],
+                        outfile=checks[i],
+                        logfile=logs[i],
+                        queue='long',
+                        machine='llrt3condor')
 
         qlines = []
         for listname in filelist:

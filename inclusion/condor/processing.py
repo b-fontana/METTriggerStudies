@@ -109,12 +109,13 @@ def processing(args):
         jw.add_string('echo "Process {} done in mode {}."'.format(vproc,args.mode))
 
         #### Write submission file
-        jw.write_condor( filename=outs_submit[i],
-                         executable=outs_job[i],
-                         outfile=outs_check[i],
-                         logfile=outs_log[i],
-                         queue='long',
-                         machine='llrt3condor' )
+        jw.write_condor(filename=outs_submit[i],
+                        real_exec=utils.build_script_path(script),
+                        shell_exec=outs_job[i],
+                        outfile=outs_check[i],
+                        logfile=outs_log[i],
+                        queue='long',
+                        machine='llrt3condor')
         
         qlines = []
         for listname in filelist:
