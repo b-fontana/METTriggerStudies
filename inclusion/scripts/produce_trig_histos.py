@@ -2,19 +2,6 @@
 
 _all_ = [ 'build_histograms' ]
 
-import re
-import os
-import functools
-import argparse
-import h5py
-import itertools as it
-
-from ROOT import (
-    TFile,
-    TH1D,
-    TH2D,
-)
-
 import os
 import sys
 parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,10 +9,20 @@ sys.path.insert(0, parent_dir)
 
 import inclusion
 from inclusion import selection
+from inclusion import config
 from inclusion.utils import utils
 from inclusion.utils.utils import join_name_trigger_intersection as joinNTC
 
-from inclusion import config
+import re
+import functools
+import argparse
+import itertools as it
+
+from ROOT import (
+    TFile,
+    TH1D,
+    TH2D,
+)
 
 def build_histograms(infile, outdir, dataset, sample, isdata,
                      channels, variables, triggers,

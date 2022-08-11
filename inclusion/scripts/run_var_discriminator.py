@@ -3,13 +3,14 @@
 _all_ = [ 'discriminator' ]
 
 import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
+
 import glob
 import re
 import json
 import argparse
-
-import sys
-sys.path.append( os.environ['PWD'] ) 
 
 from utils import utils
 from utils.utils import join_name_trigger_intersection as joinNTC

@@ -1,9 +1,12 @@
 # coding: utf-8
 
-_all_ = [ "draw_distr", "draw_distr_outputs" ]
+_all_ = [ 'draw_distr', 'draw_distr_outputs' ]
 
 import os
 import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
+
 import functools
 import h5py
 from copy import copy
@@ -16,8 +19,9 @@ from ROOT import (
     THStack,
 )
 
-from luigi_conf import _extensions
-from utils import utils
+import inclusion
+from inclusion.utils import utils
+from inclusion import config
 
 def get_histogram_max_counts(h):
   """
@@ -150,7 +154,7 @@ def plot_dist(args, channel, variable, trig, save_names, binedges, nbins):
   l.DrawLatex( lX, lY,        'Channel: '+latexChannel)
   l.DrawLatex( lX, lY-lYstep, 'Trigger: '+trig)
   
-  for aname in save_names[:len(_extensions)]:
+  for aname in save_names[:len(config.extensions)]:
     canvas.SaveAs( aname )
 
   c_stack = TCanvas( os.path.basename(save_names[0]).split('.')[0]+'_stack', 'canvas_stack', 600, 600 )
@@ -161,7 +165,7 @@ def plot_dist(args, channel, variable, trig, save_names, binedges, nbins):
     hs.Add(h)
   hs.Draw('NOCLEAR')
   
-  for aname in save_names[len(_extensions):]:
+  for aname in save_names[len(config.extensions):]:
     c_stack.SaveAs( aname )
 
 
@@ -175,8 +179,8 @@ def draw_distr_outputs(args):
       out.append( os.path.join( base, figname + dotString + ext ) )
 
   #add more outputs (used for stacked histograms)
-  extensions = list(_extensions)
-  for ext in _extensions:
+  extensions = list(config.extensions)
+  for ext in config.extensions:
     extensions.append( '_stack.' + ext )
     
   outputs = [[] for _ in range(len(extensions))]

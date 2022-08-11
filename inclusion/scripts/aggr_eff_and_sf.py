@@ -1,13 +1,18 @@
 # coding: utf-8
 
-_all_ = [ "aggregate_eff_and_sf" ]
+_all_ = [ 'aggregate_eff_and_sf' ]
 
 import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
+
+import inclusion
+from inclusion.utils import utils
+
 import re
 import argparse
 import ctypes
-import numpy as np
-from copy import copy
 
 import ROOT
 ROOT.gROOT.SetBatch(True)
@@ -18,14 +23,6 @@ from ROOT import (
     TH2D,
     )
 from array import array
-
-import os
-import sys
-parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, parent_dir)
-
-import inclusion
-from inclusion.utils import utils
 
 def convert_graph_to_hist(graph):
     """

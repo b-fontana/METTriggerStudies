@@ -1,16 +1,18 @@
 # coding: utf-8
 
-_all_ = [ "add_trigger_counts" ]
+_all_ = [ 'add_trigger_counts' ]
 
 import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
+
 import re
 import numpy as np
 import argparse
-import sys
-sys.path.append(os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
-from pathlib import Path
 
-from utils import utils
+import inclusion
+from inclusion.utils import utils
 
 @utils.set_pure_input_namespace
 def add_trigger_counts(args):
@@ -200,8 +202,6 @@ if __name__ == '__main__':
     parser.add_argument('--outfile_counts', dest='outfile_counts', required=True,
                         help='Name of output csv files with counts.')
     parser.add_argument('--channel', dest='channel', required=False, help='Channel to be used for the aggregation.')
-
-    args = parser.parse_args()
-    utils.print_configuration(args)
+    args = utils.parse_args(parser)
     
     add_trigger_counts(args)

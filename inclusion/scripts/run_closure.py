@@ -1,10 +1,16 @@
 # coding: utf-8
 
-_all_ = [ "run_closure", "run_closure_outputs" ]
+_all_ = [ 'run_closure', 'run_closure_outputs' ]
 
 import os
 import sys
-sys.path.append( os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
+
+import inclusion
+from inclusion.utils import utils
+from inclusion import config
+
 import json
 import glob
 import h5py
@@ -31,9 +37,6 @@ from ROOT import (
     kGreen,
     kRed,
 )
-
-from utils import utils
-import luigi_conf as lc
 
 def get_div_error_propagation(num, den, enum, eden):
     """Ratio propagation of errors (numerator and denominator as arguments)"""

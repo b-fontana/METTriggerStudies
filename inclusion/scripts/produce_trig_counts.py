@@ -1,23 +1,21 @@
 # coding: utf-8
 
-_all_ = [ "get_trig_counts" ]
+_all_ = [ 'get_trig_counts' ]
 
-import re
 import os
 import sys
-import functools
-import argparse
-import fnmatch
-from array import array
-from ROOT import TFile
-
-import sys
-sys.path.append( os.environ['PWD'] ) 
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
 
 import inclusion
 from inclusion import selection
 from inclusion.utils import utils
 from inclusion.utils.utils import join_name_trigger_intersection as joinNTC
+
+import functools
+import argparse
+from array import array
+from ROOT import TFile
 
 def get_trig_counts(outdir, dataset, sample, filename,
                     channels, triggers,

@@ -1,8 +1,12 @@
 # coding: utf-8
 
-_all_ = [ "run_eff_sf_1d", "run_eff_sf_1d_outputs", "run_eff_sf_2d_outputs" ]
+_all_ = [ 'run_eff_sf_1d', 'run_eff_sf_1d_outputs', 'run_eff_sf_2d_outputs' ]
 
 import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
+
 import argparse
 import ctypes
 import numpy as np
@@ -26,10 +30,9 @@ from ROOT import (
     TPad,
 )
 
-import sys
-sys.path.append( os.path.join(os.environ['CMSSW_BASE'], 'src', 'METTriggerStudies'))
-from utils import utils
-import luigi_conf as lc
+import inclusion
+from inclusion.utils import utils
+from inclusion import config
 
 def paint2d(channel, trig):
     lX1, lX2, lY, lYstep = 0.04, 0.7, 0.96, 0.03
@@ -657,12 +660,12 @@ def _get_canvas_name(prefix, proc, chn, var, trig, data_name, subtag):
     """
     add = proc + '_' + chn + '_' + var + '_TRG_' + trig
     n = prefix + data_name + '_' + add
-    n += lc._placeholder_cuts + subtag
+    n += config.placeholder_cuts + subtag
     return n
 
 def run_eff_sf_1d_outputs(outdir, data_name, mc_name,
                        trigger_combination, channels, variables, subtag):
-    outputs = [[] for _ in range(len(lc._extensions))]
+    outputs = [[] for _ in range(len(config.extensions))]
     processes = mc_name #CHANGE !!!! IF STUDYING MCs SEPARATELY
   
     for proc in processes:
@@ -675,12 +678,12 @@ def run_eff_sf_1d_outputs(outdir, data_name, mc_name,
                 thisbase = os.path.join(outdir, ch, var, '')
                 utils.create_single_dir(thisbase)
 
-                for ext,out in zip(lc._extensions, outputs):
+                for ext,out in zip(config.extensions, outputs):
                     _out = os.path.join(thisbase, canvas_name + '.' + ext)
                     out.append(_out)                    
 
     #join all outputs in the same list
-    return sum(outputs, []), lc._extensions, processes
+    return sum(outputs, []), config.extensions, processes
 
 def run_eff_sf_2d_outputs(outdir, proc, data_name,
                           trigger_combination, channel, subtag,
@@ -693,14 +696,14 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name,
     outputs = {}
     
     # only running when one of the triggers in the intersection
-    # matches one of the triggers specified by the user with `_pairs2D`
+    # matches one of the triggers specified by the user with `config.pairs2D`
     splits = trigger_combination.split(intersection_str)
-    run = any({x in lc._pairs2D.keys() for x in splits})
+    run = any({x in config.pairs2D.keys() for x in splits})
 
     if run:
         for onetrig in splits:
-            if onetrig in lc._pairs2D:
-                for j in lc._pairs2D[onetrig]:
+            if onetrig in config.pairs2D:
+                for j in config.pairs2D[onetrig]:
                     vname = utils.add_vnames(j[0],j[1])
                     pref2d = args.canvas_prefix.replace('1', '2')
                     cname = _get_canvas_name(pref2d,
@@ -720,7 +723,7 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name,
 
                     for kn,vn in cnames.items():
                         outputs[vname][kn] = []
-                        for ext in lc._extensions:
+                        for ext in config.extensions:
                             if ext not in ('C', 'root'): #remove extra outputs to reduce noise
                                 outputs[vname][kn].append(os.path.join(thisbase, vn + '.' + ext))
     
@@ -775,16 +778,16 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
 
     splits = trigger_combination.split(intersection_str)
     for x in splits:
-        if x not in lc._triggers_map:
+        if x not in config.trig_map:
             mess = 'Trigger {} was not defined in the configuration.'.format(x)
             raise ValueError(mess)
         
-    run = any({x in lc._pairs2D for x in splits})
+    run = any({x in config.pairs2D for x in splits})
     if run:
         for ip,proc in enumerate(processes):
             for ic,chn in enumerate(channels):
                 for onetrig in splits:
-                    if onetrig in lc._pairs2D:
+                    if onetrig in config.pairs2D:
                         names2D = run_eff_sf_2d_outputs(outdir, proc, data_name,
                                                         trigger_combination,
                                                         chn,
@@ -793,7 +796,7 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
                                                         draw_independent_MCs,
                                                         debug)
 
-                        for j in lc._pairs2D[onetrig]:
+                        for j in config.pairs2D[onetrig]:
                             vname = utils.add_vnames(j[0],j[1])
 
                             drawEffAndSF2D(proc, chn, vname,

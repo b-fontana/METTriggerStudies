@@ -3,20 +3,18 @@
 _all_ = [ 'define_binning', 'define_binning_outputs' ]
 
 import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
+
 import glob
 import h5py
 import uproot as up
 import pandas as pd
 import argparse
 
-import os
-import sys
-parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, parent_dir)
-
 import inclusion
 from inclusion.utils import utils
-
 from inclusion import config
 
 def skip_data_loop(args):

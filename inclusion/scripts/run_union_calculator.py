@@ -5,13 +5,22 @@
 _all_ = [ 'run_union_weights_calculator', 'run_union_weights_calculator_outputs' ]
 
 import os
+import sys
+parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, parent_dir)
+
+import inclusion
+from inclusion import selection
+from inclusion import config
+from inclusion.utils import utils
+from inclusion.utils.utils import join_name_trigger_intersection as joinNTC
+from inclusion.utils.utils import generate_trigger_combinations as gtc
+
 import h5py
 import re
 import glob
 import json
 import argparse
-import sys
-sys.path.append( os.environ['PWD'] )
 import numpy as np
 
 from ROOT import (
@@ -20,13 +29,6 @@ from ROOT import (
     TIter
 )
 gROOT.SetBatch(True)
-
-from utils import utils
-from utils.utils import generate_trigger_combinations as gtc
-from utils.utils import join_name_trigger_intersection as joinNTC
-from utils.selection import EventSelection
-
-import config
 
 def eff_extractor(args, chn, effvars, nbins):
     """
