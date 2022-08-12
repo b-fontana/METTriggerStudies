@@ -56,7 +56,7 @@ def get_trig_counts(outdir, dataset, sample, filename,
     nentries = t_in.GetEntriesFast()
     for ientry,entry in enumerate(t_in):
         if ientry%10000==0:
-             print('Processed {} entries out of {}.'.format(ientry, nentries))
+            print('{} / {}.'.format(ientry, nentries))
 
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
