@@ -62,7 +62,7 @@ def hadd_histo(args):
     inputs_join = []
     for out1,out2,out3,out4 in zip(outs_job,outs_submit,outs_check,outs_log):
         jw.write_condor(filename=out2,
-                        real_exec='/dev/null/',
+                        real_exec='/dev/null',
                         shell_exec=out1,
                         outfile=out3,
                         logfile=out4,
