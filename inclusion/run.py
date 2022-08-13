@@ -67,21 +67,12 @@ parser.add_argument(
     help='Select the MC processes over which the workflow will be run.'
     )
 parser.add_argument(
-    '--triggers',
-    nargs='+', #1 or more arguments
-    type=str,
-    required=False,
-    default=tuple(config.trig_map.keys()),
-    choices=config.trig_map.keys(),
-    help='Select the processes over which the workflow will be run.'
-    )
-parser.add_argument(
     '--triggers_closure',
     nargs='+', #1 or more arguments
     type=str,
     required=False,
-    default=tuple(config.trig_map.keys()),
-    choices=config.trig_map.keys(),
+    default=config.triggers,
+    choices=config.triggers,
     help=( 'Select the triggers considered for the closure.' +
           'The default is to consider all of them.\n' +
           'To do a closure for one single trigger efficiency (which ' +
@@ -140,7 +131,7 @@ parser.add_argument(
     help="Explicitly print the functions being run for each task, for workflow debugging purposes."
     )
 FLAGS, _ = parser.parse_known_args()
-assert set(FLAGS.triggers_closure).issubset(set(FLAGS.triggers))
+assert set(FLAGS.triggers_closure).issubset(set(config.triggers))
          
 user_data = {k:v for k,v in config.data.items()
              if k in FLAGS.data}
@@ -193,7 +184,7 @@ histos_params = {'binedges_filename' : binedges_filename,
                  'data_vals'         : data_vals,
                  'mc_keys'           : mc_keys,
                  'mc_vals'           : mc_vals,
-                 'triggers'          : FLAGS.triggers,
+                 'triggers'          : config.triggers,
                  'channels'          : FLAGS.channels,
                  'variables'         : variables_join,
                  'tag'               : FLAGS.tag,
@@ -223,7 +214,7 @@ sf_params = {'data_name'            : data_name,
              'indir'                : data_storage,
              'outdir'               : out_storage,
              'localdir'             : config.base_folder,
-             'triggers'             : FLAGS.triggers,
+             'triggers'             : config.triggers,
              'channels'             : FLAGS.channels,
              'variables'            : FLAGS.variables_for_efficiencies,
              'binedges_filename'    : binedges_filename,
@@ -247,8 +238,8 @@ sfagg_params = {'indir'       : out_storage,
 #### scripts/discriminator
 discriminator_params = {'indir'            : data_storage,
                         'outdir'           : data_storage,
-                        'localdir'  : config.base_folder,
-                        'triggers'         : FLAGS.triggers,
+                        'localdir'         : config.base_folder,
+                        'triggers'         : config.triggers,
                         'channels'         : FLAGS.channels,
                         'variables'        : FLAGS.variables_for_efficiencies,
                         'tag'              : FLAGS.tag,
@@ -267,7 +258,7 @@ calculator_params = {'binedges_filename'       : binedges_filename,
                      'mc_name'                 : mc_name,
                      'mc_processes'            : mc_vals,
                      'localdir'  : config.base_folder,
-                     'triggers'                : FLAGS.triggers,
+                     'triggers'                : config.triggers,
                      'closure_single_triggers' : FLAGS.triggers_closure,
                      'channels'                : FLAGS.channels,
                      'variables'               : FLAGS.variables_for_efficiencies,

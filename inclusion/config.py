@@ -62,6 +62,7 @@ trig_map = {'IsoMu24': trig_linear(0),
                               'VBFTauHPS': trig_shift(8)},
             'METNoMu120': trig_shift(9),
             'IsoTau180': trig_shift(11)}
+triggers = tuple(trig_map.keys())
 trig_custom = {'VBFTauCustom',
                'IsoDoubleTauCustom',
                'IsoMuIsoTauCustom',
@@ -86,7 +87,7 @@ corr = {'etau': {},
 ### 2D Plots
 pairs2D = {'METNoMu120': (('metnomu_et', 'mhtnomu_et'),
                           ('dau1_pt', 'dau1_eta'),)}
-assert( set(pairs2D.keys()).issubset(set(trig_map.keys())) )
+assert( set(pairs2D.keys()).issubset(set(triggers)) )
 for x in pairs2D.values():
     for pair in x:
         assert( pair[0] in var_eff and pair[1] in var_eff )
@@ -123,8 +124,8 @@ mc_processes = {'ggfRadions': (),
 # Sanity checks
 assert len(set(var_unionweights)) == len(var_unionweights)
 assert set(var_unionweights).issubset(set(var_eff))
-assert(trig_custom.issubset(set(trig_map.keys())))
-assert(set(cuts.keys()).issubset(set(trig_map.keys())) )
+assert(trig_custom.issubset(set(triggers)))
+assert(set(cuts.keys()).issubset(set(triggers)) )
 for x in cuts.values():
     assert( set(x.keys()).issubset(set(var_eff)) )
 

@@ -138,7 +138,7 @@ def generate_trigger_combinations(channel, trigs):
 
     length1 = list(it.chain.from_iterable(it.combinations(sorted(pruntrigs), 1)))
     for elem in length1:
-        if elem not in config.trig_map.keys():
+        if elem not in config.triggers:
             mess = '[utils.generate_trigger_combinations] '
             mess += 'Trigger {} is not supported'.format(elem)
             raise ValueError(mess)
@@ -272,6 +272,11 @@ def is_channel_consistent(chn, pairtype):
     op, val = config.sel[chn]['pairType']
     return opdict[op](pairtype, val)
 
+def is_trigger_comb_in_channel(chn, tcomb):
+    possible_trigs = generate_trigger_combinations(chn, config.triggers)
+    split = tuple(tcomb.split(config.inters_str))
+    return split in possible_trigs
+                               
 def is_nan(num):
     return num!= num
 

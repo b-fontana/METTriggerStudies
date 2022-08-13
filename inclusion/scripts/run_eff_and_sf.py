@@ -7,6 +7,10 @@ import sys
 parent_dir = os.path.abspath(__file__ + 3 * '/..')
 sys.path.insert(0, parent_dir)
 
+import inclusion
+from inclusion.utils import utils
+from inclusion import config
+
 import argparse
 import ctypes
 import numpy as np
@@ -29,10 +33,6 @@ from ROOT import (
     TLine,
     TPad,
 )
-
-import inclusion
-from inclusion.utils import utils
-from inclusion import config
 
 def paint2d(channel, trig):
     lX1, lX2, lY, lYstep = 0.04, 0.7, 0.96, 0.03
@@ -80,7 +80,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
         if k not in keylist_mc:
             m = 'Histogram {} was present in data but not in MC.\n'.format(k)
             m += 'This is possible, but highly unlikely (based on statistics).\n'
-            m += 'Check everything is correct, and .qedit this check if so.\n'
+            m += 'Check everything is correct, and edit this check if so.\n'
             m += 'Data file: {}\n'.format(name_data)
             m += 'MC file: {}'.format(name_mc)
             raise ValueError(m)
@@ -425,8 +425,6 @@ def draw_eff_and_sf_2d(proc, channel, joinvars, trig,
     _name = lambda a,b,c,d : a + b + c + d + '.root'
 
     name_data = os.path.join(indir, _name( tprefix, data_name, '_Sum', subtag ) )
-    print(name_data)
-    quit()
 
     file_data = TFile.Open(name_data, 'READ')
 
@@ -664,16 +662,16 @@ def _get_canvas_name(prefix, proc, chn, var, trig, data_name, subtag):
     return n
 
 def run_eff_sf_1d_outputs(outdir, data_name, mc_name,
-                          trigger_combination, channels, variables, subtag):
+                          tcomb, channels, variables, subtag):
     outputs = [[] for _ in range(len(config.extensions))]
-    processes = mc_name #CHANGE !!!! IF STUDYING MCs SEPARATELY
+    processes = [mc_name] #CHANGE !!!! IF STUDYING MCs SEPARATELY
   
     for proc in processes:
         for ch in channels:
             for var in variables:
                 canvas_name = _get_canvas_name(args.canvas_prefix,
                                                proc, ch, var,
-                                               trigger_combination,
+                                               tcomb,
                                                data_name, subtag)
                 thisbase = os.path.join(outdir, ch, var, '')
                 utils.create_single_dir(thisbase)
@@ -686,7 +684,7 @@ def run_eff_sf_1d_outputs(outdir, data_name, mc_name,
     return sum(outputs, []), config.extensions, processes
 
 def run_eff_sf_2d_outputs(outdir, proc, data_name,
-                          trigger_combination, channel, subtag,
+                          tcomb, channel, subtag,
                           intersection_str, debug):
     """
     This output function is not ready to be used in the luigi framework.
@@ -697,7 +695,7 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name,
     
     # only running when one of the triggers in the intersection
     # matches one of the triggers specified by the user with `config.pairs2D`
-    splits = trigger_combination.split(intersection_str)
+    splits = tcomb.split(intersection_str)
     run = any({x in config.pairs2D.keys() for x in splits})
 
     if run:
@@ -708,7 +706,7 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name,
                     pref2d = args.canvas_prefix.replace('1', '2')
                     cname = _get_canvas_name(pref2d,
                                              proc, channel, vname,
-                                             trigger_combination,
+                                             tcomb,
                                              data_name, subtag)
 
                     outputs[vname] = {}
@@ -738,43 +736,48 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name,
 
 
 def run_eff_sf_1d(indir, outdir, data_name, mc_name,
-                  trigger_combination, channels, variables, subtag,
+                  tcomb, channels, variables, subtag,
                   tprefix, intersection_str, debug):
     
     outs1D, extensions, processes = run_eff_sf_1d_outputs(outdir,
-                                                          mc_name, data_name,
-                                                          trigger_combination,
+                                                          data_name, mc_name,
+                                                          tcomb,
                                                           channels, variables,
                                                           subtag)
-  
+
+    triggercomb = {}
+    for chn in channels:
+        triggercomb[chn] = utils.generate_trigger_combinations(chn, config.triggers)
+
     dv = len(args.variables)
     dc = len(args.channels) * dv
     dp = len(processes) * dc
 
     for ip,proc in enumerate(processes):
         for ic,chn in enumerate(channels):
+            if not utils.is_trigger_comb_in_channel(chn, tcomb):
+                continue
             for iv,var in enumerate(variables):
                 index = ip*dc + ic*dv + iv
                 names1D = [ outs1D[index + dp*x] for x in range(len(extensions)) ]
 
                 if args.debug:
-                    for name in names:
+                    for name in names1D:
                         print('[=debug=] {}'.format(name))
-                        m = ( "process={}, channel={}, variable={}"
+                        m = ( 'process={}, channel={}, variable={}'
                               .format(proc, chn, var) )
-                        m += ( ", trigger_combination={}\n"
-                               .format(trigger_combination) )
+                        m += ', trigger_combination={}\n'.format(tcomb)
                         print(m)
 
                 draw_eff_and_sf_1d(proc, chn, var,
-                                   trigger_combination,
+                                   tcomb,
                                    names1D,
                                    tprefix,
                                    indir, subtag,
                                    mc_name, data_name,
                                    intersection_str, debug)
 
-    splits = trigger_combination.split(intersection_str)
+    splits = tcomb.split(intersection_str)
     for x in splits:
         if x not in config.trig_map:
             mess = 'Trigger {} was not defined in the configuration.'.format(x)
@@ -784,10 +787,13 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
     if run:
         for ip,proc in enumerate(processes):
             for ic,chn in enumerate(channels):
+                if not utils.is_trigger_comb_in_channel(chn, tcomb):
+                    continue
                 for onetrig in splits:
                     if onetrig in config.pairs2D:
-                        names2D = run_eff_sf_2d_outputs(outdir, proc, data_name,
-                                                        trigger_combination,
+                        names2D = run_eff_sf_2d_outputs(outdir, proc,
+                                                        data_name,
+                                                        tcomb,
                                                         chn,
                                                         subtag,
                                                         intersection_str,
@@ -796,14 +802,14 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
                         for j in config.pairs2D[onetrig]:
                             vname = utils.add_vnames(j[0],j[1])
 
-                            drawEffAndSF2D(proc, chn, vname,
-                                           trigger_combination,
-                                           names2D,
-                                           tprefix,
-                                           indir, subtag,
-                                           mc_name, data_name,
-                                           intersection_str,
-                                           debug)
+                            draw_eff_and_sf_2d(proc, chn, vname,
+                                               tcomb,
+                                               names2D,
+                                               tprefix,
+                                               indir, subtag,
+                                               mc_name, data_name,
+                                               intersection_str,
+                                               debug)
 
 parser = argparse.ArgumentParser(description='Draw trigger scale factors')
 parser.add_argument('--indir', help='Inputs directory', required=True)

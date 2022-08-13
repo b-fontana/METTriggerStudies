@@ -326,6 +326,7 @@ parser.add_argument('--nocut_dummy_str', dest='nocut_dummy_str', required=True,
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = utils.parse_args(parser)
 
-build_histograms(args.infile, args.outdir, args.dataset, args.sample, args.isdata,
+build_histograms(args.infile, args.outdir, args.dataset,
+                 args.sample, args.isdata,
                  args.channels, args.variables, args.triggers,
                  args.subtag, args.tprefix, args.binedges_fname)
