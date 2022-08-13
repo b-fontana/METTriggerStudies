@@ -52,14 +52,14 @@ def hadd_counts(args):
             'outfile_counts' : '${1}'}
     comm_base = bsc(name=script, sep=' ', **pars)
 
-    pars1 = {'--sample'           : '${2}',
-             '--channel'          : '${3}',
-             '--aggregation_step' : '0'}
+    pars1 = {'sample'           : '${2}',
+             'channel'          : '${3}',
+             'aggregation_step' : '0'}
     comm1 = comm_base + bsc(name=None, sep=' ', **pars1)
 
-    pars2 = {'--infile_counts'    : '${2}',
-             '--channel'          : '${3}',
-             '--aggregation_step' : '1'}
+    pars2 = {'infile_counts'    : '${2}',
+             'channel'          : '${3}',
+             'aggregation_step' : '1'}
     comm2 = comm_base + bsc(name=None, sep=' ', **pars2)
     
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)

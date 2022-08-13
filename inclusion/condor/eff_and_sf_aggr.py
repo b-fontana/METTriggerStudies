@@ -23,12 +23,12 @@ def eff_and_sf_aggr(args):
     outs_job, outs_submit, outs_check, outs_log = eff_and_sf_aggr_outputs(args)
 
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-    pars = {'--indir'       : args.indir,
-            '--outdir'      : args.outdir,
-            '--channel'     : '${1}',
-            '--file_prefix' : args.file_prefix,
-            '--variables'   : ' '.join(args.variables,),
-            '--subtag'      : args.subtag}
+    pars = {'indir'       : args.indir,
+            'outdir'      : args.outdir,
+            'channel'     : '${1}',
+            'file_prefix' : args.file_prefix,
+            'variables'   : ' '.join(args.variables,),
+            'subtag'      : args.subtag}
 
     script = 'aggr_eff_and_sf.py'
     comm = utils.build_script_command(name=script, sep=' ', **pars)

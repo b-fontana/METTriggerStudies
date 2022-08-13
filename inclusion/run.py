@@ -227,7 +227,7 @@ sf_params = {'data_name'            : data_name,
 
 sfagg_params = {'indir'       : out_storage,
                 'outdir'      : out_storage,
-                'localdir'  : config.base_folder,
+                'localdir'    : config.base_folder,
                 'channels'    : FLAGS.channels,
                 'variables'   : FLAGS.variables_for_efficiencies,
                 'tag'         : FLAGS.tag,
