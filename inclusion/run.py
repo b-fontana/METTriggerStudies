@@ -217,14 +217,12 @@ haddcounts_params = {'indir'    : data_storage,
                      'channels' : FLAGS.channels, }
 
 #### drawTriggerScaleFactors
-sf_params = {'data_keys'            : data_keys,
-             'mc_keys'              : mc_keys,
-             'data_vals'            : data_vals,
-             'mc_vals'              : mc_vals,
+sf_params = {'data_name'            : data_name,
+             'mc_name'              : mc_name,
              'draw_independent_MCs' : False,
              'indir'                : data_storage,
              'outdir'               : out_storage,
-             'localdir'  : config.base_folder,
+             'localdir'             : config.base_folder,
              'triggers'             : FLAGS.triggers,
              'channels'             : FLAGS.channels,
              'variables'            : FLAGS.variables_for_efficiencies,

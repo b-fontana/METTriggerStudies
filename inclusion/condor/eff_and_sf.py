@@ -30,10 +30,8 @@ def eff_and_sf(args):
     #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
     pars = {'indir'         : args.indir,
             'outdir'        : args.outdir,
-            'mc_keys'       : ' '.join(args.mc_keys),
-            'mc_vals'       : ' '.join(args.mc_vals),
-            'data_keys'     : ' '.join(args.data_keys),
-            'data_vals'     : ' '.join(args.data_vals),
+            'mc_name'       : args.mc_name,
+            'data_name'     : args.data_name,
             'triggercomb'   : '${1}',
             'channels'      : ' '.join(args.channels),
             'variables'     : ' '.join(args.variables),

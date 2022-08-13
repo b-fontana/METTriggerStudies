@@ -51,9 +51,9 @@ def paint2d(channel, trig):
     l.DrawLatex( lX2, lY, 'Channel: '+latexChannel)
 
 def draw_eff_and_sf_1d(proc, channel, variable, trig,
-                   save_names_1D,
-                   tprefix, indir, subtag, mc_name, data_name,
-                   intersection_str, debug):
+                       save_names_1D,
+                       tprefix, indir, subtag, mc_name, data_name,
+                       intersection_str, debug):
 
     _name = lambda a,b,c,d : a + b + c + d + '.root'
 
@@ -126,7 +126,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
     # some triggers or their intersection naturally never fire for some channels
     # example: 'IsoMu24' for the etau channel
     if len(hmc1D['trig']) == 0:
-        m = ('WARNING [drawEffAndSF1D]: Trigger {} never '.format(trig) +
+        m = ('WARNING [draw_eff_and_sf_1d]: Trigger {} never '.format(trig) +
              'fired for channel={}, variable={} in MC.'
               .format(variable, channel))
         print(m)
@@ -664,7 +664,7 @@ def _get_canvas_name(prefix, proc, chn, var, trig, data_name, subtag):
     return n
 
 def run_eff_sf_1d_outputs(outdir, data_name, mc_name,
-                       trigger_combination, channels, variables, subtag):
+                          trigger_combination, channels, variables, subtag):
     outputs = [[] for _ in range(len(config.extensions))]
     processes = mc_name #CHANGE !!!! IF STUDYING MCs SEPARATELY
   
@@ -687,7 +687,7 @@ def run_eff_sf_1d_outputs(outdir, data_name, mc_name,
 
 def run_eff_sf_2d_outputs(outdir, proc, data_name,
                           trigger_combination, channel, subtag,
-                          intersection_str, draw_independent_MCs, debug):
+                          intersection_str, debug):
     """
     This output function is not ready to be used in the luigi framework.
     It returns the outputs corresponding to a single trigger combination.
@@ -739,14 +739,13 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name,
 
 def run_eff_sf_1d(indir, outdir, data_name, mc_name,
                   trigger_combination, channels, variables, subtag,
-                  draw_independent_MCs, tprefix, intersection_str, debug):
+                  tprefix, intersection_str, debug):
     
     outs1D, extensions, processes = run_eff_sf_1d_outputs(outdir,
                                                           mc_name, data_name,
                                                           trigger_combination,
                                                           channels, variables,
-                                                          subtag,
-                                                          draw_independent_MCs)
+                                                          subtag)
   
     dv = len(args.variables)
     dc = len(args.channels) * dv
@@ -767,14 +766,13 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
                                .format(trigger_combination) )
                         print(m)
 
-                drawEffAndSF1D(proc, chn, var,
-                               trigger_combination,
-                               names1D,
-                               tprefix,
-                               indir, subtag,
-                               mc_name, data_name,
-                               intersection_str,
-                               debug)
+                draw_eff_and_sf_1d(proc, chn, var,
+                                   trigger_combination,
+                                   names1D,
+                                   tprefix,
+                                   indir, subtag,
+                                   mc_name, data_name,
+                                   intersection_str, debug)
 
     splits = trigger_combination.split(intersection_str)
     for x in splits:
@@ -793,7 +791,6 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
                                                         chn,
                                                         subtag,
                                                         intersection_str,
-                                                        draw_independent_MCs,
                                                         debug)
 
                         for j in config.pairs2D[onetrig]:
@@ -814,17 +811,16 @@ parser.add_argument('--outdir', help='Output directory', required=True, )
 parser.add_argument('--tprefix', help='prefix to the names of the produceyd outputs (targets in luigi lingo)', required=True)
 parser.add_argument('--canvas_prefix', help='canvas prefix', required=True)
 parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
-parser.add_argument('--mc_name', dest='mc_name', required=True, nargs='+', type=str,
-                    help='MC dataset user names')
-parser.add_argument('--data_name', dest='data_name', required=True, nargs='+', type=str,
-                    help='Data dataset user names',)
+parser.add_argument('--mc_name', dest='mc_name', required=True, type=str,
+                    help='Id for all MC samples')
+parser.add_argument('--data_name', dest='data_name', required=True, type=str,
+                    help='Id for all data samples',)
 parser.add_argument('--triggercomb', dest='triggercomb', required=True,
                     help='Trigger intersection combination.')
 parser.add_argument('--channels',   dest='channels',         required=True, nargs='+', type=str,
                     help='Select the channels over which the workflow will be run.' )
 parser.add_argument('--variables',        dest='variables',        required=True, nargs='+', type=str,
                     help='Select the variables over which the workflow will be run.' )
-parser.add_argument('--draw_independent_MCs', action='store_true', help='debug verbosity')
 parser.add_argument('--intersection_str', dest='intersection_str', required=False, default='_PLUS_',
                     help='String useyd to represent set intersection between triggers.')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
@@ -837,7 +833,6 @@ run_eff_sf_1d(args.indir, args.outdir,
               args.triggercomb,
               args.channels, args.variables,
               args.subtag,
-              args.draw_independent_MCs,
               args.tprefix,
               args.intersection_str,
               args.debug)
