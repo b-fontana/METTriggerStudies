@@ -7,13 +7,14 @@ import sys
 parent_dir = os.path.abspath(__file__ + 3 * '/..')
 sys.path.insert(0, parent_dir)
 
+import inclusion
+from inclusion.utils import utils
+from inclusion.utils.utils import join_name_trigger_intersection as joinNTC
+
 import glob
 import re
 import json
 import argparse
-
-from utils import utils
-from utils.utils import join_name_trigger_intersection as joinNTC
 
 # This function is very much prone to change depending on the results obtained
 def discriminator(args, chn):
