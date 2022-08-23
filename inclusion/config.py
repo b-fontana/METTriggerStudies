@@ -104,12 +104,14 @@ binedges = {'dau1_pt': {'etau':   pog_pt_binedges,
             }
 
 ### Data and MC samples
-inputs = ( '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220420/', )
+inputs = ( '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_Aug15Evening/', ) #/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220420/
 
 # names of the subfolders under '_inputs' above:
 # dictionary that maps specific general triggers to datasets 
-data = {'MET': ('SKIM_MET',),
-        'EG': ('SKIM_EGamma',)
+data = {'MET'  : ('MET',),
+        'EG'   : ('EGamma',),
+        'Mu'   : ('SingleMuon',),
+        'Tau'  : ('Tau',),
         }
 
 mc_processes = {'ggfRadions': (),
