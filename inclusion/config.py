@@ -34,7 +34,8 @@ sel = {'all':    {'pairType': ('<',  3),},
        'etau':   {'pairType': ('==', 1),},
        'tautau': {'pairType': ('==', 2),},
        'mumu':   {'pairType': ('==', 3),}, # passMu missing for the mumu channel
-       'ee':     {'pairType': ('==', 4),} }
+       'ee':     {'pairType': ('==', 4),},
+       'emu':     {'pairType': ('==', 5),} }
 
 # variables considered for calculating and plotting efficiencies
 var_eff = ('HT20', 'met_et', 'mht_et', 'metnomu_et', 'mhtnomu_et',

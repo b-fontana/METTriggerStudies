@@ -112,10 +112,10 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
         lumi       = entries.lumi
         idandiso   = entries.IdAndIsoSF_deep_pt
         
-        #if utils.is_nan(mcweight): mcweight=1
-        if utils.is_nan(pureweight): pureweight=1
-        if utils.is_nan(lumi): lumi=1
-        if utils.is_nan(idandiso): idandiso=1
+        #if utils.is_nan(mcweight)  : mcweight=1
+        if utils.is_nan(pureweight) : pureweight=1
+        if utils.is_nan(lumi)       : lumi=1
+        if utils.is_nan(idandiso)   : idandiso=1
 
         evt_weight = pureweight*lumi*idandiso
         if utils.is_nan(evt_weight) or isdata:
@@ -129,7 +129,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                 if fill_var[v][chn]>binedges[v][chn][-1]:
                     fill_var[v][chn]=binedges[v][chn][-1] # include overflow
 
-        # whether the event passes cuts (1 and 2-dimensional_ and single triggers
+        # whether the event passes cuts (1 and 2-dimensional) and single triggers
         pass_trigger, pcuts1D, pcuts2D = ({} for _ in range(3))
         for trig in triggers:
             pcuts2D[trig] = {}
