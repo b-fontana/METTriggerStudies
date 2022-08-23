@@ -20,12 +20,16 @@ class EventSelection:
         self.isdata = isdata
         self.debug = debug
 
-        self.prefix = 'Data_' if self.isdata else 'TT_'
         self.datasets = ('MET', 'EG',)
-        self.this_processed_dataset = self.prefix + dataset
+        self.prefix = 'Data_' if self.isdata else 'TT_'
+        self.ds_name = lambda ds : self.prefix + ds
+        
+        self.this_processed_dataset = self.ds_name(dataset)
+        
         for d in self.datasets:
             assert( d in config.data )
-        self.ref_trigs = tuple(self.prefix + x for x in self.datasets)
+
+        self.ref_trigs = tuple(self.ds_name(x) for x in self.datasets)
         
         if dataset not in config.data and dataset not in config.mc_processes:
             mes = 'Dataset {} is not supported '.format(dataset)
@@ -56,9 +60,9 @@ class EventSelection:
 
         if reference == self.noref_str:
             return False
-        elif reference == self.prefix + 'MET':
+        elif reference == self.ds_name('MET'):
             return self.selection_cuts(lepton_veto=True)
-        elif reference == self.prefix + 'EG':
+        elif reference == self.ds_name('EG'):
             return self.selection_cuts(lepton_veto=True)
         else:
             if reference in self.ref_trigs:
@@ -74,9 +78,9 @@ class EventSelection:
         """
         dataset_ref_trigs = {
             # trigs for the MET dataset
-            self.prefix + 'MET': ('METNoMu120',),
+            self.ds_name('MET'): ('METNoMu120',),
             # triggers for the EGamma dataset
-            self.prefix +  'EG':  ('Ele32',),
+            self.ds_name('EG'):  ('Ele32',),
             }
         for k in dataset_ref_trigs:
             if k not in self.ref_trigs:
@@ -130,9 +134,9 @@ class EventSelection:
                       ('METNoMu120', 'VBFTauCustom'),
                       ('IsoTau180', 'METNoMu120', 'VBFTauCustom'),
                      ):
-            return self.prefix + 'MET'
+            return self.ds_name('MET')
         elif tcomb in ( ):
-            return self.prefix + 'EG'
+            return self.ds_name('EG')
      
         # channel-specific triggers
         if channel == 'etau':
@@ -156,9 +160,9 @@ class EventSelection:
                           ('EleIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
                           ('EleIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
                          ):
-                return self.prefix + 'MET'
+                return self.ds_name('MET')
             elif tcomb in ( ) :
-                return self.prefix + 'EG'
+                return self.ds_name('EG')
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -183,9 +187,9 @@ class EventSelection:
                           ('IsoMuIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
                           ('IsoMuIsoTauCustom', 'METNoMu120', 'VBFTauCustom')
                          ):
-                return self.prefix + 'MET'
+                return self.ds_name('MET')
             elif tcomb in ( ) :
-                return self.prefix + 'EG'
+                return self.ds_name('EG')
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -198,9 +202,9 @@ class EventSelection:
                           ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
                           ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
                          ):
-                return self.prefix + 'MET'
+                return self.ds_name('MET')
             elif tcomb in ( ) :
-                return self.prefix + 'EG'
+                return self.ds_name('EG')
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
