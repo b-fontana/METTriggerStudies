@@ -76,11 +76,11 @@ def get_trig_counts(outdir, dataset, sample, filename,
                         [ pass_trigger[x] for x in tcomb ]
                     )
 
+                    if not sel.check_inters_with_dataset(tcomb, chn):
+                        continue
                     if not sel.dataset_cuts(tcomb, chn):
                         continue
                     if not sel.dataset_triggers(triggers, tcomb, chn)[0]:
-                        continue
-                    if not sel.match_inters_with_dataset(tcomb, chn):
                         continue
                     
                     tcomb_str = joinNTC(tcomb)

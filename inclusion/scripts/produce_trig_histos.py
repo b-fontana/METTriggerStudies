@@ -166,7 +166,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
 
                     # The following is tricky, as we are considering, simultaneously:
                     # - all trigger intersection combinations
-                    # - all cut combinations for each trigger combination (see '_cuts')
+                    # - all cut combinations for each trigger combination (see 'config.cuts')
                         
                     # Logic AND to intersect all cuts for this trigger combination
                     # Each element will contain one possible cut combination
@@ -213,11 +213,11 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                         for combtrig in combtrigs:
                             cstr = joinNTC(combtrig)
                             
+                            if not sel.check_inters_with_dataset(combtrig, chn):
+                                continue
                             if not sel.dataset_cuts(combtrig, chn):
                                 continue
                             if not sel.dataset_triggers(triggers, combtrig, chn)[0]:
-                                continue
-                            if not sel.match_inters_with_dataset(combtrig, chn):
                                 continue
                             
                             for j in config.pairs2D[onetrig]:

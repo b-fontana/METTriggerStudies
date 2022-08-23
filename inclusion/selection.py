@@ -22,7 +22,7 @@ class EventSelection:
 
         self.prefix = 'Data_' if self.isdata else 'TT_'
         self.datasets = ('MET', 'EG',)
-        self.dataset = self.prefix + dataset
+        self.this_processed_dataset = self.prefix + dataset
         for d in self.datasets:
             assert( d in config.data )
         self.ref_trigs = tuple(self.prefix + x for x in self.datasets)
@@ -85,8 +85,8 @@ class EventSelection:
 
         for k in self.ref_trigs:
             if k not in dataset_ref_trigs:
-                mes = 'Specify the reference trigger for dataset {}!'
-                raise ValueError(mes.format(self.dataset))
+                mes = 'Specify the reference trigger {} for dataset {}!'
+                raise ValueError(mes.format(k, self.this_processed_dataset))
         for vals in dataset_ref_trigs.values():
             for v in vals:
                 if v not in trigs:
@@ -117,6 +117,7 @@ class EventSelection:
         wrong_comb = 'Combination {} is not supported for channel {}.'
 
         # Ignore long intersections for simplicity
+        # Besides, long intersections tend to have lower statistics
         if len(tcomb) > 3:
             return self.noref_str
 
@@ -206,20 +207,25 @@ class EventSelection:
         else:
             raise ValueError('Channel {} is not supported.'.format(channel))
 
-    def match_inters_with_dataset(self, tcomb, channel):
-        """Matches a trigger intersection with a reference trigger."""
-        # one single reference per trigger combination
-        def decision(ds):
-            if self.isdata:
-                return True if self.dataset == ds else False
-            else:
-                return True if self.prefix in ds else False
-
+    def check_inters_with_dataset(self, tcomb, channel):
+        """
+        All input files on which the selection is applied correspond
+        to a different dataset.  This function makes sure there is a
+        match between the trigger intersection and the dataset being
+        used. It is used to skip the processing of trigger
+        intersections which are calculated with other datasets.
+        
+        Example:
+        The 'IsoMu24' trigger intersection will use the MET
+        dataset in some analysis. This functions skips the processing
+        whenever we are running the selection over other datasets,
+        such as EGamma or SingleMuon.
+        """
         reference = self.find_inters_for_reference(tcomb, channel)
         if reference == self.noref_str:
             return False
 
-        return decision(reference)
+        return True if self.this_processed_dataset == reference else False
 
     def _pass_triggers(self, trigs):
         """
@@ -288,7 +294,7 @@ class EventSelection:
         bh_mass    = self.entries.bH_mass_raw
 
         mcut = ( (svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
-                 (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) <  1.0
+                 (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) < 1.0
         if mcut and invert_mass_cut: # inverted elliptical mass cut (-> ttCR)
             return False
 
