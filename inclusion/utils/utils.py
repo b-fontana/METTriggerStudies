@@ -215,15 +215,19 @@ def get_root_input_files(proc, indir):
     fexists = []
     for idir in indir:
         g = glob.glob(os.path.join(idir, proc + '*/goodfiles.txt'))
-        if len(g)==0:
-            fexists.append(False)
-        else:
-            fexists.append(True)
+        fexists.append(False if len(g)==0 else True)
 
-    if sum(fexists) != 1: #check one and only one is True
-        m = '[utils.py] WARNING: More than one file exists for the {} sample.'.format(proc)
+    # check one and only one is True
+    if sum(fexists) > 1:
+        m = '[get_root_input_files] No file was found for the {} sample.'.format(proc)
+        m += 'The inspect path was {}'.format('INDIR/' + proc + '*/goodfiles.txt')
+        m += ' where INDIR stands for the following: {}.'.format(indir)
+        raise ValueError(m)
+    elif sum(fexists) > 1:
+        m = '[get_root_input_files] More than one file exists for the {} sample.'.format(proc)
         m += ' Selecting directory {} '.format(indir[fexists.index(True)])
         m += 'from the following list: {}.'.format(indir)
+        raise ValueError(m)
 
     #this is the only correct input directory
     inputdir = indir[ fexists.index(True) ]

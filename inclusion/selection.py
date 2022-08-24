@@ -58,12 +58,13 @@ class EventSelection:
         """
         reference, lepton_veto = self.find_inters_for_reference(tcomb, channel)
 
-        if not any(x in reference for x in self.datasets):
-            raise ValueError('Only datasets {} are supported.'.format(self.datasets))
-            
         if reference == self.noref_str:
             return False
-        
+
+        if not any(x in reference for x in self.datasets):
+            m = "Only datasets {} are supported. You tried using '{}'.".format(self.datasets, reference)
+            raise ValueError(m)
+                    
         return self.selection_cuts(lepton_veto=lepton_veto)
 
     def dataset_triggers(self, trigs, tcomb, channel):
@@ -72,10 +73,10 @@ class EventSelection:
         Considers framework triggers for a specific dataset.
         """
         dataset_ref_trigs = {
-            self.ds_name('MET')  : ('METNoMu120',),
-            self.ds_name('EG')   : ('Ele32',),
-            self.ds_name('Mu') : ('IsoMu24',),
-            self.ds_name('Tau')  : ('IsoTau180',),
+            self.ds_name('MET') : ('METNoMu120',),
+            self.ds_name('EG')  : ('Ele32',),
+            self.ds_name('Mu')  : ('IsoMu24',),
+            self.ds_name('Tau') : ('IsoTau180',),
             }
         for k in dataset_ref_trigs:
             if k not in self.ref_trigs:
@@ -92,7 +93,7 @@ class EventSelection:
                     mes = 'Reference trigger {} is not part of triggers {}.'
                     raise ValueError(mes.format(v,trigs))
 
-        reference = self.find_inters_for_reference(tcomb, channel)
+        reference, _ = self.find_inters_for_reference(tcomb, channel)
         if reference == self.noref_str:
             raise OverflowError('Intersection is too long.')
 
@@ -118,7 +119,7 @@ class EventSelection:
         # Ignore long intersections for simplicity
         # Besides, long intersections tend to have lower statistics
         if len(tcomb) > 3:
-            return self.noref_str, _
+            return self.noref_str, None
 
         # whether to apply 3rd lepton veto
         veto = False

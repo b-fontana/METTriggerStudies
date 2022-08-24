@@ -178,7 +178,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                             continue
                         if not sel.dataset_triggers(triggers, tcomb, chn)[0]:
                             continue
-                        if not sel.match_inters_with_dataset(tcomb, chn):
+                        if not sel.check_inters_with_dataset(tcomb, chn):
                             continue
 
                         hRef[chn][j][cstr].Fill(fill_var[j][chn], evt_weight)
