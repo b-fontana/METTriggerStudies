@@ -117,9 +117,9 @@ data = {'MET'  : ('MET',),
 mc_processes = {'ggfRadions': (),
                 'ggfBulkGraviton': (),
                 'vbfRadion': (),
-                'vbfBulkRadion': (),
-                'TT': ('SKIM_TT_fullyHad', 'SKIM_TT_fullyLep', 'SKIM_TT_semiLep',),
-                'DY': (),
+                'vbfBulkGraviton': (),
+                'TT': ('TTToHadronic', 'TTTo2L2Nu', 'TTToSemiLeptonic',),
+                'DY': ('DYJetsToLL_M-50_TuneCP5_13TeV-amc'),
                 }
 
 

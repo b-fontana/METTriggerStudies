@@ -218,8 +218,8 @@ def get_root_input_files(proc, indir):
         fexists.append(False if len(g)==0 else True)
 
     # check one and only one is True
-    if sum(fexists) > 1:
-        m = '[get_root_input_files] No file was found for the {} sample.'.format(proc)
+    if sum(fexists) == 0:
+        m = '[get_root_input_files] No file was found for the {} sample. '.format(proc)
         m += 'The inspect path was {}'.format('INDIR/' + proc + '*/goodfiles.txt')
         m += ' where INDIR stands for the following: {}.'.format(indir)
         raise ValueError(m)
