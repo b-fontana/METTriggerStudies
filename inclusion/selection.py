@@ -36,8 +36,6 @@ class EventSelection:
             mes += '(prefix `{}` added).'.format(self.prefix)
             raise ValueError(mes)
 
-        self.noref_str = 'NoReference'
-
     def any_trigger(self, trigs):
         """
         Checks at least one trigger was fired.
@@ -58,7 +56,7 @@ class EventSelection:
         """
         reference, lepton_veto = self.find_inters_for_reference(tcomb, channel)
 
-        if reference == self.noref_str:
+        if reference is None:
             return False
 
         if not any(x in reference for x in self.datasets):
@@ -94,7 +92,7 @@ class EventSelection:
                     raise ValueError(mes.format(v,trigs))
 
         reference, _ = self.find_inters_for_reference(tcomb, channel)
-        if reference == self.noref_str:
+        if reference is None:
             raise OverflowError('Intersection is too long.')
 
         return ( self._pass_triggers(dataset_ref_trigs[reference]),
@@ -119,7 +117,7 @@ class EventSelection:
         # Ignore long intersections for simplicity
         # Besides, long intersections tend to have lower statistics
         if len(tcomb) > 3:
-            return self.noref_str, None
+            return None, None
 
         # whether to apply 3rd lepton veto
         veto = False
@@ -267,9 +265,10 @@ class EventSelection:
         such as EGamma or SingleMuon.
         """
         reference, _ = self.find_inters_for_reference(tcomb, channel)
-        if reference == self.noref_str:
+        if reference is None:
             return False
 
+        print(reference, self.this_processed_dataset, flush=True)
         return True if self.this_processed_dataset == reference else False
 
     def _pass_triggers(self, trigs):
