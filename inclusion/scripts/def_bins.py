@@ -56,35 +56,8 @@ def define_binning(args):
             if sample != args.data_vals[0]:
                 continue
             
-            #### Input list
-            fexists = []
-            for idir in args.indir:
-                g = glob.glob(os.path.join(idir, sample + '*/goodfiles.txt'))
-                if len(g)==0:
-                    fexists.append(False)
-                else:
-                    fexists.append(True)
-
-            if sum(fexists) != 1: #check one and only one is True
-                m = '[define_binning.py] WARNING: '
-                m += 'More than one file exists for the {} sample.'.format(sample)
-                m += ' Selecting directory {} '.format(args.indir[fexists.index(True)])
-                m += 'from the following list: {}.'.format(args.indir)
-
-            inputfiles = glob.glob(os.path.join(args.indir[fexists.index(True)],
-                                                sample + '*/goodfiles.txt'))
-
             #### Parse input list
-            filelist = []
-            for inp in inputfiles:
-                with open(inp) as fIn:
-                    for line in fIn:
-                        if '.root' in line:
-                            if not os.path.exists(line[:-1]):
-                                mes = '[' + os.path.basename(__file__) + '] '
-                                mes += ' The input file does not exist: {}'.format(line)
-                                raise ValueError(mes)
-                            filelist.append(line[:-1] + ':HTauTauTree')
+            filelist = utils.get_root_input_files(sample, args.indir, include_tree=True)
 
             treesize = 0
             quantiles = {k: [] for k in args.channels }

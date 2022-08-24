@@ -208,7 +208,7 @@ def get_obj_max_min(graph, is_histo):
             vmin = val
     return vmax, vmin
 
-def get_root_input_files(proc, indir):
+def get_root_inputs(proc, indir, include_tree=False):
     #### Check input folder
     if not isinstance(indir, (tuple,list)):
         indir = [indir]
@@ -241,8 +241,16 @@ def get_root_input_files(proc, indir):
         with open(inp) as fIn:
             for line in fIn:
                 if '.root' in line:
-                    filelist.append(line)
-
+                    if include_tree:
+                        line = line[:-1] # remove new line
+                        if not os.path.exists(line): 
+                            mes = '[' + os.path.basename(__file__) + '] '
+                            mes += ' The input file does not exist: {}'.format(line)
+                            raise ValueError(mes)
+                        filelist.append(line + ':HTauTauTree')
+                    else:
+                        filelist.append(line)
+                        
     return filelist, inputdir
 
 def get_root_object(name, afile):
