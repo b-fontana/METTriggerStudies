@@ -8,6 +8,7 @@ parent_dir = os.path.abspath(__file__ + 3 * '/..')
 sys.path.insert(0, parent_dir)
 
 import inclusion
+from inclusion import config
 from inclusion.utils import utils
 from inclusion.condor.job_writer import JobWriter
 
@@ -63,7 +64,7 @@ def union_calculator(args):
                         shell_exec=jobs[i],
                         outfile=checks[i],
                         logfile=logs[i],
-                        queue='long',
+                        queue=config.queue,
                         machine='llrt3condor')
 
         qlines = []

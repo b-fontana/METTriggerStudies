@@ -10,6 +10,7 @@ sys.path.insert(0, parent_dir)
 import argparse
 
 import inclusion
+from inclusion import config
 from inclusion.utils import utils
 from inclusion.condor.job_writer import JobWriter
 
@@ -50,7 +51,7 @@ def discriminator(args):
                         shell_exec=outs_job[i],
                         outfile=outs_check[i],
                         logfile=outs_log[i],
-                        queue='long',
+                        queue=config.queue,
                         machine='llrt3condor')
         jw.write_queue()
 

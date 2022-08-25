@@ -1,6 +1,7 @@
 import os
 
 email = 'bruno.alves@cern.ch'
+queue = 'short'
 
 storage = '/data_CMS/cms/' + os.environ['USER'] + '/TriggerScaleFactors/'
 
@@ -31,13 +32,13 @@ placeholder_cuts = '_XXX'
 
 #_channels = ( 'all', 'etau', 'mutau', 'tautau', 'mumu' )
 channels = ('etau', 'mutau', 'tautau')
-sel = {'all':    {'pairType': ('<',  3),},
-       'mutau':  {'pairType': ('==', 0),},
-       'etau':   {'pairType': ('==', 1),},
-       'tautau': {'pairType': ('==', 2),},
-       'mumu':   {'pairType': ('==', 3),}, # passMu missing for the mumu channel
-       'ee':     {'pairType': ('==', 4),},
-       'emu':     {'pairType': ('==', 5),} }
+sel = {'all'    : {'pairType': ('<',  3),},
+       'mutau'  : {'pairType': ('==', 0),},
+       'etau'   : {'pairType': ('==', 1),},
+       'tautau' : {'pairType': ('==', 2),},
+       'mumu'   : {'pairType': ('==', 3),}, # passMu missing for the mumu channel
+       'ee'     : {'pairType': ('==', 4),},
+       'emu'    : {'pairType': ('==', 5),} }
 
 # variables considered for calculating and plotting efficiencies
 var_eff = ('HT20', 'met_et', 'mht_et', 'metnomu_et', 'mhtnomu_et',

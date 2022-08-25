@@ -624,7 +624,7 @@ class SubmitDAG(lutils.ForceRun):
         with open(out, 'r') as f:
             contents = f.readlines()
         ncontents = len(contents)
-        new_content = jw.condor_specific_content(queue='long',
+        new_content = jw.condor_specific_content(queue=config.queue,
                                                  machine='llrt3condor')
         contents.insert(ncontents-1, new_content + '\n')
         with open(out, 'w') as f:

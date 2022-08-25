@@ -158,6 +158,7 @@ class JobWriter:
         os.system('chmod u+rwx '+ filename)
 
     def condor_specific_content(self, queue, machine='llrt3condor'):
+        assert queue in ('short', 'long')
         m = self.endl.join(('T3Queue = {}'.format(queue),
                             'WNTag=el7',
                             '+SingularityCmd = ""'))
