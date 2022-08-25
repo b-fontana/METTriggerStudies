@@ -1,5 +1,7 @@
 import os
 
+email = 'bruno.alves@cern.ch'
+
 storage = '/data_CMS/cms/' + os.environ['USER'] + '/TriggerScaleFactors/'
 
 folders = {'base'    : 'METTriggerStudies',
