@@ -58,14 +58,16 @@ class EventSelection:
 
         if reference is None:
             return False
-
+        if lepton_veto is None:
+            raise RuntimeError('The lepton veto is only None when the reference is also None.')
+        
         if not any(x in reference for x in self.datasets):
             m = "Only datasets {} are supported. You tried using '{}'.".format(self.datasets, reference)
             raise ValueError(m)
                     
         return self.selection_cuts(lepton_veto=lepton_veto)
 
-    def dataset_triggers(self, trigs, tcomb, channel):
+    def dataset_triggers(self, tcomb, channel, trigs):
         """
         Checks at least one trigger was fired.
         Considers framework triggers for a specific dataset.
@@ -95,8 +97,7 @@ class EventSelection:
         if reference is None:
             raise OverflowError('Intersection is too long.')
 
-        return ( self._pass_triggers(dataset_ref_trigs[reference]),
-                 dataset_ref_trigs[reference] )
+        return (self._pass_triggers(dataset_ref_trigs[reference]), dataset_ref_trigs[reference])
 
     def get_trigger_bit(self, trigger_name):
         """
@@ -268,7 +269,6 @@ class EventSelection:
         if reference is None:
             return False
 
-        print(reference, self.this_processed_dataset, flush=True)
         return True if self.this_processed_dataset == reference else False
 
     def _pass_triggers(self, trigs):

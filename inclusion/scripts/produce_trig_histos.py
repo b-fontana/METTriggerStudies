@@ -96,7 +96,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
     _entries += tuple(variables)
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
-
+    cmet = 0
     nentries = t_in.GetEntriesFast()
     for ientry,entry in enumerate(t_in):
         if ientry%10000==0:
@@ -106,7 +106,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
         
         sel = selection.EventSelection(entries, dataset, isdata)
-
+        
         #mcweight   = entries.MC_weight
         pureweight = entries.PUReweight
         lumi       = entries.lumi
@@ -174,11 +174,11 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                     for tcomb in triggercomb[chn]:
                         cstr = joinNTC(tcomb)
 
+                        if not sel.check_inters_with_dataset(tcomb, chn):
+                            continue
                         if not sel.dataset_cuts(tcomb, chn):
                             continue
-                        if not sel.dataset_triggers(triggers, tcomb, chn)[0]:
-                            continue
-                        if not sel.check_inters_with_dataset(tcomb, chn):
+                        if not sel.dataset_triggers(tcomb, chn, triggers)[0]:
                             continue
 
                         hRef[chn][j][cstr].Fill(fill_var[j][chn], evt_weight)
@@ -217,7 +217,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                                 continue
                             if not sel.dataset_cuts(combtrig, chn):
                                 continue
-                            if not sel.dataset_triggers(triggers, combtrig, chn)[0]:
+                            if not sel.dataset_triggers(combtrig, chn, triggers)[0]:
                                 continue
                             
                             for j in config.pairs2D[onetrig]:

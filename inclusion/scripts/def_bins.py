@@ -57,7 +57,7 @@ def define_binning(args):
                 continue
             
             #### Parse input list
-            filelist = utils.get_root_input_files(sample, args.indir, include_tree=True)
+            filelist, _ = utils.get_root_inputs(sample, args.indir, include_tree=True)
 
             treesize = 0
             quantiles = {k: [] for k in args.channels }

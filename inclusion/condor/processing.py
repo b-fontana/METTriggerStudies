@@ -25,7 +25,7 @@ def produce_trigger_outputs_sample(args, sample, ext):
     t = []
     exp = re.compile('.+output(_[0-9]{1,5}).root')
 
-    inputs, _ = utils.get_root_input_files(sample, args.indir)
+    inputs, _ = utils.get_root_inputs(sample, args.indir)
 
     folder = os.path.join( args.outdir, proc )
     for inp in inputs:
@@ -80,7 +80,7 @@ def processing(args):
     _all_processes = _data_procs + _mc_procs
 
     for i, (kproc, vproc) in enumerate(_all_processes):
-        filelist, _ = utils.get_root_input_files(vproc, args.indir)
+        filelist, _ = utils.get_root_inputs(vproc, args.indir)
         
         #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
         pars = {'outdir'   : args.outdir,

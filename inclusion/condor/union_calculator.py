@@ -29,7 +29,7 @@ def union_calculator(args):
     jw = JobWriter()
 
     for i,proc in enumerate(args.mc_processes):
-        filelist, inputdir = utils.get_root_input_files(proc, args.indir_root)
+        filelist, inputdir = utils.get_root_inputs(proc, args.indir_root)
 
         #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
         pars = {'indir_root'             : inputdir,

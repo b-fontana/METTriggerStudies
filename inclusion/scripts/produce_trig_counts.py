@@ -56,7 +56,7 @@ def get_trig_counts(outdir, dataset, sample, filename,
     nentries = t_in.GetEntriesFast()
     for ientry,entry in enumerate(t_in):
         if ientry%10000==0:
-            print('{} / {}.'.format(ientry, nentries))
+            print('{} / {}'.format(ientry, nentries))
 
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
@@ -80,7 +80,7 @@ def get_trig_counts(outdir, dataset, sample, filename,
                         continue
                     if not sel.dataset_cuts(tcomb, chn):
                         continue
-                    if not sel.dataset_triggers(triggers, tcomb, chn)[0]:
+                    if not sel.dataset_triggers(tcomb, chn, triggers)[0]:
                         continue
                     
                     tcomb_str = joinNTC(tcomb)
@@ -103,7 +103,7 @@ def get_trig_counts(outdir, dataset, sample, filename,
         for chn in channels:
             for tcomb in triggercomb[chn]:
                 try:
-                    reftrig = sel.dataset_triggers(triggers, tcomb, chn)[1]
+                    reftrig = sel.dataset_triggers(tcomb, chn, triggers)[1]
                 except OverflowError:
                     continue
                 
