@@ -21,7 +21,7 @@ class EventSelection:
         self.debug = debug
 
         self.datasets = ('MET', 'EG', 'Mu', 'Tau')
-        self.prefix = 'Data_' if self.isdata else 'TT_'
+        self.prefix = 'Data_' if self.isdata else 'MC_'
         self.ds_name = lambda ds : self.prefix + ds
         
         self.this_processed_dataset = self.ds_name(dataset)
@@ -53,18 +53,18 @@ class EventSelection:
         Applies selection depending on the reference trigger being considered.
         Reference triggers tend to be associated with a certain dataset.
         For instance, the 'MET' dataset is connected to the MET Trigger.
+        Currently all datasets have the same selection modulos the lepton veto.
         """
-        reference, lepton_veto = self.find_inters_for_reference(tcomb, channel)
-
+        reference = self.find_inters_for_reference(tcomb, channel)
         if reference is None:
             return False
-        if lepton_veto is None:
-            raise RuntimeError('The lepton veto is only None when the reference is also None.')
-        
+
         if not any(x in reference for x in self.datasets):
             m = "Only datasets {} are supported. You tried using '{}'.".format(self.datasets, reference)
             raise ValueError(m)
-                    
+
+        lepton_veto = self.should_apply_lepton_trigger(tcomb)
+        
         return self.selection_cuts(lepton_veto=lepton_veto)
 
     def dataset_triggers(self, tcomb, channel, trigs):
@@ -93,7 +93,7 @@ class EventSelection:
                     mes = 'Reference trigger {} is not part of triggers {}.'
                     raise ValueError(mes.format(v,trigs))
 
-        reference, _ = self.find_inters_for_reference(tcomb, channel)
+        reference = self.find_inters_for_reference(tcomb, channel)
         if reference is None:
             raise OverflowError('Intersection is too long.')
 
@@ -118,53 +118,23 @@ class EventSelection:
         # Ignore long intersections for simplicity
         # Besides, long intersections tend to have lower statistics
         if len(tcomb) > 3:
-            return None, None
-
-        # whether to apply 3rd lepton veto
-        veto = False
-        if tcomb not in (# general triggers
-                         ('IsoTau180', 'METNoMu120'),
-                         ('METNoMu120', 'VBFTauCustom'),
-                         # mutau channel
-                         ('IsoMu24', 'METNoMu120'),
-                         ('IsoMuIsoTauCustom', 'METNoMu120'),
-                         ('IsoMu24', 'IsoTau180', 'METNoMu120'),
-                         ('IsoMu24', 'METNoMu120', 'VBFTauCustom'),
-                         ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
-                         ('IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-                         # etau channel
-                         ('Ele32', 'METNoMu120'),
-                         ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
-                         ('Ele32', 'IsoTau180', 'METNoMu120'),
-                         ('EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-                         ('EleIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
-                         ('Ele32', 'METNoMu120', 'VBFTauCustom'),
-                         # tautau channel
-                         ('IsoDoubleTauCustom', 'METNoMu120'),
-                         ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
-                         ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
-                         # large intersections
-                         ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-                         ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120', 'VBFTauCustom'),
-                         ('Ele32', 'EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-                         ):
-            veto = True
+            return None
         
         #general triggers
         if tcomb in ( ('IsoTau180',),
                       ('VBFTauCustom',),
                       ('IsoTau180', 'VBFTauCustom'),                     
                      ):
-            return self.ds_name('MET'), veto
+            return self.ds_name('MET')
         elif tcomb in ( ):
-            return self.ds_name('EG'), veto
+            return self.ds_name('EG')
+        elif tcomb in (('METNoMu120',),
+                       ('IsoTau180', 'METNoMu120'),
+                       ('METNoMu120', 'VBFTauCustom'),
+                       ('IsoTau180', 'METNoMu120', 'VBFTauCustom'),):
+            return self.ds_name('Mu')
         elif tcomb in ( ):
-            return self.ds_name('Mu'), veto
-        elif tcomb in ( ('METNoMu120',),
-                        ('IsoTau180', 'METNoMu120'),
-                        ('METNoMu120', 'VBFTauCustom'),
-                        ('IsoTau180', 'METNoMu120', 'VBFTauCustom'),):
-            return self.ds_name('Tau'), veto
+            return self.ds_name('Tau')
      
         # channel-specific triggers
         if channel == 'etau':
@@ -181,11 +151,9 @@ class EventSelection:
                           ('Ele32', 'IsoTau180', 'VBFTauCustom'),
                           ('EleIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
                          ):
-                return self.ds_name('MET'), veto
+                return self.ds_name('MET')
             elif tcomb in ( ) :
-                return self.ds_name('EG'), veto
-            elif tcomb in ( ):
-                return self.ds_name('Mu'), veto
+                return self.ds_name('EG')
             elif tcomb in (('Ele32', 'METNoMu120'),
                            ('EleIsoTauCustom', 'METNoMu120'),
                            ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
@@ -194,7 +162,9 @@ class EventSelection:
                            ('EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
                            ('EleIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
                            ('Ele32', 'EleIsoTauCustom', 'IsoTau180', 'METNoMu120')):
-                return self.ds_name('Tau'), veto
+                return self.ds_name('Mu')
+            elif tcomb in ( ):
+                return self.ds_name('Tau')
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -212,9 +182,7 @@ class EventSelection:
                           ('IsoMu24', 'IsoTau180', 'VBFTauCustom'),
                           ('IsoMuIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
                          ):
-                return self.ds_name('MET'), veto
-            elif tcomb in ( ) :
-                return self.ds_name('EG'), veto
+                return self.ds_name('MET')
             elif tcomb in (('IsoMu24', 'METNoMu120'),
                            ('IsoMuIsoTauCustom', 'METNoMu120'),
                            ('IsoMu24', 'IsoTau180', 'METNoMu120'),
@@ -222,10 +190,12 @@ class EventSelection:
                            ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
                            ('IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
                            ('IsoMuIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
-                           ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),):
-                return self.ds_name('Mu'), veto
+                           ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120')) :
+                return self.ds_name('EG')
             elif tcomb in ( ):
-                return self.ds_name('Tau'), veto
+                return self.ds_name('Mu')
+            elif tcomb in ( ):
+                return self.ds_name('Tau')
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -235,16 +205,16 @@ class EventSelection:
                          ('IsoDoubleTauCustom', 'IsoTau180'),
                          ('IsoDoubleTauCustom', 'IsoTau180', 'VBFTauCustom'),
                          ):
-                return self.ds_name('MET'), veto
+                return self.ds_name('MET')
             elif tcomb in ( ) :
-                return self.ds_name('EG'), veto
-            elif tcomb in ( ):
-                return self.ds_name('Mu'), veto
+                return self.ds_name('EG')
             elif tcomb in (('IsoDoubleTauCustom', 'METNoMu120'),
                            ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
                            ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
                            ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120', 'VBFTauCustom'),):
-                return self.ds_name('Tau'), veto
+                return self.ds_name('Mu')
+            elif tcomb in ( ):
+                return self.ds_name('Tau')
             else:
                 raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -258,6 +228,7 @@ class EventSelection:
         match between the trigger intersection and the dataset being
         used. It is used to skip the processing of trigger
         intersections which are calculated with other datasets.
+        No MC datasets are skipped.
         
         Example:
         The 'IsoMu24' trigger intersection will use the MET
@@ -265,7 +236,10 @@ class EventSelection:
         whenever we are running the selection over other datasets,
         such as EGamma or SingleMuon.
         """
-        reference, _ = self.find_inters_for_reference(tcomb, channel)
+        if not self.isdata:
+            return True
+        
+        reference = self.find_inters_for_reference(tcomb, channel)
         if reference is None:
             return False
 
@@ -379,6 +353,41 @@ class EventSelection:
 
         return bits
 
+    def should_apply_lepton_trigger(self, tcomb):
+        """Whether to apply 3rd lepton veto. The veto is always applied to MC."""
+        if not self.isdata:
+            return True
+        
+        veto = False
+        if tcomb not in (# general triggers
+                         ('IsoTau180', 'METNoMu120'),
+                         ('METNoMu120', 'VBFTauCustom'),
+                         # mutau channel
+                         ('IsoMu24', 'METNoMu120'),
+                         ('IsoMuIsoTauCustom', 'METNoMu120'),
+                         ('IsoMu24', 'IsoTau180', 'METNoMu120'),
+                         ('IsoMu24', 'METNoMu120', 'VBFTauCustom'),
+                         ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
+                         ('IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
+                         # etau channel
+                         ('Ele32', 'METNoMu120'),
+                         ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
+                         ('Ele32', 'IsoTau180', 'METNoMu120'),
+                         ('EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
+                         ('EleIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
+                         ('Ele32', 'METNoMu120', 'VBFTauCustom'),
+                         # tautau channel
+                         ('IsoDoubleTauCustom', 'METNoMu120'),
+                         ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
+                         ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
+                         # large intersections
+                         ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
+                         ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120', 'VBFTauCustom'),
+                         ('Ele32', 'EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
+                         ):
+            veto = True
+        return veto
+    
     def trigger_bits(self, trig):
         if trig in config.trig_custom:
             return self.set_custom_trigger_bit(trig)
