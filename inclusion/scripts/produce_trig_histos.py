@@ -59,7 +59,8 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
             binning1D = (nbins[j][chn], binedges[j][chn])
             hTrig[chn][j], hRef[chn][j] = ({} for _ in range(2))
             for tcomb in triggercomb[chn]:
-                hname = utils.get_hnames('Ref1D')(chn, j, tcomb)
+                hname = utils.get_hnames('Ref1D')(chn, j, joinNTC(tcomb))
+
                 hRef[chn][j][joinNTC(tcomb)] = TH1D(hname, '', *binning1D)
                 hTrig[chn][j][joinNTC(tcomb)] = {}
 
