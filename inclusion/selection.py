@@ -15,8 +15,8 @@ from inclusion import config
 class EventSelection:
     def __init__(self, entries, dataset, isdata, debug=False):
         self.entries = entries
-        self.bit = self.entries.triggerbit
-        self.run = self.entries.RunNumber
+        self.bit = self.entries['triggerbit']
+        self.run = self.entries['RunNumber']
         self.isdata = isdata
         self.debug = debug
 
@@ -266,23 +266,23 @@ class EventSelection:
         Applies selection cut to one event.
         Returns `True` only if all selection cuts pass.
         """
-        mhh = self.entries.HHKin_mass
+        mhh = self.entries['HHKin_mass']
         if mhh < 1:
             return False
 
-        pairtype    = self.entries.pairType
-        dau1_eleiso = self.entries.dau1_eleMVAiso
-        dau1_muiso  = self.entries.dau1_iso
-        dau1_tauiso = self.entries.dau1_deepTauVsJet
-        dau2_tauiso = self.entries.dau2_deepTauVsJet
+        pairtype    = self.entries['pairType']
+        dau1_eleiso = self.entries['dau1_eleMVAiso']
+        dau1_muiso  = self.entries['dau1_iso']
+        dau1_tauiso = self.entries['dau1_deepTauVsJet']
+        dau2_tauiso = self.entries['dau2_deepTauVsJet']
 
         # third lepton veto
-        nleps = self.entries.nleps
+        nleps = self.entries['nleps']
         if nleps > 0 and lepton_veto:
             return False
 
         # require at least two b jet candidates
-        nbjetscand = self.entries.nbjetscand
+        nbjetscand = self.entries['nbjetscand']
         if nbjetscand <= 1 and bjet_cuts:
             return False
 
@@ -308,8 +308,8 @@ class EventSelection:
             return False
 
         #((tauH_SVFIT_mass-116.)*(tauH_SVFIT_mass-116.))/(35.*35.) + ((bH_mass_raw-111.)*(bH_mass_raw-111.))/(45.*45.) <  1.0
-        svfit_mass = self.entries.tauH_SVFIT_mass
-        bh_mass    = self.entries.bH_mass_raw
+        svfit_mass = self.entries['tauH_SVFIT_mass']
+        bh_mass    = self.entries['bH_mass_raw']
 
         mcut = ( (svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
                  (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) < 1.0
