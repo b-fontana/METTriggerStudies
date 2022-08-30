@@ -47,7 +47,7 @@ def get_trig_counts(outdir, dataset, sample, filename,
             c_inters[chn][tcomb_str] = 0
 
     t_in.SetBranchStatus('*', 0)
-    _entries = ('pass_triggerbit', 'RunNumber',
+    _entries = ('triggerbit', 'RunNumber',
                 'HHKin_mass', 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
     for ientry in _entries:

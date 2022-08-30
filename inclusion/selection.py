@@ -15,7 +15,7 @@ from inclusion import config
 class EventSelection:
     def __init__(self, entries, dataset, isdata, debug=False):
         self.entries = entries
-        self.bit = self.entries.pass_triggerbit
+        self.bit = self.entries.triggerbit
         self.run = self.entries.RunNumber
         self.isdata = isdata
         self.debug = debug

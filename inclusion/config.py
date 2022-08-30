@@ -52,20 +52,23 @@ var_join = set(var_eff + var_dist)
 var_unionweights = ('dau1_pt', 'dau2_pt', 'dau1_eta', 'dau2_eta')
 
 trig_linear = lambda x : {'mc': x, 'data': x}
-trig_shift  = lambda x : {'mc': x, 'data': x+5}
-# https://twiki.cern.ch/twiki/bin/viewauth/CMS/auTrigger
-trig_map = {'IsoMu24': trig_linear(0),
-            'Ele32': trig_linear(2),
-            'IsoDoubleTauCustom': {'IsoDoubleTau':    {'mc': 4, 'data': (4,5,6)},
-                                   'IsoDoubleTauHPS': {'mc': 4, 'data': 7}},
-            'IsoMuIsoTauCustom': { 'IsoMuIsoTau':    {'mc': 5, 'data': 9},
-                                  'IsoMuIsoTauHPS': {'mc': 5, 'data': 8} },
-            'EleIsoTauCustom': {'EleIsoTau': {'mc': 6, 'data': 11},
-                                'EleIsoTauHPS': {'mc': 6, 'data': 10}},
-            'VBFTauCustom':  {'VBFTau':    {'mc': 8, 'data': 12},
-                              'VBFTauHPS': trig_shift(8)},
-            'METNoMu120': trig_shift(9),
-            'IsoTau180': trig_shift(11)}
+
+# The bit numbering scheme below matches the 'triggerbit' leaf
+# It does NOT match the 'pass_triggerbit' leaf, which is a skimmed version of the above that might change more often
+# One way to ensure the scheme is still correct is by running the script as shown here:
+# https://github.com/bfonta/useful_scripts/commit/f5e4a0096bc74c89176579a336b0f52b74cb3ed2
+trig_map = {'IsoMu24':    {'mc': 0, 'data': 0},
+            'Ele32':      {'mc': 2, 'data': 2},
+            'METNoMu120': {'mc': 40,  'data': 40},
+            'IsoTau180':  {'mc': 4,   'data': 4},
+            'IsoDoubleTauCustom': {'IsoDoubleTau':    {'mc': 12, 'data': (13,14,15)},
+                                   'IsoDoubleTauHPS': {'mc': 12, 'data': 12}},
+            'IsoMuIsoTauCustom':  {'IsoMuIsoTau':     {'mc': 8,  'data': 9},
+                                   'IsoMuIsoTauHPS':  {'mc': 8,  'data': 8} },
+            'EleIsoTauCustom':    {'EleIsoTau':       {'mc': 10, 'data': 11},
+                                   'EleIsoTauHPS':    {'mc': 10, 'data': 10}},
+            'VBFTauCustom':       {'VBFTau':          {'mc': 16,  'data': 12},
+                                   'VBFTauHPS':       {'mc': 16,  'data': 13}}}
 triggers = tuple(trig_map.keys())
 trig_custom = {'VBFTauCustom',
                'IsoDoubleTauCustom',

@@ -206,7 +206,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
                         ref_prob_ratios[chn][var][weightvar].setdefault(str(ibin), [])
 
     t_in.SetBranchStatus('*', 0)
-    _entries = ('pass_triggerbit', 'RunNumber',
+    _entries = ('triggerbit', 'RunNumber',
                 'HHKin_mass', 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
     _entries += args.variables
