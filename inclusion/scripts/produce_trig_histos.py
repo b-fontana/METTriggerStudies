@@ -9,7 +9,7 @@ sys.path.insert(0, parent_dir)
 
 import inclusion
 from inclusion import selection
-from inclusion import config
+from inclusion import config.main as main
 from inclusion.utils import utils
 from inclusion.utils.utils import join_name_trigger_intersection as joinNTC
 
@@ -67,12 +67,12 @@ def build_histograms(args):
     for chn in args.channels:
         h2Ref[chn], h2Trig[chn] = ({} for _ in range(2))
         for onetrig in args.triggers:
-            if onetrig in config.pairs2D.keys():
+            if onetrig in main.pairs2D.keys():
                 combtrigs = {x for x in triggercomb[chn] if onetrig in x}
                 for combtrig in combtrigs:
                     cstr = joinNTC(combtrig)
                     
-                    for j in config.pairs2D[onetrig]:
+                    for j in main.pairs2D[onetrig]:
                         bin2D = ( nbins[j[0]][chn], binedges[j[0]][chn],
                                   nbins[j[1]][chn], binedges[j[1]][chn] )
                         vname = utils.add_vnames(j[0], j[1])
@@ -138,11 +138,11 @@ def build_histograms(args):
             for var in args.variables:
                 pcuts1D[trig][var] = sel.var_cuts(trig, [var], args.nocut_dummy_str)
 
-            if trig in config.pairs2D.keys():
+            if trig in main.pairs2D.keys():
                 # combtrigs = tuple(x for x in triggercomb if trig in x)
                 # for combtrig in combtrigs:
                 # pcuts2D[joinNTC(combtrig)] = {}
-                for j in config.pairs2D[trig]:
+                for j in main.pairs2D[trig]:
                     vname = utils.add_vnames(j[0],j[1])
                     for t in args.triggers:
                         pcuts2D[t][vname] = sel.var_cuts(t, [j[0], j[1]], args.nocut_dummy_str)
@@ -164,7 +164,7 @@ def build_histograms(args):
 
                     # The following is tricky, as we are considering, simultaneously:
                     # - all trigger intersection combinations
-                    # - all cut combinations for each trigger combination (see 'config.cuts')
+                    # - all cut combinations for each trigger combination (see 'main.cuts')
                         
                     # Logic AND to intersect all cuts for this trigger combination
                     # Each element will contain one possible cut combination
@@ -205,7 +205,7 @@ def build_histograms(args):
 
                 # fill 2D efficiencies
                 for onetrig in args.triggers:
-                    if onetrig in config.pairs2D.keys():
+                    if onetrig in main.pairs2D.keys():
                         combtrigs = tuple(x for x in triggercomb[chn] if onetrig in x)
 
                         for combtrig in combtrigs:
@@ -218,7 +218,7 @@ def build_histograms(args):
                             if not sel.dataset_triggers(combtrig, chn, args.triggers)[0]:
                                 continue
                             
-                            for j in config.pairs2D[onetrig]:
+                            for j in main.pairs2D[onetrig]:
                                 vname = utils.add_vnames(j[0],j[1])
                                 fill_info = ( fill_var[j[0]][chn], fill_var[j[1]][chn],
                                               evt_weight )

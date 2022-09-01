@@ -21,7 +21,7 @@ from ROOT import (
 
 import inclusion
 from inclusion.utils import utils
-from inclusion import config
+from inclusion import config.main
 
 def get_histogram_max_counts(h):
   """
@@ -154,7 +154,7 @@ def plot_dist(args, channel, variable, trig, save_names, binedges, nbins):
   l.DrawLatex( lX, lY,        'Channel: '+latexChannel)
   l.DrawLatex( lX, lY-lYstep, 'Trigger: '+trig)
   
-  for aname in save_names[:len(config.extensions)]:
+  for aname in save_names[:len(main.extensions)]:
     canvas.SaveAs( aname )
 
   c_stack = TCanvas( os.path.basename(save_names[0]).split('.')[0]+'_stack', 'canvas_stack', 600, 600 )
@@ -165,7 +165,7 @@ def plot_dist(args, channel, variable, trig, save_names, binedges, nbins):
     hs.Add(h)
   hs.Draw('NOCLEAR')
   
-  for aname in save_names[len(config.extensions):]:
+  for aname in save_names[len(main.extensions):]:
     c_stack.SaveAs( aname )
 
 
@@ -179,8 +179,8 @@ def draw_distr_outputs(args):
       out.append( os.path.join( base, figname + dotString + ext ) )
 
   #add more outputs (used for stacked histograms)
-  extensions = list(config.extensions)
-  for ext in config.extensions:
+  extensions = list(main.extensions)
+  for ext in main.extensions:
     extensions.append( '_stack.' + ext )
     
   outputs = [[] for _ in range(len(extensions))]

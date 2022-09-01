@@ -30,7 +30,7 @@ from ROOT import (
 
 import inclusion
 from inclusion.utils import utils
-from inclusion import config
+from inclusion import config.main
 
 def set_histo_props(histo, variables):
     histo.GetYaxis().SetNdivisions(6)
@@ -235,14 +235,14 @@ def check_2D_trigger(args, proc, channel, var, trig, save_names):
   
 @utils.set_pure_input_namespace
 def draw_2D_sf_outputs(args):
-    outputs = [[] for _ in range(len(config.extensions))]
+    outputs = [[] for _ in range(len(main.extensions))]
     processes = args.mc_processes if args.draw_independent_MCs else [args.mc_name]
   
     for proc in processes:
         for ch in args.channels:
             for trig in args.triggers:
-                if trig in config.pairs2D.keys():
-                    for variables in config.pairs2D[trig]:
+                if trig in main.pairs2D.keys():
+                    for variables in main.pairs2D[trig]:
                         add = proc + '_' + ch + '_' + trig + '_' + variables[0] + '_VS_' + variables[1]
                         canvas_data_name = 'EffData_' + args.data_name + '_' + add + args.subtag
                         canvas_mc_name = 'EffMC_' + args.data_name + '_' + add + args.subtag
@@ -250,13 +250,13 @@ def draw_2D_sf_outputs(args):
                         thisbase = os.path.join(args.outdir, ch, '')
                         utils.createSingleDir( thisbase )
 
-                    for ext,out in zip(config.extensions, outputs):
+                    for ext,out in zip(main.extensions, outputs):
                         out.append( ( os.path.join( thisbase, canvas_data_name + '.' + ext ),
                                       os.path.join( thisbase, canvas_mc_name   + '.' + ext ),
                                       os.path.join( thisbase, canvas_sf_name   + '.' + ext )) )
 
     #join all outputs in the same list
-    return sum(outputs, []), config.extensions
+    return sum(outputs, []), main.extensions
     
 @utils.set_pure_input_namespace
 def draw_2D_sf(args):
@@ -268,16 +268,16 @@ def draw_2D_sf(args):
 
     # loop through variables, triggers, channels and processes
     dv = 0
-    for key in config.pairs2D:
-        dv += len(config.pairs2D[key])
+    for key in main.pairs2D:
+        dv += len(main.pairs2D[key])
     dc = len(args.channels) * dv
     dp = len(processes) * dc
     for ip,proc in enumerate(processes):
         for ic,ch in enumerate(args.channels):
             iv = -1
             for trig in args.triggers:
-                 if trig in config.pairs2D.keys():
-                    for variables in config.pairs2D[trig]:
+                 if trig in main.pairs2D.keys():
+                    for variables in main.pairs2D[trig]:
                         iv += 1
                         index = ip*dc + ic*dv + iv
                         names = [ outputs[index + dp*x] for x in range(len(extensions)) ]

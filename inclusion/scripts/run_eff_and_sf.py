@@ -9,7 +9,7 @@ sys.path.insert(0, parent_dir)
 
 import inclusion
 from inclusion.utils import utils
-from inclusion import config
+from inclusion import config.main
 
 import argparse
 import ctypes
@@ -658,12 +658,12 @@ def _get_canvas_name(prefix, proc, chn, var, trig, data_name, subtag):
     """
     add = proc + '_' + chn + '_' + var + '_TRG_' + trig
     n = prefix + data_name + '_' + add
-    n += config.placeholder_cuts + subtag
+    n += main.placeholder_cuts + subtag
     return n
 
 def run_eff_sf_1d_outputs(outdir, data_name, mc_name,
                           tcomb, channels, variables, subtag):
-    outputs = [[] for _ in range(len(config.extensions))]
+    outputs = [[] for _ in range(len(main.extensions))]
     processes = [mc_name] #CHANGE !!!! IF STUDYING MCs SEPARATELY
   
     for proc in processes:
@@ -676,12 +676,12 @@ def run_eff_sf_1d_outputs(outdir, data_name, mc_name,
                 thisbase = os.path.join(outdir, ch, var, '')
                 utils.create_single_dir(thisbase)
 
-                for ext,out in zip(config.extensions, outputs):
+                for ext,out in zip(main.extensions, outputs):
                     _out = os.path.join(thisbase, canvas_name + '.' + ext)
                     out.append(_out)                    
 
     #join all outputs in the same list
-    return sum(outputs, []), config.extensions, processes
+    return sum(outputs, []), main.extensions, processes
 
 def run_eff_sf_2d_outputs(outdir, proc, data_name,
                           tcomb, channel, subtag,
@@ -694,14 +694,14 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name,
     outputs = {}
     
     # only running when one of the triggers in the intersection
-    # matches one of the triggers specified by the user with `config.pairs2D`
+    # matches one of the triggers specified by the user with `main.pairs2D`
     splits = tcomb.split(intersection_str)
-    run = any({x in config.pairs2D.keys() for x in splits})
+    run = any({x in main.pairs2D.keys() for x in splits})
 
     if run:
         for onetrig in splits:
-            if onetrig in config.pairs2D:
-                for j in config.pairs2D[onetrig]:
+            if onetrig in main.pairs2D:
+                for j in main.pairs2D[onetrig]:
                     vname = utils.add_vnames(j[0],j[1])
                     pref2d = args.canvas_prefix.replace('1', '2')
                     cname = _get_canvas_name(pref2d,
@@ -721,7 +721,7 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name,
 
                     for kn,vn in cnames.items():
                         outputs[vname][kn] = []
-                        for ext in config.extensions:
+                        for ext in main.extensions:
                             if ext not in ('C', 'root'): #remove extra outputs to reduce noise
                                 outputs[vname][kn].append(os.path.join(thisbase, vn + '.' + ext))
     
@@ -747,7 +747,7 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
 
     triggercomb = {}
     for chn in channels:
-        triggercomb[chn] = utils.generate_trigger_combinations(chn, config.triggers)
+        triggercomb[chn] = utils.generate_trigger_combinations(chn, main.triggers)
 
     dv = len(args.variables)
     dc = len(args.channels) * dv
@@ -779,18 +779,18 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
 
     splits = tcomb.split(intersection_str)
     for x in splits:
-        if x not in config.trig_map:
+        if x not in main.trig_map:
             mess = 'Trigger {} was not defined in the configuration.'.format(x)
             raise ValueError(mess)
         
-    run = any({x in config.pairs2D for x in splits})
+    run = any({x in main.pairs2D for x in splits})
     if run:
         for ip,proc in enumerate(processes):
             for ic,chn in enumerate(channels):
                 if not utils.is_trigger_comb_in_channel(chn, tcomb):
                     continue
                 for onetrig in splits:
-                    if onetrig in config.pairs2D:
+                    if onetrig in main.pairs2D:
                         names2D = run_eff_sf_2d_outputs(outdir, proc,
                                                         data_name,
                                                         tcomb,
@@ -799,7 +799,7 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
                                                         intersection_str,
                                                         debug)
 
-                        for j in config.pairs2D[onetrig]:
+                        for j in main.pairs2D[onetrig]:
                             vname = utils.add_vnames(j[0],j[1])
 
                             draw_eff_and_sf_2d(proc, chn, vname,

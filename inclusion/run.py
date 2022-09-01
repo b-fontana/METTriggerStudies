@@ -14,6 +14,7 @@ import argparse
 from argparse import RawTextHelpFormatter
 
 import config
+from config import main
 from utils import utils, luigi_utils as lutils
 from scripts import def_bins
 from condor import (
@@ -55,7 +56,7 @@ parser.add_argument(
     type=str,
     nargs='+',
     required=True,
-    choices=config.data.keys(),
+    choices=main.data.keys(),
     help='Select the data over which the workflow will be run.'
     )
 parser.add_argument(
@@ -63,7 +64,7 @@ parser.add_argument(
     type=str,
     nargs='+',
     required=True,
-    choices=config.mc_processes.keys(),
+    choices=main.mc_processes.keys(),
     help='Select the MC processes over which the workflow will be run.'
     )
 parser.add_argument(
@@ -71,8 +72,8 @@ parser.add_argument(
     nargs='+', #1 or more arguments
     type=str,
     required=False,
-    default=config.triggers,
-    choices=config.triggers,
+    default=main.triggers,
+    choices=main.triggers,
     help=( 'Select the triggers considered for the closure.' +
           'The default is to consider all of them.\n' +
           'To do a closure for one single trigger efficiency (which ' +
@@ -83,21 +84,21 @@ parser.add_argument(
     '--channels',
     nargs='+', #1 or more arguments
     type=str,
-    default=config.channels,
+    default=main.channels,
     help='Select the channels over which the workflow will be run.'
     )
 parser.add_argument(
     '--variables_for_efficiencies',
     nargs='+', #1 or more arguments
     type=str,
-    default=config.var_eff,
+    default=main.var_eff,
     help='Select the variables to be used for the calculation of efficiencies.'
     )
 parser.add_argument(
     '--variables_for_distributions',
     nargs='+', #1 or more arguments
     type=str,
-    default=config.var_dist,
+    default=main.var_dist,
     help='Select the variables to be used for the display of distributions.'
     )
 parser.add_argument(
@@ -137,11 +138,11 @@ parser.add_argument(
     help="Explicitly print the functions being run for each task, for workflow debugging purposes."
     )
 FLAGS, _ = parser.parse_known_args()
-assert set(FLAGS.triggers_closure).issubset(set(config.triggers))
+assert set(FLAGS.triggers_closure).issubset(set(main.triggers))
          
-user_data = {k:v for k,v in config.data.items()
+user_data = {k:v for k,v in main.data.items()
              if k in FLAGS.data}
-user_mc   = {k:v for k,v in config.mc_processes.items()
+user_mc   = {k:v for k,v in main.mc_processes.items()
              if k in FLAGS.mc_processes}
 
 data_keys, data_vals = utils.flatten_nested_dict(user_data)
@@ -152,8 +153,8 @@ assert len(mc_keys)==len(mc_vals)
 data_name = 'Data_' + '_'.join(FLAGS.data)
 mc_name   = 'MC_'   + '_'.join(FLAGS.mc_processes)
 
-data_storage = os.path.join(config.storage, FLAGS.tag, 'Data' )
-out_storage = os.path.join(config.storage, FLAGS.tag, 'Outputs')
+data_storage = os.path.join(main.storage, FLAGS.tag, 'Data' )
+out_storage = os.path.join(main.storage, FLAGS.tag, 'Outputs')
 targets_folder = os.path.join(data_storage, 'targets')    
 binedges_filename = os.path.join(data_storage, 'binedges.hdf5')
 
@@ -166,7 +167,7 @@ variables_join = tuple(set(FLAGS.variables_for_efficiencies + FLAGS.variables_fo
 #### scripts/def_bins
 bins_params = {'nbins'             : FLAGS.nbins,
                'binedges_filename' : binedges_filename,
-               'indir'             : config.inputs,
+               'indir'             : main.inputs,
                'outdir'            : data_storage,
                'data_vals'         : data_vals,
                'variables'         : variables_join,
@@ -178,38 +179,38 @@ bins_params = {'nbins'             : FLAGS.nbins,
 
 #### condor/dag
 write_params = {'data_name' : data_name,
-                'localdir'  : config.base_folder,
+                'localdir'  : main.base_folder,
                 'tag'       : FLAGS.tag}
 
 #### scripts/produce_trig_histos
 histos_params = {'binedges_filename' : binedges_filename,
-                 'indir'             : config.inputs,
+                 'indir'             : main.inputs,
                  'outdir'            : data_storage,
-                 'localdir'          : config.base_folder,
+                 'localdir'          : main.base_folder,
                  'data_keys'         : data_keys,
                  'data_vals'         : data_vals,
                  'mc_keys'           : mc_keys,
                  'mc_vals'           : mc_vals,
-                 'triggers'          : config.triggers,
+                 'triggers'          : main.triggers,
                  'channels'          : FLAGS.channels,
                  'variables'         : variables_join,
                  'tag'               : FLAGS.tag,
                  'subtag'            : subtag,
-                 'intersection_str'  : config.inters_str,
-                 'nocut_dummy_str'   : config.nocut_dummy,
-                 'configuration'     : 'inclusion.config.' + FLAGS.configuration,
+                 'intersection_str'  : main.inters_str,
+                 'nocut_dummy_str'   : main.nocut_dummy,
+                 'configuration'     : 'inclusion.main.' + FLAGS.configuration,
                  'debug'             : FLAGS.debug_workflow}
 
 #### scripts/hadd_histo
 haddhisto_params = {'indir'    : data_storage,
-                    'localdir' : config.base_folder,
+                    'localdir' : main.base_folder,
                     'tag'      : FLAGS.tag,
                     'subtag'   : subtag, }
 
 #### scripts/add_counts
 haddcounts_params = {'indir'    : data_storage,
                      'outdir'   : out_storage,
-                     'localdir'  : config.base_folder,
+                     'localdir'  : main.base_folder,
                      'tag'      : FLAGS.tag,
                      'subtag'   : subtag,
                      'channels' : FLAGS.channels, }
@@ -220,58 +221,58 @@ sf_params = {'data_name'            : data_name,
              'draw_independent_MCs' : False,
              'indir'                : data_storage,
              'outdir'               : out_storage,
-             'localdir'             : config.base_folder,
-             'triggers'             : config.triggers,
+             'localdir'             : main.base_folder,
+             'triggers'             : main.triggers,
              'channels'             : FLAGS.channels,
              'variables'            : FLAGS.variables_for_efficiencies,
              'binedges_filename'    : binedges_filename,
              'tag'                  : FLAGS.tag,
              'subtag'               : subtag,
-             'canvas_prefix'        : config.pref['canvas'],
-             'intersection_str'     : config.inters_str,
-             'nocut_dummy_str'      : config.nocut_dummy,
+             'canvas_prefix'        : main.pref['canvas'],
+             'intersection_str'     : main.inters_str,
+             'nocut_dummy_str'      : main.nocut_dummy,
              'debug'                : FLAGS.debug_workflow,}
 
 sfagg_params = {'indir'       : out_storage,
                 'outdir'      : out_storage,
-                'localdir'    : config.base_folder,
+                'localdir'    : main.base_folder,
                 'channels'    : FLAGS.channels,
                 'variables'   : FLAGS.variables_for_efficiencies,
                 'tag'         : FLAGS.tag,
                 'subtag'      : subtag,
-                'file_prefix' : config.pref['sf'],
+                'file_prefix' : main.pref['sf'],
                 'debug'       : FLAGS.debug_workflow,}
 
 #### scripts/discriminator
 discriminator_params = {'indir'            : data_storage,
                         'outdir'           : data_storage,
-                        'localdir'         : config.base_folder,
-                        'triggers'         : config.triggers,
+                        'localdir'         : main.base_folder,
+                        'triggers'         : main.triggers,
                         'channels'         : FLAGS.channels,
                         'variables'        : FLAGS.variables_for_efficiencies,
                         'tag'              : FLAGS.tag,
                         'subtag'           : subtag,
-                        'intersection_str' : config.inters_str,
+                        'intersection_str' : main.inters_str,
                         'debug'            : FLAGS.debug_workflow,}
 
 #### scripts/calculator
 calculator_params = {'binedges_filename'       : binedges_filename,
-                     'indir_root'              : config.inputs,
+                     'indir_root'              : main.inputs,
                      'indir_json'              : data_storage,
                      'indir_eff'               : out_storage,
                      'outdir'                  : data_storage,
-                     'outprefix'               : config.pref['clos'],
+                     'outprefix'               : main.pref['clos'],
                      'data_name'               : data_name,
                      'mc_name'                 : mc_name,
                      'mc_processes'            : mc_vals,
-                     'localdir'                : config.base_folder,
-                     'triggers'                : config.triggers,
+                     'localdir'                : main.base_folder,
+                     'triggers'                : main.triggers,
                      'closure_single_triggers' : FLAGS.triggers_closure,
                      'channels'                : FLAGS.channels,
                      'variables'               : FLAGS.variables_for_efficiencies,
                      'tag'                     : FLAGS.tag,
                      'subtag'                  : subtag,
-                     'configuration'           : 'inclusion.config.' + FLAGS.configuration,
+                     'configuration'           : 'inclusion.main.' + FLAGS.configuration,
                      'debug'                   : FLAGS.debug_workflow,}
 
 #### scripts/closure
@@ -282,12 +283,12 @@ closure_params = {'data_name'               : data_name,
                   'indir_union'             : data_storage,
                   'indir_json'              : data_storage,
                   'outdir'                  : out_storage,
-                  'inprefix'                : config.pref['clos'],
-                  'eff_prefix'              : config.pref['sf'],
+                  'inprefix'                : main.pref['clos'],
+                  'eff_prefix'              : main.pref['sf'],
                   'mc_processes'            : mc_vals,
-                  'out_weighted_prefix'     : config.pref['clos'],
-                  'out_original_prefix'     : config.pref['histos'],
-                  'localdir'                : config.base_folder,
+                  'out_weighted_prefix'     : main.pref['clos'],
+                  'out_original_prefix'     : main.pref['histos'],
+                  'localdir'                : main.base_folder,
                   'closure_single_triggers' : FLAGS.triggers_closure,
                   'channels'                : FLAGS.channels,
                   'variables'               : FLAGS.variables_for_efficiencies,
@@ -300,7 +301,7 @@ closure_params = {'data_name'               : data_name,
 def get_target_path(taskname, targets_dir):
     re_txt = re.compile('\.txt')
     target_path = os.path.join(targets_dir,
-                               re_txt.sub('_'+taskname+'.txt', config.targ_def)) 
+                               re_txt.sub('_'+taskname+'.txt', main.targ_def)) 
     return target_path
 
 
@@ -337,7 +338,7 @@ class Processing(lutils.ForceRun):
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
         self.params['mode'] = self.mode
-        self.params['tprefix'] = config.pref[self.mode]
+        self.params['tprefix'] = main.pref[self.mode]
         obj_data, obj_mc, _, _ = processing.processing_outputs(self.params)
         o1_1, o1_2, _, _ = obj_data
         o2_1, o2_2, _, _ = obj_mc
@@ -357,7 +358,7 @@ class Processing(lutils.ForceRun):
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
         self.params['mode'] = self.mode
-        self.params['tprefix'] = config.pref[self.mode]
+        self.params['tprefix'] = main.pref[self.mode]
         processing.processing(self.params)
  
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
@@ -370,7 +371,7 @@ class HaddHisto(lutils.ForceRun):
     samples = luigi.ListParameter()
     dataset_name = luigi.Parameter()
     args = utils.dot_dict(haddhisto_params)
-    args['tprefix'] = config.pref['histos']
+    args['tprefix'] = main.pref['histos']
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
@@ -400,7 +401,7 @@ class HaddCounts(lutils.ForceRun):
     samples = luigi.ListParameter()
     dataset_name = luigi.Parameter()
     args = utils.dot_dict(haddcounts_params)
-    args['tprefix'] = config.pref['counts']
+    args['tprefix'] = main.pref['counts']
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
@@ -429,7 +430,7 @@ class HaddCounts(lutils.ForceRun):
 class EffAndSF(lutils.ForceRun):
     """Write htcondor files for efficiencies and scale factors."""
     params = utils.dot_dict(sf_params)
-    params['tprefix'] = config.pref['histos']
+    params['tprefix'] = main.pref['histos']
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
@@ -561,8 +562,8 @@ class Dag(lutils.ForceRun):
     p_calc        = utils.dot_dict(calculator_params)
     p_closure     = utils.dot_dict(closure_params)
     
-    p_hadd_histo['tprefix'] = config.pref['histos']
-    p_eff_sf['tprefix'] = config.pref['histos']
+    p_hadd_histo['tprefix'] = main.pref['histos']
+    p_eff_sf['tprefix'] = main.pref['histos']
     
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
@@ -632,7 +633,7 @@ class SubmitDAG(lutils.ForceRun):
         with open(out, 'r') as f:
             contents = f.readlines()
         ncontents = len(contents)
-        new_content = jw.condor_specific_content(queue=config.queue,
+        new_content = jw.condor_specific_content(queue=main.queue,
                                                  machine='llrt3condor')
         contents.insert(ncontents-1, new_content + '\n')
         with open(out, 'w') as f:

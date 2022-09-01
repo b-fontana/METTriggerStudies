@@ -9,7 +9,7 @@ sys.path.insert(0, parent_dir)
 
 import inclusion
 from inclusion.utils import utils
-from inclusion import config
+from inclusion import config.main
 
 import json
 import glob
