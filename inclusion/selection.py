@@ -67,7 +67,7 @@ class EventSelection:
             m = "Only datasets {} are supported. You tried using '{}'.".format(self.datasets, reference)
             raise ValueError(m)
 
-        lepton_veto = self.should_apply_lepton_trigger(tcomb)
+        lepton_veto = self.should_apply_lepton_veto(tcomb)
         
         return self.selection_cuts(lepton_veto=lepton_veto)
 
@@ -283,37 +283,17 @@ class EventSelection:
 
         return bits
 
-    def should_apply_lepton_trigger(self, tcomb):
+    def should_apply_lepton_veto(self, tcomb):
         """Whether to apply 3rd lepton veto. The veto is always applied to MC."""
         if not self.isdata:
             return True
         
-        veto = False
-        if tcomb not in (# general triggers
-                         ('IsoTau180', 'METNoMu120'),
-                         ('METNoMu120', 'VBFTauCustom'),
-                         # mutau channel
-                         ('IsoMu24', 'METNoMu120'),
-                         ('IsoMuIsoTauCustom', 'METNoMu120'),
-                         ('IsoMu24', 'IsoTau180', 'METNoMu120'),
-                         ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
-                         ('IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-                         # etau channel
-                         ('Ele32', 'METNoMu120'),
-                         ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
-                         ('Ele32', 'IsoTau180', 'METNoMu120'),
-                         ('EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-                         # tautau channel
-                         ('IsoDoubleTauCustom', 'METNoMu120'),
-                         ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
-                         ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
-                         # large intersections
-                         ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-                         ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120', 'VBFTauCustom'),
-                         ('Ele32', 'EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-                         ):
-            veto = True
-        return veto
+        if (tcomb in selmod.inters_general['MET'] or
+            tcomb in selmod.inters_etau['MET'] or
+            tcomb in selmod.inters_mutau['MET'] or
+            tcomb in selmod.inters_tautau['MET']):
+            return True
+        return False
     
     def trigger_bits(self, trig):
         if trig in config.trig_custom:
