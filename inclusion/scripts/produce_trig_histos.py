@@ -93,6 +93,7 @@ def build_histograms(args):
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
     cmet = 0
+
     config_module = importlib.import_module(args.configuration)
     nentries = t_in.GetEntriesFast()
     for ientry,entry in enumerate(t_in):

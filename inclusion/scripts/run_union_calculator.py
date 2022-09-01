@@ -22,13 +22,10 @@ import glob
 import json
 import argparse
 import numpy as np
+import importlib
 
-from ROOT import (
-    gROOT,
-    TFile,
-    TIter
-)
-gROOT.SetBatch(True)
+import ROOT
+ROOT.gROOT.SetBatch(True)
 
 def eff_extractor(args, chn, effvars, nbins):
     """
@@ -68,8 +65,8 @@ def eff_extractor(args, chn, effvars, nbins):
                 # CHANGE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 in_file_name = min(glob_name, key=len) #select the shortest string (NoCut)
 
-                in_file = TFile.Open(in_file_name, 'READ')
-                key_list = TIter(in_file.GetListOfKeys())
+                in_file = ROOT.TFile.Open(in_file_name, 'READ')
+                key_list = ROOT.TIter(in_file.GetListOfKeys())
                 for key in key_list:
                     obj = key.ReadObj()
                     
@@ -166,7 +163,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
     fname = os.path.join(args.indir_root, args.sample, args.file_name)
     if not os.path.exists(fname):
         raise ValueError('[' + os.path.basename(__file__) + '] {} does not exist.'.format(fname))
-    f_in = TFile( fname )
+    f_in = ROOT.TFile( fname )
     t_in = f_in.Get('HTauTauTree')
 
     outdata = h5py.File(output, mode='w')
@@ -214,6 +211,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
 
+    config_module = importlib.import_module(args.configuration)
     nentries = t_in.GetEntriesFast()
     for ientry,entry in enumerate(t_in):
         if ientry%10000==0:
@@ -222,7 +220,7 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
         
-        sel = selection.EventSelection(entries, dataset, isdata)
+        sel = selection.EventSelection(entries, dataset, isdata, configuration=config_module)
         
         for chn in args.channels:
             if not utils.is_channel_consistent(chn, entries.pairType):
@@ -302,6 +300,8 @@ if __name__ == '__main__':
                         help='Workflow variables considered.')
     parser.add_argument('-t', '--tag', help='string to differentiate between different workflow runs', required=True)
     parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
+    parser.add_argument('--configuration', dest='configuration', required=True,
+                        help='Name of the configuration module to use.')
     parser.add_argument('--debug', action='store_true', help='debug verbosity')
     args = utils.parse_args(parser)
     
