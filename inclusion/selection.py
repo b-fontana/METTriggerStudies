@@ -296,7 +296,6 @@ class EventSelection:
                          ('IsoMu24', 'METNoMu120'),
                          ('IsoMuIsoTauCustom', 'METNoMu120'),
                          ('IsoMu24', 'IsoTau180', 'METNoMu120'),
-                         ('IsoMu24', 'METNoMu120', 'VBFTauCustom'),
                          ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
                          ('IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
                          # etau channel
@@ -304,8 +303,6 @@ class EventSelection:
                          ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
                          ('Ele32', 'IsoTau180', 'METNoMu120'),
                          ('EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-                         ('EleIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
-                         ('Ele32', 'METNoMu120', 'VBFTauCustom'),
                          # tautau channel
                          ('IsoDoubleTauCustom', 'METNoMu120'),
                          ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),

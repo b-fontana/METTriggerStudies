@@ -129,7 +129,7 @@ def generate_trigger_combinations(channel, trigs):
     """
     exclusive = { 'etau'   : ('Ele32', 'Ele35', 'EleIsoTauCustom'),
                   'mutau'  : ('IsoMu24', 'IsoMu27', 'IsoMuIsoTauCustom'),
-                  'tautau' : ('IsoDoubleTauCustom',) }
+                  'tautau' : ('IsoDoubleTauCustom', 'VBFTauCustom') }
 
     # look only at combinations where the channel is imcompatible with the trigger
     pruntrigs = [ exclusive[x] for x in exclusive if x != channel ]
