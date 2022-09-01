@@ -11,14 +11,21 @@ sys.path.insert(0, parent_dir)
 
 import inclusion
 from inclusion import config
+from config import main
 
 class EventSelection:
-    def __init__(self, entries, dataset, isdata, debug=False):
+    def __init__(self, entries, dataset, isdata, debug=False, configuration=None):
         self.entries = entries
         self.bit = self.entries['triggerbit']
         self.run = self.entries['RunNumber']
         self.isdata = isdata
         self.debug = debug
+
+        # dependency injection
+        if configuration:
+            from config import configuration as selmod
+        else:
+            from config import sel_default as selmod
 
         self.datasets = ('MET', 'EG', 'Mu', 'Tau')
         self.prefix = 'Data_' if self.isdata else 'MC_'
@@ -120,103 +127,29 @@ class EventSelection:
         if len(tcomb) > 3:
             return None
         
-        #general triggers
-        if tcomb in ( ('IsoTau180',),
-                      ('VBFTauCustom',),
-                      ('IsoTau180', 'VBFTauCustom'),                     
-                     ):
-            return self.ds_name('MET')
-        elif tcomb in ( ):
-            return self.ds_name('EG')
-        elif tcomb in (('METNoMu120',),
-                       ('IsoTau180', 'METNoMu120'),
-                       ('METNoMu120', 'VBFTauCustom'),
-                       ('IsoTau180', 'METNoMu120', 'VBFTauCustom'),):
-            return self.ds_name('Mu')
-        elif tcomb in ( ):
-            return self.ds_name('Tau')
-     
+        # general triggers
+        for k in main.data:
+            if tcomb in selmod.inters_general[k]:
+                return self.ds_name(k)
+                 
         # channel-specific triggers
         if channel == 'etau':
-            if tcomb in ( ('Ele32',),
-                          ('EleIsoTauCustom',),
-                          ('Ele32', 'EleIsoTauCustom'),
-                          ('Ele32', 'VBFTauCustom'),
-                          ('Ele32', 'IsoTau180'),
-                          ('EleIsoTauCustom', 'VBFTauCustom'),
-                          ('EleIsoTauCustom', 'IsoTau180'),
-                          ('EleIsoTauCustom', 'IsoTau180'),
-                          ('Ele32', 'EleIsoTauCustom', 'VBFTauCustom'),
-                          ('Ele32', 'EleIsoTauCustom', 'IsoTau180'),
-                          ('Ele32', 'IsoTau180', 'VBFTauCustom'),
-                          ('EleIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
-                         ):
-                return self.ds_name('MET')
-            elif tcomb in ( ) :
-                return self.ds_name('EG')
-            elif tcomb in (('Ele32', 'METNoMu120'),
-                           ('EleIsoTauCustom', 'METNoMu120'),
-                           ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
-                           ('Ele32', 'IsoTau180', 'METNoMu120'),
-                           ('Ele32', 'METNoMu120', 'VBFTauCustom'),
-                           ('EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-                           ('EleIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
-                           ('Ele32', 'EleIsoTauCustom', 'IsoTau180', 'METNoMu120')):
-                return self.ds_name('Mu')
-            elif tcomb in ( ):
-                return self.ds_name('Tau')
-            else:
-                raise ValueError(wrong_comb.format(tcomb, channel))
+            for k in main.data:
+                if tcomb in selmod.inters_etau[k]:
+                    return self.ds_name(k)
+            raise ValueError(wrong_comb.format(tcomb, channel))
             
         elif channel == 'mutau':
-            if tcomb in ( ('IsoMu24',),
-                          ('IsoMuIsoTauCustom',),
-                          ('IsoMu24', 'IsoMuIsoTauCustom'),
-                          ('IsoMu24', 'VBFTauCustom'),
-                          ('IsoMu24', 'IsoTau180'),
-                          ('IsoMuIsoTauCustom', 'VBFTauCustom'),
-                          ('IsoMuIsoTauCustom', 'IsoTau180'),
-                          ('IsoMuIsoTauCustom', 'IsoTau180'),
-                          ('IsoMu24', 'IsoMuIsoTauCustom', 'VBFTauCustom'),
-                          ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180'),
-                          ('IsoMu24', 'IsoTau180', 'VBFTauCustom'),
-                          ('IsoMuIsoTauCustom', 'IsoTau180', 'VBFTauCustom'),
-                         ):
-                return self.ds_name('MET')
-            elif tcomb in (('IsoMu24', 'METNoMu120'),
-                           ('IsoMuIsoTauCustom', 'METNoMu120'),
-                           ('IsoMu24', 'IsoTau180', 'METNoMu120'),
-                           ('IsoMu24', 'METNoMu120', 'VBFTauCustom'),
-                           ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
-                           ('IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-                           ('IsoMuIsoTauCustom', 'METNoMu120', 'VBFTauCustom'),
-                           ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120')) :
-                return self.ds_name('EG')
-            elif tcomb in ( ):
-                return self.ds_name('Mu')
-            elif tcomb in ( ):
-                return self.ds_name('Tau')
-            else:
-                raise ValueError(wrong_comb.format(tcomb, channel))
+            for k in main.data:
+                if tcomb in selmod.inters_mutau[k]:
+                    return self.ds_name(k)
+            raise ValueError(wrong_comb.format(tcomb, channel))
             
         elif channel == 'tautau':
-            if tcomb in (('IsoDoubleTauCustom',),
-                         ('IsoDoubleTauCustom', 'VBFTauCustom'),
-                         ('IsoDoubleTauCustom', 'IsoTau180'),
-                         ('IsoDoubleTauCustom', 'IsoTau180', 'VBFTauCustom'),
-                         ):
-                return self.ds_name('MET')
-            elif tcomb in ( ) :
-                return self.ds_name('EG')
-            elif tcomb in (('IsoDoubleTauCustom', 'METNoMu120'),
-                           ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
-                           ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
-                           ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120', 'VBFTauCustom'),):
-                return self.ds_name('Mu')
-            elif tcomb in ( ):
-                return self.ds_name('Tau')
-            else:
-                raise ValueError(wrong_comb.format(tcomb, channel))
+            for k in main.data:
+                if tcomb in selmod.inters_tautau[k]:
+                    return self.ds_name(k)
+            raise ValueError(wrong_comb.format(tcomb, channel))
             
         else:
             raise ValueError('Channel {} is not supported.'.format(channel))
