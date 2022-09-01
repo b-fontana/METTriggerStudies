@@ -126,6 +126,12 @@ parser.add_argument(
     help="Only runs the 'counting' workflow: check how many events pass each intersection of triggers. The default is to run the full workflow."
     )
 parser.add_argument(
+    '--configuration',
+    type=str,
+    default='sel_default',
+    help='Specifies a subtag, for instance an additional cut within the same tag. We force its first character to be an underscore.'
+    )
+parser.add_argument(
     '--debug_workflow',
     action='store_true',
     help="Explicitly print the functions being run for each task, for workflow debugging purposes."
@@ -191,6 +197,7 @@ histos_params = {'binedges_filename' : binedges_filename,
                  'subtag'            : subtag,
                  'intersection_str'  : config.inters_str,
                  'nocut_dummy_str'   : config.nocut_dummy,
+                 'configuration'     : 'inclusion.config.' + FLAGS.configuration,
                  'debug'             : FLAGS.debug_workflow}
 
 #### scripts/hadd_histo

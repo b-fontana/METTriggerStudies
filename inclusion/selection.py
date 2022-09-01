@@ -14,7 +14,7 @@ from inclusion import config
 from config import main
 
 class EventSelection:
-    def __init__(self, entries, dataset, isdata, debug=False, configuration=None):
+    def __init__(self, entries, dataset, isdata, configuration, debug=False):
         self.entries = entries
         self.bit = self.entries['triggerbit']
         self.run = self.entries['RunNumber']
@@ -22,10 +22,7 @@ class EventSelection:
         self.debug = debug
 
         # dependency injection
-        if configuration:
-            from config import configuration as selmod
-        else:
-            from config import sel_default as selmod
+        from config import sel_default as selmod
 
         self.datasets = ('MET', 'EG', 'Mu', 'Tau')
         self.prefix = 'Data_' if self.isdata else 'MC_'

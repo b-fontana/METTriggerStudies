@@ -17,51 +17,46 @@ import re
 import functools
 import argparse
 import itertools as it
+import importlib
 
-from ROOT import (
-    TFile,
-    TH1D,
-    TH2D,
-)
+import ROOT
 
-def build_histograms(infile, outdir, dataset, sample, isdata,
-                     channels, variables, triggers,
-                     subtag, tprefix, binedges_fname):
+def build_histograms(args):
     # -- Check if outdir exists, if not create it
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-    if not os.path.exists( os.path.join(outdir, sample) ):
-        os.makedirs( os.path.join(outdir, sample) )
-    outdir = os.path.join(outdir, sample)
+    if not os.path.exists(args.outdir):
+        os.makedirs(args.outdir)
+    if not os.path.exists( os.path.join(args.outdir, args.sample) ):
+        os.makedirs( os.path.join(args.outdir, args.sample) )
+    outdir = os.path.join(args.outdir, args.sample)
 
-    if not os.path.exists(infile):
+    if not os.path.exists(args.infile):
         mes = '[' + os.path.basename(__file__) + '] {} does not exist.'.format(infile)
         raise ValueError(mes)
 
-    f_in = TFile(infile)
+    f_in = ROOT.TFile(args.infile)
     t_in = f_in.Get('HTauTauTree')
 
-    binedges, nbins = utils.load_binning(afile=binedges_fname, key=subtag,
-                                         variables=variables, channels=channels)
+    binedges, nbins = utils.load_binning(afile=args.binedges_fname, key=args.subtag,
+                                         variables=args.variables, channels=args.channels)
 
     triggercomb = {}
-    for chn in channels:
-        triggercomb[chn] = utils.generate_trigger_combinations(chn, triggers)
+    for chn in args.channels:
+        triggercomb[chn] = utils.generate_trigger_combinations(chn, args.triggers)
 
     # Define 1D histograms
     #  hRef: pass the reference trigger
     #  hTrig: pass the reference trigger + trigger under study
     hRef, hTrig = ({} for _ in range(2))
 
-    for chn in channels:
+    for chn in args.channels:
         hRef[chn], hTrig[chn] = ({} for _ in range(2))
-        for j in variables:
+        for j in args.variables:
             binning1D = (nbins[j][chn], binedges[j][chn])
             hTrig[chn][j], hRef[chn][j] = ({} for _ in range(2))
             for tcomb in triggercomb[chn]:
                 hname = utils.get_hnames('Ref1D')(chn, j, joinNTC(tcomb))
 
-                hRef[chn][j][joinNTC(tcomb)] = TH1D(hname, '', *binning1D)
+                hRef[chn][j][joinNTC(tcomb)] = ROOT.TH1D(hname, '', *binning1D)
                 hTrig[chn][j][joinNTC(tcomb)] = {}
 
     # Define 2D histograms
@@ -69,9 +64,9 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
     #  h2Trig: pass the reference trigger + trigger under study
     h2Ref, h2Trig = ({} for _ in range(2))
     
-    for chn in channels:
+    for chn in args.channels:
         h2Ref[chn], h2Trig[chn] = ({} for _ in range(2))
-        for onetrig in triggers:
+        for onetrig in args.triggers:
             if onetrig in config.pairs2D.keys():
                 combtrigs = {x for x in triggercomb[chn] if onetrig in x}
                 for combtrig in combtrigs:
@@ -84,7 +79,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                         if vname not in h2Ref[chn]:
                             h2Ref[chn][vname] = {}
                         hname = utils.get_hnames('Ref2D')(chn, vname, cstr)
-                        h2Ref[chn][vname][cstr] = TH2D(hname, '', *bin2D)
+                        h2Ref[chn][vname][cstr] = ROOT.TH2D(hname, '', *bin2D)
                         if vname not in h2Trig[chn]:
                             h2Trig[chn][vname] = {}
                         h2Trig[chn][vname][cstr] = {}
@@ -94,10 +89,11 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                 'PUReweight', 'lumi', 'IdAndIsoSF_deep_pt',
                 'HHKin_mass', 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
-    _entries += tuple(variables)
+    _entries += tuple(args.variables)
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
     cmet = 0
+    config_module = importlib.import_module(args.configuration)
     nentries = t_in.GetEntriesFast()
     for ientry,entry in enumerate(t_in):
         if ientry%10000==0:
@@ -105,8 +101,8 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
 
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-        
-        sel = selection.EventSelection(entries, dataset, isdata)
+
+        sel = selection.EventSelection(entries, args.dataset, args.isdata, configuration=config_module)
         
         #mcweight   = entries.MC_weight
         pureweight = entries.PUReweight
@@ -119,26 +115,26 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
         if utils.is_nan(idandiso)   : idandiso=1
 
         evt_weight = pureweight*lumi*idandiso
-        if utils.is_nan(evt_weight) or isdata:
+        if utils.is_nan(evt_weight) or args.isdata:
             evt_weight = 1
 
         fill_var = {}
-        for v in variables:
+        for v in args.variables:
             fill_var[v] = {}
-            for chn in channels:
+            for chn in args.channels:
                 fill_var[v].update({chn: entries[v]})
                 if fill_var[v][chn]>binedges[v][chn][-1]:
                     fill_var[v][chn]=binedges[v][chn][-1] # include overflow
 
         # whether the event passes cuts (1 and 2-dimensional) and single triggers
         pass_trigger, pcuts1D, pcuts2D = ({} for _ in range(3))
-        for trig in triggers:
+        for trig in args.triggers:
             pcuts2D[trig] = {}
-        for trig in triggers:
+        for trig in args.triggers:
             pass_trigger[trig] = sel.trigger_bits(trig)
 
             pcuts1D[trig] = {}
-            for var in variables:
+            for var in args.variables:
                 pcuts1D[trig][var] = sel.var_cuts(trig, [var], args.nocut_dummy_str)
 
             if trig in config.pairs2D.keys():
@@ -147,22 +143,22 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                 # pcuts2D[joinNTC(combtrig)] = {}
                 for j in config.pairs2D[trig]:
                     vname = utils.add_vnames(j[0],j[1])
-                    for t in triggers:
+                    for t in args.triggers:
                         pcuts2D[t][vname] = sel.var_cuts(t, [j[0], j[1]], args.nocut_dummy_str)
 
         #logic AND to intersect all triggers in this combination
         pass_trigger_intersection = {}
-        for chn in channels:
+        for chn in args.channels:
             for tcomb in triggercomb[chn]:
                 pass_trigger_intersection[joinNTC(tcomb)] = functools.reduce(
                     lambda x,y: x and y,
                     [ pass_trigger[x] for x in tcomb ] )
 
-        for chn in channels:
+        for chn in args.channels:
             if utils.is_channel_consistent(chn, entries.pairType):
                 
                 # fill histograms for 1D efficiencies
-                for j in variables:
+                for j in args.variables:
                     binning1D = (nbins[j][chn], binedges[j][chn])
 
                     # The following is tricky, as we are considering, simultaneously:
@@ -179,7 +175,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                             continue
                         if not sel.dataset_cuts(tcomb, chn):
                             continue
-                        if not sel.dataset_triggers(tcomb, chn, triggers)[0]:
+                        if not sel.dataset_triggers(tcomb, chn, args.triggers)[0]:
                             continue
 
                         hRef[chn][j][cstr].Fill(fill_var[j][chn], evt_weight)
@@ -201,13 +197,13 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                             if key not in hTrig[chn][j][cstr]:
                                 base_str = utils.get_hnames('Trig1D')(chn,j,cstr)
                                 htrig_name = utils.rewrite_cut_string(base_str, key)
-                                hTrig[chn][j][cstr][key] = TH1D(htrig_name, '', *binning1D)
+                                hTrig[chn][j][cstr][key] = ROOT.TH1D(htrig_name, '', *binning1D)
 
                             if val and pass_trigger_intersection[cstr]:
                                 hTrig[chn][j][cstr][key].Fill(fill_var[j][chn], evt_weight)
 
                 # fill 2D efficiencies
-                for onetrig in triggers:
+                for onetrig in args.triggers:
                     if onetrig in config.pairs2D.keys():
                         combtrigs = tuple(x for x in triggercomb[chn] if onetrig in x)
 
@@ -218,7 +214,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                                 continue
                             if not sel.dataset_cuts(combtrig, chn):
                                 continue
-                            if not sel.dataset_triggers(combtrig, chn, triggers)[0]:
+                            if not sel.dataset_triggers(combtrig, chn, args.triggers)[0]:
                                 continue
                             
                             for j in config.pairs2D[onetrig]:
@@ -231,10 +227,6 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                                 except KeyError:
                                     print('CHECK: ', combtrig)
                                     raise
-
-                                if args.debug:
-                                    print(combtrig, j)
-                                    print(cuts_combinations)
 
                                 # One dict item per cut combination
                                 # - key: all cut strings joined
@@ -254,19 +246,19 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
                                         h2name = utils.rewrite_cut_string(base_str, key)
                                         bin2D = ( nbins[j[0]][chn], binedges[j[0]][chn],  
                                                   nbins[j[1]][chn], binedges[j[1]][chn] ) 
-                                        h2Trig[chn][vname][cstr][key] = TH2D(h2name, '', *bin2D)
+                                        h2Trig[chn][vname][cstr][key] = ROOT.TH2D(h2name, '', *bin2D)
                                         
                                     if val and pass_trigger_intersection[cstr]:
                                         h2Trig[chn][vname][cstr][key].Fill(*fill_info)
     
-    file_id = ''.join( c for c in infile[-10:] if c.isdigit() ) 
-    outname = os.path.join(outdir, tprefix + sample + '_' + file_id + subtag + '.root')
+    file_id = ''.join( c for c in args.infile[-10:] if c.isdigit() ) 
+    outname = os.path.join(outdir, args.tprefix + args.sample + '_' + file_id + args.subtag + '.root')
     empty_files = True
     
-    f_out = TFile(outname, 'RECREATE')
+    f_out = ROOT.TFile(outname, 'RECREATE')
     f_out.cd()
-    for chn in channels:
-        for j in variables:
+    for chn in args.channels:
+        for j in args.variables:
             for tcomb in triggercomb[chn]:
                 cstr = joinNTC(tcomb)
                 if hRef[chn][j][cstr].GetEntries() > 0:
@@ -298,7 +290,7 @@ def build_histograms(infile, outdir, dataset, sample, isdata,
     print('Saving file {} at {} '.format(file_id, outname) )
 
 # Parse input arguments
-parser = argparse.ArgumentParser(description='Command line parser')
+parser = argparse.ArgumentParser(description='Producer trigger histograms.')
 
 parser.add_argument('--binedges_fname', dest='binedges_fname', required=True, help='where the bin edges are stored')
 parser.add_argument('--outdir', dest='outdir', required=True,
@@ -324,10 +316,8 @@ parser.add_argument('--intersection_str', dest='intersection_str', required=Fals
                     help='String used to represent set intersection between triggers.')
 parser.add_argument('--nocut_dummy_str', dest='nocut_dummy_str', required=True,
                     help='Dummy string associated to trigger histograms were no cuts are applied.')
-parser.add_argument('--debug', action='store_true', help='debug verbosity')
+parser.add_argument('--configuration', dest='configuration', required=True,
+                    help='Name of the configuration module to use.')
 args = utils.parse_args(parser)
 
-build_histograms(args.infile, args.outdir, args.dataset,
-                 args.sample, args.isdata,
-                 args.channels, args.variables, args.triggers,
-                 args.subtag, args.tprefix, args.binedges_fname)
+build_histograms(args)

@@ -1,7 +1,5 @@
 # coding: utf-8
 
-import os
-
 inters_general = {'MET': (('IsoTau180',),
                           ('VBFTauCustom',),
                           ('IsoTau180', 'VBFTauCustom')),
