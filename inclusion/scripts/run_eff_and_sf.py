@@ -9,7 +9,7 @@ sys.path.insert(0, parent_dir)
 
 import inclusion
 from inclusion.utils import utils
-from inclusion import config.main
+from inclusion.config import main
 
 import argparse
 import ctypes

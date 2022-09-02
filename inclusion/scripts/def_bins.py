@@ -15,7 +15,7 @@ import argparse
 
 import inclusion
 from inclusion.utils import utils
-from inclusion import config.main
+from inclusion.config import main
 
 def skip_data_loop(args):
     for var in args.variables:

@@ -21,7 +21,7 @@ from ROOT import (
 
 import inclusion
 from inclusion.utils import utils
-from inclusion import config.main
+from inclusion.config import main
 
 def get_histogram_max_counts(h):
   """

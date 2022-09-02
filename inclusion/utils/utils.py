@@ -10,15 +10,10 @@ import numpy as np
 import h5py
 from types import SimpleNamespace
 
-import ROOT
-from ROOT import (
-    TGraphAsymmErrors,
-    TH2D,
-    TLine,
-)
-
 import inclusion
-from inclusion import config
+from inclusion.config import main
+
+import ROOT
 
 def add_slash(s):
     """Adds single slash to path if absent"""
@@ -47,8 +42,8 @@ def build_script_command(name, sep, **kw):
     return comm
     
 def build_script_path(name):
-    path = os.path.join(config.local_folder,
-                        config.folders['scripts'],
+    path = os.path.join(main.local_folder,
+                        main.folders['scripts'],
                         name)
     return path
             
@@ -138,7 +133,7 @@ def generate_trigger_combinations(channel, trigs):
 
     length1 = list(it.chain.from_iterable(it.combinations(sorted(pruntrigs), 1)))
     for elem in length1:
-        if elem not in config.triggers:
+        if elem not in main.triggers:
             mess = '[utils.generate_trigger_combinations] '
             mess += 'Trigger {} is not supported'.format(elem)
             raise ValueError(mess)
@@ -176,7 +171,7 @@ def get_key_list(afile, inherits=['TH1']):
     return tmp
 
 def get_hnames(opt):
-    ph = config.placeholder_cuts
+    ph = main.placeholder_cuts
     if opt == 'Ref1D':
         return lambda a,b,c : 'Ref1D_{}_{}_{}'.format(a,b,c)
     elif opt == 'Trig1D':
@@ -281,12 +276,12 @@ def is_channel_consistent(chn, pairtype):
                '>':  operator.gt,
                '==': operator.eq }
 
-    op, val = config.sel[chn]['pairType']
+    op, val = main.sel[chn]['pairType']
     return opdict[op](pairtype, val)
 
 def is_trigger_comb_in_channel(chn, tcomb):
-    possible_trigs = generate_trigger_combinations(chn, config.triggers)
-    split = tuple(tcomb.split(config.inters_str))
+    possible_trigs = generate_trigger_combinations(chn, main.triggers)
+    split = tuple(tcomb.split(main.inters_str))
     return split in possible_trigs
                                
 def is_nan(num):
@@ -327,7 +322,7 @@ def redraw_border():
     """
     ROOT.gPad.Update()
     ROOT.gPad.RedrawAxis()
-    l = TLine()
+    l = ROOT.TLine()
     l.SetLineWidth(2)
 
     l.DrawLine(ROOT.gPad.GetUxmin(), ROOT.gPad.GetUymax(), ROOT.gPad.GetUxmax(), ROOT.gPad.GetUymax()) #top border
@@ -346,7 +341,7 @@ def rewrite_cut_string(oldstr, newstr, regex=False):
         _regex = _regex[0]
         newstr = _regex.replace('>', 'L').replace('<', 'S').replace('.', 'p')
     
-    res = oldstr.replace(config.placeholder_cuts, '_CUTS_'+newstr)
+    res = oldstr.replace(main.placeholder_cuts, '_CUTS_'+newstr)
     return res
 
 def set_pure_input_namespace(func):
@@ -408,17 +403,17 @@ def apply_equal_bin_width(old, roundx=2, roundy=2):
         rstr = str(round(r, roundy)) if roundy!=0 else str(int(r))
         return '#splitline{[' + lstr + ';}{' + rstr + '[}'
     
-    if old.InheritsFrom(TGraphAsymmErrors.Class()):
-        h = TGraphAsymmErrors( old.GetN() )
+    if old.InheritsFrom(ROOT.TGraphAsymmErrors.Class()):
+        h = ROOT.TGraphAsymmErrors( old.GetN() )
         for ip in range(old.GetN()):
             h.SetPoint(ip, ip, old.GetPointY(ip) )
             h.SetPointError(ip, .5, .5,
                             old.GetErrorYlow(ip), old.GetErrorYhigh(ip) )
 
-    elif old.InheritsFrom(TH2D.Class()): 
+    elif old.InheritsFrom(ROOT.TH2D.Class()): 
         name = old.GetName() + '_equal_width'
         nx, ny = old.GetNbinsX(), old.GetNbinsY()
-        h = TH2D(name, name, nx, 0, nx, ny, 0, ny)
+        h = ROOT.TH2D(name, name, nx, 0, nx, ny, 0, ny)
         for by in range(1, old.GetNbinsY()+1):
             for bx in range(1, old.GetNbinsX()+1):
                 h.SetBinContent(bx, by, old.GetBinContent(bx, by))

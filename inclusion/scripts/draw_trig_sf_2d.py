@@ -30,7 +30,7 @@ from ROOT import (
 
 import inclusion
 from inclusion.utils import utils
-from inclusion import config.main
+from inclusion.config import main
 
 def set_histo_props(histo, variables):
     histo.GetYaxis().SetNdivisions(6)

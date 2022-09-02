@@ -8,7 +8,7 @@ parent_dir = os.path.abspath(__file__ + 3 * '/..')
 sys.path.insert(0, parent_dir)
 
 import inclusion
-from inclusion import config
+from inclusion.config import main
 from inclusion.utils import utils
 from inclusion.condor.job_writer import JobWriter
 
@@ -116,7 +116,7 @@ def processing(args):
                         shell_exec=outs_job[i],
                         outfile=outs_check[i],
                         logfile=outs_log[i],
-                        queue=config.queue,
+                        queue=main.queue,
                         machine='llrt3condor')
         
         qlines = []

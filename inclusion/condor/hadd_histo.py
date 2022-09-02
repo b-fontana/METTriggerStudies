@@ -8,7 +8,7 @@ parent_dir = os.path.abspath(__file__ + 3 * '/..')
 sys.path.insert(0, parent_dir)
 
 import inclusion
-from inclusion import config
+from inclusion.config import main
 from inclusion.utils import utils
 from inclusion.condor.job_writer import JobWriter
 
@@ -67,7 +67,7 @@ def hadd_histo(args):
                         shell_exec=out1,
                         outfile=out3,
                         logfile=out4,
-                        queue=config.queue,
+                        queue=main.queue,
                         machine='llrt3condor')
 
         qlines = []

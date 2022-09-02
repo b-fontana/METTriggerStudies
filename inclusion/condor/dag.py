@@ -13,7 +13,7 @@ import atexit # https://stackoverflow.com/questions/865115/how-do-i-correctly-cl
 import inclusion
 from inclusion.utils import utils
 from inclusion.condor.job_writer import JobWriter
-from inclusion import config
+from inclusion.config import main
 
 @utils.set_pure_input_namespace
 def dag_outputs(args):
@@ -47,7 +47,7 @@ class WriteDAGManager:
 
     def build_job_id(self, job_path):
         jp = os.path.dirname(job_path)
-        regex = re.compile('.+/{}/(.+)'.format(config.folders['subm']))
+        regex = re.compile('.+/{}/(.+)'.format(main.folders['subm']))
         matches = regex.findall(jp)
         assert len(matches) == 1
         matches = matches[0].replace('/', '_')

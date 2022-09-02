@@ -8,7 +8,7 @@ parent_dir = os.path.abspath(__file__ + 3 * '/..')
 sys.path.insert(0, parent_dir)
 
 import inclusion
-from inclusion import config
+from inclusion.config import main
 
 class JobWriter:
     """
@@ -55,10 +55,10 @@ class JobWriter:
         job_d, out_d = ([] for _ in range(2))
         for dataf in data_folders:
             job_d.append(os.path.join(base_d,
-                                      config.folders['subm'], dataf))
+                                      main.folders['subm'], dataf))
             mkdir(job_d[-1])
             out_d.append( os.path.join(base_d,
-                                       config.folders['outs'], dataf) )
+                                       main.folders['outs'], dataf) )
             mkdir(out_d[-1])
 
         job_f, subm_f, out_f, log_f = ([] for _ in range(4))
@@ -108,7 +108,7 @@ class JobWriter:
                             'getenv = true',
                             '+JobBatchName="{}"'.format(batch_name),
                             'should_transfer_files = YES',
-                            'notify_user = {}'.format(config.email),
+                            'notify_user = {}'.format(main.email),
                             'notification = always', #options: complete, error, never
                             self.condor_specific_content(queue=queue, machine=machine)))
         m += self.endl
