@@ -48,7 +48,8 @@ def union_calculator(args):
                 'subtag'                 : args.subtag,
                 'data_name'              : args.data_name,
                 'mc_name'                : args.mc_name,
-                'binedges_fname'         : args.binedges_filename}
+                'binedges_fname'         : args.binedges_filename,
+                'configuration'          : args.configuration}
 
         script = 'run_union_calculator.py'
         comm = utils.build_script_command(name=script, sep=' ', **pars)

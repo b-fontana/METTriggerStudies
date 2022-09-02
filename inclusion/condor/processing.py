@@ -84,15 +84,16 @@ def processing(args):
         filelist, _ = utils.get_root_inputs(vproc, args.indir)
         
         #### Write shell executable (python scripts must be wrapped in shell files to run on HTCondor)
-        pars = {'outdir'   : args.outdir,
-                'dataset'  : kproc,
-                'sample'   : vproc,
-                'isdata'   : int(vproc in args.data_vals),
-                'file'     : '${1}',
-                'subtag'   : args.subtag,
-                'channels' : ' '.join(args.channels),
-                'triggers' : ' '.join(args.triggers),
-                'tprefix'  : args.tprefix }
+        pars = {'outdir'        : args.outdir,
+                'dataset'       : kproc,
+                'sample'        : vproc,
+                'isdata'        : int(vproc in args.data_vals),
+                'file'          : '${1}',
+                'subtag'        : args.subtag,
+                'channels'      : ' '.join(args.channels),
+                'triggers'      : ' '.join(args.triggers),
+                'tprefix'       : args.tprefix,
+                'configuration' : args.configuration}
         script = ('produce_trig_histos.py' if args.mode == 'histos'
                   else 'produce_trig_counts.py')
         comm = utils.build_script_command(name=script, sep=' ', **pars)
@@ -153,6 +154,8 @@ if __name__ == '__main__':
                         help='String used to represent set intersection between triggers.')
     parser.add_argument('--nocut_dummy_str', dest='nocut_dummy_str', required=True,
                         help='Dummy string associated to trigger histograms were no cuts are applied.')
+    parser.add_argument('--configuration', dest='configuration', required=True,
+                        help='Name of the configuration module to use.')
     parser.add_argument('--debug', action='store_true', help='debug verbosity')
     args = parser.parse_args()
 

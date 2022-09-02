@@ -11,7 +11,7 @@ sys.path.insert(0, parent_dir)
 
 import inclusion
 from inclusion import config
-from config import main
+from inclusion.config import main
 
 class EventSelection:
     def __init__(self, entries, dataset, isdata, configuration, debug=False):
@@ -22,7 +22,7 @@ class EventSelection:
         self.debug = debug
 
         # dependency injection
-        from config import sel_default as selmod
+        self.cfg = configuration
 
         self.datasets = ('MET', 'EG', 'Mu', 'Tau')
         self.prefix = 'Data_' if self.isdata else 'MC_'
@@ -31,11 +31,11 @@ class EventSelection:
         self.this_processed_dataset = self.ds_name(dataset)
         
         for d in self.datasets:
-            assert( d in config.data )
+            assert( d in main.data )
 
         self.ref_trigs = tuple(self.ds_name(x) for x in self.datasets)
         
-        if dataset not in config.data and dataset not in config.mc_processes:
+        if dataset not in main.data and dataset not in main.mc_processes:
             mes = 'Dataset {} is not supported '.format(dataset)
             mes += '(prefix `{}` added).'.format(self.prefix)
             raise ValueError(mes)
@@ -105,14 +105,14 @@ class EventSelection:
 
     def get_trigger_bit(self, trigger_name):
         """
-        Returns the trigger bit corresponding to 'config.trig_map'
+        Returns the trigger bit corresponding to 'main.trig_map'
         """
         s = 'data' if self.isdata else 'mc'
-        res = config.trig_map[trigger_name]
+        res = main.trig_map[trigger_name]
         try:
             res = res[s]
         except KeyError:
-            print('You likely forgot to add your custom trigger to `config.trig_custom`.')
+            print('You likely forgot to add your custom trigger to `main.trig_custom`.')
             raise
         return res
 
@@ -126,25 +126,25 @@ class EventSelection:
         
         # general triggers
         for k in main.data:
-            if tcomb in selmod.inters_general[k]:
+            if tcomb in self.cfg.inters_general[k]:
                 return self.ds_name(k)
                  
         # channel-specific triggers
         if channel == 'etau':
             for k in main.data:
-                if tcomb in selmod.inters_etau[k]:
+                if tcomb in self.cfg.inters_etau[k]:
                     return self.ds_name(k)
             raise ValueError(wrong_comb.format(tcomb, channel))
             
         elif channel == 'mutau':
             for k in main.data:
-                if tcomb in selmod.inters_mutau[k]:
+                if tcomb in self.cfg.inters_mutau[k]:
                     return self.ds_name(k)
             raise ValueError(wrong_comb.format(tcomb, channel))
             
         elif channel == 'tautau':
             for k in main.data:
-                if tcomb in selmod.inters_tautau[k]:
+                if tcomb in self.cfg.inters_tautau[k]:
                     return self.ds_name(k)
             raise ValueError(wrong_comb.format(tcomb, channel))
             
@@ -182,7 +182,7 @@ class EventSelection:
         """
         flag = False
         for trig in trigs:
-            if trig in config.trig_custom:
+            if trig in main.trig_custom:
                 flag = set_custom_trigger_bit(trig, self.bit, self.run)
             else:
                 flag = self.check_bit(self.get_trigger_bit(trig))
@@ -253,33 +253,33 @@ class EventSelection:
         The VBF trigger was updated during data taking, adding HPS
         https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger
         """
-        if trigger not in config.trig_custom:
+        if trigger not in main.trig_custom:
             import inspect
             currentFunction = inspect.getframeinfo(frame).function
             raise ValueError('[{}] option not supported.'.format(currentFunction))
 
         if self.run < 317509 and self.isdata:
             if trigger == 'VBFTauCustom':
-                bits = self.check_bit(config.trig_map[trigger]['VBFTau']['data'])
+                bits = self.check_bit(main.trig_map[trigger]['VBFTau']['data'])
             elif trigger == 'IsoDoubleTauCustom':
-                bits = ( self.check_bit(config.trig_map[trigger]['IsoDoubleTau']['data'][0]) or
-                         self.check_bit(config.trig_map[trigger]['IsoDoubleTau']['data'][1]) or
-                         self.check_bit(config.trig_map[trigger]['IsoDoubleTau']['data'][2]) )
+                bits = ( self.check_bit(main.trig_map[trigger]['IsoDoubleTau']['data'][0]) or
+                         self.check_bit(main.trig_map[trigger]['IsoDoubleTau']['data'][1]) or
+                         self.check_bit(main.trig_map[trigger]['IsoDoubleTau']['data'][2]) )
             elif trigger == 'IsoMuIsoTauCustom':
-                bits = self.check_bit(config.trig_map[trigger]['IsoMuIsoTau']['data'])
+                bits = self.check_bit(main.trig_map[trigger]['IsoMuIsoTau']['data'])
             elif trigger == 'EleIsoTauCustom':
-                bits = self.check_bit(config.trig_map[trigger]['EleIsoTau']['data'])
+                bits = self.check_bit(main.trig_map[trigger]['EleIsoTau']['data'])
 
         else:
             s = 'data' if self.isdata else 'mc'
             if trigger == 'VBFTauCustom':
-                bits = self.check_bit(config.trig_map[trigger]['VBFTauHPS'][s])
+                bits = self.check_bit(main.trig_map[trigger]['VBFTauHPS'][s])
             elif trigger == 'IsoDoubleTauCustom':
-                bits = self.check_bit(config.trig_map[trigger]['IsoDoubleTauHPS'][s])
+                bits = self.check_bit(main.trig_map[trigger]['IsoDoubleTauHPS'][s])
             elif trigger == 'IsoMuIsoTauCustom':
-                bits = self.check_bit(config.trig_map[trigger]['IsoMuIsoTauHPS'][s])
+                bits = self.check_bit(main.trig_map[trigger]['IsoMuIsoTauHPS'][s])
             elif trigger == 'EleIsoTauCustom':
-                bits = self.check_bit(config.trig_map[trigger]['EleIsoTauHPS'][s])
+                bits = self.check_bit(main.trig_map[trigger]['EleIsoTauHPS'][s])
 
         return bits
 
@@ -288,15 +288,15 @@ class EventSelection:
         if not self.isdata:
             return True
         
-        if (tcomb in selmod.inters_general['MET'] or
-            tcomb in selmod.inters_etau['MET'] or
-            tcomb in selmod.inters_mutau['MET'] or
-            tcomb in selmod.inters_tautau['MET']):
+        if (tcomb in self.cfg.inters_general['MET'] or
+            tcomb in self.cfg.inters_etau['MET'] or
+            tcomb in self.cfg.inters_mutau['MET'] or
+            tcomb in self.cfg.inters_tautau['MET']):
             return True
         return False
     
     def trigger_bits(self, trig):
-        if trig in config.trig_custom:
+        if trig in main.trig_custom:
             return self.set_custom_trigger_bit(trig)
         else:
             return self.check_bit(self.get_trigger_bit(trig))
@@ -319,7 +319,7 @@ class EventSelection:
         dflags = defaultdict(lambda: [])
     
         try:
-            trig_cuts = config.cuts[trig]
+            trig_cuts = main.cuts[trig]
         except KeyError: # the trigger has no cut associated
             if self.debug:
                 print('KeyError')            
@@ -329,8 +329,8 @@ class EventSelection:
             # ignore cuts according to the user's definition in '_cuts_ignored'
             # example: do not cut on 'met_et' when displaying 'metnomu_et'
             ignore = functools.reduce( lambda x, y: x or y,
-                                       [ avar in config.cuts_ignored[k] for k in variables
-                                         if k in config.cuts_ignored ],
+                                       [ avar in main.cuts_ignored[k] for k in variables
+                                         if k in main.cuts_ignored ],
                                       False
                                       )
 

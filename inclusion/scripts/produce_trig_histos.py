@@ -9,7 +9,7 @@ sys.path.insert(0, parent_dir)
 
 import inclusion
 from inclusion import selection
-from inclusion import config.main as main
+from inclusion.config import main
 from inclusion.utils import utils
 from inclusion.utils.utils import join_name_trigger_intersection as joinNTC
 

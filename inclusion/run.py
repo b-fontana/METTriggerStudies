@@ -164,6 +164,8 @@ subtag = ( FLAGS.subtag if FLAGS.subtag==''
 
 variables_join = tuple(set(FLAGS.variables_for_efficiencies + FLAGS.variables_for_distributions))
 
+sel_config = 'inclusion.config.' + FLAGS.configuration
+
 #### scripts/def_bins
 bins_params = {'nbins'             : FLAGS.nbins,
                'binedges_filename' : binedges_filename,
@@ -198,7 +200,7 @@ histos_params = {'binedges_filename' : binedges_filename,
                  'subtag'            : subtag,
                  'intersection_str'  : main.inters_str,
                  'nocut_dummy_str'   : main.nocut_dummy,
-                 'configuration'     : 'inclusion.main.' + FLAGS.configuration,
+                 'configuration'     : sel_config,
                  'debug'             : FLAGS.debug_workflow}
 
 #### scripts/hadd_histo
@@ -272,7 +274,7 @@ calculator_params = {'binedges_filename'       : binedges_filename,
                      'variables'               : FLAGS.variables_for_efficiencies,
                      'tag'                     : FLAGS.tag,
                      'subtag'                  : subtag,
-                     'configuration'           : 'inclusion.main.' + FLAGS.configuration,
+                     'configuration'           : sel_config,
                      'debug'                   : FLAGS.debug_workflow,}
 
 #### scripts/closure

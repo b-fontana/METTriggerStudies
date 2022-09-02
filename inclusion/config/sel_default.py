@@ -2,7 +2,7 @@
 
 inters_general = {'MET' : (),
                   'EG'  : (),
-                  'Mu'  : (('IsoTau180',)
+                  'Mu'  : (('IsoTau180',),
                            ('METNoMu120',),
                            ('IsoTau180', 'METNoMu120')),
                   'Tau' : ()
@@ -19,7 +19,7 @@ inters_etau = {'MET' : (),
                         ('EleIsoTauCustom', 'METNoMu120'),
                         ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
                         ('Ele32', 'IsoTau180', 'METNoMu120'),
-                        ('Ele32', 'EleIsoTauCustom', 'IsoTau180')
+                        ('Ele32', 'EleIsoTauCustom', 'IsoTau180'),
                         ('EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
                         ('Ele32', 'EleIsoTauCustom', 'IsoTau180', 'METNoMu120')),
                'Tau' : ()
@@ -36,6 +36,7 @@ inters_mutau = {'MET' : (),
                          ('IsoMuIsoTauCustom', 'METNoMu120'),
                          ('IsoMu24', 'IsoTau180', 'METNoMu120'),
                          ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
+                         ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180'),
                          ('IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
                          ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120')),
                 'Mu'  : (),
@@ -46,12 +47,12 @@ inters_tautau = {'MET' : (),
                  'EG'  : (),
                  'Mu'  : (('VBFTauCustom',),
                           ('IsoDoubleTauCustom',),
-                          ('IsoTau180', 'VBFTauCustom')
+                          ('IsoTau180', 'VBFTauCustom'),
                           ('METNoMu120', 'VBFTauCustom'),
                           ('IsoDoubleTauCustom', 'METNoMu120'),
                           ('IsoDoubleTauCustom', 'VBFTauCustom'),
                           ('IsoDoubleTauCustom', 'IsoTau180'),
-                          ('IsoDoubleTauCustom', 'IsoTau180', 'VBFTauCustom')
+                          ('IsoDoubleTauCustom', 'IsoTau180', 'VBFTauCustom'),
                           ('IsoTau180', 'METNoMu120', 'VBFTauCustom'),
                           ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
                           ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
