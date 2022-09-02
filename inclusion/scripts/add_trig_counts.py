@@ -18,7 +18,7 @@ from inclusion.utils import utils
 def add_trigger_counts(args):
     def are_there_files(files, regex):
         if len(files)==0:
-            m =  '\nThe walk was performed in {} .\n'.format(os.path.join(args.indir, smpl))
+            m =  '\nThe walk was performed in {} .\n'.format(os.path.join(args.indir))
             m += 'The regular expression was {}.\n'.format(regex.pattern)
             m += 'The regular expression could not retrieve any files.'
             raise ValueError(m)
