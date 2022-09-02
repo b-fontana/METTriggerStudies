@@ -12,6 +12,7 @@ from types import SimpleNamespace
 
 import inclusion
 from inclusion.config import main
+from inclusion.utils import utils
 
 import ROOT
 
@@ -46,7 +47,57 @@ def build_script_path(name):
                         main.folders['scripts'],
                         name)
     return path
-            
+
+def check_intersection_correctness(d, channel):
+    """
+    Check if the intersections exist, are complete, and do not have duplicates.
+    Input dictionary should have the following signature:
+    d = {'dataset1': (tuple1, tuple2,), 'dataset2': (tuple3, tuple4,), ...}
+    """
+    chn_triggers = get_exclusive_intersections()[channel]
+    chn_triggers += get_exclusive_intersections()['general']
+    length1 = list(it.chain.from_iterable(it.combinations(sorted(chn_triggers), 1)))
+    check_triggers_exist(length1)
+
+    chn_inters = list( it.chain.from_iterable(it.combinations(sorted(chn_triggers), x)
+                                              for x in range(1,len(chn_triggers)+1)) )
+    all_inters = generate_trigger_combinations(channel, main.triggers)
+    flatten = [ w for x in d for w in d[x] ]
+
+    # existence check
+    for f in flatten:
+        if f not in chn_inters and len(f)!=0:
+            mes = 'Intersection {} is not required by channel {}.'
+            mes = mes.format(f, channel)
+            raise ValueError(mes)
+
+    # completness check
+    diff = set(chn_inters)-set(flatten)
+    if not diff:
+        mes = 'Some intersections were not included in the configuration:\n'
+        for elem in diff:
+            mes += ' - ' + utils.join_name_trigger_intersection(elem) + '\n'
+        raise ValueError(mes)
+
+    # duplicate check
+    dup = set([x for x in flatten if flatten.count(x) > 1])
+    if dup:
+        mes = 'Some intersections in the configuration are duplicated:\n'
+        for elem in dup:
+            mes += ' - ' + utils.join_name_trigger_intersection(elem) + '\n'
+        raise ValueError(mes)
+    
+    return
+
+def check_triggers_exist(l):
+    """Check individual triggers match the ones in the configuration file."""
+    for elem in l:
+        if elem not in main.triggers:
+            mess = '[utils.check_triggers_exist] '
+            mess += 'Trigger {} is not supported'.format(elem)
+            raise ValueError(mess)
+    return
+    
 def create_single_dir(p):
     """Creates a directory if it does not exist"""
     try:
@@ -122,9 +173,7 @@ def generate_trigger_combinations(channel, trigs):
     Each intersection is sorted alphabetically
     (useful for matching with the KLUB framework).
     """
-    exclusive = { 'etau'   : ('Ele32', 'Ele35', 'EleIsoTauCustom'),
-                  'mutau'  : ('IsoMu24', 'IsoMu27', 'IsoMuIsoTauCustom'),
-                  'tautau' : ('IsoDoubleTauCustom', 'VBFTauCustom') }
+    exclusive = get_exclusive_intersections()
 
     # look only at combinations where the channel is imcompatible with the trigger
     pruntrigs = [ exclusive[x] for x in exclusive if x != channel ]
@@ -132,12 +181,7 @@ def generate_trigger_combinations(channel, trigs):
     pruntrigs = set(trigs) - pruntrigs
 
     length1 = list(it.chain.from_iterable(it.combinations(sorted(pruntrigs), 1)))
-    for elem in length1:
-        if elem not in main.triggers:
-            mess = '[utils.generate_trigger_combinations] '
-            mess += 'Trigger {} is not supported'.format(elem)
-            raise ValueError(mess)
-
+    check_triggers_exist(length1)
     complete = list( it.chain.from_iterable(it.combinations(sorted(pruntrigs), x)
                                             for x in range(1,len(pruntrigs)+1)) )
     return complete
@@ -154,6 +198,13 @@ def get_display_variable_name(channel, var):
     else:
         var_custom = var
     return var_custom
+
+def get_exclusive_intersections():
+    exclusive = {'etau'   : ('Ele32', 'EleIsoTauCustom'),
+                 'mutau'  : ('IsoMu24', 'IsoMuIsoTauCustom'),
+                 'tautau' : ('IsoDoubleTauCustom', 'VBFTauCustom'),
+                 'general': ('METNoMu120', 'IsoTau180')}
+    return exclusive
 
 def get_key_list(afile, inherits=['TH1']):
     tmp = []

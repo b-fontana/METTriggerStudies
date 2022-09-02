@@ -1,5 +1,14 @@
 # coding: utf-8
 
+import os
+import sys
+parent_dir = os.path.abspath(__file__ + 3 * '/..')
+sys.path.insert(0, parent_dir)
+
+import inclusion
+from inclusion.config import main
+from inclusion.utils import utils
+
 inters_general = {'MET' : (('IsoTau180',)),
                   'EG'  : (),
                   'Mu'  : (('METNoMu120',),
@@ -27,7 +36,6 @@ inters_mutau = {'MET' : (('IsoMu24',),
                          ('IsoMuIsoTauCustom',),
                          ('IsoMu24', 'IsoMuIsoTauCustom'),
                          ('IsoMu24', 'IsoTau180'),
-                         ('IsoMuIsoTauCustom', 'IsoTau180'),
                          ('IsoMuIsoTauCustom', 'IsoTau180'),),
                 'EG'  : (('IsoMu24', 'METNoMu120'),
                          ('IsoMuIsoTauCustom', 'METNoMu120'),
@@ -54,6 +62,10 @@ inters_tautau = {'MET' : (('IsoDoubleTauCustom',),
                           ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120', 'VBFTauCustom')),
                  'Tau' : ()
                  }
+
+utils.check_intersection_correctness(inters_etau,   channel='etau')
+utils.check_intersection_correctness(inters_mutau,  channel='mutau')
+utils.check_intersection_correctness(inters_tautau, channel='tautau')
 
 # inters_with_veto = (('IsoTau180', 'METNoMu120'),
 #                     ('METNoMu120', 'VBFTauCustom'),
