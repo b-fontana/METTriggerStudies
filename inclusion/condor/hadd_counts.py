@@ -53,13 +53,13 @@ def hadd_counts(args):
             'outfile_counts' : '${1}'}
     comm_base = bsc(name=script, sep=' ', **pars)
 
-    pars1 = {'channel'          : '${2}',
-             'sample'           : '${3}',
+    pars1 = {'sample'           : '${2}',
+             'channel'          : '${3}',
              'aggregation_step' : '0'}
     comm1 = comm_base + bsc(name=None, sep=' ', **pars1)
 
-    pars2 = {'infile_counts'    : '${2}',
-             'channel'          : '${3}',
+    pars2 = {'channel'          : '${2}',
+             'infile_counts'    : '${3}',
              'aggregation_step' : '1'}
     comm2 = comm_base + bsc(name=None, sep=' ', **pars2)
     
