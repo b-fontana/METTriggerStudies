@@ -102,6 +102,6 @@ def hadd_counts(args):
         elif out1 == outs_job[1]:
             qvars = ('myoutput', 'channel', 'myinputs')
             for ichn,chn in enumerate(args.channels):
-                qlines.append('  {}, {}, {}'.format(targets[ichn], chn, ' '.join(inputs_join[chn])))
+                qlines.append("  {}, {}, '{}'".format(targets[ichn], chn, ' '.join(inputs_join[chn])))
 
         jw.write_queue( qvars=qvars, qlines=qlines )

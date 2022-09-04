@@ -127,10 +127,10 @@ class JobWriter:
             
         with open(self.filenames[-1], 'a') as self.f:
             if len(qvars) > 0:
-                argstr = 'Arguments = '
+                argstr = 'Arguments = "'
                 for qvar in qvars:
                     argstr += '$(' + qvar + ') '
-                argstr += self.endl
+                argstr += '"' + self.endl
                 self.f.write(argstr)
                 qstr = 'queue '
                 for qvar in qvars:
