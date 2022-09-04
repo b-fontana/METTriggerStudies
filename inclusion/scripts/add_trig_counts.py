@@ -198,7 +198,7 @@ if __name__ == '__main__':
                         help='Process name as in SKIM directory. Used for the first step only.')
     
     parser.add_argument('--infile_counts', dest='infile_counts', required=False, nargs='+', type=str,
-                        help='Name of input csv files with counts. Used for the aggrgeation step only.')
+                        help='Name of input csv files with counts. Used for the aggregation step only.')
     parser.add_argument('--outfile_counts', dest='outfile_counts', required=True,
                         help='Name of output csv files with counts.')
     parser.add_argument('--channel', dest='channel', required=False, help='Channel to be used for the aggregation.')

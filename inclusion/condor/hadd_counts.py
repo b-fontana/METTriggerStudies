@@ -100,7 +100,7 @@ def hadd_counts(args):
                 qlines.append('  {}, {}, {}'.format(t,smpl,chn))
 
         elif out1 == outs_job[1]:
-            qvars = ('myoutput', 'myinputs', 'channel')
+            qvars = ('myoutput', 'channel', 'myinputs')
             for ichn,chn in enumerate(args.channels):
                 qlines.append('  {}, {}, {}'.format(targets[ichn], chn, ' '.join(inputs_join[chn])))
 
