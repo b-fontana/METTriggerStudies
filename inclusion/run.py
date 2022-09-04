@@ -648,13 +648,14 @@ class SubmitDAG(lutils.ForceRun):
         com = 'condor_submit_dag -no_submit -f'
         com += ' -outfile_dir {} {}'.format(os.path.dirname(outfile), outfile)
         com += ' -notification always'
+        com += ' -notify_user bruno.alves@cern.ch'
         com += ' -batch_name InclusionSF'
     
         os.system(com)
         time.sleep(.5)
         self.edit_condor_submission_file(outfile + '.condor.sub')
         time.sleep(.5)
-        os.system('condor_submit {}.condor.sub -notify_user bruno.alves@cern.ch'.format(outfile))
+        os.system('condor_submit {}.condor.sub'.format(outfile))
  
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
