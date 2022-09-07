@@ -110,9 +110,12 @@ def get_trig_counts(args):
                 reftrig = joinNTC(reftrig)
                 
                 tcomb_str = joinNTC(tcomb)
-                basestr = tcomb_str + sep + chn + sep + reftrig + sep
-                f.write( 'Reference' + sep + basestr + str(int(c_ref[chn][tcomb_str])) + '\n' )
-                f.write( 'Intersection' + sep + basestr + str(int(c_inters[chn][tcomb_str])) + '\n' )
+                basestr = sep.join((tcomb_str, chn, reftrig))
+
+                counts_ref = str(int(c_ref[chn][tcomb_str]))
+                counts_int = str(int(c_inters[chn][tcomb_str]))
+                f.write( sep.join(('Reference', basestr, counts_ref)) + '\n' )
+                f.write( sep.join(('Intersection', basestr, counts_int)) + '\n' )
     
 # -- Parse input arguments
 parser = argparse.ArgumentParser(description='Produce trigger counts.')
