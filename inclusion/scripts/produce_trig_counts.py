@@ -135,7 +135,6 @@ parser.add_argument('--triggers',    dest='triggers',    required=True, nargs='+
                     help='Select the triggers over which the workflow will be run.' )
 parser.add_argument('--configuration', dest='configuration', required=True,
                     help='Name of the configuration module to use.')
-parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = utils.parse_args(parser)
 
 get_trig_counts(args)

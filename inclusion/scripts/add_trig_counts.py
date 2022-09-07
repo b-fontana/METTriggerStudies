@@ -187,7 +187,6 @@ if __name__ == '__main__':
                         help='Whether to run the sample aggregation step or the "per sample step"')
     parser.add_argument('--dataset_name', dest='dataset_name', required=True,
                         help='Name of the dataset being used.')
-    parser.add_argument('--debug', action='store_true', help='debug verbosity')
 
     parser.add_argument('--sample',     dest='sample',       required=False,
                         help='Process name as in SKIM directory. Used for the first step only.')

@@ -200,8 +200,7 @@ histos_params = {'binedges_filename' : binedges_filename,
                  'subtag'            : subtag,
                  'intersection_str'  : main.inters_str,
                  'nocut_dummy_str'   : main.nocut_dummy,
-                 'configuration'     : sel_config,
-                 'debug'             : FLAGS.debug_workflow}
+                 'configuration'     : sel_config}
 
 #### scripts/hadd_histo
 haddhisto_params = {'indir'    : data_storage,

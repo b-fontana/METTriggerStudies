@@ -97,8 +97,6 @@ def processing(args):
         script = ('produce_trig_histos.py' if args.mode == 'histos'
                   else 'produce_trig_counts.py')
         comm = utils.build_script_command(name=script, sep=' ', **pars)
-        if args.debug:
-            comm += '--debug '
 
         if args.mode == 'histos':
             pars1 = {'binedges_fname'   : args.binedges_filename,
@@ -156,7 +154,6 @@ if __name__ == '__main__':
                         help='Dummy string associated to trigger histograms were no cuts are applied.')
     parser.add_argument('--configuration', dest='configuration', required=True,
                         help='Name of the configuration module to use.')
-    parser.add_argument('--debug', action='store_true', help='debug verbosity')
     args = parser.parse_args()
 
     submitTriggerEff( args )
