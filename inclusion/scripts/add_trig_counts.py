@@ -111,18 +111,17 @@ def add_trigger_counts(args):
     if args.aggr:
         with open(outs, 'w') as fcsv:
             for il,l in enumerate(aggr_outs):
-                ftype, atype, comb, ref, c, eff = [x.replace('\n', '') for x in l.split(sep)]
-                
-                if ( atype == '' and comb == '' and ref == '' and
-                     c == '' and eff == '' ):
-                    continue
+                split_line = [x.replace('\n', '') for x in l.split(sep)]
+                if all( not x for x in split_line ):
+                        continue
 
+                ftype, atype, comb, ref, c, eff = split_line
                 if atype != 'Type':
                     fcsv.write(l)
 
-                if atype == 'Type' and il==0:
-                    newline = sep.join(('File Type', atype, comb, ref, c, eff)) + '\n'
-                    fcsv.write(newline)
+                if atype=='Type' and il==0:
+                    newline = sep.join(('File Type', atype, comb, ref, c, eff))
+                    fcsv.write(newline + '\n')
 
     else:
         with open(outs, 'w') as fcsv:
