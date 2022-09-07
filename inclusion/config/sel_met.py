@@ -63,28 +63,6 @@ inters_tautau = {'MET' : (('IsoDoubleTauCustom',),
                  'Tau' : ()
                  }
 
-utils.check_intersection_correctness(inters_etau,   channel='etau')
-utils.check_intersection_correctness(inters_mutau,  channel='mutau')
-utils.check_intersection_correctness(inters_tautau, channel='tautau')
-
-# inters_with_veto = (('IsoTau180', 'METNoMu120'),
-#                     ('METNoMu120', 'VBFTauCustom'),
-#                     # mutau channel
-#                     ('IsoMu24', 'METNoMu120'),
-#                     ('IsoMuIsoTauCustom', 'METNoMu120'),
-#                     ('IsoMu24', 'IsoTau180', 'METNoMu120'),
-#                     ('IsoMu24', 'IsoMuIsoTauCustom', 'METNoMu120'),
-#                     ('IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-#                     # etau channel
-#                     ('Ele32', 'METNoMu120'),
-#                     ('Ele32', 'EleIsoTauCustom', 'METNoMu120'),
-#                     ('Ele32', 'IsoTau180', 'METNoMu120'),
-#                     ('EleIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-#                     # tautau channel
-#                     ('IsoDoubleTauCustom', 'METNoMu120'),
-#                     ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120'),
-#                     ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom'),
-#                     # large intersections
-#                     ('IsoMu24', 'IsoMuIsoTauCustom', 'IsoTau180', 'METNoMu120'),
-#                     ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120', 'VBFTauCustom'),
-#                     ('Ele32', 'EleIsoTauCustom', 'IsoTau180', 'METNoMu120'))
+utils.check_inters_correctness(inters_etau, inters_general, channel='etau')
+utils.check_inters_correctness(inters_mutau, inters_general, channel='mutau')
+utils.check_inters_correctness(inters_tautau, inters_general, channel='tautau')

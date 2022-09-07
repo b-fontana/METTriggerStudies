@@ -48,22 +48,22 @@ def build_script_path(name):
                         name)
     return path
 
-def check_intersection_correctness(d, channel):
+def check_inters_correctness(dchn, dgen, channel):
     """
     Check if the intersections exist, are complete, and do not have duplicates.
     Input dictionary should have the following signature:
     d = {'dataset1': (tuple1, tuple2,), 'dataset2': (tuple3, tuple4,), ...}
     """
-    chn_triggers = get_exclusive_intersections()[channel]
-    chn_triggers += get_exclusive_intersections()['general']
-    length1 = list(it.chain.from_iterable(it.combinations(sorted(chn_triggers), 1)))
-    check_triggers_exist(length1)
+    chn_inters = generate_trigger_combinations(channel, main.triggers)
+    flatten =  [ w for x in dchn for w in dchn[x] ]
+    flatten += [ w for x in dgen for w in dgen[x] ]
 
-    chn_inters = list( it.chain.from_iterable(it.combinations(sorted(chn_triggers), x)
-                                              for x in range(1,len(chn_triggers)+1)) )
-    all_inters = generate_trigger_combinations(channel, main.triggers)
-    flatten = [ w for x in d for w in d[x] ]
-
+    # type check
+    for x in flatten:
+        if not isinstance(x, tuple):
+            mes = 'Intersection {} must be defined as a tuple'.format(x)
+            raise TypeError(mes)
+    
     # existence check
     for f in flatten:
         if f not in chn_inters and len(f)!=0:
@@ -73,7 +73,7 @@ def check_intersection_correctness(d, channel):
 
     # completness check
     diff = set(chn_inters)-set(flatten)
-    if not diff:
+    if diff:
         mes = 'Some intersections were not included in the configuration:\n'
         for elem in diff:
             mes += ' - ' + utils.join_name_trigger_intersection(elem) + '\n'

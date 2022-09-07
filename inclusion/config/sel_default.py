@@ -68,6 +68,6 @@ inters_tautau = {'MET' : (),
                  'Tau' : ()
                  }
 
-utils.check_intersection_correctness(inters_etau,   channel='etau')
-utils.check_intersection_correctness(inters_mutau,  channel='mutau')
-utils.check_intersection_correctness(inters_tautau, channel='tautau')
+utils.check_inters_correctness(inters_etau, inters_general, channel='etau')
+utils.check_inters_correctness(inters_mutau, inters_general, channel='mutau')
+utils.check_inters_correctness(inters_tautau, inters_general, channel='tautau')

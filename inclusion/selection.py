@@ -121,7 +121,7 @@ class EventSelection:
 
         # Ignore long intersections for simplicity
         # Besides, long intersections tend to have lower statistics
-        if len(tcomb) > 3:
+        if len(tcomb) > 4:
             return None
         
         # general triggers
