@@ -109,7 +109,7 @@ class JobWriter:
                             '+JobBatchName="{}"'.format(batch_name),
                             'should_transfer_files = YES',
                             'notify_user = {}'.format(main.email),
-                            'notification = always', #options: complete, error, never
+                            'notification = Error', #options: complete, error, never
                             self.condor_specific_content(queue=queue, machine=machine)))
         m += self.endl
         with open(filename, 'w') as self.f:
