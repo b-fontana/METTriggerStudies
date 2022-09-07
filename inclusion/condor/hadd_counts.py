@@ -52,7 +52,7 @@ def hadd_counts(args):
             'dataset_name'   : args.dataset_name}
     comm_base = bsc(name=script, sep=' ', **pars)
 
-    pars1 = {'outfile_counts'   : '${1}'
+    pars1 = {'outfile_counts'   : '${1}',
              'sample'           : '${2}',
              'channel'          : '${3}',
              'aggregation_step' : '0'}
