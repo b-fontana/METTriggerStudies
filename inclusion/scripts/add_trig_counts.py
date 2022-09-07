@@ -42,41 +42,50 @@ def add_trigger_counts(args):
         assert set(inputs_join) == set(args.infile_counts)
 
     else:
-        regex = re.compile( args.tprefix + '.+_[0-9]{1,5}' + args.subtag + '.csv' )
+        regex = re.compile( args.tprefix + args.sample + '.+_[0-9]{1,5}' + args.subtag + '.csv' )
         walk_path = os.path.join(args.indir, args.sample)
         for root, _, files in os.walk( walk_path ):
             for afile in files:
                 if regex.match( os.path.basename(afile) ):
                     inputs_join.append( os.path.join(root, afile) )
             are_there_files(files, regex)
-            
-    regex2 = re.compile(args.tprefix + '(.+)_Sum.*' + args.subtag + '_' + args.channel + '.csv')
+
     aggr_outs = []
     sep = ','
     reftrigs = {}
     c_ref, c_inters = ({} for _ in range(2))
-    
-    for afile in inputs_join:
-        filetype = regex2.findall(afile)
 
-        with open(afile, 'r') as f:
-            for line in f.readlines():
-                if line.strip(): #ignore empty lines
-                    if args.aggr:
-                        aggr_outs.append( filetype[0] + sep + line )
+    if args.aggr:
+        regex2 = re.compile(args.tprefix + '(.+)_Sum.*' + args.subtag + '_' + args.channel + '.csv')    
+        for afile in inputs_join:
+            filetype = regex2.findall(afile)
 
-                    else:
-                        title, comb, chn, reftrig, count = [x.replace('\n', '') for x in line.split(sep)]
+            with open(afile, 'r') as f:
+                for line in f.readlines():
+                    if line.strip(): #ignore empty lines
+                        aggr_outs.append(filetype[0] + sep + line)
 
+
+    else:
+        for afile in inputs_join:
+            filetype = regex2.findall(afile)
+
+            with open(afile, 'r') as f:
+                for line in f.readlines():
+                    if line.strip(): #ignore empty lines
+                        
+                        split_line = [x.replace('\n', '') for x in line.split(sep)]
+                        if split_line == ',,,,':
+                            continue
+                            
+                        title, comb, chn, reftrig, count = split_line
+                        
                         if chn != args.channel:
                             continue
-                        if ( title == '' and comb == '' and chn == '' and
-                            reftrig == '' and count == '' ):
-                            continue
-
+      
                         if comb not in reftrigs:
                             reftrigs[comb] = reftrig                        
-
+      
                         if title == 'Reference':
                             c_ref.setdefault(comb, 0)
                             c_ref[comb] += int(count)
@@ -86,6 +95,7 @@ def add_trigger_counts(args):
                         else:
                             mes = 'Column {} is not supported.'
                             raise ValueError(mes.format(mes))
+
 
     if args.aggr:
         suboutdir = os.path.join(args.outdir, args.channel, 'Counts_' + args.dataset_name)
@@ -104,7 +114,6 @@ def add_trigger_counts(args):
                 
                 if ( atype == '' and comb == '' and ref == '' and
                      c == '' and eff == '' ):
-                    fcsv.write(',,,,,\n')
                     continue
 
                 if atype != 'Type':
@@ -169,8 +178,6 @@ def add_trigger_counts(args):
                                     refref, str(refv), '1\n' )
                 fcsv.write(newline)
      
-                fcsv.write(',,,,\n')
-                fcsv.write(',,,,\n')        
                 fcsv.write('\n')
 
     print('Save file {}.'.format(outs))
