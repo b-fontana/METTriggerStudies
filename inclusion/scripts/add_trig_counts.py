@@ -86,13 +86,13 @@ def add_trigger_counts(args):
                             mes = 'Column {} is not supported.'
                             raise ValueError(mes.format(mes))
 
-    outputs_csv = args.outfile_counts
     if args.aggr:
         suboutdir = os.path.join(args.outdir, args.channel, 'Counts_' + args.dataset_name)
         if not os.path.exists(suboutdir):
             os.makedirs(suboutdir)
         outs = os.path.join(suboutdir, 'table.csv')
     else:
+        outputs_csv = args.outfile_counts
         pref, suf = outputs_csv.split('.')
         outs = outputs_csv
 
@@ -195,8 +195,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--infile_counts', dest='infile_counts', required=False, nargs='+', type=str,
                         help='Name of input csv files with counts. Used for the aggregation step only.')
-    parser.add_argument('--outfile_counts', dest='outfile_counts', required=True,
-                        help='Name of output csv files with counts.')
+    parser.add_argument('--outfile_counts', dest='outfile_counts', help='Name of output csv files with counts.')
     parser.add_argument('--channel', dest='channel', required=False, help='Channel to be used for the aggregation.')
     args = utils.parse_args(parser)
     

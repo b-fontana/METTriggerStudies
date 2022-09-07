@@ -49,17 +49,17 @@ def hadd_counts(args):
             'outdir'         : args.outdir,
             'subtag'         : args.subtag,
             'tprefix'        : args.tprefix,
-            'dataset_name'   : args.dataset_name,
-            'outfile_counts' : '${1}'}
+            'dataset_name'   : args.dataset_name}
     comm_base = bsc(name=script, sep=' ', **pars)
 
-    pars1 = {'sample'           : '${2}',
+    pars1 = {'outfile_counts'   : '${1}'
+             'sample'           : '${2}',
              'channel'          : '${3}',
              'aggregation_step' : '0'}
     comm1 = comm_base + bsc(name=None, sep=' ', **pars1)
 
-    pars2 = {'channel'          : '${2}',
-             'infile_counts'    : '${3}',
+    pars2 = {'channel'          : '${1}',
+             'infile_counts'    : '${2}',
              'aggregation_step' : '1'}
     comm2 = comm_base + bsc(name=None, sep=' ', **pars2)
     
@@ -100,8 +100,8 @@ def hadd_counts(args):
                 qlines.append('  {}, {}, {}'.format(t,smpl,chn))
 
         elif out1 == outs_job[1]:
-            qvars = ('myoutput', 'channel', 'myinputs')
+            qvars = ('channel', 'myinputs')
             for ichn,chn in enumerate(args.channels):
-                qlines.append("  {}, {}, '{}'".format(targets[ichn], chn, ' '.join(inputs_join[chn])))
+                qlines.append(" {}, '{}'".format(chn, ' '.join(inputs_join[chn])))
 
         jw.write_queue( qvars=qvars, qlines=qlines )
