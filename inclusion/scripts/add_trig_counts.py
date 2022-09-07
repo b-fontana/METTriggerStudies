@@ -140,12 +140,7 @@ def add_trigger_counts(args):
             ref_vals  = np.array(ref_vals)
             int_combs = np.array(int_combs)
             int_vals  = np.array(int_vals)
-            refs      = np.array(refs)
-                
-            #sort
-            gzip = zip(ref_vals, ref_combs, int_vals, int_combs)
-            ref_vals, ref_combs, int_vals, int_combs = (np.array(t[::-1])
-                                                        for t in zip(*sorted(gzip)))
+            refs      = np.array(refs)g
      
             #remove zeros
             zeromask = int_vals == 0
@@ -157,10 +152,24 @@ def add_trigger_counts(args):
      
             line = sep.join(('Type', 'Trigger Intersection', 'Reference', 'Counts', 'Efficiency\n'))
             fcsv.write(line)
+
+            # calculate efficiencies
+            effs = []
             gzip = zip(ref_vals, ref_combs, int_vals, int_combs, refs)
             for refv, refc, intv, intc, refref in gzip:
-                eff = float(intv) / float(refv)
+                effs.append(float(intv) / float(refv))
 
+            effs = np.sort(np.array(effs))[::-1]
+            
+            # sort other columns following efficiencies descending order
+            idxs_sort = effs.argsort(axis=None)[::-1]
+            ref_vals  = ref_vals[idxs_sort]
+            ref_combs = ref_combs[idxs_sort]
+            int_vals  = int_vals[idxs_sort]
+            int_combs = int_combs[idxs_sort]
+
+            gzip = zip(effs, ref_vals, ref_combs, int_vals, int_combs, refs)
+            for eff, refv, refc, intv, intc, refref in gzip:
                 newline = sep.join(('Numerator',
                                     str(intc).replace(main.inters_str, '  AND  '),
                                     refref, str(intv), str(round(eff,4)))) + '\n'
