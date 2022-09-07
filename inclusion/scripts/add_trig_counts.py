@@ -72,29 +72,30 @@ def add_trigger_counts(args):
 
             with open(afile, 'r') as f:
                 for line in f.readlines():
-                    if line.strip(): #ignore empty lines
+                    if not line.strip(): #ignore empty lines
+                        continue
                         
-                        split_line = [x.replace('\n', '') for x in line.split(sep)]
-                        if split_line == ',,,,':
-                            continue
+                    split_line = [x.replace('\n', '') for x in line.split(sep)]
+                    if all( not x for x in split_line ):
+                        continue
                             
-                        title, comb, chn, reftrig, count = split_line
+                    title, comb, chn, reftrig, count = split_line
                         
-                        if chn != args.channel:
-                            continue
+                    if chn != args.channel:
+                        continue
       
-                        if comb not in reftrigs:
-                            reftrigs[comb] = reftrig                        
+                    if comb not in reftrigs:
+                        reftrigs[comb] = reftrig                        
       
-                        if title == 'Reference':
-                            c_ref.setdefault(comb, 0)
-                            c_ref[comb] += int(count)
-                        elif title == 'Intersection':
-                            c_inters.setdefault(comb, 0)
-                            c_inters[comb] += int(count)
-                        else:
-                            mes = 'Column {} is not supported.'
-                            raise ValueError(mes.format(mes))
+                    if title == 'Reference':
+                        c_ref.setdefault(comb, 0)
+                        c_ref[comb] += int(count)
+                    elif title == 'Intersection':
+                        c_inters.setdefault(comb, 0)
+                        c_inters[comb] += int(count)
+                    else:
+                        mes = 'Column {} is not supported.'
+                        raise ValueError(mes.format(mes))
 
 
     if args.aggr:
@@ -127,7 +128,7 @@ def add_trigger_counts(args):
         with open(outs, 'w') as fcsv:
             ref_combs, ref_vals = ([] for _ in range(2))
             int_combs, int_vals = ([] for _ in range(2))
-            references, ftypes = ([] for _ in range(2))
+            references = []
             for comb, val in c_inters.items():
                 ref_combs.append(comb)
                 ref_vals.append(c_ref[comb])
