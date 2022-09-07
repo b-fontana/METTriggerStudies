@@ -128,7 +128,7 @@ def add_trigger_counts(args):
         with open(outs, 'w') as fcsv:
             ref_combs, ref_vals = ([] for _ in range(2))
             int_combs, int_vals = ([] for _ in range(2))
-            references = []
+            refs = []
             for comb, val in c_inters.items():
                 ref_combs.append(comb)
                 ref_vals.append(c_ref[comb])
@@ -140,6 +140,7 @@ def add_trigger_counts(args):
             ref_vals  = np.array(ref_vals)
             int_combs = np.array(int_combs)
             int_vals  = np.array(int_vals)
+            refs      = np.array(refs)
                 
             #sort
             gzip = zip(ref_vals, ref_combs, int_vals, int_combs)
@@ -152,20 +153,11 @@ def add_trigger_counts(args):
             ref_combs = ref_combs[~zeromask]
             int_vals  = int_vals[~zeromask]
             int_combs = int_combs[~zeromask]
-            if not all(ref_vals):
-                mes = 'At least one of the trigger references has zero entries.'
-                mes += ' This should not happen after filtering using the intersections '
-                mes += '(denominator of the efficiency).\n'
-                mes += 'Intersections:\n  {}\n'
-                mes += 'Intersection counts:\n {}\n'
-                mes += 'References:\n {}\n'
-                mes += 'References counts:\n {}\n'
-                raise RuntimeError(mes.format(int_combs, int_vals, ref_combs, ref_vals))
-            #refval = vals[trigs.tolist().index('Total')]
+            refs      = refs[~zeromask]
      
             line = sep.join(('Type', 'Trigger Intersection', 'Reference', 'Counts', 'Efficiency\n'))
             fcsv.write(line)
-            gzip = zip(ref_vals, ref_combs, int_vals, int_combs, references)
+            gzip = zip(ref_vals, ref_combs, int_vals, int_combs, refs)
             for refv, refc, intv, intc, refref in gzip:
                 eff = float(intv) / float(refv)
 
@@ -178,8 +170,6 @@ def add_trigger_counts(args):
                                     str(refc).replace(main.inters_str, '  AND  '),
                                     refref, str(refv), '1\n' )
                 fcsv.write(newline)
-     
-                fcsv.write('\n')
 
     print('Save file {}.'.format(outs))
         
