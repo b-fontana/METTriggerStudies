@@ -176,7 +176,7 @@ def generate_trigger_combinations(channel, trigs):
     exclusive = get_exclusive_intersections()
 
     # look only at combinations where the channel is imcompatible with the trigger
-    pruntrigs = [ exclusive[x] for x in exclusive if x != channel ]
+    pruntrigs = [ exclusive[x] for x in exclusive if x not in (channel, 'general') ]
     pruntrigs = set(it.chain(*pruntrigs))
     pruntrigs = set(trigs) - pruntrigs
 
@@ -204,6 +204,8 @@ def get_exclusive_intersections():
                  'mutau'  : ('IsoMu24', 'IsoMuIsoTauCustom'),
                  'tautau' : ('IsoDoubleTauCustom', 'VBFTauCustom'),
                  'general': ('METNoMu120', 'IsoTau180')}
+    flat = sorted([x for v in exclusive.values() for x in v])
+    assert flat == sorted(list(main.trig_map.keys()))
     return exclusive
 
 def get_key_list(afile, inherits=['TH1']):
