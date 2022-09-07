@@ -367,7 +367,7 @@ class EventSelection:
             
             for comb in combinations:
                 joinFlag = functools.reduce( lambda x,y: x and y, [k[1] for k in comb] )
-                tmp[ '_AND_'.join([k[0] for k in comb]) ] = joinFlag
+                tmp[ (main.inters_str).join([k[0] for k in comb]) ] = joinFlag
 
             return tmp
 

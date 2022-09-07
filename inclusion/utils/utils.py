@@ -341,7 +341,7 @@ def is_nan(num):
     return num!= num
 
 def join_name_trigger_intersection(tuple_element):
-    inters = '_PLUS_'
+    inters = main.inters_str
     return inters.join(tuple_element)
 
 def join_strings(*args, sep=''):

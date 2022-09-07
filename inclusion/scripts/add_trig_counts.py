@@ -13,6 +13,7 @@ import argparse
 
 import inclusion
 from inclusion.utils import utils
+from inclusion.config import main
 
 @utils.set_pure_input_namespace
 def add_trigger_counts(args):
@@ -110,8 +111,7 @@ def add_trigger_counts(args):
                     fcsv.write(l)
 
                 if atype == 'Type' and il==0:
-                    newline = ( 'File Type' + sep + atype + sep + comb + sep +
-                                ref + sep + c + sep + eff + '\n')
+                    newline = sep.join(('File Type', atype, comb, ref, c, eff)) + '\n'
                     fcsv.write(newline)
 
     else:
@@ -159,15 +159,14 @@ def add_trigger_counts(args):
             for refv, refc, intv, intc, refref in gzip:
                 eff = float(intv) / float(refv)
 
-                newline = ( 'Numerator' + sep +
-                            str(intc).replace('_PLUS_', '  AND  ') + sep +
-                            refref + sep + str(intv) +
-                            sep + str(round(eff,4)) + '\n' )
+                newline = sep.join(('Numerator',
+                                    str(intc).replace(main.inters_str, '  AND  '),
+                                    refref, str(intv), str(round(eff,4)))) + '\n'
                 fcsv.write(newline)
      
-                newline = ( 'Denominator' + sep + str(refc).replace('_PLUS_', '  AND  ')
-                            + sep + refref + sep + str(refv) +
-                            sep + '1\n' )
+                newline = sep.join(('Denominator',
+                                    str(refc).replace(main.inters_str, '  AND  '),
+                                    refref, str(refv), '1\n' )
                 fcsv.write(newline)
      
                 fcsv.write(',,,,\n')

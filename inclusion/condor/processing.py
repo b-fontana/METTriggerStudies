@@ -150,7 +150,7 @@ if __name__ == '__main__':
                         help='Select the triggers over which the workflow will be run.' )
     parser.add_argument('--variables', dest='variables', required=True, nargs='+', type=str,
                         help='Select the variables over which the workflow will be run.' )
-    parser.add_argument('--intersection_str', dest='intersection_str', required=False, default='_PLUS_',
+    parser.add_argument('--intersection_str', dest='intersection_str', required=False, default=main.inters_str,
                         help='String used to represent set intersection between triggers.')
     parser.add_argument('--nocut_dummy_str', dest='nocut_dummy_str', required=True,
                         help='Dummy string associated to trigger histograms were no cuts are applied.')

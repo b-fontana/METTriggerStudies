@@ -827,7 +827,7 @@ parser.add_argument('--channels',   dest='channels',         required=True, narg
                     help='Select the channels over which the workflow will be run.' )
 parser.add_argument('--variables',        dest='variables',        required=True, nargs='+', type=str,
                     help='Select the variables over which the workflow will be run.' )
-parser.add_argument('--intersection_str', dest='intersection_str', required=False, default='_PLUS_',
+parser.add_argument('--intersection_str', dest='intersection_str', required=False, default=main.inters_str,
                     help='String useyd to represent set intersection between triggers.')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = utils.parse_args(parser)
