@@ -35,13 +35,9 @@ def add_trigger_counts(args):
                     if regex.match( os.path.basename(afile) ):
                         afile_full = os.path.join(root, afile)
                         if afile_full in args.infile_counts:
-                            print('FULL: ', afile_full)
                             inputs_join.append( afile_full )
 
         are_there_files(files, regex)
-        print('outfile_counts: ', args.outfile_counts)
-        print('infile_counts: ', args.infile_counts)
-        print('channel: ', args.channel)
         assert set(inputs_join) == set(args.infile_counts)
 
     else:
