@@ -15,6 +15,8 @@ import inclusion
 from inclusion.utils import utils
 from inclusion.config import main
 
+import ROOT
+
 @utils.set_pure_input_namespace
 def add_trigger_counts(args):
     def are_there_files(files, regex):
@@ -114,6 +116,7 @@ def add_trigger_counts(args):
         pref, suf = outputs_csv.split('.')
         outs = outputs_csv
 
+    passed = 0
     if args.aggr:
         with open(outs, 'w') as fcsv:
             for il,l in enumerate(aggr_outs):
@@ -121,14 +124,29 @@ def add_trigger_counts(args):
                 if all( not x for x in split_line ):
                         continue
 
-                _, atype, comb, ref, c, eff = split_line
+                # write a new line only once per numerator/denominator pair of lines
+                dataset, atype, comb, ref, c, eff = split_line
                 if atype != 'Type':
-                    print(l)
-                    fcsv.write(l + '\n')
+                    if atype=='Numerator':
+                        passed = ROOT.TH1I('h_pass'+str(il), 'h_pass'+str(il), 1, 0., 1.)
+                        passed.Fill(0.5, int(c))
+                    elif atype=='Denominator':
+                        total = ROOT.TH1I('h_pass'+str(il), 'h_pass'+str(il), 1, 0., 1.)
+                        total.Fill(0.5, int(c))
+                        eff = ROOT.TEfficiency(passed, total)
+                        efflow = str(round(eff.GetEfficiencyErrorLow(1),3))
+                        effup  = str(round(eff.GetEfficiencyErrorUp(1),3))
+                        effval = (str(round(eff.GetEfficiency(1),3)) +
+                                  ' +' + effup + ' -' + efflow)
+                        newline = sep.join((dataset, ref, comb,
+                                            str(passed.GetBinContent(1)), c, effval))
+                        fcsv.write(newline + '\n')
+                    else:
+                        mes = 'Type {} does not exist.'
+                        raise ValueError(mes.format(atype))
 
                 if atype=='Type' and il==0:
-                    newline = sep.join(('File Type', atype, comb, ref, c, eff))
-                    print(newline + '\n')
+                    newline = sep.join(('File Type', 'Reference', 'Intersection', 'Passed', 'Total', 'Efficiency'))
                     fcsv.write(newline + '\n')
 
     else:
