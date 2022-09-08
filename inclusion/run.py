@@ -36,13 +36,13 @@ parser.add_argument(
     '--nbins',
     type=int,
     default=6,
-    help="Number of histogram bins. If fine-grained control is required modify the variable `binedges` in the configuration file."
+    help='Number of histogram bins. If fine-grained control is required modify the variable `binedges` in the configuration file.'
     )
 parser.add_argument(
     '--workers',
     type=int,
     default=1,
-    help="Maximum number of worker which can be used to run the pipeline."
+    help='Maximum number of worker which can be used to run the pipeline.'
     )
 parser.add_argument(
     '--scheduler',
@@ -74,12 +74,12 @@ parser.add_argument(
     required=False,
     default=main.triggers,
     choices=main.triggers,
-    help=( 'Select the triggers considered for the closure.' +
-          'The default is to consider all of them.\n' +
-          'To do a closure for one single trigger efficiency (which ' +
-          'should provide a perfect match between original and ' +
-          'weighted MC), one must specify here the trigger to consider.' )
-          )
+    help=''.join(('Select the triggers considered for the closure. ',
+                  'The default is to consider all of them.\n',
+                  'To do a closure for one single trigger efficiency (which ' ,
+                  'should provide a perfect match between original and ',
+                  'weighted MC), one must specify here the trigger to consider.'))
+    )
 parser.add_argument(
     '--channels',
     nargs='+', #1 or more arguments
@@ -119,12 +119,14 @@ parser.add_argument(
     type=int,
     choices=[0,1,2],
     default=0,
-    help="0: Does not draw the distributions (default).\n1: Also draws the distributions.\n2: Only draws the distributions."
+    help='0: Does not draw the distributions (default).\n1: Also draws the distributions.\n2: Only draws the distributions.'
     )
 parser.add_argument(
-    '--counts',
-    action='store_true',
-    help="Only runs the 'counting' workflow: check how many events pass each intersection of triggers. The default is to run the full workflow."
+    '--branch',
+    type=str,
+    choices=['all', 'counts', 'extra'],
+    default='all',
+    help='Which section of the DAG to run.'
     )
 parser.add_argument(
     '--configuration',
@@ -135,7 +137,7 @@ parser.add_argument(
 parser.add_argument(
     '--debug_workflow',
     action='store_true',
-    help="Explicitly print the functions being run for each task, for workflow debugging purposes."
+    help='Explicitly print the functions being run for each task, for workflow debugging purposes.'
     )
 FLAGS, _ = parser.parse_known_args()
 assert set(FLAGS.triggers_closure).issubset(set(main.triggers))
@@ -553,6 +555,8 @@ class Closure(lutils.ForceRun):
  
 class Dag(lutils.ForceRun):
     """Triggering all htcondor writing classes."""
+    branch = luigi.Parameter()
+    
     params        = utils.dot_dict(write_params)
     p_histos      = utils.dot_dict(histos_params)
     p_hadd_histo  = utils.dot_dict(haddhisto_params)
@@ -605,30 +609,33 @@ class Dag(lutils.ForceRun):
         subm_disc = discriminator.discriminator_outputs(self.p_disc)[1]
         # subm_union = union_calculator.union_calculator_outputs(self.p_calc)[1]
         # subm_closure = closure.closure_outputs(self.p_closure)
- 
-        jobs = { 'HistosData':     subm_hdata,
-                 'HistosMC':       subm_hmc,
-                 'CountsData':     subm_cdata,
-                 'CountsMC':       subm_cmc,
-                 'HaddHistoData':  subm_hadd_hdata,
-                 'HaddHistoMC':    subm_hadd_hmc,
-                 'HaddCountsData': subm_hadd_cdata,
-                 'HaddCountsMC':   subm_hadd_cmc,
-                 'EffSF':          [ subm_eff_sf ],
-                 'EffSFAgg':       [ subm_eff_sf_agg ],
-                 'Discr':          subm_disc,
-                 #'Union':          subm_union,
-                 #'Closure':        [ subm_closure ],
-                }
- 
+
+        jobs = {'CountsData'    : subm_cdata,
+                'CountsMC'      : subm_cmc,                
+                'HaddCountsData': subm_hadd_cdata,
+                'HaddCountsMC'  : subm_hadd_cmc}
+        if self.branch != 'counts':
+            jobs.update({'HistosData'   : subm_hdata,
+                         'HistosMC'     : subm_hmc,
+                         'HaddHistoData': subm_hadd_hdata,
+                         'HaddHistoMC'  : subm_hadd_hmc,
+                         'EffSF'        : [subm_eff_sf],
+                         'EffSFAgg'     : [subm_eff_sf_agg],
+                         'Discr'        : subm_disc})
+        if self.branch == 'extra':
+            jobs.update({'Union'  : subm_union,
+                         'Closure': [subm_closure]})
+            
         dag_manager = dag.WriteDAGManager( self.params['localdir'],
                                            self.params['tag'],
                                            jobs,
-                                           mode='short' )
+                                           branch=self.branch )
         dag_manager.write_all()
         
 class SubmitDAG(lutils.ForceRun):
     """Submission class."""
+    branch = luigi.ListParameter()
+    
     def edit_condor_submission_file(self, out):
         jw = job_writer.JobWriter()
         with open(out, 'r') as f:
@@ -676,14 +683,13 @@ class SubmitDAG(lutils.ForceRun):
                  Discriminator(),
                  UnionCalculator(),
                  Closure(),
-                 Dag(),
+                 Dag(branch=self.branch),
                 ]
-   
- 
+
 utils.create_single_dir( data_storage )
 utils.create_single_dir( targets_folder )
-    
-last_tasks = [ SubmitDAG() ]
+
+last_tasks = [ SubmitDAG(branch=FLAGS.branch) ]
  
 if FLAGS.scheduler == 'central':
     luigi.build(last_tasks,
