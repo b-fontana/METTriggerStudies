@@ -129,10 +129,14 @@ def add_trigger_counts(args):
                 if atype != 'Type':
                     if atype=='Numerator':
                         passed = ROOT.TH1I('h_pass'+str(il), 'h_pass'+str(il), 1, 0., 1.)
-                        passed.Fill(0.5, int(c))
+                        for _ in range(int(c)):
+                            passed.Fill(0.5)
                     elif atype=='Denominator':
                         total = ROOT.TH1I('h_pass'+str(il), 'h_pass'+str(il), 1, 0., 1.)
-                        total.Fill(0.5, int(c))
+                        for _ in range(int(c)):
+                            total.Fill(0.5)
+                        if not ROOT.TEfficiency.CheckConsistency(passed,total):
+                            raise ValueError('Bad histogram for TEfficiency')
                         eff = ROOT.TEfficiency(passed, total)
                         efflow = str(round(eff.GetEfficiencyErrorLow(1),3))
                         effup  = str(round(eff.GetEfficiencyErrorUp(1),3))
