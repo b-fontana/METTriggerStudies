@@ -90,7 +90,7 @@ done
 echo "### Arguments"
 echo "TAGS  = ${TAGS[*]}"
 echo "DRYRUN = ${DRYRUN}"
-echo "FULL  = ${FULL}"
+echo "EOS_USER  = ${EOS_USER}"
 echo "#############"
 
 for tag in ${TAGS[@]}; do
