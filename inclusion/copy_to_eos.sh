@@ -93,6 +93,9 @@ echo "DRYRUN = ${DRYRUN}"
 echo "EOS_USER  = ${EOS_USER}"
 echo "#############"
 
+
+[[ ! -d ${EOS_DIR} ]] && /opt/exp_soft/cms/t3/eos-login -username ${EOS_USER} -init
+
 for tag in ${TAGS[@]}; do
 	for chn in ${CHANNELS[@]}; do
 		comm="cp ${BASE_LOCAL_DIR}/${tag}/Outputs/${chn}/Counts_Data_MET_EG_Mu/table.csv ${BASE_EOS_DIR}/New2/table.csv"
