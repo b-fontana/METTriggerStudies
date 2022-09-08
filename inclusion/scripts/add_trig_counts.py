@@ -56,15 +56,21 @@ def add_trigger_counts(args):
     c_ref, c_inters = ({} for _ in range(2))
 
     if args.aggr:
-        regex2 = re.compile(args.tprefix + '(.+)_Sum.*' + args.subtag + '_' + args.channel + '.csv')    
+        regex2 = re.compile(args.tprefix + '(.+)_Sum.*' + args.subtag + '_' + args.channel + '.csv')
         for afile in inputs_join:
             filetype = regex2.findall(afile)
 
             with open(afile, 'r') as f:
                 for line in f.readlines():
-                    if line.strip(): #ignore empty lines
-                        aggr_outs.append(filetype[0] + sep + line)
+                    if not line.strip(): #ignore empty lines
+                        continue
 
+                    split_line = [x.replace('\n', '') for x in line.split(sep)]
+                    if all( not x for x in split_line ):
+                        continue
+
+                    new_line = line.replace('\n', '')
+                    aggr_outs.append(filetype[0] + sep + new_line)
 
     else:
         for afile in inputs_join:
@@ -115,12 +121,14 @@ def add_trigger_counts(args):
                 if all( not x for x in split_line ):
                         continue
 
-                ftype, atype, comb, ref, c, eff = split_line
+                _, atype, comb, ref, c, eff = split_line
                 if atype != 'Type':
-                    fcsv.write(l)
+                    print(l)
+                    fcsv.write(l + '\n')
 
                 if atype=='Type' and il==0:
                     newline = sep.join(('File Type', atype, comb, ref, c, eff))
+                    print(newline + '\n')
                     fcsv.write(newline + '\n')
 
     else:
@@ -139,7 +147,7 @@ def add_trigger_counts(args):
             ref_vals  = np.array(ref_vals)
             int_combs = np.array(int_combs)
             int_vals  = np.array(int_vals)
-            refs      = np.array(refs)g
+            refs      = np.array(refs)
      
             #remove zeros
             zeromask = int_vals == 0
@@ -176,7 +184,7 @@ def add_trigger_counts(args):
      
                 newline = sep.join(('Denominator',
                                     str(refc).replace(main.inters_str, '  AND  '),
-                                    refref, str(refv), '1\n' )
+                                    refref, str(refv), '1\n' ))
                 fcsv.write(newline)
 
     print('Save file {}.'.format(outs))
