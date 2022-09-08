@@ -58,33 +58,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-### Functions
-function list_tags() {
-	if [ ${#OLD_TAGS[@]} -eq 1 ]; then
-		echo "The following tag is currently available:"
-	else
-		echo "The following tags are currently available:"
-	fi
-	for tag in "$@"; do
-		echo " - ${tag}"
-	done
-}
-
-function list_ignored_tags() {
-	declare -a tags=( "${@:2}" )
-	
-	printf "Tags"
-	for tag in ${tags[@]}; do
-		if [ ${tag} == ${tags[ $((${1}-1)) ]} ]; then
-			printf " and '${tag}' "
-		elif [ ${tag} == ${tags[0]} ]; then
-			printf " '${tag}'"
-		else
-			printf ", '${tag}'"
-		fi
-	done
-	echo "were ignored since they are not present."
-}
+### Load functions
+source "lib/funcs.sh"
 
 ### General parameters
 BASE_PATH="/data_CMS/cms/alves/TriggerScaleFactors"
