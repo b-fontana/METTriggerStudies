@@ -76,8 +76,6 @@ def add_trigger_counts(args):
 
     else:
         for afile in inputs_join:
-            filetype = regex2.findall(afile)
-
             with open(afile, 'r') as f:
                 for line in f.readlines():
                     if not line.strip(): #ignore empty lines
@@ -163,7 +161,7 @@ def add_trigger_counts(args):
                 ref_vals.append(c_ref[comb])
                 int_combs.append(comb)
                 int_vals.append(val)
-                references.append(reftrigs[comb])
+                refs.append(reftrigs[comb])
      
             ref_combs = np.array(ref_combs)
             ref_vals  = np.array(ref_vals)
