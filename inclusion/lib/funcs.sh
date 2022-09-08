@@ -26,3 +26,20 @@ function list_ignored_tags() {
 	done
 	echo "were ignored since they are not present."
 }
+
+function check_tags() {
+	ntags="$1"
+	ntags_next=$((${ntags} + 1))
+	declare -a tags=( "${@:2:${ntags}}" )
+	declare -a old_tags=( "${@:${ntags_next}}" )
+	
+	if [[ -z ${tags} ]]; then
+		echo "Select the tag via the '--tag' option."
+		if [ ${#old_tags[@]} -ne 0 ]; then
+			list_tags ${old_tags[@]}
+		else
+			echo "No tags are currently available. Everything looks clean!"
+		fi
+		exit 1;
+	fi
+}

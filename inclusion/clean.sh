@@ -66,17 +66,7 @@ BASE_PATH="/data_CMS/cms/alves/TriggerScaleFactors"
 EOS_PATH="/eos/home-${EOS_USER:0:1}/${EOS_USER}"
 
 declare -a OLD_TAGS=( $(/bin/ls -1 "${BASE_PATH}") )
-
-# Argument parsing sanity checks
-if [[ -z ${TAGS} ]]; then
-    echo "Select the tag via the '--tag' option."
-    if [ ${#OLD_TAGS[@]} -ne 0 ]; then
-		list_tags ${OLD_TAGS[@]}
-    else
-		echo "No tags are currently available. Everything looks clean!"
-    fi
-    exit 1;
-fi
+check_tags ${#TAGS[@]} ${TAGS[@]} ${OLD_TAGS[@]}
 
 declare -a REMOVED_TAGS;
 for tag1 in ${TAGS[@]}; do
