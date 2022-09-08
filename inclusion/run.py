@@ -654,7 +654,13 @@ class SubmitDAG(lutils.ForceRun):
         com = 'condor_submit_dag -no_submit -f'
         com += ' -notification Always'
         com += ' -append "notify_user={}"'.format(main.email)
-        com += ' -batch_name InclusionSF'
+        if self.branch == 'counts':
+            bname = 'InclusionSFCounts'
+        elif self.branch == 'all':
+            bname = 'InclusionSF'
+        elif self.brach == 'extra':
+            bname = 'InclusionSFExtra'
+        com += ' -batch_name {}'.format(bname)
         com += ' -outfile_dir {} {}'.format(os.path.dirname(outfile), outfile)
     
         os.system(com)
