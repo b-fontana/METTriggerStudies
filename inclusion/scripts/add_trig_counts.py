@@ -44,12 +44,13 @@ def add_trigger_counts(args):
         assert set(inputs_join) == set(args.infile_counts)
 
     else:
-        regex = re.compile( args.tprefix + args.sample + '.+_[0-9]{1,5}' + args.subtag + '.csv' )
+        regex = re.compile( args.tprefix + args.sample + '.*_[0-9]{1,5}' + args.subtag + '.csv' )
         walk_path = os.path.join(args.indir, args.sample)
         for root, _, files in os.walk( walk_path ):
             for afile in files:
                 if regex.match( os.path.basename(afile) ):
                     inputs_join.append( os.path.join(root, afile) )
+
             are_there_files(files, regex)
 
     aggr_outs = []
