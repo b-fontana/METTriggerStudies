@@ -59,7 +59,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 ### Load functions
-source "lib/funcs.sh"
+THIS_FILE="${BASH_SOURCE[0]}"
+THIS_DIR="$( cd "$( dirname ${THIS_FILE} )" && pwd )"
+source "${THIS_DIR}/lib/funcs.sh"
 
 ### General parameters
 BASE_PATH="/data_CMS/cms/alves/TriggerScaleFactors"

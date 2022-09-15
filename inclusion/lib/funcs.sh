@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 function list_tags() {
-	if [ ${@} -eq 1 ]; then
+	if [ ${#@} -eq 1 ]; then
 		echo "The following tag is currently available:"
 	else
 		echo "The following tags are currently available:"
@@ -29,7 +29,7 @@ function list_ignored_tags() {
 
 function check_tags() {
 	ntags="$1"
-	ntags_next=$((${ntags} + 1))
+	ntags_next=$((${ntags} + 2))
 	declare -a tags=( "${@:2:${ntags}}" )
 	declare -a old_tags=( "${@:${ntags_next}}" )
 	
