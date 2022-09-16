@@ -9,7 +9,7 @@ import inclusion
 from inclusion.config import main
 from inclusion.utils import utils
 
-bjets_cut = True
+bjets_cut = False
 
 inters_general = {'MET' : (),
                   'EG'  : (),

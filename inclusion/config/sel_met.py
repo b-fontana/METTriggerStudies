@@ -9,6 +9,8 @@ import inclusion
 from inclusion.config import main
 from inclusion.utils import utils
 
+bjets_cut = True
+
 inters_general = {'MET' : (('IsoTau180',)),
                   'EG'  : (),
                   'Mu'  : (('METNoMu120',),

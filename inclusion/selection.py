@@ -69,7 +69,8 @@ class EventSelection:
 
         lepton_veto = self.should_apply_lepton_veto(tcomb)
         
-        return self.selection_cuts(lepton_veto=lepton_veto)
+        return self.selection_cuts(bjets_cut=self.cfg.bjets_cut,
+                                   lepton_veto=lepton_veto)
 
     def dataset_triggers(self, tcomb, channel, trigs):
         """
@@ -213,7 +214,7 @@ class EventSelection:
 
         # require at least two b jet candidates
         nbjetscand = self.entries['nbjetscand']
-        if nbjetscand <= 1 and bjet_cuts:
+        if nbjetscand <= 1 and bjets_cuts:
             return False
 
         # Loose / Medium / Tight
