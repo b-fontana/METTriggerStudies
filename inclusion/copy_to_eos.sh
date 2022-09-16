@@ -94,14 +94,16 @@ echo "DRYRUN = ${DRYRUN}"
 echo "EOS_USER  = ${EOS_USER}"
 echo "#############"
 
-
 [[ ! -d ${EOS_DIR} ]] || /opt/exp_soft/cms/t3/eos-login -username ${EOS_USER} -init
 for tag in ${TAGS[@]}; do
 	for chn in ${CHANNELS[@]}; do
-		comm="cp -r ${BASE_LOCAL_DIR}/${tag}/Outputs/${chn} ${BASE_EOS_DIR}/${tag}"
-		echo ${comm}
+		comm1="mkdir -p ${BASE_EOS_DIR}/${tag}/${chn}/"
+		comm2="cp -r ${BASE_LOCAL_DIR}/${tag}/Outputs/${chn}/* ${BASE_EOS_DIR}/${tag}/${chn}/"
+		echo ${comm1}
+		echo ${comm2}
 		if [[ ${DRYRUN} -eq 0 ]]; then
-			${comm}
+			${comm1}
+			${comm2}
 		fi	
 	done
 done
