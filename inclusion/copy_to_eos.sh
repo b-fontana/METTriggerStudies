@@ -57,11 +57,11 @@ THIS_DIR="$( cd "$( dirname ${THIS_FILE} )" && pwd )"
 source "${THIS_DIR}/lib/funcs.sh"
 
 ### General parameters
-BASE_LOCAL_DIR="/data_CMS/cms/${USER}/TriggerScaleFactors"
-BASE_EOS_DIR="/eos/user/${EOS_USER:0:1}/${EOS_USER}/www/TriggerScaleFactors"
+LOCAL_DIR="/data_CMS/cms/${USER}/TriggerScaleFactors"
+EOS_DIR="/eos/user/${EOS_USER:0:1}/${EOS_USER}/www/TriggerScaleFactors"
 declare -a CHANNELS=( "etau" "mutau" "tautau" )
 
-declare -a OLD_TAGS=( $(/bin/ls -1 "${BASE_LOCAL_DIR}") )
+declare -a OLD_TAGS=( $(/bin/ls -1 "${LOCAL_DIR}") )
 check_tags ${#TAGS[@]} ${TAGS[@]} ${OLD_TAGS[@]}
 
 declare -a REMOVED_TAGS;
@@ -94,11 +94,14 @@ echo "DRYRUN = ${DRYRUN}"
 echo "EOS_USER  = ${EOS_USER}"
 echo "#############"
 
-[[ ! -d ${EOS_DIR} ]] || /opt/exp_soft/cms/t3/eos-login -username ${EOS_USER} -init
+if ! ls ${EOS_DIR} > /dev/null 2>&1 ; then
+   /opt/exp_soft/cms/t3/eos-login -username ${EOS_USER} -init
+fi
+
 for tag in ${TAGS[@]}; do
 	for chn in ${CHANNELS[@]}; do
-		comm1="mkdir -p ${BASE_EOS_DIR}/${tag}/${chn}/"
-		comm2="cp -r ${BASE_LOCAL_DIR}/${tag}/Outputs/${chn}/* ${BASE_EOS_DIR}/${tag}/${chn}/"
+		comm1="mkdir -p ${EOS_DIR}/${tag}/${chn}/"
+		comm2="cp -r ${LOCAL_DIR}/${tag}/Outputs/${chn}/* ${EOS_DIR}/${tag}/${chn}/"
 		echo ${comm1}
 		echo ${comm2}
 		if [[ ${DRYRUN} -eq 0 ]]; then

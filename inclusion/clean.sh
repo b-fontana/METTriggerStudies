@@ -105,7 +105,10 @@ declare -a COMMANDS;
 for tag in ${TAGS[@]}; do
 	if ${FULL}; then
 		### Ensure connection to /eos/ folder
-		[[ ! -d ${EOS_PATH} ]] && /opt/exp_soft/cms/t3/eos-login -username ${EOS_USER} -init
+		if ! ls ${EOS_PATH} > /dev/null 2>&1 ; then
+			/opt/exp_soft/cms/t3/eos-login -username ${EOS_USER} -init
+		fi
+		
 		COMMANDS+=( "rm -rf ${EOS_PATH}/www/TriggerScaleFactors/${tag}/"
 					"rm -rf ${BASE_PATH}/${tag}/"
 					"rm -rf jobs/${tag}/" )
