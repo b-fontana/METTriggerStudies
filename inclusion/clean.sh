@@ -62,6 +62,7 @@ done
 THIS_FILE="${BASH_SOURCE[0]}"
 THIS_DIR="$( cd "$( dirname ${THIS_FILE} )" && pwd )"
 source "${THIS_DIR}/lib/funcs.sh"
+#source "${THIS_DIR}/lib/clean_completion.bash"
 
 ### General parameters
 BASE_PATH="/data_CMS/cms/alves/TriggerScaleFactors"

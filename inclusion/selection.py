@@ -69,8 +69,8 @@ class EventSelection:
 
         lepton_veto = self.should_apply_lepton_veto(tcomb)
         
-        return self.selection_cuts(bjets_cut=self.cfg.bjets_cut,
-                                   lepton_veto=lepton_veto)
+        return self.selection_cuts(lepton_veto=lepton_veto,
+                                   bjets_cut=self.cfg.bjets_cut)
 
     def dataset_triggers(self, tcomb, channel, trigs):
         """
