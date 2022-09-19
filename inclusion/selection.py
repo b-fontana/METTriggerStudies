@@ -55,8 +55,9 @@ class EventSelection:
     def dataset_cuts(self, tcomb, channel):
         """
         Applies selection depending on the reference trigger being considered.
-        Reference triggers tend to be associated with a certain dataset.
-        For instance, the 'MET' dataset is connected to the MET Trigger.
+        Datasets are defined according to the applied trigger(s).
+        For instance, the 'MET' dataset is by construction a group of events to which
+        the MET Trigger was applied.
         Currently all datasets have the same selection modulos the lepton veto.
         """
         reference = self.find_inters_for_reference(tcomb, channel)
@@ -198,7 +199,11 @@ class EventSelection:
         Returns `True` only if all selection cuts pass.
         """
         mhh = self.entries['HHKin_mass']
-        if mhh < 1:
+
+        # When one only has 0 or 1 bjet th HH mass is not well defined,
+        # and a value of -1 is assigned. One thus has to remove the cut below
+        # when considering events with less than 2 b-jets.
+        if mhh < 1 and not bjets_cut:
             return False
 
         pairtype    = self.entries['pairType']
