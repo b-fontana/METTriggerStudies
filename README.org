@@ -46,8 +46,10 @@ Run the submission workflow (check the meaning of the arguments by adding ~--hel
 
 #+NAME: running_command
 #+BEGIN_SRC shell
-python3 sf_inclusion/run.py --tag FullWorkflowTest --data MET EGamma --mc_process TT
+python3 sf_inclusion/run.py --tag FullWorkflowTest --data MET EGamma --mc_process TT --configuration sel_default
 #+END_SRC
+
+where the configuration file must be defined under ~inclusion/config/~.
 
 If everything runs as expected, the above should run locally all local tasks (currently ~DefineBinning~ only) and launch a HTCondor DAG which encodes de dependencies of the remaining tasks and runs them in the server.
 
