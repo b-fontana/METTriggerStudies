@@ -219,7 +219,7 @@ class EventSelection:
 
         # require at least two b jet candidates
         nbjetscand = self.entries['nbjetscand']
-        if nbjetscand <= 1 and bjets_cuts:
+        if nbjetscand <= 1 and bjets_cut:
             return False
 
         # Loose / Medium / Tight
