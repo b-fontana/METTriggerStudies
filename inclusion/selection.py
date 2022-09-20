@@ -203,7 +203,7 @@ class EventSelection:
         # When one only has 0 or 1 bjet th HH mass is not well defined,
         # and a value of -1 is assigned. One thus has to remove the cut below
         # when considering events with less than 2 b-jets.
-        if mhh < 1 and not bjets_cut:
+        if mhh < 1 and bjets_cut:
             return False
 
         pairtype    = self.entries['pairType']
