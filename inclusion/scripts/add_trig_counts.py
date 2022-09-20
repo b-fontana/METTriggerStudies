@@ -100,24 +100,38 @@ def add_trigger_counts(args):
                     elif title == 'Intersection':
                         c_inters.setdefault(comb, 0)
                         c_inters[comb] += int(count)
+                    elif title == 'Reference_weighted':
+                        w_ref.setdefault(comb, 0)
+                        w_ref[comb] += int(count)
+                    elif title == 'Intersection_weighted':
+                        w_inters.setdefault(comb, 0)
+                        w_inters[comb] += int(count)
+                    elif title == 'Reference_w2':
+                        w2_ref.setdefault(comb, 0)
+                        w2_ref[comb] += int(count)
+                    elif title == 'Intersection_w2':
+                        w2_inters.setdefault(comb, 0)
+                        w2_inters[comb] += int(count)
                     else:
                         mes = 'Column {} is not supported.'
                         raise ValueError(mes.format(mes))
 
 
     if args.aggr:
-        suboutdir = os.path.join(args.outdir, args.channel, 'Counts_' + args.dataset_name)
-        if not os.path.exists(suboutdir):
-            os.makedirs(suboutdir)
-        outs = os.path.join(suboutdir, 'table.csv')
+        suboutdir1 = os.path.join(args.outdir, args.channel, 'Counts_' + args.dataset_name)
+        utils.create_single_dir(suboutdir1)
+        outs1 = os.path.join(suboutdir1, 'table.csv')
+        suboutdir2 = os.path.join(args.outdir, args.channel, 'Weights_' + args.dataset_name)
+        utils.create_single_dir(suboutdir2)
+        outs2 = os.path.join(suboutdir2, 'table.csv')
     else:
         outputs_csv = args.outfile_counts
         pref, suf = outputs_csv.split('.')
         outs = outputs_csv
 
-    passed = 0
+    passed, w2_pass, w2_total = 0, 0., 0.
     if args.aggr:
-        with open(outs, 'w') as fcsv:
+        with open(outs1, 'w') as fcsv1:
             for il,l in enumerate(aggr_outs):
                 split_line = [x.replace('\n', '') for x in l.split(sep)]
                 if all( not x for x in split_line ):
@@ -130,80 +144,208 @@ def add_trigger_counts(args):
                         passed = ROOT.TH1I('h_pass'+str(il), 'h_pass'+str(il), 1, 0., 1.)
                         for _ in range(int(c)):
                             passed.Fill(0.5)
+                        continue
                     elif atype=='Denominator':
                         total = ROOT.TH1I('h_pass'+str(il), 'h_pass'+str(il), 1, 0., 1.)
                         for _ in range(int(c)):
                             total.Fill(0.5)
-                        if not ROOT.TEfficiency.CheckConsistency(passed,total):
-                            raise ValueError('Bad histogram for TEfficiency')
-                        eff = ROOT.TEfficiency(passed, total)
-                        efflow = str(round(eff.GetEfficiencyErrorLow(1),3))
-                        effup  = str(round(eff.GetEfficiencyErrorUp(1),3))
-                        effval = (str(round(eff.GetEfficiency(1),3)) +
-                                  ' +' + effup + ' -' + efflow)
-                        newline = sep.join((dataset, ref, comb,
-                                            str(passed.GetBinContent(1)), c, effval))
-                        fcsv.write(newline + '\n')
                     else:
-                        mes = 'Type {} does not exist.'
-                        raise ValueError(mes.format(atype))
+                        if (atype != 'Numerator_weighted' and atype != 'Denominator_weighted' and
+                            atype != 'Numerator_w2' and atype != 'Denominator_w2'):
+                            mes = 'Type {} does not exist.'
+                            raise ValueError(mes.format(atype))
+
+                    # only lines with "Denominator" reach the following
+                    if not ROOT.TEfficiency.CheckConsistency(passed,total):
+                        raise ValueError('Bad histogram for TEfficiency')
+                    eff = ROOT.TEfficiency(passed, total)
+                    efflow = str(round(eff.GetEfficiencyErrorLow(1),3))
+                    effup  = str(round(eff.GetEfficiencyErrorUp(1),3))
+                    effval = (str(round(eff.GetEfficiency(1),3)) +
+                              ' +' + effup + ' -' + efflow)
+                    newline = sep.join((dataset, ref, comb,
+                                        str(passed.GetBinContent(1)), c, effval))
+                    fcsv1.write(newline + '\n')
 
                 if atype=='Type' and il==0:
                     newline = sep.join(('File Type', 'Reference', 'Intersection', 'Passed', 'Total', 'Efficiency'))
-                    fcsv.write(newline + '\n')
+                    fcsv1.write(newline + '\n')
+
+
+        with open(outs2, 'w') as fcsv2:
+            for il,l in enumerate(aggr_outs):
+                split_line = [x.replace('\n', '') for x in l.split(sep)]
+                if all( not x for x in split_line ):
+                        continue
+
+                # write a new line only once per numerator/denominator pair of lines
+                dataset, atype, comb, ref, c, eff = split_line
+                if atype != 'Type':
+                    if atype=='Numerator_weighted':
+                        passed = ROOT.TH1F('hw_pass'+str(il), 'hw_pass'+str(il), 1, 0., 1.)
+                        for _ in range(int(c)):
+                            passed.Fill(0.5)
+                        continue                            
+                    elif atype=='Denominator_weighted':
+                        total = ROOT.TH1F('hw_pass'+str(il), 'hw_pass'+str(il), 1, 0., 1.)
+                        for _ in range(int(c)):
+                            total.Fill(0.5)
+                        continue
+                    elif atype=='Numerator_w2':
+                        w2_pass = sqrt(c)
+                        continue
+                    elif atype=='Denominator_w2':
+                        w2_total = sqrt(c)
+                    else:
+                        if atype != 'Numerator' and atype != 'Denominator':
+                            mes = 'Type {} does not exist.'
+                            raise ValueError(mes.format(atype))
+
+                    # only lines with "Denominator_w2" reach the following
+                    if not ROOT.TEfficiency.CheckConsistency(passed,total):
+                        raise ValueError('Bad histogram for TEfficiency')
+                    eff = ROOT.TEfficiency(passed, total)
+                    efflow = str(round(eff.GetEfficiencyErrorLow(1),3))
+                    effup  = str(round(eff.GetEfficiencyErrorUp(1),3))
+                    effval = (str(round(eff.GetEfficiency(1),3)) +
+                              ' +' + effup + ' -' + efflow)
+                    
+                    newline = sep.join((dataset, ref, comb, w2_pass, w2_total, effval))
+                    fcsv2.write(newline + '\n')
+
+                if atype=='Type' and il==0:
+                    newline = sep.join(('File Type', 'Reference', 'Intersection',
+                                        'Passed Error', 'Total Error', 'Efficiency'))
+                    fcsv2.write(newline + '\n')
+
 
     else:
         with open(outs, 'w') as fcsv:
-            ref_combs, ref_vals = ([] for _ in range(2))
-            int_combs, int_vals = ([] for _ in range(2))
-            refs = []
+            c_ref_combs, c_ref_vals   = ([] for _ in range(2))
+            c_int_combs, c_int_vals   = ([] for _ in range(2))
+            w_ref_combs, w_ref_vals   = ([] for _ in range(2))
+            w_int_combs, w_int_vals   = ([] for _ in range(2))
+            w2_ref_combs, w2_ref_vals = ([] for _ in range(2))
+            w2_int_combs, w2_int_vals = ([] for _ in range(2))
+            c_refs, w_refs, w2_refs = ([] for _ in range(3))
             for comb, val in c_inters.items():
-                ref_combs.append(comb)
-                ref_vals.append(c_ref[comb])
-                int_combs.append(comb)
-                int_vals.append(val)
-                refs.append(reftrigs[comb])
+                c_ref_combs.append(comb)
+                c_ref_vals.append(c_ref[comb])
+                c_int_combs.append(comb)
+                c_int_vals.append(val)
+                c_refs.append(reftrigs[comb])
+            for comb, val in w_inters.items():
+                w_ref_combs.append(comb)
+                w_ref_vals.append(w_ref[comb])
+                w_int_combs.append(comb)
+                w_int_vals.append(val)
+                w_refs.append(reftrigs[comb])
+            for comb, val in w2_inters.items():
+                w2_ref_combs.append(comb)
+                w2_ref_vals.append(w2_ref[comb])
+                w2_int_combs.append(comb)
+                w2_int_vals.append(val)
+                w2_refs.append(reftrigs[comb])
      
-            ref_combs = np.array(ref_combs)
-            ref_vals  = np.array(ref_vals)
-            int_combs = np.array(int_combs)
-            int_vals  = np.array(int_vals)
-            refs      = np.array(refs)
+            c_ref_combs = np.array(c_ref_combs)
+            c_ref_vals  = np.array(c_ref_vals)
+            c_int_combs = np.array(c_int_combs)
+            c_int_vals  = np.array(c_int_vals)
+            c_refs      = np.array(c_refs)
+            w_ref_combs = np.array(w_ref_combs)
+            w_ref_vals  = np.array(w_ref_vals)
+            w_int_combs = np.array(w_int_combs)
+            w_int_vals  = np.array(w_int_vals)
+            w_refs      = np.array(w_refs)
+            w2_ref_combs = np.array(w2_ref_combs)
+            w2_ref_vals  = np.array(w2_ref_vals)
+            w2_int_combs = np.array(w2_int_combs)
+            w2_int_vals  = np.array(w2_int_vals)
+            w2_refs      = np.array(w2_refs)
      
             #remove zeros
-            zeromask = int_vals == 0
-            ref_vals  = ref_vals[~zeromask]
-            ref_combs = ref_combs[~zeromask]
-            int_vals  = int_vals[~zeromask]
-            int_combs = int_combs[~zeromask]
-            refs      = refs[~zeromask]
-     
+            c_zeromask   = c_int_vals == 0
+            c_ref_vals   = c_ref_vals[~c_zeromask]
+            c_ref_combs  = c_ref_combs[~c_zeromask]
+            c_int_vals   = c_int_vals[~c_zeromask]
+            c_int_combs  = c_int_combs[~c_zeromask]
+            c_refs       = c_refs[~c_zeromask]
+            w_zeromask   = w_int_vals == 0
+            w_ref_vals   = w_ref_vals[~w_zeromask]
+            w_ref_combs  = w_ref_combs[~w_zeromask]
+            w_int_vals   = w_int_vals[~w_zeromask]
+            w_int_combs  = w_int_combs[~w_zeromask]
+            w_refs       = w_refs[~w_zeromask]
+            w2_zeromask  = w2_int_vals == 0
+            w2_ref_vals  = w2_ref_vals[~w2_zeromask]
+            w2_ref_combs = w2_ref_combs[~w2_zeromask]
+            w2_int_vals  = w2_int_vals[~w2_zeromask]
+            w2_int_combs = w2_int_combs[~w2_zeromask]
+            w2_refs      = w2_refs[~w2_zeromask]
+
             line = sep.join(('Type', 'Trigger Intersection', 'Reference', 'Counts', 'Efficiency\n'))
             fcsv.write(line)
 
             # calculate efficiencies
-            effs = []
-            gzip = zip(ref_vals, ref_combs, int_vals, int_combs, refs)
-            for refv, refc, intv, intc, refref in gzip:
-                effs.append(float(intv) / float(refv))
-
-            effs = np.sort(np.array(effs))[::-1]
+            c_effs, w_effs, w2_effs = ([] for _ in range(3))
+            c_gzip = zip(c_ref_vals, c_ref_combs, c_int_vals, c_int_combs, c_refs)
+            for refv, refc, intv, intc, refref in c_gzip:
+                c_effs.append(float(intv) / float(refv))
+            c_effs = np.sort(np.array(c_effs))[::-1]
+            w_gzip = zip(w_ref_vals, w_ref_combs, w_int_vals, w_int_combs, w_refs)
+            for refv, refc, intv, intc, refref in w_gzip:
+                w_effs.append(float(intv) / float(refv))
+            w_effs = np.sort(np.array(w_effs))[::-1]
             
             # sort other columns following efficiencies descending order
-            idxs_sort = effs.argsort(axis=None)[::-1]
-            ref_vals  = ref_vals[idxs_sort]
-            ref_combs = ref_combs[idxs_sort]
-            int_vals  = int_vals[idxs_sort]
-            int_combs = int_combs[idxs_sort]
+            c_idxs_sort  = c_effs.argsort(axis=None)[::-1]
+            c_ref_vals   = c_ref_vals[c_idxs_sort]
+            c_ref_combs  = c_ref_combs[c_idxs_sort]
+            c_int_vals   = c_int_vals[c_idxs_sort]
+            c_int_combs  = c_int_combs[c_idxs_sort]
+            w_idxs_sort  = w_effs.argsort(axis=None)[::-1]
+            w_ref_vals   = w_ref_vals[w_idxs_sort]
+            w_ref_combs  = w_ref_combs[w_idxs_sort]
+            w_int_vals   = w_int_vals[w_idxs_sort]
+            w_int_combs  = w_int_combs[w_idxs_sort]
+            w2_idxs_sort = w2_effs.argsort(axis=None)[::-1]
+            w2_ref_vals  = w2_ref_vals[w2_idxs_sort]
+            w2_ref_combs = w2_ref_combs[w2_idxs_sort]
+            w2_int_vals  = w2_int_vals[w2_idxs_sort]
+            w2_int_combs = w2_int_combs[w2_idxs_sort]
 
-            gzip = zip(effs, ref_vals, ref_combs, int_vals, int_combs, refs)
-            for eff, refv, refc, intv, intc, refref in gzip:
+            c_gzip = zip(c_effs, c_ref_vals, c_ref_combs, c_int_vals, c_int_combs, c_refs)
+            for eff, refv, refc, intv, intc, refref in c_gzip:
                 newline = sep.join(('Numerator',
                                     str(intc).replace(main.inters_str, '  AND  '),
                                     refref, str(intv), str(round(eff,4)))) + '\n'
                 fcsv.write(newline)
      
                 newline = sep.join(('Denominator',
+                                    str(refc).replace(main.inters_str, '  AND  '),
+                                    refref, str(refv), '1\n' ))
+                fcsv.write(newline)
+                
+            w_gzip = zip(w_effs, w_ref_vals, w_ref_combs, w_int_vals, w_int_combs, w_refs)
+            for eff, refv, refc, intv, intc, refref in w_gzip:
+                newline = sep.join(('Numerator_weighted',
+                                    str(intc).replace(main.inters_str, '  AND  '),
+                                    refref, str(intv), str(round(eff,4)))) + '\n'
+                fcsv.write(newline)
+     
+                newline = sep.join(('Denominator_weighted',
+                                    str(refc).replace(main.inters_str, '  AND  '),
+                                    refref, str(refv), '1\n' ))
+                fcsv.write(newline)
+
+            w2_gzip = zip(w2_effs, w2_ref_vals, w2_ref_combs, w2_int_vals, w2_int_combs, w2_refs)
+            for eff, refv, refc, intv, intc, refref in w2_gzip:
+                newline = sep.join(('Numerator_w2',
+                                    str(intc).replace(main.inters_str, '  AND  '),
+                                    refref, str(intv), str(round(eff,4)))) + '\n'
+                fcsv.write(newline)
+     
+                newline = sep.join(('Denominator_w2',
                                     str(refc).replace(main.inters_str, '  AND  '),
                                     refref, str(refv), '1\n' ))
                 fcsv.write(newline)
