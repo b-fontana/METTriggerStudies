@@ -101,17 +101,17 @@ def add_trigger_counts(args):
                         c_inters.setdefault(comb, 0)
                         c_inters[comb] += int(count)
                     elif title == 'Reference_weighted':
-                        w_ref.setdefault(comb, 0)
-                        w_ref[comb] += int(count)
+                        w_ref.setdefault(comb, 0.)
+                        w_ref[comb] += count
                     elif title == 'Intersection_weighted':
-                        w_inters.setdefault(comb, 0)
-                        w_inters[comb] += int(count)
+                        w_inters.setdefault(comb, 0.)
+                        w_inters[comb] += count
                     elif title == 'Reference_w2':
-                        w2_ref.setdefault(comb, 0)
-                        w2_ref[comb] += int(count)
+                        w2_ref.setdefault(comb, 0.)
+                        w2_ref[comb] += count
                     elif title == 'Intersection_w2':
-                        w2_inters.setdefault(comb, 0)
-                        w2_inters[comb] += int(count)
+                        w2_inters.setdefault(comb, 0.)
+                        w2_inters[comb] += count
                     else:
                         mes = 'Column {} is not supported.'
                         raise ValueError(mes.format(mes))
@@ -219,7 +219,7 @@ def add_trigger_counts(args):
                     fcsv2.write(newline + '\n')
 
 
-    else:
+    else: # paired with 'if args.aggr'
         with open(outs, 'w') as fcsv:
             c_ref_combs, c_ref_vals   = ([] for _ in range(2))
             c_int_combs, c_int_vals   = ([] for _ in range(2))
@@ -288,31 +288,33 @@ def add_trigger_counts(args):
 
             # calculate efficiencies
             c_effs, w_effs, w2_effs = ([] for _ in range(3))
+
             c_gzip = zip(c_ref_vals, c_ref_combs, c_int_vals, c_int_combs, c_refs)
             for refv, refc, intv, intc, refref in c_gzip:
                 c_effs.append(float(intv) / float(refv))
             c_effs = np.sort(np.array(c_effs))[::-1]
+
             w_gzip = zip(w_ref_vals, w_ref_combs, w_int_vals, w_int_combs, w_refs)
             for refv, refc, intv, intc, refref in w_gzip:
                 w_effs.append(float(intv) / float(refv))
             w_effs = np.sort(np.array(w_effs))[::-1]
-            
-            # sort other columns following efficiencies descending order
+
+            # sort other columns following unweighted efficiencies descending order
             c_idxs_sort  = c_effs.argsort(axis=None)[::-1]
             c_ref_vals   = c_ref_vals[c_idxs_sort]
             c_ref_combs  = c_ref_combs[c_idxs_sort]
             c_int_vals   = c_int_vals[c_idxs_sort]
             c_int_combs  = c_int_combs[c_idxs_sort]
-            w_idxs_sort  = w_effs.argsort(axis=None)[::-1]
-            w_ref_vals   = w_ref_vals[w_idxs_sort]
-            w_ref_combs  = w_ref_combs[w_idxs_sort]
-            w_int_vals   = w_int_vals[w_idxs_sort]
-            w_int_combs  = w_int_combs[w_idxs_sort]
-            w2_idxs_sort = w2_effs.argsort(axis=None)[::-1]
-            w2_ref_vals  = w2_ref_vals[w2_idxs_sort]
-            w2_ref_combs = w2_ref_combs[w2_idxs_sort]
-            w2_int_vals  = w2_int_vals[w2_idxs_sort]
-            w2_int_combs = w2_int_combs[w2_idxs_sort]
+            
+            w_ref_vals   = w_ref_vals[c_idxs_sort]
+            w_ref_combs  = w_ref_combs[c_idxs_sort]
+            w_int_vals   = w_int_vals[c_idxs_sort]
+            w_int_combs  = w_int_combs[c_idxs_sort]
+            
+            w2_ref_vals  = w2_ref_vals[c_idxs_sort]
+            w2_ref_combs = w2_ref_combs[c_idxs_sort]
+            w2_int_vals  = w2_int_vals[c_idxs_sort]
+            w2_int_combs = w2_int_combs[c_idxs_sort]
 
             c_gzip = zip(c_effs, c_ref_vals, c_ref_combs, c_int_vals, c_int_combs, c_refs)
             for eff, refv, refc, intv, intc, refref in c_gzip:

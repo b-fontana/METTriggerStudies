@@ -46,17 +46,17 @@ def get_trig_counts(args):
         w_ref[chn], w_inters[chn] = ({} for _ in range(2))
         w2_ref[chn], w2_inters[chn] = ({} for _ in range(2))
         for tcomb in triggercomb[chn]:
-            tcomb_str = joinNTC(tcomb)
-            c_ref[chn][tcomb_str] = 0
-            c_inters[chn][tcomb_str] = 0
-            w_ref[chn][tcomb_str] = 0.
-            w_inters[chn][tcomb_str] = 0.
-            w2_ref[chn][tcomb_str] = 0.
-            w2_inters[chn][tcomb_str] = 0.
+            tstr = joinNTC(tcomb)
+            c_ref[chn][tstr] = 0
+            c_inters[chn][tstr] = 0
+            w_ref[chn][tstr] = 0.
+            w_inters[chn][tstr] = 0.
+            w2_ref[chn][tstr] = 0.
+            w2_inters[chn][tstr] = 0.
 
     t_in.SetBranchStatus('*', 0)
-    _entries = ('triggerbit', 'RunNumber', 'MC_weight',
-                'HHKin_mass', 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
+    _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'HHKin_mass',
+                'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
@@ -70,7 +70,8 @@ def get_trig_counts(args):
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
         weight = entries.MC_weight
 
-        sel = selection.EventSelection(entries, args.dataset, args.isdata, configuration=config_module)
+        sel = selection.EventSelection(entries, args.dataset, args.isdata,
+                                       configuration=config_module)
         
         pass_trigger = {}
         for trig in args.triggers:
@@ -92,15 +93,15 @@ def get_trig_counts(args):
                     if not sel.dataset_triggers(tcomb, chn, args.triggers)[0]:
                         continue
                     
-                    tcomb_str = joinNTC(tcomb)
-                    c_ref[chn][tcomb_str] += 1
-                    w_ref[chn][tcomb_str] += weight
-                    w2_ref[chn][tcomb_str] += weight*weight
+                    tstr = joinNTC(tcomb)
+                    c_ref[chn][tstr] += 1
+                    w_ref[chn][tstr] += weight
+                    w2_ref[chn][tstr] += weight*weight
 
                     if pass_trigger_intersection:
-                        c_inters[chn][tcomb_str] += 1
-                        w_inters[chn][tcomb_str] += weight
-                        w2_inters[chn][tcomb_str] += weight*weight
+                        c_inters[chn][tstr] += 1
+                        w_inters[chn][tstr] += weight
+                        w2_inters[chn][tstr] += weight*weight
                                             
     file_id = ''.join( c for c in args.filename[-10:] if c.isdigit() )
 
@@ -122,21 +123,21 @@ def get_trig_counts(args):
                 
                 reftrig = joinNTC(reftrig)
                 
-                tcomb_str = joinNTC(tcomb)
-                basestr = sep.join((tcomb_str, chn, reftrig))
+                tstr = joinNTC(tcomb)
+                basestr = sep.join((tstr, chn, reftrig))
 
-                counts_ref = str(int(c_ref[chn][tcomb_str]))
-                counts_int = str(int(c_inters[chn][tcomb_str]))
+                counts_ref = str(int(c_ref[chn][tstr]))
+                counts_int = str(int(c_inters[chn][tstr]))
                 f.write( sep.join(('Reference', basestr, counts_ref)) + '\n' )
                 f.write( sep.join(('Intersection', basestr, counts_int)) + '\n' )
 
-                weights_ref = str(int(w_ref[chn][tcomb_str]))
-                weights_int = str(int(w_inters[chn][tcomb_str]))
+                weights_ref = str(int(w_ref[chn][tstr]))
+                weights_int = str(int(w_inters[chn][tstr]))
                 f.write( sep.join(('Reference_weighted', basestr, weights_ref)) + '\n' )
                 f.write( sep.join(('Intersection_weighted', basestr, weights_int)) + '\n' )
                 
-                w2_ref = str(int(w2_ref[chn][tcomb_str]))
-                w2_int = str(int(w2_inters[chn][tcomb_str]))
+                w2_ref = str(int(w2_ref[chn][tstr]))
+                w2_int = str(int(w2_inters[chn][tstr]))
                 f.write( sep.join(('Reference_w2', basestr, w2_ref)) + '\n' )
                 f.write( sep.join(('Intersection_w2', basestr, w2_int)) + '\n' )
 
