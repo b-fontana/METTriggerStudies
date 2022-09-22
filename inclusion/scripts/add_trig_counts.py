@@ -118,20 +118,33 @@ def add_trigger_counts(args):
 
 
     if args.aggr:
-        suboutdir1 = os.path.join(args.outdir, args.channel, 'Counts_' + args.dataset_name)
-        utils.create_single_dir(suboutdir1)
-        outs1 = os.path.join(suboutdir1, 'table.csv')
-        suboutdir2 = os.path.join(args.outdir, args.channel, 'Weights_' + args.dataset_name)
-        utils.create_single_dir(suboutdir2)
-        outs2 = os.path.join(suboutdir2, 'table.csv')
+        table_name = 'table.csv'
+        sub = os.path.join(args.outdir, args.channel, 'Tables')
+        sub_c = os.path.join(sub, 'Counts_' + args.dataset_name)
+        sub_w = os.path.join(sub, 'Weights_' + args.dataset_name)
+        sub_c_squash = os.path.join(sub, 'CountsSquashed_' + args.dataset_name)
+        sub_w_squash = os.path.join(sub, 'WeightsSquashed_' + args.dataset_name)
+        utils.create_single_dir(sub_c)
+        utils.create_single_dir(sub_w)
+        utils.create_single_dir(sub_c_squashed)
+        utils.create_single_dir(sub_w_squashed)
+        outs_c = os.path.join(sub_c, table_name)
+        outs_w = os.path.join(sub_w, table_name)
+        outs_c_squashed = os.path.join(sub_c_squashed, table_name)
+        outs_w_squashed = os.path.join(sub_w_squashed, table_name)
     else:
         outputs_csv = args.outfile_counts
         pref, suf = outputs_csv.split('.')
         outs = outputs_csv
 
+    aggr_c_squashed, aggr_w_squashed = ([] for _ in range(2))
+
     passed, w2_pass, w2_total = 0, 0., 0.
+    
     if args.aggr:
-        with open(outs1, 'w') as fcsv1:
+
+        # Unweighted counts
+        with open(outs_c, 'w') as fcsv1:
             for il,l in enumerate(aggr_outs):
                 split_line = [x.replace('\n', '') for x in l.split(sep)]
                 if all( not x for x in split_line ):
@@ -166,13 +179,59 @@ def add_trigger_counts(args):
                     newline = sep.join((dataset, ref, comb,
                                         str(passed.GetBinContent(1)), c, effval))
                     fcsv1.write(newline + '\n')
+                    aggr_c_squashed.append(newline)
 
                 if atype=='Type' and il==0:
-                    newline = sep.join(('File Type', 'Reference', 'Intersection', 'Passed', 'Total', 'Efficiency'))
+                    newline = sep.join(('File Type', 'Reference', 'Intersection',
+                                        'Pass', 'Total', 'Efficiency'))
                     fcsv1.write(newline + '\n')
 
+        pass_vals, tot_vals = ({} for _ in range(2))
+        eff_up_vals, eff_down_vals = ({} for _ in range(2))
+            
+        with open(outs_c_squashed, 'w') as fcsv1_squashed:
+            # sum values from different samples for the same trigger intersection ("squash")
+            for il,l in enumerate(aggr_c_squashed):
+                split_line = [x.replace('\n', '') for x in l.split(sep)]
+                if all( not x for x in split_line ):
+                    continue
 
-        with open(outs2, 'w') as fcsv2:
+                _, ref, comb, npass, ntot, eff = split_line
+                pass_vals.setdefault((comb,ref), 0.)
+                tot_vals.setdefault((comb,ref), 0.)
+                eff_up_vals.setdefault((comb,ref), 0.)
+                eff_down_vals.setdefault((comb,ref), 0.)
+                
+                pass_vals[(comb,ref)] += npass
+                tot_vals[(comb,ref)] += ntot
+
+                eff_up = float(re.findall('.+\+(.+)\s.+', eff)[0])
+                eff_down = float(re.findall('.+-(.+)$', eff)[0])
+                eff_up_vals[(comb,ref)] += eff_up*eff_up
+                eff_down_vals[(comb,ref)] += eff_down*eff_down
+
+            for i in range(len(eff_up_vals)):
+                eff_up_vals = sqrt(eff_up_vals)
+            for i in range(len(eff_down_vals)):
+                eff_down_vals = sqrt(eff_down_vals)
+                
+            newline = sep.join(('File Type', 'Reference', 'Intersection',
+                                'Pass', 'Total', 'Efficiency'))
+            fcsv1_squashed.write(newline + '\n')
+    
+            # calculate the new efficiency and write
+            gzip = zip(pass_vals.items(), tot_vals.item(), eff_up_vals.items(), eff_down_vals.items())
+            for (pk,pv),(tk,tv),(euk,euv),(edk,edv) in gzip:
+                assert pk == tk
+                assert pk == euk
+                assert euk == edk
+                eff = str(float(pv)/float(tv)) + '+' + float(euv) + ' -' + float(edv)
+                newline = sep.join((pk[1], pk[0], float(pv), float(tv), eff))
+                fcsv1_squashed.write(newline + '\n')
+
+
+        # Weighted counts
+        with open(outs_w, 'w') as fcsv2:
             for il,l in enumerate(aggr_outs):
                 split_line = [x.replace('\n', '') for x in l.split(sep)]
                 if all( not x for x in split_line ):
@@ -209,14 +268,74 @@ def add_trigger_counts(args):
                     effup  = str(round(eff.GetEfficiencyErrorUp(1),3))
                     effval = (str(round(eff.GetEfficiency(1),3)) +
                               ' +' + effup + ' -' + efflow)
+                    pass_str = (str(round(passed.GetBinContent(1),3)) +
+                              ' +-' + w2_pass)
+                    total_str = (str(round(total.GetBinContent(1),3)) +
+                                 ' +-' + w2_total)
                     
-                    newline = sep.join((dataset, ref, comb, w2_pass, w2_total, effval))
+                    newline = sep.join((dataset, ref, comb, pass_str, total_str, effval))
                     fcsv2.write(newline + '\n')
+                    aggr_w_squashed.append(newline)
 
                 if atype=='Type' and il==0:
                     newline = sep.join(('File Type', 'Reference', 'Intersection',
-                                        'Passed Error', 'Total Error', 'Efficiency'))
+                                        'Weighted Pass', 'Weighted Total', 'Efficiency'))
                     fcsv2.write(newline + '\n')
+
+        pass_vals, tot_vals = ({} for _ in range(2))
+        eff_up_vals, eff_down_vals = ({} for _ in range(2))
+            
+        with open(outs_w_squashed, 'w') as fcsv2_squashed:
+            # sum values from different samples for the same trigger intersection ("squash")
+            for il,l in enumerate(aggr_c_squashed):
+                split_line = [x.replace('\n', '') for x in l.split(sep)]
+                if all( not x for x in split_line ):
+                    continue
+
+                _, ref, comb, npass, ntot, eff = split_line
+                pass_vals.setdefault((comb,ref), 0.)
+                tot_vals.setdefault((comb,ref), 0.)
+                eff_up_vals.setdefault((comb,ref), 0.)
+                eff_down_vals.setdefault((comb,ref), 0.)
+
+                npass, npass_err = re.findall('(.+)\+-(.+)$', npass)[0]
+                ntot, ntot_err = re.findall('(.+)\+-(.+)$', ntot)[0]
+                pass_vals[(comb,ref)] += float(npass)
+                tot_vals[(comb,ref)] += float(ntot)
+                pass_err_vals[(comb,ref)] += float(npass_err)*float(npass_err)
+                tot_err_vals[(comb,ref)] += float(ntot_err)*float(ntot_err)
+                
+                eff_up = float(re.findall('.+\+(.+)\s.+', eff)[0])
+                eff_down = float(re.findall('.+-(.+)$', eff)[0])
+                eff_up_vals[(comb,ref)] += eff_up*eff_up
+                eff_down_vals[(comb,ref)] += eff_down*eff_down
+
+            for i in range(len(pass_err_vals)):
+                pass_err_vals = sqrt(pass_err_vals)                
+            for i in range(len(tot_err_vals)):
+                tot_err_vals = sqrt(tot_err_vals)                
+            for i in range(len(eff_up_vals)):
+                eff_up_vals = sqrt(eff_up_vals)
+            for i in range(len(eff_down_vals)):
+                eff_down_vals = sqrt(eff_down_vals)
+                
+            newline = sep.join(('File Type', 'Reference', 'Intersection',
+                                'Pass', 'Total', 'Efficiency'))
+            fcsv2_squashed.write(newline + '\n')
+    
+            # calculate the new efficiency and write
+            gzip = zip(pass_vals.items(), tot_vals.item(),
+                       pass_err_vals.items(), tot_err_vals.items(),
+                       eff_up_vals.items(), eff_down_vals.items())
+            for (pk,pv),(pek,pev),(tek,tev),(tk,tv),(euk,euv),(edk,edv) in gzip:
+                assert pk == tk
+                assert pk == euk
+                assert euk == edk
+                pass_v = str(pv) + '+-' + str(pev)
+                tot_v = str(tv) + '+-' + str(tev) 
+                eff = str(float(pv)/float(tv)) + '+' + float(euv) + ' -' + float(edv)
+                newline = sep.join((pk[1], pk[0], pass_v, tot_v, eff))
+                fcsv2_squashed.write(newline + '\n')
 
 
     else: # paired with 'if args.aggr'
@@ -359,21 +478,23 @@ if __name__ == '__main__':
 
     parser.add_argument('--indir', dest='indir', required=True, help='SKIM directory')
     parser.add_argument('--outdir', dest='outdir', required=True, help='output directory')
-    parser.add_argument('--subtag', dest='subtag',      required=True,
+    parser.add_argument('--subtag', dest='subtag', required=True,
                         help='Additional (sub)tag to differ  entiate similar runs within the same tag.')
-    parser.add_argument('--tprefix',     dest='tprefix',     required=True, help='Targets name prefix.')
-    parser.add_argument('--aggregation_step', dest='aggr',   required=True, type=int,
+    parser.add_argument('--tprefix', dest='tprefix', required=True, help='Targets name prefix.')
+    parser.add_argument('--aggregation_step', dest='aggr', required=True, type=int,
                         help='Whether to run the sample aggregation step or the "per sample step"')
     parser.add_argument('--dataset_name', dest='dataset_name', required=True,
                         help='Name of the dataset being used.')
 
-    parser.add_argument('--sample',     dest='sample',       required=False,
+    parser.add_argument('--sample', dest='sample', required=False,
                         help='Process name as in SKIM directory. Used for the first step only.')
     
     parser.add_argument('--infile_counts', dest='infile_counts', required=False, nargs='+', type=str,
                         help='Name of input csv files with counts. Used for the aggregation step only.')
-    parser.add_argument('--outfile_counts', dest='outfile_counts', help='Name of output csv files with counts.')
-    parser.add_argument('--channel', dest='channel', required=False, help='Channel to be used for the aggregation.')
+    parser.add_argument('--outfile_counts', dest='outfile_counts',
+                        help='Name of output csv files with counts.')
+    parser.add_argument('--channel', dest='channel', required=False,
+                        help='Channel to be used for the aggregation.')
     args = utils.parse_args(parser)
     
     add_trigger_counts(args)
