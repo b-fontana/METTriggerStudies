@@ -59,7 +59,7 @@ If everything runs as expected, the above should run locally all local tasks (cu
 
 You can run only part of the framework by selecting the appropriate ~--branch~ option. For instance, for running the "Counts Chain" only (if you only care about how many events passed each trigger) use ~--branch counts~.
 
-The HTCondor files are written using the =condor/dag.py= and =condor/job_writer.py= files.
+The HTCondor files are written using the =inclusion/condor/dag.py= and =inclusion/condor/job_writer.py= files.
 
 | Output files | Destination folder                                                   |
 |--------------+----------------------------------------------------------------------|
@@ -71,7 +71,7 @@ The HTCondor files are written using the =condor/dag.py= and =condor/job_writer.
 
 You can also run each ~luigi~ task separately by running its corresponding ~python~ scripts (all support ~--help~). Inspect HTCondor's output shell and condor files for the full commands.
 
-Variables can be configured in ~sf_inclusion/luigi_conf/__init__.py~.
+Input files, variables and quantities associated to the triggers can be configured in ~inclusion/config/main.py~.
 
 *** Visualize plots
 
