@@ -9,7 +9,7 @@
 
 This framework calculates and stores "intersection efficiencies" for the application of the "inclusion method" [1], to be used for the HH\rightarrow bbττ resonant analysis by the CMS experiment. More details available in [[https://indico.cern.ch/event/1143576/#13-trigger-sf-update][this presentation]].
 
-The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KLUB]]) Ntuples. The framework is managed by [[https://github.com/spotify/luigi][luigi]] (see ~run.py~), which runs local tasks and creates a Direct Acyclic Graph (DAG) which runs on [[https://htcondor.readthedocs.io/en/latest/index.html][HTCondor]].
+The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KLUB]]) Ntuples. The framework is managed by [[https://github.com/spotify/luigi][luigi]] (see ~run.py~), which runs local tasks and creates a [[https://htcondor.readthedocs.io/en/latest/index.html][HTCondor]] Direct Acyclic Graph (DAG).
 
 ** Tasks
 
@@ -22,13 +22,17 @@ The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KL
 5. *EfficienciesAndSF**: calculate efficiencies by dividing the histograms obtained in point #2
 6. *EffAndAgg*: aggregate efficiencies and scale factors in one file per channel
 7. *Discriminator_**: choose the variables to be used to calculate the final union efficiency
-8. *UnionWeightsCalculator_SKIM_**: calculate the union efficiencies (following the =inclusion method= [1])
-9. *Closure*: perform a simple closure (complete closure is done outside this framework in the HH \rightarrow bb\tau \tau ~C++~ analysis code)
-
+   
 *** Counts Chain
 1. *Counts_SKIM_**: count the number of events that passes a selection identical to the one of the events in the "Efficiencies Chain"
 2. *HaddCounts**: add counters per data type (Data and all MCs)
 3. *HaddCountsAgg**: add counters for Data and MC
+
+*** Outdated (continuation of the "Efficiencies Chain")
+Used for replicating the retrieval of the weights done by KLUB, using the outputs of steps *6.* and *7.*:
+
+8. *UnionWeightsCalculator_SKIM_**: calculate the union efficiencies (following the =inclusion method= [1])
+9. *Closure*: perform a simple closure (complete closure is done outside this framework in the HH \rightarrow bb\tau \tau ~C++~ analysis code)
 
 *** Visualize DAG
 
@@ -51,7 +55,9 @@ python3 sf_inclusion/run.py --tag FullWorkflowTest --data MET EGamma --mc_proces
 
 where the configuration file must be defined under ~inclusion/config/~.
 
-If everything runs as expected, the above should run locally all local tasks (currently ~DefineBinning~ only) and launch a HTCondor DAG which encodes de dependencies of the remaining tasks and runs them in the server.
+If everything runs as expected, the above should run locally all local tasks (currently ~DefineBinning~ only) and launch a ~HTCondor DAG~ which encodes the dependencies of the remaining tasks and runs them in the server.
+
+You can run only part of the framework by selecting the appropriate ~--branch~ option. For instance, for running the "Counts Chain" only (if you only care about how many events passed each trigger) use ~--branch counts~.
 
 The HTCondor files are written using the =condor/dag.py= and =condor/job_writer.py= files.
 
