@@ -102,16 +102,16 @@ def add_trigger_counts(args):
                         c_inters[comb] += int(count)
                     elif title == 'Reference_weighted':
                         w_ref.setdefault(comb, 0.)
-                        w_ref[comb] += count
+                        w_ref[comb] += float(count)
                     elif title == 'Intersection_weighted':
                         w_inters.setdefault(comb, 0.)
-                        w_inters[comb] += count
+                        w_inters[comb] += float(count)
                     elif title == 'Reference_w2':
                         w2_ref.setdefault(comb, 0.)
-                        w2_ref[comb] += count
+                        w2_ref[comb] += float(count)
                     elif title == 'Intersection_w2':
                         w2_inters.setdefault(comb, 0.)
-                        w2_inters[comb] += count
+                        w2_inters[comb] += float(count)
                     else:
                         mes = 'Column {} is not supported.'
                         raise ValueError(mes.format(mes))

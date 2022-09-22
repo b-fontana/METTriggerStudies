@@ -131,15 +131,15 @@ def get_trig_counts(args):
                 f.write( sep.join(('Reference', basestr, counts_ref)) + '\n' )
                 f.write( sep.join(('Intersection', basestr, counts_int)) + '\n' )
 
-                weights_ref = str(int(w_ref[chn][tstr]))
-                weights_int = str(int(w_inters[chn][tstr]))
+                weights_ref = str(float(w_ref[chn][tstr]))
+                weights_int = str(float(w_inters[chn][tstr]))
                 f.write( sep.join(('Reference_weighted', basestr, weights_ref)) + '\n' )
                 f.write( sep.join(('Intersection_weighted', basestr, weights_int)) + '\n' )
-                
-                w2_ref = str(int(w2_ref[chn][tstr]))
-                w2_int = str(int(w2_inters[chn][tstr]))
-                f.write( sep.join(('Reference_w2', basestr, w2_ref)) + '\n' )
-                f.write( sep.join(('Intersection_w2', basestr, w2_int)) + '\n' )
+
+                w2_ref_str = str(float(w2_ref[chn][tstr]))
+                w2_int_str = str(float(w2_inters[chn][tstr]))
+                f.write( sep.join(('Reference_w2', basestr, w2_ref_str)) + '\n' )
+                f.write( sep.join(('Intersection_w2', basestr, w2_int_str)) + '\n' )
 
 # -- Parse input arguments
 parser = argparse.ArgumentParser(description='Produce trigger counts.')
