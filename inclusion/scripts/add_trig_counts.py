@@ -57,6 +57,8 @@ def add_trigger_counts(args):
     sep = ','
     reftrigs = {}
     c_ref, c_inters = ({} for _ in range(2))
+    w_ref, w_inters = ({} for _ in range(2))
+    w2_ref, w2_inters = ({} for _ in range(2))
 
     if args.aggr:
         regex2 = re.compile(args.tprefix + '(.+)_Sum.*' + args.subtag + '_' + args.channel + '.csv')
@@ -75,7 +77,7 @@ def add_trigger_counts(args):
                     new_line = line.replace('\n', '')
                     aggr_outs.append(filetype[0] + sep + new_line)
 
-    else:
+    else: # paired with 'if args.aggr:'
         for afile in inputs_join:
             with open(afile, 'r') as f:
                 for line in f.readlines():
@@ -122,27 +124,26 @@ def add_trigger_counts(args):
         sub = os.path.join(args.outdir, args.channel, 'Tables')
         sub_c = os.path.join(sub, 'Counts_' + args.dataset_name)
         sub_w = os.path.join(sub, 'Weights_' + args.dataset_name)
-        sub_c_squash = os.path.join(sub, 'CountsSquashed_' + args.dataset_name)
-        sub_w_squash = os.path.join(sub, 'WeightsSquashed_' + args.dataset_name)
+        sub_c_squash = os.path.join(sub, 'CountsSquash_' + args.dataset_name)
+        sub_w_squash = os.path.join(sub, 'WeightsSquash_' + args.dataset_name)
         utils.create_single_dir(sub_c)
         utils.create_single_dir(sub_w)
-        utils.create_single_dir(sub_c_squashed)
-        utils.create_single_dir(sub_w_squashed)
+        utils.create_single_dir(sub_c_squash)
+        utils.create_single_dir(sub_w_squash)
         outs_c = os.path.join(sub_c, table_name)
         outs_w = os.path.join(sub_w, table_name)
-        outs_c_squashed = os.path.join(sub_c_squashed, table_name)
-        outs_w_squashed = os.path.join(sub_w_squashed, table_name)
+        outs_c_squash = os.path.join(sub_c_squash, table_name)
+        outs_w_squash = os.path.join(sub_w_squash, table_name)
     else:
         outputs_csv = args.outfile_counts
         pref, suf = outputs_csv.split('.')
         outs = outputs_csv
 
-    aggr_c_squashed, aggr_w_squashed = ([] for _ in range(2))
+    aggr_c_squash, aggr_w_squash = ([] for _ in range(2))
 
     passed, w2_pass, w2_total = 0, 0., 0.
     
     if args.aggr:
-
         # Unweighted counts
         with open(outs_c, 'w') as fcsv1:
             for il,l in enumerate(aggr_outs):
@@ -179,7 +180,7 @@ def add_trigger_counts(args):
                     newline = sep.join((dataset, ref, comb,
                                         str(passed.GetBinContent(1)), c, effval))
                     fcsv1.write(newline + '\n')
-                    aggr_c_squashed.append(newline)
+                    aggr_c_squash.append(newline)
 
                 if atype=='Type' and il==0:
                     newline = sep.join(('File Type', 'Reference', 'Intersection',
@@ -189,9 +190,9 @@ def add_trigger_counts(args):
         pass_vals, tot_vals = ({} for _ in range(2))
         eff_up_vals, eff_down_vals = ({} for _ in range(2))
             
-        with open(outs_c_squashed, 'w') as fcsv1_squashed:
+        with open(outs_c_squash, 'w') as fcsv1_squash:
             # sum values from different samples for the same trigger intersection ("squash")
-            for il,l in enumerate(aggr_c_squashed):
+            for il,l in enumerate(aggr_c_squash):
                 split_line = [x.replace('\n', '') for x in l.split(sep)]
                 if all( not x for x in split_line ):
                     continue
@@ -201,33 +202,33 @@ def add_trigger_counts(args):
                 tot_vals.setdefault((comb,ref), 0.)
                 eff_up_vals.setdefault((comb,ref), 0.)
                 eff_down_vals.setdefault((comb,ref), 0.)
-                
-                pass_vals[(comb,ref)] += npass
-                tot_vals[(comb,ref)] += ntot
+
+                pass_vals[(comb,ref)] += float(npass)
+                tot_vals[(comb,ref)] += float(ntot)
 
                 eff_up = float(re.findall('.+\+(.+)\s.+', eff)[0])
                 eff_down = float(re.findall('.+-(.+)$', eff)[0])
                 eff_up_vals[(comb,ref)] += eff_up*eff_up
                 eff_down_vals[(comb,ref)] += eff_down*eff_down
 
-            for i in range(len(eff_up_vals)):
-                eff_up_vals = sqrt(eff_up_vals)
-            for i in range(len(eff_down_vals)):
-                eff_down_vals = sqrt(eff_down_vals)
+            for k in eff_up_vals:
+                eff_up_vals[k] = np.sqrt(eff_up_vals[k])
+            for k in eff_down_vals:
+                eff_down_vals[k] = np.sqrt(eff_down_vals[k])
                 
             newline = sep.join(('File Type', 'Reference', 'Intersection',
                                 'Pass', 'Total', 'Efficiency'))
-            fcsv1_squashed.write(newline + '\n')
+            fcsv1_squash.write(newline + '\n')
     
             # calculate the new efficiency and write
-            gzip = zip(pass_vals.items(), tot_vals.item(), eff_up_vals.items(), eff_down_vals.items())
+            gzip = zip(pass_vals.items(), tot_vals.items(), eff_up_vals.items(), eff_down_vals.items())
             for (pk,pv),(tk,tv),(euk,euv),(edk,edv) in gzip:
                 assert pk == tk
                 assert pk == euk
                 assert euk == edk
-                eff = str(float(pv)/float(tv)) + '+' + float(euv) + ' -' + float(edv)
-                newline = sep.join((pk[1], pk[0], float(pv), float(tv), eff))
-                fcsv1_squashed.write(newline + '\n')
+                eff = str(float(pv)/float(tv)) + '+' + str(euv) + ' -' + str(edv)
+                newline = sep.join((pk[1], pk[0], str(pv), str(tv), eff))
+                fcsv1_squash.write(newline + '\n')
 
 
         # Weighted counts
@@ -251,10 +252,10 @@ def add_trigger_counts(args):
                             total.Fill(0.5)
                         continue
                     elif atype=='Numerator_w2':
-                        w2_pass = sqrt(c)
+                        w2_pass = np.sqrt(c)
                         continue
                     elif atype=='Denominator_w2':
-                        w2_total = sqrt(c)
+                        w2_total = np.sqrt(c)
                     else:
                         if atype != 'Numerator' and atype != 'Denominator':
                             mes = 'Type {} does not exist.'
@@ -268,14 +269,12 @@ def add_trigger_counts(args):
                     effup  = str(round(eff.GetEfficiencyErrorUp(1),3))
                     effval = (str(round(eff.GetEfficiency(1),3)) +
                               ' +' + effup + ' -' + efflow)
-                    pass_str = (str(round(passed.GetBinContent(1),3)) +
-                              ' +-' + w2_pass)
-                    total_str = (str(round(total.GetBinContent(1),3)) +
-                                 ' +-' + w2_total)
+                    pass_str = (str(round(passed.GetBinContent(1),3)) + ' +-' + str(w2_pass))
+                    total_str = (str(round(total.GetBinContent(1),3)) + ' +-' + str(w2_total))
                     
                     newline = sep.join((dataset, ref, comb, pass_str, total_str, effval))
                     fcsv2.write(newline + '\n')
-                    aggr_w_squashed.append(newline)
+                    aggr_w_squash.append(newline)
 
                 if atype=='Type' and il==0:
                     newline = sep.join(('File Type', 'Reference', 'Intersection',
@@ -285,9 +284,9 @@ def add_trigger_counts(args):
         pass_vals, tot_vals = ({} for _ in range(2))
         eff_up_vals, eff_down_vals = ({} for _ in range(2))
             
-        with open(outs_w_squashed, 'w') as fcsv2_squashed:
+        with open(outs_w_squash, 'w') as fcsv2_squash:
             # sum values from different samples for the same trigger intersection ("squash")
-            for il,l in enumerate(aggr_c_squashed):
+            for il,l in enumerate(aggr_c_squash):
                 split_line = [x.replace('\n', '') for x in l.split(sep)]
                 if all( not x for x in split_line ):
                     continue
@@ -311,20 +310,20 @@ def add_trigger_counts(args):
                 eff_down_vals[(comb,ref)] += eff_down*eff_down
 
             for i in range(len(pass_err_vals)):
-                pass_err_vals = sqrt(pass_err_vals)                
+                pass_err_vals[i] = np.sqrt(pass_err_vals[i])                
             for i in range(len(tot_err_vals)):
-                tot_err_vals = sqrt(tot_err_vals)                
+                tot_err_vals[i] = np.sqrt(tot_err_vals[i])                
             for i in range(len(eff_up_vals)):
-                eff_up_vals = sqrt(eff_up_vals)
+                eff_up_vals[i] = np.sqrt(eff_up_vals[i])
             for i in range(len(eff_down_vals)):
-                eff_down_vals = sqrt(eff_down_vals)
+                eff_down_vals[i] = np.sqrt(eff_down_vals[i])
                 
             newline = sep.join(('File Type', 'Reference', 'Intersection',
                                 'Pass', 'Total', 'Efficiency'))
-            fcsv2_squashed.write(newline + '\n')
+            fcsv2_squash.write(newline + '\n')
     
             # calculate the new efficiency and write
-            gzip = zip(pass_vals.items(), tot_vals.item(),
+            gzip = zip(pass_vals.items(), tot_vals.items(),
                        pass_err_vals.items(), tot_err_vals.items(),
                        eff_up_vals.items(), eff_down_vals.items())
             for (pk,pv),(pek,pev),(tek,tev),(tk,tv),(euk,euv),(edk,edv) in gzip:
@@ -335,7 +334,7 @@ def add_trigger_counts(args):
                 tot_v = str(tv) + '+-' + str(tev) 
                 eff = str(float(pv)/float(tv)) + '+' + float(euv) + ' -' + float(edv)
                 newline = sep.join((pk[1], pk[0], pass_v, tot_v, eff))
-                fcsv2_squashed.write(newline + '\n')
+                fcsv2_squash.write(newline + '\n')
 
 
     else: # paired with 'if args.aggr'
@@ -389,18 +388,18 @@ def add_trigger_counts(args):
             c_int_vals   = c_int_vals[~c_zeromask]
             c_int_combs  = c_int_combs[~c_zeromask]
             c_refs       = c_refs[~c_zeromask]
-            w_zeromask   = w_int_vals == 0
-            w_ref_vals   = w_ref_vals[~w_zeromask]
-            w_ref_combs  = w_ref_combs[~w_zeromask]
-            w_int_vals   = w_int_vals[~w_zeromask]
-            w_int_combs  = w_int_combs[~w_zeromask]
-            w_refs       = w_refs[~w_zeromask]
-            w2_zeromask  = w2_int_vals == 0
-            w2_ref_vals  = w2_ref_vals[~w2_zeromask]
-            w2_ref_combs = w2_ref_combs[~w2_zeromask]
-            w2_int_vals  = w2_int_vals[~w2_zeromask]
-            w2_int_combs = w2_int_combs[~w2_zeromask]
-            w2_refs      = w2_refs[~w2_zeromask]
+
+            w_ref_vals   = w_ref_vals[~c_zeromask]
+            w_ref_combs  = w_ref_combs[~c_zeromask]
+            w_int_vals   = w_int_vals[~c_zeromask]
+            w_int_combs  = w_int_combs[~c_zeromask]
+            w_refs       = w_refs[~c_zeromask]
+
+            w2_ref_vals  = w2_ref_vals[~c_zeromask]
+            w2_ref_combs = w2_ref_combs[~c_zeromask]
+            w2_int_vals  = w2_int_vals[~c_zeromask]
+            w2_int_combs = w2_int_combs[~c_zeromask]
+            w2_refs      = w2_refs[~c_zeromask]
 
             line = sep.join(('Type', 'Trigger Intersection', 'Reference', 'Counts', 'Efficiency\n'))
             fcsv.write(line)
@@ -455,18 +454,6 @@ def add_trigger_counts(args):
                 fcsv.write(newline)
      
                 newline = sep.join(('Denominator_weighted',
-                                    str(refc).replace(main.inters_str, '  AND  '),
-                                    refref, str(refv), '1\n' ))
-                fcsv.write(newline)
-
-            w2_gzip = zip(w2_effs, w2_ref_vals, w2_ref_combs, w2_int_vals, w2_int_combs, w2_refs)
-            for eff, refv, refc, intv, intc, refref in w2_gzip:
-                newline = sep.join(('Numerator_w2',
-                                    str(intc).replace(main.inters_str, '  AND  '),
-                                    refref, str(intv), str(round(eff,4)))) + '\n'
-                fcsv.write(newline)
-     
-                newline = sep.join(('Denominator_w2',
                                     str(refc).replace(main.inters_str, '  AND  '),
                                     refref, str(refv), '1\n' ))
                 fcsv.write(newline)

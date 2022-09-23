@@ -185,7 +185,7 @@ class EventSelection:
         flag = False
         for trig in trigs:
             if trig in main.trig_custom:
-                flag = set_custom_trigger_bit(trig, self.bit, self.run)
+                flag = set_custom_trigger_bit(trig)
             else:
                 flag = self.check_bit(self.get_trigger_bit(trig))
             if flag:
