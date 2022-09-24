@@ -79,7 +79,9 @@ def sel_category(entries, category):
     common = not (entries.isVBF == 1 and entries.VBFjj_mass > 500 and entries.VBFjj_deltaEta > 3 and
                   (entries.bjet1_bID_deepFlavor > 0.2783 or entries.bjet2_bID_deepFlavor > 0.2783))
 
-    if category == 's1b1jresolvedMcut':
+    if category == 'baseline':
+        specific = True
+    elif category == 's1b1jresolvedMcut':
         specific = entries.isBoosted != 1 and btagM
     elif category == 's2b0jresolvedMcut':
         specific = entries.isBoosted != 1 and btagMM
@@ -150,97 +152,91 @@ def sel_cuts(entries, iso_cuts=dict(), lepton_veto=True,
 
         return True
 
-def plot(hmet, hnomet, var, channel, sample, category, directory):
+def set_plot_definitions():
     ROOT.gROOT.SetBatch(ROOT.kTRUE)
     ROOT.gStyle.SetOptStat(ROOT.kFALSE)
-
-    c = ROOT.TCanvas('c', '', 600, 400)
-    c.Divide(2,1)
-    pad1 = ROOT.TPad('pad1', 'pad1', 0, 0.0, 1.0, 1.0)
-    pad1.SetFrameLineWidth(3)
-    pad1.SetLeftMargin(0.12);
-    pad1.SetBottomMargin(0.12);
-    pad1.SetTopMargin(0.055);
-    pad1.Draw()
-    pad1.cd()
-
-    cmsTextSize = 0.05 
-    t = ROOT.gPad.GetTopMargin()
-    b = ROOT.gPad.GetBottomMargin()
-    l = ROOT.gPad.GetLeftMargin()
-    r = ROOT.gPad.GetRightMargin()
+    ret = {'BoxTextSize': 50,
+           'BoxTextFont': 43,
+           'BoxTextColor': ROOT.kBlack,
+           'XTitleSize': 0.045,
+           'YTitleSize': 0.045,
+           'LineWidth': 2,
+           }
+    return ret
     
-    selBox = ROOT.TLatex(l + 0.03 , 1 - t - 0.02, category)
+def plot(hmet, hnomet, hmetwithcut, var, channel, sample, category, directory):
+    defs = set_plot_definitions()
+    c = ROOT.TCanvas('c', '', 600, 400)
+    c.cd()
+    
+    pad = ROOT.TPad('pad', 'pad', 0., 0., 1., 1.)
+    pad.SetFrameLineWidth(3)
+
+    selBox = ROOT.TLatex(0.5, 0.5, category)
     selBox.SetNDC()
-    selBox.SetTextSize(cmsTextSize+20)
-    selBox.SetTextFont(43)
-    selBox.SetTextColor(ROOT.kBlack)
+    selBox.SetTextSize(defs['BoxTextSize'])
+    selBox.SetTextFont(defs['BoxTextFont'])
+    selBox.SetTextColor(defs['BoxTextColor'])
     selBox.SetTextAlign(13)
     selBox.Draw('same')
     
-    #hmet.SetAxisRange(0,1.1,'Y');
+    hmet.GetXaxis().SetTitleSize(defs['XTitleSize']);
     hmet.GetXaxis().SetTitle(var + ' [GeV]');
+    hmet.GetYaxis().SetTitleSize(defs['YTitleSize']);
     hmet.GetYaxis().SetTitle('a.u.');
-    hmet.GetXaxis().SetTitleSize(0.045);
-    hmet.GetYaxis().SetTitleSize(0.045);
-    hmet.SetLineWidth(2);
+    hmet.SetLineWidth(defs['LineWidth']);
     hmet.SetLineColor(8);
-    #hmet.SetFillColor(8);
 
     hnomet.SetLineWidth(2);
     hnomet.SetLineColor(4);
-    #hnomet.SetFillColor(4);
+    hmetwithcut.SetLineWidth(2);
+    hmetwithcut.SetLineColor(2);
 
-    # hmet.Add(hnomet)
     hmet.Scale(1/hmet.Integral())
-    hmet.Draw('hist');
     hnomet.Scale(1/hnomet.Integral())
-    hnomet.Draw('histsame');
+    hmetwithcut.Scale(1/hmetwithcut.Integral())
 
-    leg = ROOT.TLegend(0.7, 0.8, 0.90, 0.93)
+    max_met   = hmet.GetMaximum() + (hmet.GetMaximum()-hmet.GetMinimum())/5.
+    max_nomet = hnomet.GetMaximum() + (hnomet.GetMaximum()-hnomet.GetMinimum())/5.
+    max_withcut = hmetwithcut.GetMaximum() + (hmetwithcut.GetMaximum()-hmetwithcut.GetMinimum())/5.
+    hmet.SetMaximum( max(max_met, max_nomet, max_withcut) )
+
+    hmet.Draw('hist')
+    hnomet.Draw('histsame')
+    hmetwithcut.Draw('histsame')
+
+    leg = ROOT.TLegend(0.65, 0.75, 0.90, 0.9)
     leg.SetNColumns(1)
     leg.SetFillStyle(0)
     leg.SetBorderSize(0)
     leg.SetTextFont(43)
-    leg.AddEntry(hmet, 'MET Only')
+    leg.SetTextSize(10)
+    leg.AddEntry(hmet, 'MET')
+    leg.AddEntry(hmetwithcut, 'Met + Cut')
     leg.AddEntry(hnomet, '+\n'.join(triggers[channel]))
     leg.Draw('same')
 
-    outdir = os.path.join(directory, channel, sample, category)
-    utils.create_single_dir(outdir)
+    cat_folder = os.path.join(directory, category)
+    utils.create_single_dir(cat_folder)
     c.Update();
-    c.SaveAs( os.path.join(outdir, 'met_' + var + '.png') )
+    c.SaveAs( os.path.join(cat_folder, 'met_' + var + '.png') )
+    c.Close()
 
-def plot2D(hmet, hnomet, channel, sample, category, directory):
-    ROOT.gROOT.SetBatch(ROOT.kTRUE)
-    ROOT.gStyle.SetOptStat(ROOT.kFALSE)
-
+def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, directory):
+    defs = set_plot_definitions()    
     c = ROOT.TCanvas('c', '', 600, 400)
-    pad1 = ROOT.TPad('pad1', 'pad1', 0.0, 0.0, .5, 1.0)
-    pad1.SetFrameLineWidth(3)
-    pad1.SetLeftMargin(0.12);
-    pad1.SetBottomMargin(0.12);
-    pad1.SetTopMargin(0.055);
-    pad1.Draw()
-    pad1.cd()
+    c.cd()
 
-    cmsTextSize = 0.05 
-    t = ROOT.gPad.GetTopMargin()
-    b = ROOT.gPad.GetBottomMargin()
-    l = ROOT.gPad.GetLeftMargin()
-    r = ROOT.gPad.GetRightMargin()
-    
-    selBox = ROOT.TLatex(l + 0.03 , 1 - t - 0.02, category)
-    selBox.SetNDC()
-    selBox.SetTextSize(cmsTextSize+20)
-    selBox.SetTextFont(43)
-    selBox.SetTextColor(ROOT.kBlack)
-    selBox.SetTextAlign(13)
-    selBox.Draw('same')
-    
-    #hmet.SetAxisRange(0,1.1,'Y');
-    hmet.GetXaxis().SetTitle('dau1_pt [GeV]');
-    hmet.GetYaxis().SetTitle('dau2_pt [GeV]');
+    pad = ROOT.TPad('pad1', 'pad1', 0., 0., 0.33, 1.)
+    pad.SetFrameLineWidth(3)
+    pad.SetLeftMargin(0.12);
+    pad.SetBottomMargin(0.12);
+    pad.SetTopMargin(0.055);
+    pad.Draw()
+    pad.cd()
+
+    hmet.GetXaxis().SetTitle(two_vars[0])
+    hmet.GetYaxis().SetTitle(two_vars[1])
     hmet.GetXaxis().SetTitleSize(0.045);
     hmet.GetYaxis().SetTitleSize(0.045);
     hmet.SetLineWidth(2);
@@ -251,7 +247,7 @@ def plot2D(hmet, hnomet, channel, sample, category, directory):
     hmet.Draw('hist colz');
 
     c.cd()
-    pad2 = ROOT.TPad('pad2', 'pad2', 0.5, 0.0, 1.0, 1.0)
+    pad2 = ROOT.TPad('pad2', 'pad2', 0.33, 0.0, 0.67, 1.0)
     pad2.SetFrameLineWidth(3)
     pad2.SetLeftMargin(0.12);
     pad2.SetBottomMargin(0.12);
@@ -259,8 +255,8 @@ def plot2D(hmet, hnomet, channel, sample, category, directory):
     pad2.Draw()
     pad2.cd()
 
-    hnomet.GetXaxis().SetTitle('dau1_pt [GeV]');
-    hnomet.GetYaxis().SetTitle('dau2_pt [GeV]');
+    hnomet.GetXaxis().SetTitle(two_vars[0]);
+    hnomet.GetYaxis().SetTitle(two_vars[1]);
     hnomet.GetXaxis().SetTitleSize(0.045);
     hnomet.GetYaxis().SetTitleSize(0.045);
     hnomet.SetLineWidth(2);
@@ -268,13 +264,37 @@ def plot2D(hmet, hnomet, channel, sample, category, directory):
     hnomet.Draw('hist colz same');
     #hnomet.SetFillColor(4);
 
-    outdir = os.path.join(directory, channel, sample, category)
+    c.cd()
+    pad3 = ROOT.TPad('pad3', 'pad3', 0.67, 0.0, 1.0, 1.0)
+    pad3.SetFrameLineWidth(3)
+    pad3.SetLeftMargin(0.12);
+    pad3.SetBottomMargin(0.12);
+    pad3.SetTopMargin(0.055);
+    pad3.Draw()
+    pad3.cd()
+
+    hmetwithcut.GetXaxis().SetTitle(two_vars[0]);
+    hmetwithcut.GetYaxis().SetTitle(two_vars[1]);
+    hmetwithcut.GetXaxis().SetTitleSize(0.045);
+    hmetwithcut.GetYaxis().SetTitleSize(0.045);
+    hmetwithcut.SetLineWidth(2);
+    hmetwithcut.SetLineColor(8);
+    hmetwithcut.Draw('hist colz same');
+    #hmetwithcut.SetFillColor(4);
+
+    outdir = os.path.join(directory, channel, sample)
     utils.create_single_dir(outdir)
     c.Update();
-    c.SaveAs( os.path.join(outdir, 'met_2D.png') )
+    c.SaveAs( os.path.join(outdir, 'met_' + '_VS_'.join(two_vars) + '.png') )
+    c.Close()
 
 def test_met(indir, sample, channel, plot_only):
-    binning.update({'HHKin_mass': (20, float(sample)-300, float(sample)+300)})
+    if channel == 'etau' or 'mutau':
+        iso1 = (24, 0, 8)
+    elif channel == 'tautau':
+        iso1 = (20, 0.86, 1.01)
+    binning.update({'HHKin_mass': (20, float(sample)-300, float(sample)+300),
+                    'dau1_iso': iso1})
     
     outname = 'met_{}_{}.root'.format(sample, channel)
     full_sample = 'GluGluToBulkGravitonToHHTo2B2Tau_M-' + sample + '_'
@@ -285,22 +305,26 @@ def test_met(indir, sample, channel, plot_only):
         for f in glob_files:
             t_in.Add(f)
      
-        hMET, hNoMET = ({} for _ in range(2))
+        hMET, hNoMET, hMETWithCut = ({} for _ in range(3))
         for v in tuple(variables):
-            hMET[v], hNoMET[v] = ({} for _ in range(2))
+            hMET[v], hNoMET[v], hMETWithCut[v] = ({} for _ in range(3))
             for cat in categories:
-                hMET[v][cat] = ROOT.TH1D('hMET'+v+'_'+cat, '', *binning[v])
-                hNoMET[v][cat] = ROOT.TH1D('hNoMET'+v+'_'+cat, '', *binning[v])
+                hMET[v][cat] = ROOT.TH1D('hMET_'+v+'_'+cat, '', *binning[v])
+                hNoMET[v][cat] = ROOT.TH1D('hNoMET_'+v+'_'+cat, '', *binning[v])
+                hMETWithCut[v][cat] = ROOT.TH1D('hMETWithCut_'+v+'_'+cat, '', *binning[v])
 
-        hMET_2D, hNoMET_2D = ({} for _ in range(2))
-        for cat in categories:
-            hMET_2D[cat] = ROOT.TH2D('hMET_2D_'+cat, '', *binning['dau1_pt'], *binning['dau2_pt'])
-            hNoMET_2D[cat] = ROOT.TH2D('hNoMET_2D_'+cat, '', *binning['dau1_pt'], *binning['dau2_pt'])        
-     
+        hMET_2D, hNoMET_2D, hMETWithCut_2D = ({} for _ in range(3))
+        for v in variables_2D:
+            hMET_2D[v], hNoMET_2D[v], hMETWithCut_2D[v] = ({} for _ in range(3))
+            for cat in categories:
+                hMET_2D[v][cat] = ROOT.TH2D('hMET_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
+                hNoMET_2D[v][cat] = ROOT.TH2D('hNoMET_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
+                hMETWithCut_2D[v][cat] = ROOT.TH2D('hMETWithCut_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])        
+
         t_in.SetBranchStatus('*', 0)
         _entries = ('triggerbit', 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted',
                     'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta', 'PUReweight', 'lumi', 'IdAndIsoSF_deep_pt',
-                    'HHKin_mass', 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
+                    'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                     'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
         _entries += tuple(variables)
         for ientry in _entries:
@@ -324,108 +348,107 @@ def test_met(indir, sample, channel, plot_only):
             if utils.is_nan(evt_weight):
                 evt_weight = 1
 
-            for v in variables:
-                
-                if utils.is_channel_consistent(channel, entries.pairType):
-     
-                    if not sel_cuts(entries, lepton_veto=True, bjets_cut=True):
-                        continue
-     
+            if utils.is_channel_consistent(channel, entries.pairType):
+                if not sel_cuts(entries, lepton_veto=True, bjets_cut=True):
+                    continue
+
+                for v in variables:
                     for cat in categories:
                         if sel_category(entries, cat):
 
+                            # passes the OR of the trigger baseline (not including METNoMu120 trigger)
                             if pass_triggers(triggers[channel], entries.triggerbit):
                                 hNoMET[v][cat].Fill(entries[v], evt_weight)
-                                if v == variables[0]:
-                                    hNoMET_2D[cat].Fill(entries['dau1_pt'], entries['dau2_pt'], evt_weight)
-     
+
+                            # passes the METNoMu120 trigger and does *not* pass the OR of the baseline
                             if (pass_triggers(('METNoMu120',), entries.triggerbit) and
                                 not pass_triggers(triggers[channel], entries.triggerbit)):
                                 hMET[v][cat].Fill(entries[v], evt_weight)
-                                if v == variables[0]:
-                                    hMET_2D[cat].Fill(entries['dau1_pt'], entries['dau2_pt'], evt_weight)
+                                if entries.metnomu_et > met_cut:
+                                    hMETWithCut[v][cat].Fill(entries[v], evt_weight)
 
-     
+                for v in variables_2D:
+                    for cat in categories:
+                        if sel_category(entries, cat):
+
+                            # passes the OR of the trigger baseline (not including METNoMu120 trigger)
+                            if pass_triggers(triggers[channel], entries.triggerbit):
+                                hNoMET_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+
+                            # passes the METNoMu120 trigger and does *not* pass the OR of the baseline
+                            if (pass_triggers(('METNoMu120',), entries.triggerbit) and
+                                not pass_triggers(triggers[channel], entries.triggerbit)):
+                                hMET_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+                                if entries.metnomu_et > met_cut:
+                                    hMETWithCut_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+
+
         f_out = ROOT.TFile(outname, 'RECREATE')
         f_out.cd()
-        for v in variables:
-            for cat in categories:
+        for cat in categories:
+            for v in variables:
                 hMET[v][cat].Write('hMET_' + v + '_' + cat)
                 hNoMET[v][cat].Write('hNoMET_' + v + '_' + cat)
-                if v == variables[0]:
-                    hMET_2D[cat].Write('hMET_2D_' + cat)
-                    hNoMET_2D[cat].Write('hNoMET_2D_' + cat)
+                hMETWithCut[v][cat].Write('hMETWithCut_' + v + '_' + cat)
+            for v in variables_2D:
+                hMET_2D[v][cat].Write('hMET_2D_' + '_'.join(v)+'_'+ cat)
+                hNoMET_2D[v][cat].Write('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
+                hMETWithCut_2D[v][cat].Write('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
         f_out.Close()
-        print('Raw histograms saved in {}.'.format(outname) )
+        print('Raw histograms saved in {}.'.format(outname), flush=True)
 
 
     f_in = ROOT.TFile(outname, 'READ')
     f_in.cd()
-    from_directory = 'MET_Histograms'
-    for v in variables:
-        for cat in categories:
+    from_directory = os.path.join('MET_Histograms', channel, sample)
+    for cat in categories:
+        for v in variables:
             hMET = f_in.Get('hMET_' + v + '_' + cat)
             hNoMET = f_in.Get('hNoMET_' + v + '_' + cat)
-            plot(hMET, hNoMET, v, channel, sample, cat, from_directory)
-            if v == variables[0]:
-                hMET_2D = f_in.Get('hMET_2D_' + cat)
-                hNoMET_2D = f_in.Get('hNoMET_2D_' + cat)
-                plot2D(hMET_2D, hNoMET_2D, channel, sample, cat, from_directory)
+            hMETWithCut = f_in.Get('hMETWithCut_' + v + '_' + cat)
+            plot(hMET, hNoMET, hMETWithCut, v, channel, sample, cat, from_directory)
+        for v in variables_2D:
+            hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
+            hNoMET_2D = f_in.Get('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
+            hMETWithCut_2D = f_in.Get('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
+            plot2D(hMET_2D, hNoMET_2D, hMETWithCut_2D, v, channel, sample, cat, from_directory)
                 
     f_in.Close()
 
     from distutils.dir_util import copy_tree
     to_directory = '/eos/user/b/bfontana/www/TriggerScaleFactors/{}'.format(from_directory)
     copy_tree(from_directory, to_directory)
+    print(from_directory)
+    print(to_directory)
+    print('Pictures copied to {}.'.format(to_directory), flush=True)
 
 if __name__ == '__main__':
     triggers = {'etau': ('Ele32', 'EleIsoTauCustom'),
                 'mutau': ('IsoMu24', 'IsoMuIsoTauCustom'),
                 'tautau': ('IsoDoubleTauCustom',)}
     binning = {'metnomu_et': (20, 0, 450),
-               'dau1_pt': (30, 0, 500),
+               'dau1_pt': (30, 0, 450),
                'dau1_eta': (20, -2.5, 2.5),
-               'dau1_iso': (24, 0, 8),
-               'dau2_iso': (20, 0.8, 1.),
-               'dau2_pt': (30, 0, 500),
+               'dau2_iso': (20, 0.87, 1.01),
+               'dau2_pt': (30, 0, 350),
                'dau2_eta': (20, -2.5, 2.5),
-               'ditau_deltaR': (25, 0, 5),
-               'dib_deltaR': (25, 0, 5),
-               'bH_pt': (20, 70, 400),
-               'bH_mass': (30, 0, 300),
-               'tauH_mass': (30, 0, 200),
-               'tauH_pt': (30, 0, 400),
-               'tauH_SVFIT_mass': (30, 0, 300),
-               'tauH_SVFIT_pt': (30, 0, 500),
-               'bjet1_pt': (20, 20, 200),
+               'ditau_deltaR': (25, 0, 1.7),
+               'dib_deltaR': (25, 0, 2.5),
+               'bH_pt': (20, 70, 600),
+               'bH_mass': (30, 0, 280),
+               'tauH_mass': (30, 0, 170),
+               'tauH_pt': (30, 0, 500),
+               'tauH_SVFIT_mass': (50, 0, 250),
+               'tauH_SVFIT_pt': (30, 100, 600),
+               'bjet1_pt': (16, 20, 500),
+               'bjet2_pt': (16, 20, 500),
+               'bjet1_eta': (20, -2.5, 2.5),
+               'bjet2_eta': (20, -2.5, 2.5),
                }
-    variables = tuple(binning.keys()) + ('HHKin_mass',)
-    categories = ('s1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
-    # massLimits = {'250': (0,500),
-    #               '260': (0,500),
-    #               '270': (0,500),
-    #               '280': (0,500),
-    #               '300': (0,500),
-    #               '320': (0,500),
-    #               '350': (0,500),
-    #               '400': (0,500),
-    #               '450': (0,500),
-    #               '500': (0,500),
-    #               '550': (0,500),
-    #               '600': (0,500),
-    #               '650': (0,500),
-    #               '700': (0,500),
-    #               '750': (0,500),
-    #               '800': (0,500),
-    #               '850': (300,1200),
-    #               '900': (0,500),
-    #               '1000': (0,500),
-    #               '1250': (0,500),
-    #               '1500': (0,500),
-    #               '1750': (0,500),
-    #               '2000': (0,500),
-    #               '2500': (0,500),
-    #               '3000': (0,500)}
+    variables = tuple(binning.keys()) + ('HHKin_mass', 'dau1_iso')
+    variables_2D = (('dau1_pt', 'dau2_pt'), ('dau1_iso', 'dau2_iso'))
+    categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
+    met_cut = 200
     
     # Parse input arguments
     parser = argparse.ArgumentParser(description='Producer trigger histograms.')
@@ -436,7 +459,8 @@ if __name__ == '__main__':
                         help='Full path of ROOT input file')
     parser.add_argument('--channel', dest='channel', required=True, type=str,  
                         help='Select the channel over which the workflow will be run.' )
-    parser.add_argument('--plot_only', dest='plot_only', help='use log scale', action='store_true')
+    parser.add_argument('--plot_only', dest='plot_only', action='store_true',
+                        help='Reuse previously produced data for quick plot changes.')
     args = utils.parse_args(parser)
 
     # pool = multiprocessing.Pool(processes=4)    
