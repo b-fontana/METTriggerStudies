@@ -17,6 +17,9 @@ from inclusion.utils import utils
 
 import ROOT
 
+def get_outname(sample, channel):
+    return 'met_{}_{}.root'.format(sample, channel)
+
 def check_bit(bitpos, bit):
     bitdigit = 1
     res = bool(bit&(bitdigit<<bitpos))
@@ -225,7 +228,7 @@ def plot(hmet, hnomet, hmetwithcut, var, channel, sample, category, directory):
     leg.AddEntry(hnomet, '+\n'.join(triggers[channel]))
     leg.Draw('same')
 
-    cat_folder = os.path.join(directory, category)
+    cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
     c.Update();
     c.SaveAs( os.path.join(cat_folder, 'met_' + var + '.png') )
@@ -294,13 +297,14 @@ def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, direc
     hmetwithcut.Draw('hist colz same');
     #hmetwithcut.SetFillColor(4);
 
-    cat_folder = os.path.join(directory, category)
+    cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
     c.Update();
     c.SaveAs( os.path.join(cat_folder, 'met_' + '_VS_'.join(two_vars) + '.png') )
     c.Close()
 
 def test_met(indir, sample, channel, plot_only):
+    outname = get_outname(sample, channel)
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
     elif channel == 'tautau':
@@ -308,128 +312,103 @@ def test_met(indir, sample, channel, plot_only):
     binning.update({'HHKin_mass': (20, float(sample)-300, float(sample)+300),
                     'dau1_iso': iso1})
     
-    outname = 'met_{}_{}.root'.format(sample, channel)
     full_sample = 'GluGluToBulkGravitonToHHTo2B2Tau_M-' + sample + '_'
     
-    if not plot_only:
-        t_in = ROOT.TChain('HTauTauTree');
-        glob_files = glob.glob( os.path.join(indir, full_sample, 'output_*.root') )
-        for f in glob_files:
-            t_in.Add(f)
-     
-        hMET, hNoMET, hMETWithCut = ({} for _ in range(3))
-        for v in tuple(variables):
-            hMET[v], hNoMET[v], hMETWithCut[v] = ({} for _ in range(3))
-            for cat in categories:
-                hMET[v][cat] = ROOT.TH1D('hMET_'+v+'_'+cat, '', *binning[v])
-                hNoMET[v][cat] = ROOT.TH1D('hNoMET_'+v+'_'+cat, '', *binning[v])
-                hMETWithCut[v][cat] = ROOT.TH1D('hMETWithCut_'+v+'_'+cat, '', *binning[v])
-
-        hMET_2D, hNoMET_2D, hMETWithCut_2D = ({} for _ in range(3))
-        for v in variables_2D:
-            hMET_2D[v], hNoMET_2D[v], hMETWithCut_2D[v] = ({} for _ in range(3))
-            for cat in categories:
-                hMET_2D[v][cat] = ROOT.TH2D('hMET_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
-                hNoMET_2D[v][cat] = ROOT.TH2D('hNoMET_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
-                hMETWithCut_2D[v][cat] = ROOT.TH2D('hMETWithCut_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])        
-
-        t_in.SetBranchStatus('*', 0)
-        _entries = ('triggerbit', 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted',
-                    'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta', 'PUReweight', 'lumi', 'IdAndIsoSF_deep_pt',
-                    'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
-                    'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
-        _entries += tuple(variables)
-        for ientry in _entries:
-            t_in.SetBranchStatus(ientry, 1)
-     
-        for entry in t_in:
-            # this is slow: do it once only
-            entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-            
-            # mcweight   = entries.MC_weight
-            pureweight = entries.PUReweight
-            lumi       = entries.lumi
-            idandiso   = entries.IdAndIsoSF_deep_pt
-            
-            #if utils.is_nan(mcweight)  : mcweight=1
-            if utils.is_nan(pureweight) : pureweight=1
-            if utils.is_nan(lumi)       : lumi=1
-            if utils.is_nan(idandiso)   : idandiso=1
-     
-            evt_weight = pureweight*lumi*idandiso
-            if utils.is_nan(evt_weight):
-                evt_weight = 1
-
-            if utils.is_channel_consistent(channel, entries.pairType):
-                if not sel_cuts(entries, lepton_veto=True, bjets_cut=True):
-                    continue
-
-                for v in variables:
-                    for cat in categories:
-                        if sel_category(entries, cat):
-
-                            # passes the OR of the trigger baseline (not including METNoMu120 trigger)
-                            if pass_triggers(triggers[channel], entries.triggerbit):
-                                hNoMET[v][cat].Fill(entries[v], evt_weight)
-
-                            # passes the METNoMu120 trigger and does *not* pass the OR of the baseline
-                            if (pass_triggers(('METNoMu120',), entries.triggerbit) and
-                                not pass_triggers(triggers[channel], entries.triggerbit)):
-                                hMET[v][cat].Fill(entries[v], evt_weight)
-                                if entries.metnomu_et > met_cut:
-                                    hMETWithCut[v][cat].Fill(entries[v], evt_weight)
-
-                for v in variables_2D:
-                    for cat in categories:
-                        if sel_category(entries, cat):
-
-                            # passes the OR of the trigger baseline (not including METNoMu120 trigger)
-                            if pass_triggers(triggers[channel], entries.triggerbit):
-                                hNoMET_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
-
-                            # passes the METNoMu120 trigger and does *not* pass the OR of the baseline
-                            if (pass_triggers(('METNoMu120',), entries.triggerbit) and
-                                not pass_triggers(triggers[channel], entries.triggerbit)):
-                                hMET_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
-                                if entries.metnomu_et > met_cut:
-                                    hMETWithCut_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
-
-
-        f_out = ROOT.TFile(outname, 'RECREATE')
-        f_out.cd()
+    t_in = ROOT.TChain('HTauTauTree')
+    glob_files = glob.glob( os.path.join(indir, full_sample, 'output_*.root') )
+    for f in glob_files:
+        t_in.Add(f)
+  
+    hMET, hNoMET, hMETWithCut = ({} for _ in range(3))
+    for v in tuple(variables):
+        hMET[v], hNoMET[v], hMETWithCut[v] = ({} for _ in range(3))
         for cat in categories:
+            hMET[v][cat] = ROOT.TH1D('hMET_'+v+'_'+cat, '', *binning[v])
+            hNoMET[v][cat] = ROOT.TH1D('hNoMET_'+v+'_'+cat, '', *binning[v])
+            hMETWithCut[v][cat] = ROOT.TH1D('hMETWithCut_'+v+'_'+cat, '', *binning[v])
+  
+    hMET_2D, hNoMET_2D, hMETWithCut_2D = ({} for _ in range(3))
+    for v in variables_2D:
+        hMET_2D[v], hNoMET_2D[v], hMETWithCut_2D[v] = ({} for _ in range(3))
+        for cat in categories:
+            hMET_2D[v][cat] = ROOT.TH2D('hMET_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
+            hNoMET_2D[v][cat] = ROOT.TH2D('hNoMET_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
+            hMETWithCut_2D[v][cat] = ROOT.TH2D('hMETWithCut_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])        
+  
+    t_in.SetBranchStatus('*', 0)
+    _entries = ('triggerbit', 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted',
+                'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta', 'PUReweight', 'lumi', 'IdAndIsoSF_deep_pt',
+                'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
+                'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
+    _entries += tuple(variables)
+    for ientry in _entries:
+        t_in.SetBranchStatus(ientry, 1)
+  
+    for entry in t_in:
+        # this is slow: do it once only
+        entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
+        
+        # mcweight   = entries.MC_weight
+        pureweight = entries.PUReweight
+        lumi       = entries.lumi
+        idandiso   = entries.IdAndIsoSF_deep_pt
+        
+        #if utils.is_nan(mcweight)  : mcweight=1
+        if utils.is_nan(pureweight) : pureweight=1
+        if utils.is_nan(lumi)       : lumi=1
+        if utils.is_nan(idandiso)   : idandiso=1
+  
+        evt_weight = pureweight*lumi*idandiso
+        if utils.is_nan(evt_weight):
+            evt_weight = 1
+  
+        if utils.is_channel_consistent(channel, entries.pairType):
+            if not sel_cuts(entries, lepton_veto=True, bjets_cut=True):
+                continue
+  
             for v in variables:
-                hMET[v][cat].Write('hMET_' + v + '_' + cat)
-                hNoMET[v][cat].Write('hNoMET_' + v + '_' + cat)
-                hMETWithCut[v][cat].Write('hMETWithCut_' + v + '_' + cat)
+                for cat in categories:
+                    if sel_category(entries, cat):
+  
+                        # passes the OR of the trigger baseline (not including METNoMu120 trigger)
+                        if pass_triggers(triggers[channel], entries.triggerbit):
+                            hNoMET[v][cat].Fill(entries[v], evt_weight)
+  
+                        # passes the METNoMu120 trigger and does *not* pass the OR of the baseline
+                        if (pass_triggers(('METNoMu120',), entries.triggerbit) and
+                            not pass_triggers(triggers[channel], entries.triggerbit)):
+                            hMET[v][cat].Fill(entries[v], evt_weight)
+                            if entries.metnomu_et > met_cut:
+                                hMETWithCut[v][cat].Fill(entries[v], evt_weight)
+  
             for v in variables_2D:
-                hMET_2D[v][cat].Write('hMET_2D_' + '_'.join(v)+'_'+ cat)
-                hNoMET_2D[v][cat].Write('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
-                hMETWithCut_2D[v][cat].Write('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
-        f_out.Close()
-        print('Raw histograms saved in {}.'.format(outname), flush=True)
-
-    f_in = ROOT.TFile(outname, 'READ')
-    f_in.cd()
-    from_directory = os.path.join('MET_Histograms', channel, sample)
+                for cat in categories:
+                    if sel_category(entries, cat):
+  
+                        # passes the OR of the trigger baseline (not including METNoMu120 trigger)
+                        if pass_triggers(triggers[channel], entries.triggerbit):
+                            hNoMET_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+  
+                        # passes the METNoMu120 trigger and does *not* pass the OR of the baseline
+                        if (pass_triggers(('METNoMu120',), entries.triggerbit) and
+                            not pass_triggers(triggers[channel], entries.triggerbit)):
+                            hMET_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+                            if entries.metnomu_et > met_cut:
+                                hMETWithCut_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+  
+    f_out = ROOT.TFile(outname, 'RECREATE')
+    f_out.cd()
     for cat in categories:
         for v in variables:
-            hMET = f_in.Get('hMET_' + v + '_' + cat)
-            hNoMET = f_in.Get('hNoMET_' + v + '_' + cat)
-            hMETWithCut = f_in.Get('hMETWithCut_' + v + '_' + cat)
-            plot(hMET, hNoMET, hMETWithCut, v, channel, sample, cat, from_directory)
+            hMET[v][cat].Write('hMET_' + v + '_' + cat)
+            hNoMET[v][cat].Write('hNoMET_' + v + '_' + cat)
+            hMETWithCut[v][cat].Write('hMETWithCut_' + v + '_' + cat)
         for v in variables_2D:
-            hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
-            hNoMET_2D = f_in.Get('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
-            hMETWithCut_2D = f_in.Get('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
-            plot2D(hMET_2D, hNoMET_2D, hMETWithCut_2D, v, channel, sample, cat, from_directory)
-                
-    f_in.Close()
-
-    from distutils.dir_util import copy_tree
-    to_directory = '/eos/user/b/bfontana/www/TriggerScaleFactors/{}'.format(from_directory)
-    copy_tree(from_directory, to_directory)
-    print('Pictures copied to {}.'.format(to_directory), flush=True)
+            hMET_2D[v][cat].Write('hMET_2D_' + '_'.join(v)+'_'+ cat)
+            hNoMET_2D[v][cat].Write('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
+            hMETWithCut_2D[v][cat].Write('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
+    f_out.Close()
+    print('Raw histograms saved in {}.'.format(outname), flush=True)
 
 if __name__ == '__main__':
     triggers = {'etau': ('Ele32', 'EleIsoTauCustom'),
@@ -472,10 +451,35 @@ if __name__ == '__main__':
                         help='Reuse previously produced data for quick plot changes.')
     args = utils.parse_args(parser)
 
-    # pool = multiprocessing.Pool(processes=4)    
-    # pool.starmap(test_met, zip(it.repeat(args.indir), args.samples,
-    #                            it.repeat(args.channel), it.repeat(args.plot_only)))
-    
+    if not args.plot_only:
+        pool = multiprocessing.Pool(processes=4)    
+        pool.starmap(test_met, zip(it.repeat(args.indir), args.samples,
+                                   it.repeat(args.channel), it.repeat(args.plot_only)))
+
+    # if not args.plot_only:
+    #     for sample in args.samples:
+    #         test_met(args.indir, sample, args.channel, args.plot_only)
+
+    from_directory = os.path.join('MET_Histograms', args.channel)
     for sample in args.samples:
-        print('Processing sample {}'.format(sample))
-        test_met(args.indir, sample, args.channel, args.plot_only)
+        outname = get_outname(sample, args.channel)
+        f_in = ROOT.TFile(outname, 'READ')
+        f_in.cd()
+        for cat in categories:
+            for v in variables:
+                hMET = f_in.Get('hMET_' + v + '_' + cat)
+                hNoMET = f_in.Get('hNoMET_' + v + '_' + cat)
+                hMETWithCut = f_in.Get('hMETWithCut_' + v + '_' + cat)
+                plot(hMET, hNoMET, hMETWithCut, v, args.channel, sample, cat, from_directory)
+            for v in variables_2D:
+                hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
+                hNoMET_2D = f_in.Get('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
+                hMETWithCut_2D = f_in.Get('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
+                plot2D(hMET_2D, hNoMET_2D, hMETWithCut_2D, v, args.channel, sample, cat, from_directory)
+        f_in.Close()
+
+    import subprocess
+    to_directory = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors/MET_Histograms/')
+    utils.create_single_dir(to_directory)    
+    subprocess.run(['cp', '-r', from_directory, to_directory])
+    print('Pictures copied to {}.'.format(to_directory), flush=True)
