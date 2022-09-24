@@ -183,7 +183,7 @@ def plot(hmet, hnomet, hmetwithcut, var, channel, sample, category, directory):
     hmet.GetXaxis().SetTitleSize(defs['XTitleSize']);
     hmet.GetXaxis().SetTitle(var + ' [GeV]');
     hmet.GetYaxis().SetTitleSize(defs['YTitleSize']);
-    hmet.GetYaxis().SetTitle('a.u.');
+    hmet.GetYaxis().SetTitle('Normalized to 1');
     hmet.SetLineWidth(defs['LineWidth']);
     hmet.SetLineColor(8);
 
@@ -192,9 +192,18 @@ def plot(hmet, hnomet, hmetwithcut, var, channel, sample, category, directory):
     hmetwithcut.SetLineWidth(2);
     hmetwithcut.SetLineColor(2);
 
-    hmet.Scale(1/hmet.Integral())
-    hnomet.Scale(1/hnomet.Integral())
-    hmetwithcut.Scale(1/hmetwithcut.Integral())
+    try:
+        hmet.Scale(1/hmet.Integral())
+    except ZeroDivisionError:
+        pass
+    try:
+        hnomet.Scale(1/hnomet.Integral())
+    except ZeroDivisionError:
+        pass
+    try:
+        hmetwithcut.Scale(1/hmetwithcut.Integral())
+    except ZeroDivisionError:
+        pass
 
     max_met   = hmet.GetMaximum() + (hmet.GetMaximum()-hmet.GetMinimum())/5.
     max_nomet = hnomet.GetMaximum() + (hnomet.GetMaximum()-hnomet.GetMinimum())/5.
@@ -205,7 +214,7 @@ def plot(hmet, hnomet, hmetwithcut, var, channel, sample, category, directory):
     hnomet.Draw('histsame')
     hmetwithcut.Draw('histsame')
 
-    leg = ROOT.TLegend(0.65, 0.75, 0.90, 0.9)
+    leg = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
     leg.SetNColumns(1)
     leg.SetFillStyle(0)
     leg.SetBorderSize(0)
@@ -230,7 +239,8 @@ def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, direc
     pad = ROOT.TPad('pad1', 'pad1', 0., 0., 0.33, 1.)
     pad.SetFrameLineWidth(3)
     pad.SetLeftMargin(0.12);
-    pad.SetBottomMargin(0.12);
+    pad.SetRightMargin(0.0);
+    pad.SetBottomMargin(0.1);
     pad.SetTopMargin(0.055);
     pad.Draw()
     pad.cd()
@@ -249,8 +259,9 @@ def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, direc
     c.cd()
     pad2 = ROOT.TPad('pad2', 'pad2', 0.33, 0.0, 0.67, 1.0)
     pad2.SetFrameLineWidth(3)
-    pad2.SetLeftMargin(0.12);
-    pad2.SetBottomMargin(0.12);
+    pad2.SetLeftMargin(0.0);
+    pad2.SetRightMargin(0.0);
+    pad2.SetBottomMargin(0.1);
     pad2.SetTopMargin(0.055);
     pad2.Draw()
     pad2.cd()
@@ -267,8 +278,9 @@ def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, direc
     c.cd()
     pad3 = ROOT.TPad('pad3', 'pad3', 0.67, 0.0, 1.0, 1.0)
     pad3.SetFrameLineWidth(3)
-    pad3.SetLeftMargin(0.12);
-    pad3.SetBottomMargin(0.12);
+    pad3.SetLeftMargin(0.0);
+    pad3.SetRightMargin(0.0);
+    pad3.SetBottomMargin(0.1);
     pad3.SetTopMargin(0.055);
     pad3.Draw()
     pad3.cd()
@@ -282,17 +294,17 @@ def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, direc
     hmetwithcut.Draw('hist colz same');
     #hmetwithcut.SetFillColor(4);
 
-    outdir = os.path.join(directory, channel, sample)
-    utils.create_single_dir(outdir)
+    cat_folder = os.path.join(directory, category)
+    utils.create_single_dir(cat_folder)
     c.Update();
-    c.SaveAs( os.path.join(outdir, 'met_' + '_VS_'.join(two_vars) + '.png') )
+    c.SaveAs( os.path.join(cat_folder, 'met_' + '_VS_'.join(two_vars) + '.png') )
     c.Close()
 
 def test_met(indir, sample, channel, plot_only):
-    if channel == 'etau' or 'mutau':
+    if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
     elif channel == 'tautau':
-        iso1 = (20, 0.86, 1.01)
+        iso1 = binning['dau2_iso']
     binning.update({'HHKin_mass': (20, float(sample)-300, float(sample)+300),
                     'dau1_iso': iso1})
     
@@ -397,7 +409,6 @@ def test_met(indir, sample, channel, plot_only):
         f_out.Close()
         print('Raw histograms saved in {}.'.format(outname), flush=True)
 
-
     f_in = ROOT.TFile(outname, 'READ')
     f_in.cd()
     from_directory = os.path.join('MET_Histograms', channel, sample)
@@ -418,8 +429,6 @@ def test_met(indir, sample, channel, plot_only):
     from distutils.dir_util import copy_tree
     to_directory = '/eos/user/b/bfontana/www/TriggerScaleFactors/{}'.format(from_directory)
     copy_tree(from_directory, to_directory)
-    print(from_directory)
-    print(to_directory)
     print('Pictures copied to {}.'.format(to_directory), flush=True)
 
 if __name__ == '__main__':
@@ -429,7 +438,7 @@ if __name__ == '__main__':
     binning = {'metnomu_et': (20, 0, 450),
                'dau1_pt': (30, 0, 450),
                'dau1_eta': (20, -2.5, 2.5),
-               'dau2_iso': (20, 0.87, 1.01),
+               'dau2_iso': (20, 0.88, 1.01),
                'dau2_pt': (30, 0, 350),
                'dau2_eta': (20, -2.5, 2.5),
                'ditau_deltaR': (25, 0, 1.7),
@@ -439,7 +448,7 @@ if __name__ == '__main__':
                'tauH_mass': (30, 0, 170),
                'tauH_pt': (30, 0, 500),
                'tauH_SVFIT_mass': (50, 0, 250),
-               'tauH_SVFIT_pt': (30, 100, 600),
+               'tauH_SVFIT_pt': (20, 200, 650),
                'bjet1_pt': (16, 20, 500),
                'bjet2_pt': (16, 20, 500),
                'bjet1_eta': (20, -2.5, 2.5),
