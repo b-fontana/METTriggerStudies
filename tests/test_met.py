@@ -158,12 +158,13 @@ def sel_cuts(entries, iso_cuts=dict(), lepton_veto=True,
 def set_plot_definitions():
     ROOT.gROOT.SetBatch(ROOT.kTRUE)
     ROOT.gStyle.SetOptStat(ROOT.kFALSE)
-    ret = {'BoxTextSize': 50,
-           'BoxTextFont': 43,
-           'BoxTextColor': ROOT.kBlack,
-           'XTitleSize': 0.045,
-           'YTitleSize': 0.045,
-           'LineWidth': 2,
+    ret = {'BoxTextSize'    : 50,
+           'BoxTextFont'    : 43,
+           'BoxTextColor'   : ROOT.kBlack,
+           'XTitleSize'     : 0.045,
+           'YTitleSize'     : 0.045,
+           'LineWidth'      : 2,
+           'FrameLineWidth' : 1,
            }
     return ret
     
@@ -173,7 +174,7 @@ def plot(hmet, hnomet, hmetwithcut, var, channel, sample, category, directory):
     c.cd()
     
     pad = ROOT.TPad('pad', 'pad', 0., 0., 1., 1.)
-    pad.SetFrameLineWidth(3)
+    pad.SetFrameLineWidth(defs['FrameLineWidth'])
 
     selBox = ROOT.TLatex(0.5, 0.5, category)
     selBox.SetNDC()
@@ -231,92 +232,75 @@ def plot(hmet, hnomet, hmetwithcut, var, channel, sample, category, directory):
     cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
     c.Update();
-    c.SaveAs( os.path.join(cat_folder, 'met_' + var + '.png') )
+    for ext in ('png', 'pdf'):
+        c.SaveAs( os.path.join(cat_folder, 'met_' + var + '.' + ext) )
     c.Close()
 
 def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, directory):
     defs = set_plot_definitions()    
     c = ROOT.TCanvas('c', '', 600, 400)
-    c.cd()
 
-    pad = ROOT.TPad('pad1', 'pad1', 0., 0., 0.33, 1.)
-    pad.SetFrameLineWidth(1)
-    pad.SetLeftMargin(0.12);
+    c.cd()
+    pad = ROOT.TPad('pad1', 'pad1', 0., 0., 0.333, 1.)
+    pad.SetFrameLineWidth(defs['FrameLineWidth'])
+    pad.SetLeftMargin(0.15);
     pad.SetRightMargin(0.0);
-    pad.SetBottomMargin(0.1);
+    pad.SetBottomMargin(0.08);
     pad.SetTopMargin(0.055);
     pad.Draw()
     pad.cd()
 
-    hmet.GetXaxis().SetTitle(two_vars[0])
+    hmet.GetXaxis().SetTitle('')
     hmet.GetYaxis().SetTitle(two_vars[1])
-    hmet.GetXaxis().SetTitleSize(0.045);
-    hmet.GetYaxis().SetTitleSize(0.045);
-    hmet.SetLineWidth(2);
-    hmet.SetLineColor(8);
-    #hmet.SetFillColor(8);
-
+    hmetwithcut.GetYaxis().SetTitleSize(0.045)
+    hmetwithcut.GetYaxis().SetTitle(two_vars[1])
     try:
         hmet.Scale(1/hmet.Integral())
     except ZeroDivisionError:
         pass
-
-    # hmet.Add(hnomet)
     hmet.Draw('colz');
 
     c.cd()
-    pad2 = ROOT.TPad('pad2', 'pad2', 0.33, 0.0, 0.66, 1.0)
-    pad2.SetFrameLineWidth(1)
+    pad2 = ROOT.TPad('pad2', 'pad2', 0.333, 0.0, 0.665, 1.0)
+    pad2.SetFrameLineWidth(defs['FrameLineWidth'])
     pad2.SetLeftMargin(0.0);
     pad2.SetRightMargin(0.0);
-    pad2.SetBottomMargin(0.1);
+    pad2.SetBottomMargin(0.08);
     pad2.SetTopMargin(0.055);
     pad2.Draw()
     pad2.cd()
 
-    hnomet.GetXaxis().SetTitle(two_vars[0]);
-    hnomet.GetYaxis().SetTitle(two_vars[1]);
-    hnomet.GetXaxis().SetTitleSize(0.045);
-    hnomet.GetYaxis().SetTitleSize(0.045);
-    hnomet.SetLineWidth(2);
-    hnomet.SetLineColor(8);
-
+    hnomet.GetXaxis().SetTitle('');
+    hnomet.GetYaxis().SetTitle('');
     try:
         hnomet.Scale(1/hnomet.Integral())
     except ZeroDivisionError:
         pass
-
     hnomet.Draw('colz');
-    #hnomet.SetFillColor(4);
 
     c.cd()
-    pad3 = ROOT.TPad('pad3', 'pad3', 0.66, 0.0, 1.0, 1.0)
-    pad3.SetFrameLineWidth(1)
+    pad3 = ROOT.TPad('pad3', 'pad3', 0.665, 0.0, 1.0, 1.0)
+    pad3.SetFrameLineWidth(defs['FrameLineWidth'])
     pad3.SetLeftMargin(0.0);
     pad3.SetRightMargin(0.15);
-    pad3.SetBottomMargin(0.1);
+    pad3.SetBottomMargin(0.08);
     pad3.SetTopMargin(0.055);
     pad3.Draw()
     pad3.cd()
 
     hmetwithcut.GetXaxis().SetTitle(two_vars[0])
-    hmetwithcut.GetYaxis().SetTitle(two_vars[1])
     hmetwithcut.GetXaxis().SetTitleSize(0.045)
-    hmetwithcut.GetYaxis().SetTitleSize(0.045)
-    hmetwithcut.SetLineWidth(2)
-    hmetwithcut.SetLineColor(8)
-
     try:
         hmetwithcut.Scale(1/hmetwithcut.Integral())
     except ZeroDivisionError:
         pass
-
     hmetwithcut.Draw('colz')
 
     cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
     c.Update();
-    c.SaveAs( os.path.join(cat_folder, 'met_' + '_VS_'.join(two_vars) + '.png') )
+    for ext in ('png', 'pdf'):
+        c.SaveAs( os.path.join(cat_folder, 'met_' + '_VS_'.join(two_vars) + '.' + ext) )
     c.Close()
 
 def test_met(indir, sample, channel, plot_only):
@@ -490,19 +474,19 @@ if __name__ == '__main__':
                     hNoMET = f_in.Get('hNoMET_' + v + '_' + cat)
                     hMETWithCut = f_in.Get('hMETWithCut_' + v + '_' + cat)
                     plot(hMET, hNoMET, hMETWithCut, v, args.channel, sample, cat, from_directory)
-            if args.plot_2D_only:
-                for v in variables_2D:
-                    hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
-                    hNoMET_2D = f_in.Get('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
-                    hMETWithCut_2D = f_in.Get('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
-                    plot2D(hMET_2D, hNoMET_2D, hMETWithCut_2D, v, args.channel, sample, cat, from_directory)
+
+            for v in variables_2D:
+                hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
+                hNoMET_2D = f_in.Get('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
+                hMETWithCut_2D = f_in.Get('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
+                plot2D(hMET_2D, hNoMET_2D, hMETWithCut_2D, v, args.channel, sample, cat, from_directory)
         f_in.Close()
 
     import subprocess
     to_directory = '/eos/user/b/bfontana/www/TriggerScaleFactors/MET_Histograms/'
     to_directory = os.path.join(to_directory, args.channel)
     for sample in args.samples:
-        print('Copying: {}\t\t--->\t{}'.format(sample_from, to_directory), flush=True)
         sample_from = os.path.join(from_directory, sample)
+        print('Copying: {}\t\t--->\t{}'.format(sample_from, to_directory), flush=True)
         subprocess.run(['rsync', '-ah', sample_from, to_directory])
     print('Done.')
