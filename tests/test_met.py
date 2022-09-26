@@ -240,7 +240,7 @@ def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, direc
     c.cd()
 
     pad = ROOT.TPad('pad1', 'pad1', 0., 0., 0.33, 1.)
-    pad.SetFrameLineWidth(3)
+    pad.SetFrameLineWidth(1)
     pad.SetLeftMargin(0.12);
     pad.SetRightMargin(0.0);
     pad.SetBottomMargin(0.1);
@@ -255,13 +255,18 @@ def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, direc
     hmet.SetLineWidth(2);
     hmet.SetLineColor(8);
     #hmet.SetFillColor(8);
-    
+
+    try:
+        hmet.Scale(1/hmet.Integral())
+    except ZeroDivisionError:
+        pass
+
     # hmet.Add(hnomet)
-    hmet.Draw('hist colz');
+    hmet.Draw('colz');
 
     c.cd()
-    pad2 = ROOT.TPad('pad2', 'pad2', 0.33, 0.0, 0.67, 1.0)
-    pad2.SetFrameLineWidth(3)
+    pad2 = ROOT.TPad('pad2', 'pad2', 0.33, 0.0, 0.66, 1.0)
+    pad2.SetFrameLineWidth(1)
     pad2.SetLeftMargin(0.0);
     pad2.SetRightMargin(0.0);
     pad2.SetBottomMargin(0.1);
@@ -275,27 +280,38 @@ def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, direc
     hnomet.GetYaxis().SetTitleSize(0.045);
     hnomet.SetLineWidth(2);
     hnomet.SetLineColor(8);
-    hnomet.Draw('hist colz same');
+
+    try:
+        hnomet.Scale(1/hnomet.Integral())
+    except ZeroDivisionError:
+        pass
+
+    hnomet.Draw('colz');
     #hnomet.SetFillColor(4);
 
     c.cd()
-    pad3 = ROOT.TPad('pad3', 'pad3', 0.67, 0.0, 1.0, 1.0)
-    pad3.SetFrameLineWidth(3)
+    pad3 = ROOT.TPad('pad3', 'pad3', 0.66, 0.0, 1.0, 1.0)
+    pad3.SetFrameLineWidth(1)
     pad3.SetLeftMargin(0.0);
-    pad3.SetRightMargin(0.0);
+    pad3.SetRightMargin(0.15);
     pad3.SetBottomMargin(0.1);
     pad3.SetTopMargin(0.055);
     pad3.Draw()
     pad3.cd()
 
-    hmetwithcut.GetXaxis().SetTitle(two_vars[0]);
-    hmetwithcut.GetYaxis().SetTitle(two_vars[1]);
-    hmetwithcut.GetXaxis().SetTitleSize(0.045);
-    hmetwithcut.GetYaxis().SetTitleSize(0.045);
-    hmetwithcut.SetLineWidth(2);
-    hmetwithcut.SetLineColor(8);
-    hmetwithcut.Draw('hist colz same');
-    #hmetwithcut.SetFillColor(4);
+    hmetwithcut.GetXaxis().SetTitle(two_vars[0])
+    hmetwithcut.GetYaxis().SetTitle(two_vars[1])
+    hmetwithcut.GetXaxis().SetTitleSize(0.045)
+    hmetwithcut.GetYaxis().SetTitleSize(0.045)
+    hmetwithcut.SetLineWidth(2)
+    hmetwithcut.SetLineColor(8)
+
+    try:
+        hmetwithcut.Scale(1/hmetwithcut.Integral())
+    except ZeroDivisionError:
+        pass
+
+    hmetwithcut.Draw('colz')
 
     cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
@@ -449,9 +465,11 @@ if __name__ == '__main__':
                         help='Select the channel over which the workflow will be run.' )
     parser.add_argument('--plot_only', dest='plot_only', action='store_true',
                         help='Reuse previously produced data for quick plot changes.')
+    parser.add_argument('--plot_2D_only', dest='plot_2D_only', action='store_true',
+                        help='Reuse previously produced data for quick plot changes.')
     args = utils.parse_args(parser)
 
-    if not args.plot_only:
+    if not args.plot_only and not args.plot_2D_only:
         pool = multiprocessing.Pool(processes=4)    
         pool.starmap(test_met, zip(it.repeat(args.indir), args.samples,
                                    it.repeat(args.channel), it.repeat(args.plot_only)))
@@ -466,20 +484,25 @@ if __name__ == '__main__':
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
         for cat in categories:
-            for v in variables:
-                hMET = f_in.Get('hMET_' + v + '_' + cat)
-                hNoMET = f_in.Get('hNoMET_' + v + '_' + cat)
-                hMETWithCut = f_in.Get('hMETWithCut_' + v + '_' + cat)
-                plot(hMET, hNoMET, hMETWithCut, v, args.channel, sample, cat, from_directory)
-            for v in variables_2D:
-                hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
-                hNoMET_2D = f_in.Get('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
-                hMETWithCut_2D = f_in.Get('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
-                plot2D(hMET_2D, hNoMET_2D, hMETWithCut_2D, v, args.channel, sample, cat, from_directory)
+            if not args.plot_2D_only:
+                for v in variables:
+                    hMET = f_in.Get('hMET_' + v + '_' + cat)
+                    hNoMET = f_in.Get('hNoMET_' + v + '_' + cat)
+                    hMETWithCut = f_in.Get('hMETWithCut_' + v + '_' + cat)
+                    plot(hMET, hNoMET, hMETWithCut, v, args.channel, sample, cat, from_directory)
+            if args.plot_2D_only:
+                for v in variables_2D:
+                    hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
+                    hNoMET_2D = f_in.Get('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
+                    hMETWithCut_2D = f_in.Get('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
+                    plot2D(hMET_2D, hNoMET_2D, hMETWithCut_2D, v, args.channel, sample, cat, from_directory)
         f_in.Close()
 
     import subprocess
-    to_directory = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors/MET_Histograms/')
-    utils.create_single_dir(to_directory)    
-    subprocess.run(['cp', '-r', from_directory, to_directory])
-    print('Pictures copied to {}.'.format(to_directory), flush=True)
+    to_directory = '/eos/user/b/bfontana/www/TriggerScaleFactors/MET_Histograms/'
+    to_directory = os.path.join(to_directory, args.channel)
+    for sample in args.samples:
+        print('Copying: {}\t\t--->\t{}'.format(sample_from, to_directory), flush=True)
+        sample_from = os.path.join(from_directory, sample)
+        subprocess.run(['rsync', '-ah', sample_from, to_directory])
+    print('Done.')
