@@ -168,96 +168,121 @@ def set_plot_definitions():
            }
     return ret
     
-def plot(hmet, hnomet, hmetwithcut, var, channel, sample, category, directory):
+def plot(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
     defs = set_plot_definitions()
-    c1 = ROOT.TCanvas('c1', '', 600, 400)
-    c2 = ROOT.TCanvas('c2', '', 600, 400)
-    c2.cd()
-   
+    cat_folder = os.path.join(directory, sample, category)
+    utils.create_single_dir(cat_folder)
     
-    pad = ROOT.TPad('pad', 'pad', 0., 0., 1., 1.)
-    pad.SetFrameLineWidth(defs['FrameLineWidth'])
+    hmet2 = hmet.Clone('hmet2')
+    hnomet2 = hnomet.Clone('hnomet2')
+    hmetcut2 = hmetcut.Clone('hmetcut2')
 
-    selBox = ROOT.TLatex(0.5, 0.5, category)
-    selBox.SetNDC()
-    selBox.SetTextSize(defs['BoxTextSize'])
-    selBox.SetTextFont(defs['BoxTextFont'])
-    selBox.SetTextColor(defs['BoxTextColor'])
-    selBox.SetTextAlign(13)
-    selBox.Draw('same')
+    c1 = ROOT.TCanvas('c1', '', 600, 400)
+    c1.cd()
     
-    hmet.GetXaxis().SetTitleSize(defs['XTitleSize']);
-    hmet.GetXaxis().SetTitle(var + ' [GeV]');
-    hmet.GetYaxis().SetTitleSize(defs['YTitleSize']);
-    hmet.GetYaxis().SetTitle('Normalized to 1');
-    hmet.SetLineWidth(defs['LineWidth']);
-    hmet.SetLineColor(8);
+    # selBox = ROOT.TLatex(0.5, 0.5, category)
+    # selBox.SetNDC()
+    # selBox.SetTextSize(defs['BoxTextSize'])
+    # selBox.SetTextFont(defs['BoxTextFont'])
+    # selBox.SetTextColor(defs['BoxTextColor'])
+    # selBox.SetTextAlign(13)
+    # selBox.Draw('same')
+    
+    # Absolute shapes    
+    max_met   = hmet.GetMaximum() + (hmet.GetMaximum()-hmet.GetMinimum())/5.
+    max_nomet = hnomet.GetMaximum() + (hnomet.GetMaximum()-hnomet.GetMinimum())/5.
+    max_cut   = hmetcut.GetMaximum() + (hmetcut.GetMaximum()-hmetcut.GetMinimum())/5.
+    hmet.SetMaximum( max(max_met, max_nomet, max_cut) )
+
+    hmetcut.GetXaxis().SetTitleSize(defs['XTitleSize']);
+    hmetcut.GetXaxis().SetTitle(var + ' [GeV]');
+    hmetcut.GetYaxis().SetTitleSize(defs['YTitleSize']);
+    hmetcut.GetYaxis().SetTitle('a. u.');
+    hmetcut.SetLineWidth(defs['LineWidth']);
+    hmetcut.SetLineColor(8);
 
     hnomet.SetLineWidth(2);
     hnomet.SetLineColor(4);
-    hmetwithcut.SetLineWidth(2);
-    hmetwithcut.SetLineColor(2);
+    hmetcut.SetLineWidth(2);
+    hmetcut.SetLineColor(2);
 
-    # Absolute shapes
+    #hmet.Draw('hist')
+    hmetcut.Add(hnomet)
+    hmetcut.SetFillColor(2)
+    hmetcut.Draw('hist')
+    hnomet.SetFillColor(4)
+    hnomet.Draw('histsame')
+
     leg = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
     leg.SetNColumns(1)
     leg.SetFillStyle(0)
     leg.SetBorderSize(0)
     leg.SetTextFont(43)
     leg.SetTextSize(10)
-    leg.AddEntry(hmet, 'MET')
-    leg.AddEntry(hmetwithcut, 'Met + Cut')
+    #leg.AddEntry(hmet, 'MET')
+    leg.AddEntry(hmetcut, 'Met + Cut')
     leg.AddEntry(hnomet, '+\n'.join(triggers[channel]))
     leg.Draw('same')
-    
-    max_met   = hmet.GetMaximum() + (hmet.GetMaximum()-hmet.GetMinimum())/5.
-    max_nomet = hnomet.GetMaximum() + (hnomet.GetMaximum()-hnomet.GetMinimum())/5.
-    max_withcut = hmetwithcut.GetMaximum() + (hmetwithcut.GetMaximum()-hmetwithcut.GetMinimum())/5.
-    hmet.SetMaximum( max(max_met, max_nomet, max_withcut) )
 
-    hmet.Draw('hist')
-    hnomet.Draw('histsame')
-    hmetwithcut.Draw('histsame')
-
-    cat_folder = os.path.join(directory, sample, category)
-    utils.create_single_dir(cat_folder)
-    c2.Update();
-    for ext in ('png', 'pdf'):
-        c2.SaveAs( os.path.join(cat_folder, 'met_abs_' + var + '.' + ext) )
-    c2.Close()
-
-    # Normalized shapes
-    c1.cd()
-    try:
-        hmet.Scale(1/hmet.Integral())
-    except ZeroDivisionError:
-        pass
-    try:
-        hnomet.Scale(1/hnomet.Integral())
-    except ZeroDivisionError:
-        pass
-    try:
-        hmetwithcut.Scale(1/hmetwithcut.Integral())
-    except ZeroDivisionError:
-        pass
-
-    max_met   = hmet.GetMaximum() + (hmet.GetMaximum()-hmet.GetMinimum())/5.
-    max_nomet = hnomet.GetMaximum() + (hnomet.GetMaximum()-hnomet.GetMinimum())/5.
-    max_withcut = hmetwithcut.GetMaximum() + (hmetwithcut.GetMaximum()-hmetwithcut.GetMinimum())/5.
-    hmet.SetMaximum( max(max_met, max_nomet, max_withcut) )
-
-    hmet.Draw('hist')
-    hnomet.Draw('histsame')
-    hmetwithcut.Draw('histsame')
-
-    leg.Draw('same')
-    
     c1.Update();
     for ext in ('png', 'pdf'):
-        c1.SaveAs( os.path.join(cat_folder, 'met_' + var + '.' + ext) )
+        c1.SaveAs( os.path.join(cat_folder, 'met_abs_' + var + '.' + ext) )
     c1.Close()
 
-def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, directory):
+    # Normalized shapes
+    c2 = ROOT.TCanvas('c2', '', 600, 400)
+    c2.cd()
+    try:
+        hmet2.Scale(1/hmet2.Integral())
+    except ZeroDivisionError:
+        pass
+    try:
+        hnomet2.Scale(1/hnomet2.Integral())
+    except ZeroDivisionError:
+        pass
+    try:
+        hmetcut2.Scale(1/hmetcut2.Integral())
+    except ZeroDivisionError:
+        pass
+
+    max_met2   = hmet2.GetMaximum() + (hmet2.GetMaximum()-hmet2.GetMinimum())/5.
+    max_nomet2 = hnomet2.GetMaximum() + (hnomet2.GetMaximum()-hnomet2.GetMinimum())/5.
+    max_cut2   = hmetcut2.GetMaximum() + (hmetcut2.GetMaximum()-hmetcut2.GetMinimum())/5.
+    hmet2.SetMaximum( max(max_met2, max_nomet2, max_cut2) )
+
+    hmet2.GetXaxis().SetTitleSize(defs['XTitleSize']);
+    hmet2.GetXaxis().SetTitle(var + ' [GeV]');
+    hmet2.GetYaxis().SetTitleSize(defs['YTitleSize']);
+    hmet2.GetYaxis().SetTitle('Normalized to 1');
+    hmet2.SetLineWidth(defs['LineWidth']);
+    hmet2.SetLineColor(8);
+
+    hnomet2.SetLineWidth(2);
+    hnomet2.SetLineColor(4);
+    hmetcut2.SetLineWidth(2);
+    hmetcut2.SetLineColor(2);
+
+    hmet2.Draw('hist')
+    hnomet2.Draw('histsame')
+    hmetcut2.Draw('histsame')
+
+    leg2 = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
+    leg2.SetNColumns(1)
+    leg2.SetFillStyle(0)
+    leg2.SetBorderSize(0)
+    leg2.SetTextFont(43)
+    leg2.SetTextSize(10)
+    leg2.AddEntry(hmet2, 'MET')
+    leg2.AddEntry(hmetcut2, 'Met + Cut')
+    leg2.AddEntry(hnomet2, '+\n'.join(triggers[channel]))
+    leg2.Draw('same')
+    
+    c2.Update();
+    for ext in ('png', 'pdf'):
+        c2.SaveAs( os.path.join(cat_folder, 'met_' + var + '.' + ext) )
+    c2.Close()
+
+def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory):
     defs = set_plot_definitions()    
     c = ROOT.TCanvas('c', '', 600, 400)
 
@@ -273,8 +298,8 @@ def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, direc
 
     hmet.GetXaxis().SetTitle('')
     hmet.GetYaxis().SetTitle(two_vars[1])
-    hmetwithcut.GetYaxis().SetTitleSize(0.045)
-    hmetwithcut.GetYaxis().SetTitle(two_vars[1])
+    hmetcut.GetYaxis().SetTitleSize(0.045)
+    hmetcut.GetYaxis().SetTitle(two_vars[1])
     try:
         hmet.Scale(1/hmet.Integral())
     except ZeroDivisionError:
@@ -309,13 +334,13 @@ def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, direc
     pad3.Draw()
     pad3.cd()
 
-    hmetwithcut.GetXaxis().SetTitle(two_vars[0])
-    hmetwithcut.GetXaxis().SetTitleSize(0.045)
+    hmetcut.GetXaxis().SetTitle(two_vars[0])
+    hmetcut.GetXaxis().SetTitleSize(0.045)
     try:
-        hmetwithcut.Scale(1/hmetwithcut.Integral())
+        hmetcut.Scale(1/hmetcut.Integral())
     except ZeroDivisionError:
         pass
-    hmetwithcut.Draw('colz')
+    hmetcut.Draw('colz')
 
     cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
