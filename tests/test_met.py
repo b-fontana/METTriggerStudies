@@ -170,8 +170,10 @@ def set_plot_definitions():
     
 def plot(hmet, hnomet, hmetwithcut, var, channel, sample, category, directory):
     defs = set_plot_definitions()
-    c = ROOT.TCanvas('c', '', 600, 400)
-    c.cd()
+    c1 = ROOT.TCanvas('c1', '', 600, 400)
+    c2 = ROOT.TCanvas('c2', '', 600, 400)
+    c2.cd()
+   
     
     pad = ROOT.TPad('pad', 'pad', 0., 0., 1., 1.)
     pad.SetFrameLineWidth(defs['FrameLineWidth'])
@@ -196,6 +198,36 @@ def plot(hmet, hnomet, hmetwithcut, var, channel, sample, category, directory):
     hmetwithcut.SetLineWidth(2);
     hmetwithcut.SetLineColor(2);
 
+    # Absolute shapes
+    leg = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
+    leg.SetNColumns(1)
+    leg.SetFillStyle(0)
+    leg.SetBorderSize(0)
+    leg.SetTextFont(43)
+    leg.SetTextSize(10)
+    leg.AddEntry(hmet, 'MET')
+    leg.AddEntry(hmetwithcut, 'Met + Cut')
+    leg.AddEntry(hnomet, '+\n'.join(triggers[channel]))
+    leg.Draw('same')
+    
+    max_met   = hmet.GetMaximum() + (hmet.GetMaximum()-hmet.GetMinimum())/5.
+    max_nomet = hnomet.GetMaximum() + (hnomet.GetMaximum()-hnomet.GetMinimum())/5.
+    max_withcut = hmetwithcut.GetMaximum() + (hmetwithcut.GetMaximum()-hmetwithcut.GetMinimum())/5.
+    hmet.SetMaximum( max(max_met, max_nomet, max_withcut) )
+
+    hmet.Draw('hist')
+    hnomet.Draw('histsame')
+    hmetwithcut.Draw('histsame')
+
+    cat_folder = os.path.join(directory, sample, category)
+    utils.create_single_dir(cat_folder)
+    c2.Update();
+    for ext in ('png', 'pdf'):
+        c2.SaveAs( os.path.join(cat_folder, 'met_abs_' + var + '.' + ext) )
+    c2.Close()
+
+    # Normalized shapes
+    c1.cd()
     try:
         hmet.Scale(1/hmet.Integral())
     except ZeroDivisionError:
@@ -218,23 +250,12 @@ def plot(hmet, hnomet, hmetwithcut, var, channel, sample, category, directory):
     hnomet.Draw('histsame')
     hmetwithcut.Draw('histsame')
 
-    leg = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
-    leg.SetNColumns(1)
-    leg.SetFillStyle(0)
-    leg.SetBorderSize(0)
-    leg.SetTextFont(43)
-    leg.SetTextSize(10)
-    leg.AddEntry(hmet, 'MET')
-    leg.AddEntry(hmetwithcut, 'Met + Cut')
-    leg.AddEntry(hnomet, '+\n'.join(triggers[channel]))
     leg.Draw('same')
-
-    cat_folder = os.path.join(directory, sample, category)
-    utils.create_single_dir(cat_folder)
-    c.Update();
+    
+    c1.Update();
     for ext in ('png', 'pdf'):
-        c.SaveAs( os.path.join(cat_folder, 'met_' + var + '.' + ext) )
-    c.Close()
+        c1.SaveAs( os.path.join(cat_folder, 'met_' + var + '.' + ext) )
+    c1.Close()
 
 def plot2D(hmet, hnomet, hmetwithcut, two_vars, channel, sample, category, directory):
     defs = set_plot_definitions()    
