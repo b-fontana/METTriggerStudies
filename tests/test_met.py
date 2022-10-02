@@ -17,8 +17,12 @@ from inclusion.utils import utils
 
 import ROOT
 
-def get_outname(sample, channel):
-    return 'met_{}_{}.root'.format(sample, channel)
+def get_outname(suffix, ext):
+    if ext == 'csv':
+        s = 'counts_{}/table.csv'.format(suffix)
+    else:
+        s = 'met_{}.{}'.format(suffix, ext)
+    return s
 
 def check_bit(bitpos, bit):
     bitdigit = 1
@@ -221,7 +225,7 @@ def plot(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
     leg.SetTextSize(10)
     #leg.AddEntry(hmet, 'MET')
     leg.AddEntry(hmetcut, 'Met + Cut')
-    leg.AddEntry(hnomet, '+\n'.join(triggers[channel]))
+    leg.AddEntry(hnomet, '+'.join(triggers[channel]))
     leg.Draw('same')
 
     c1.Update();
@@ -349,8 +353,41 @@ def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory
         c.SaveAs( os.path.join(cat_folder, 'met_' + '_VS_'.join(two_vars) + '.' + ext) )
     c.Close()
 
+def count(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
+    cat_folder = os.path.join(directory, sample, category)
+
+    def calc_frac(c1, c2):
+        try:
+            frac = c2 / (c1 + c2)
+        except ZeroDivisionError:
+            frac = 0
+        return frac * 100
+
+    totmet, totnomet, totmetcut = (0. for _ in range(3))
+    name = os.path.join(cat_folder, get_outname(suffix=var, ext='csv'))
+    utils.create_single_dir(os.path.dirname(name))
+
+    with open(name, 'w') as f:
+        f.write(','.join(('Bin label', 'MET', 'MET + Cut', 'Trigger baseline (no MET)', 'Fraction [%]: {[MET + Cut] / [Trigger baseline]} + 1\n')))
+        for ibin in range(1, hmet.GetNbinsX()+1):
+            label = str(hmet.GetXaxis().GetBinLowEdge(ibin)) + ' / ' + str(hmet.GetXaxis().GetBinLowEdge(ibin+1))
+            cmet = hmet.GetBinContent(ibin)
+            cnomet = hnomet.GetBinContent(ibin)
+            cmetcut = hmetcut.GetBinContent(ibin)
+            assert cmet >= cmetcut
+            
+            frac  = calc_frac(cnomet, cmetcut)
+            f.write(','.join((label, str(round(cmet,2)), str(round(cmetcut,2)), str(round(cnomet,2)), str(round(frac,2)))) + '\n')
+
+            totmet += cmet
+            totnomet += cnomet
+            totmetcut += cmetcut
+
+        totfrac  = calc_frac(totnomet, totmetcut)
+        f.write(','.join(('Total', str(round(totmet,2)), str(round(totmetcut,2)), str(round(totnomet,2)), str(totfrac))) + '\n')
+
 def test_met(indir, sample, channel, plot_only):
-    outname = get_outname(sample, channel)
+    outname = get_outname(suffix=sample+'_'+channel, ext='root')
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
     elif channel == 'tautau':
@@ -510,7 +547,7 @@ if __name__ == '__main__':
 
     from_directory = os.path.join('MET_Histograms', args.channel)
     for sample in args.samples:
-        outname = get_outname(sample, args.channel)
+        outname = get_outname(suffix=sample+'_'+args.channel, ext='root')
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
         for cat in categories:
@@ -519,13 +556,19 @@ if __name__ == '__main__':
                     hMET = f_in.Get('hMET_' + v + '_' + cat)
                     hNoMET = f_in.Get('hNoMET_' + v + '_' + cat)
                     hMETWithCut = f_in.Get('hMETWithCut_' + v + '_' + cat)
-                    plot(hMET, hNoMET, hMETWithCut, v, args.channel, sample, cat, from_directory)
 
+                    hMET_c = hMET.Clone('hMET_' + v + '_' + cat + '_c')
+                    hNoMET_c = hNoMET.Clone('hNoMET_' + v + '_' + cat + '_c')
+                    hMETWithCut_c = hMETWithCut.Clone('hMETWithCut_' + v + '_' + cat + '_c')
+
+                    #plot(hMET, hNoMET, hMETWithCut, v, args.channel, sample, cat, from_directory)
+                    count(hMET_c, hNoMET_c, hMETWithCut_c, v, args.channel, sample, cat, from_directory)
+                    
             for v in variables_2D:
                 hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
                 hNoMET_2D = f_in.Get('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
                 hMETWithCut_2D = f_in.Get('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
-                plot2D(hMET_2D, hNoMET_2D, hMETWithCut_2D, v, args.channel, sample, cat, from_directory)
+                #plot2D(hMET_2D, hNoMET_2D, hMETWithCut_2D, v, args.channel, sample, cat, from_directory)
         f_in.Close()
 
     import subprocess
