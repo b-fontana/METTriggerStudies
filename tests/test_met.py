@@ -363,7 +363,6 @@ def count(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
             frac = 0
         return frac * 100
 
-    totmet, totnomet, totmetcut = (0. for _ in range(3))
     name = os.path.join(cat_folder, get_outname(suffix=var, ext='csv'))
     utils.create_single_dir(os.path.dirname(name))
 
@@ -375,13 +374,13 @@ def count(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
             cnomet = hnomet.GetBinContent(ibin)
             cmetcut = hmetcut.GetBinContent(ibin)
             assert cmet >= cmetcut
-            
+
             frac  = calc_frac(cnomet, cmetcut)
             f.write(','.join((label, str(round(cmet,2)), str(round(cmetcut,2)), str(round(cnomet,2)), str(round(frac,2)))) + '\n')
 
-            totmet += cmet
-            totnomet += cnomet
-            totmetcut += cmetcut
+        totmet = hmet.Integral(0,hmet.GetNbinsX()+1)
+        totnomet = hnomet.Integral(0,hnomet.GetNbinsX()+1)
+        totmetcut = hmetcut.Integral(0,hmetcut.GetNbinsX()+1)
 
         totfrac  = calc_frac(totnomet, totmetcut)
         f.write(','.join(('Total', str(round(totmet,2)), str(round(totmetcut,2)), str(round(totnomet,2)), str(totfrac))) + '\n')
@@ -524,15 +523,15 @@ if __name__ == '__main__':
     # Parse input arguments
     parser = argparse.ArgumentParser(description='Producer trigger histograms.')
 
-    parser.add_argument('--indir', dest='indir', required=True, type=str,
+    parser.add_argument('--indir', required=True, type=str,
                         help='Full path of ROOT input file')
-    parser.add_argument('--samples', dest='samples', required=True, nargs='+', type=str,
+    parser.add_argument('--samples', required=True, nargs='+', type=str,
                         help='Full path of ROOT input file')
-    parser.add_argument('--channel', dest='channel', required=True, type=str,  
+    parser.add_argument('--channel', required=True, type=str,  
                         help='Select the channel over which the workflow will be run.' )
-    parser.add_argument('--plot_only', dest='plot_only', action='store_true',
+    parser.add_argument('--plot_only', action='store_true',
                         help='Reuse previously produced data for quick plot changes.')
-    parser.add_argument('--plot_2D_only', dest='plot_2D_only', action='store_true',
+    parser.add_argument('--plot_2D_only', action='store_true',
                         help='Reuse previously produced data for quick plot changes.')
     args = utils.parse_args(parser)
 
@@ -561,14 +560,14 @@ if __name__ == '__main__':
                     hNoMET_c = hNoMET.Clone('hNoMET_' + v + '_' + cat + '_c')
                     hMETWithCut_c = hMETWithCut.Clone('hMETWithCut_' + v + '_' + cat + '_c')
 
-                    #plot(hMET, hNoMET, hMETWithCut, v, args.channel, sample, cat, from_directory)
+                    plot(hMET, hNoMET, hMETWithCut, v, args.channel, sample, cat, from_directory)
                     count(hMET_c, hNoMET_c, hMETWithCut_c, v, args.channel, sample, cat, from_directory)
                     
             for v in variables_2D:
                 hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
                 hNoMET_2D = f_in.Get('hNoMET_2D_' + '_'.join(v)+'_'+ cat)
                 hMETWithCut_2D = f_in.Get('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
-                #plot2D(hMET_2D, hNoMET_2D, hMETWithCut_2D, v, args.channel, sample, cat, from_directory)
+                plot2D(hMET_2D, hNoMET_2D, hMETWithCut_2D, v, args.channel, sample, cat, from_directory)
         f_in.Close()
 
     import subprocess
