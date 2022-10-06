@@ -17,11 +17,11 @@ from inclusion.utils import utils
 
 import ROOT
 
-def get_outname(suffix, ext):
+def get_outname(suffix, met_cut, ext):
     if ext == 'csv':
-        s = 'counts_{}/table.csv'.format(suffix)
+        s = 'counts_{}_{}/table.csv'.format(suffix, met_cut)
     else:
-        s = 'met_{}.{}'.format(suffix, ext)
+        s = 'met_{}_{}.{}'.format(suffix, met_cut, ext)
     return s
 
 def check_bit(bitpos, bit):
@@ -234,7 +234,7 @@ def plot(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
 
     c1.Update();
     for ext in ('png', 'pdf'):
-        c1.SaveAs( os.path.join(cat_folder, 'met_abs_' + var + '.' + ext) )
+        c1.SaveAs( os.path.join(cat_folder, 'met_abs_' + var + '_' + str(met_cut) + '.' + ext) )
     c1.Close()
 
     # Normalized shapes
@@ -287,7 +287,7 @@ def plot(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
     
     c2.Update();
     for ext in ('png', 'pdf'):
-        c2.SaveAs( os.path.join(cat_folder, 'met_' + var + '.' + ext) )
+        c2.SaveAs( os.path.join(cat_folder, 'met_' + var + '_' + str(met_cut) + '.' + ext) )
     c2.Close()
 
 def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory):
@@ -358,7 +358,7 @@ def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory
     utils.create_single_dir(cat_folder)
     c.Update();
     for ext in ('png', 'pdf'):
-        c.SaveAs( os.path.join(cat_folder, 'met_' + '_VS_'.join(two_vars) + '.' + ext) )
+        c.SaveAs( os.path.join(cat_folder, 'met_' + '_VS_'.join(two_vars) + '_' + str(met_cut) + '.' + ext) )
     c.Close()
 
 def count(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
@@ -371,7 +371,7 @@ def count(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
             frac = 0
         return frac * 100
 
-    name = os.path.join(cat_folder, get_outname(suffix=var, ext='csv'))
+    name = os.path.join(cat_folder, get_outname(suffix=var, met_cut=str(met_cut), ext='csv'))
     utils.create_single_dir(os.path.dirname(name))
 
     with open(name, 'w') as f:
@@ -394,7 +394,7 @@ def count(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
         f.write(','.join(('Total', str(round(totmet,2)), str(round(totmetcut,2)), str(round(totnomet,2)), str(round(totfrac,2)))) + '\n')
 
 def test_met(indir, sample, channel, plot_only):
-    outname = get_outname(suffix=sample+'_'+channel, ext='root')
+    outname = get_outname(suffix=sample+'_'+channel, met_cut=str(met_cut), ext='root')
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
     elif channel == 'tautau':
@@ -526,7 +526,7 @@ if __name__ == '__main__':
     variables = tuple(binning.keys()) + ('HHKin_mass', 'dau1_iso')
     variables_2D = (('dau1_pt', 'dau2_pt'), ('dau1_iso', 'dau2_iso'))
     categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
-    met_cut = 200
+    met_cut = 180
     
     # Parse input arguments
     parser = argparse.ArgumentParser(description='Producer trigger histograms.')
@@ -552,9 +552,9 @@ if __name__ == '__main__':
     #     for sample in args.samples:
     #         test_met(args.indir, sample, args.channel, args.plot_only)
 
-    from_directory = os.path.join('MET_Histograms', args.channel)
+    from_directory = os.path.join('MET_Histograms_'+str(met_cut), args.channel)
     for sample in args.samples:
-        outname = get_outname(suffix=sample+'_'+args.channel, ext='root')
+        outname = get_outname(suffix=sample+'_'+args.channel, met_cut=str(met_cut), ext='root')
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
         for cat in categories:
@@ -579,7 +579,7 @@ if __name__ == '__main__':
         f_in.Close()
 
     import subprocess
-    to_directory = '/eos/user/b/bfontana/www/TriggerScaleFactors/MET_Histograms/'
+    to_directory = '/eos/user/b/bfontana/www/TriggerScaleFactors/MET_Histograms_'+str(met_cut)+'/'
     to_directory = os.path.join(to_directory, args.channel)
     for sample in args.samples:
         sample_from = os.path.join(from_directory, sample)
