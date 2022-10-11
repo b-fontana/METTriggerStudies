@@ -103,7 +103,7 @@ def build_histograms(args):
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
 
-        sel = selection.EventSelection(entries, args.dataset, args.isdata, configuration=config_module)
+        sel = selection.EventSelection(entries, isdata=True, configuration=config_module)
         
         #mcweight   = entries.MC_weight
         pureweight = entries.PUReweight
@@ -172,11 +172,11 @@ def build_histograms(args):
                     for tcomb in triggercomb[chn]:
                         cstr = joinNTC(tcomb)
 
-                        if not sel.check_inters_with_dataset(tcomb, chn):
+                        if not sel.check_inters_with_dataset(tcomb, chn, args.dataset):
                             continue
                         if not sel.dataset_cuts(tcomb, chn):
                             continue
-                        if not sel.dataset_triggers(tcomb, chn, args.triggers)[0]:
+                        if not sel.dataset_triggers(tcomb, chn, args.triggers, args.dataset)[0]:
                             continue
 
                         hRef[chn][j][cstr].Fill(fill_var[j][chn], evt_weight)

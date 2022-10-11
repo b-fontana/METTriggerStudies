@@ -12,152 +12,155 @@ import multiprocessing
 import itertools as it
 
 import inclusion
+from inclusion import selection
 from inclusion.config import main
 from inclusion.utils import utils
 
 import ROOT
 
-def get_outname(suffix, met_cut, ext):
+def get_outname(suffix, mode, cut, ext):
+    pref = {'met': 'MET', 'tau': 'Tau', 'met_tau': 'MET_and_Tau'}
+    assert mode in list(pref.keys())
     if ext == 'csv':
-        s = 'counts_{}_{}/table.csv'.format(suffix, met_cut)
+        s = 'counts_{}_{}_{}/table.csv'.format(suffix, pref[mode], cut)
     else:
-        s = 'met_{}_{}.{}'.format(suffix, met_cut, ext)
+        s = 'met_{}_{}_{}.{}'.format(suffix, pref[mode], cut, ext)
     return s
 
-def check_bit(bitpos, bit):
-    bitdigit = 1
-    res = bool(bit&(bitdigit<<bitpos))
-    return res
+# def check_bit(bitpos, bit):
+#     bitdigit = 1
+#     res = bool(bit&(bitdigit<<bitpos))
+#     return res
 
-def get_trigger_bit(trigger_name):
-    """
-    Returns the trigger bit corresponding to 'main.trig_map'
-    """
-    res = main.trig_map[trigger_name]
-    try:
-        res = res['mc']
-    except KeyError:
-        print('You likely forgot to add your custom trigger to `main.trig_custom`.')
-        raise
-    return res
+# def get_trigger_bit(trigger_name):
+#     """
+#     Returns the trigger bit corresponding to 'main.trig_map'
+#     """
+#     res = main.trig_map[trigger_name]
+#     try:
+#         res = res['mc']
+#     except KeyError:
+#         print('You likely forgot to add your custom trigger to `main.trig_custom`.')
+#         raise
+#     return res
 
-def pass_triggers(trigs, bit):
-    """
-    Internal only function.
-    Checks at least one trigger was fired.
-    """
-    flag = False
-    for trig in trigs:
-        if trig in main.trig_custom:
-            flag = set_custom_trigger_bit(trig, bit)
-        else:
-            flag = check_bit(get_trigger_bit(trig), bit)
-        if flag:
-            return True
-    return False    
+# def pass_triggers(trigs, bit):
+#     """
+#     Internal only function.
+#     Checks at least one trigger was fired.
+#     """
+#     flag = False
+#     for trig in trigs:
+#         if trig in main.trig_custom:
+#             flag = set_custom_trigger_bit(trig, bit)
+#         else:
+#             flag = check_bit(get_trigger_bit(trig), bit)
+#         if flag:
+#             return True
+#     return False    
 
-def set_custom_trigger_bit(trigger, bit):
-    """
-    The VBF trigger was updated during data taking, adding HPS
-    https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger
-    """
-    if trigger not in main.trig_custom:
-        import inspect
-        currentFunction = inspect.getframeinfo(frame).function
-        raise ValueError('[{}] option not supported.'.format(currentFunction))
+# def set_custom_trigger_bit(trigger, bit):
+#     """
+#     The VBF trigger was updated during data taking, adding HPS
+#     https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger
+#     """
+#     if trigger not in main.trig_custom:
+#         import inspect
+#         currentFunction = inspect.getframeinfo(frame).function
+#         raise ValueError('[{}] option not supported.'.format(currentFunction))
 
-    if trigger == 'VBFTauCustom':
-        bits = check_bit(main.trig_map[trigger]['VBFTauHPS']['mc'], bit)
-    elif trigger == 'IsoDoubleTauCustom':
-        bits = check_bit(main.trig_map[trigger]['IsoDoubleTauHPS']['mc'], bit)
-    elif trigger == 'IsoMuIsoTauCustom':
-        bits = check_bit(main.trig_map[trigger]['IsoMuIsoTauHPS']['mc'], bit)
-    elif trigger == 'EleIsoTauCustom':
-        bits = check_bit(main.trig_map[trigger]['EleIsoTauHPS']['mc'], bit)
+#     if trigger == 'VBFTauCustom':
+#         bits = check_bit(main.trig_map[trigger]['VBFTauHPS']['mc'], bit)
+#     elif trigger == 'IsoDoubleTauCustom':
+#         bits = check_bit(main.trig_map[trigger]['IsoDoubleTauHPS']['mc'], bit)
+#     elif trigger == 'IsoMuIsoTauCustom':
+#         bits = check_bit(main.trig_map[trigger]['IsoMuIsoTauHPS']['mc'], bit)
+#     elif trigger == 'EleIsoTauCustom':
+#         bits = check_bit(main.trig_map[trigger]['EleIsoTauHPS']['mc'], bit)
 
-    return bits
+#     return bits
 
-def sel_category(entries, category):
-    btagLL = entries.bjet1_bID_deepFlavor > 0.0490 and entries.bjet2_bID_deepFlavor > 0.0490
-    btagM  = ((entries.bjet1_bID_deepFlavor > 0.2783 and entries.bjet2_bID_deepFlavor < 0.2783) or
-              (entries.bjet1_bID_deepFlavor < 0.2783 and entries.bjet2_bID_deepFlavor > 0.2783))
-    btagMM = entries.bjet1_bID_deepFlavor > 0.2783 and entries.bjet2_bID_deepFlavor > 0.2783
+# def sel_category(entries, category):
+#     btagLL = entries.bjet1_bID_deepFlavor > 0.0490 and entries.bjet2_bID_deepFlavor > 0.0490
+#     btagM  = ((entries.bjet1_bID_deepFlavor > 0.2783 and entries.bjet2_bID_deepFlavor < 0.2783) or
+#               (entries.bjet1_bID_deepFlavor < 0.2783 and entries.bjet2_bID_deepFlavor > 0.2783))
+#     btagMM = entries.bjet1_bID_deepFlavor > 0.2783 and entries.bjet2_bID_deepFlavor > 0.2783
 
-    common = not (entries.isVBF == 1 and entries.VBFjj_mass > 500 and entries.VBFjj_deltaEta > 3 and
-                  (entries.bjet1_bID_deepFlavor > 0.2783 or entries.bjet2_bID_deepFlavor > 0.2783))
+#     common = not (entries.isVBF == 1 and entries.VBFjj_mass > 500 and entries.VBFjj_deltaEta > 3 and
+#                   (entries.bjet1_bID_deepFlavor > 0.2783 or entries.bjet2_bID_deepFlavor > 0.2783))
 
-    if category == 'baseline':
-        specific = True
-    elif category == 's1b1jresolvedMcut':
-        specific = entries.isBoosted != 1 and btagM
-    elif category == 's2b0jresolvedMcut':
-        specific = entries.isBoosted != 1 and btagMM
-    elif category == 'sboostedLLMcut':
-        specific = entries.isBoosted == 1 and btagLL
+#     if category == 'baseline':
+#         specific = True
+#     elif category == 's1b1jresolvedMcut':
+#         specific = entries.isBoosted != 1 and btagM
+#     elif category == 's2b0jresolvedMcut':
+#         specific = entries.isBoosted != 1 and btagMM
+#     elif category == 'sboostedLLMcut':
+#         specific = entries.isBoosted == 1 and btagLL
 
-    return common and specific
+#     return common and specific
 
-def sel_cuts(entries, iso_cuts=dict(), lepton_veto=True,
-             bjets_cut=True, invert_mass_cut=True):
-        """
-        Applies selection cut to one event.
-        Returns `True` only if all selection cuts pass.
-        """
-        mhh = entries['HHKin_mass']
+# def sel_cuts(entries, iso_cuts=dict(), lepton_veto=True,
+#              bjets_cut=True, invert_mass_cut=True):
+#         """
+#         Applies selection cut to one event.
+#         Returns `True` only if all selection cuts pass.
+#         """
+#         mhh = entries['HHKin_mass']
 
-        # When one only has 0 or 1 bjet th HH mass is not well defined,
-        # and a value of -1 is assigned. One thus has to remove the cut below
-        # when considering events with less than 2 b-jets.
-        if mhh < 1 and bjets_cut:
-            return False
+#         # When one only has 0 or 1 bjet th HH mass is not well defined,
+#         # and a value of -1 is assigned. One thus has to remove the cut below
+#         # when considering events with less than 2 b-jets.
+#         if mhh < 1 and bjets_cut:
+#             return False
 
-        pairtype    = entries['pairType']
-        dau1_eleiso = entries['dau1_eleMVAiso']
-        dau1_muiso  = entries['dau1_iso']
-        dau1_tauiso = entries['dau1_deepTauVsJet']
-        dau2_tauiso = entries['dau2_deepTauVsJet']
+#         pairtype    = entries['pairType']
+#         dau1_eleiso = entries['dau1_eleMVAiso']
+#         dau1_muiso  = entries['dau1_iso']
+#         dau1_tauiso = entries['dau1_deepTauVsJet']
+#         dau2_tauiso = entries['dau2_deepTauVsJet']
 
-        # third lepton veto
-        nleps = entries['nleps']
-        if nleps > 0 and lepton_veto:
-            return False
+#         # third lepton veto
+#         nleps = entries['nleps']
+#         if nleps > 0 and lepton_veto:
+#             return False
 
-        # require at least two b jet candidates
-        nbjetscand = entries['nbjetscand']
-        if nbjetscand <= 1 and bjets_cut:
-            return False
+#         # require at least two b jet candidates
+#         nbjetscand = entries['nbjetscand']
+#         if nbjetscand <= 1 and bjets_cut:
+#             return False
 
-        # Loose / Medium / Tight
-        iso_allowed = { 'dau1_ele': 1., 'dau1_mu': 0.15,
-                        'dau1_tau': 5., 'dau2_tau': 5. }
-        if any(x not in iso_allowed for x in iso_cuts.keys()):
-            mes = 'At least one of the keys is not allowed. '
-            mes += 'Keys introduced: {}.'.format(iso_cuts.keys())
-            raise ValueError(mes)
+#         # Loose / Medium / Tight
+#         iso_allowed = { 'dau1_ele': 1., 'dau1_mu': 0.15,
+#                         'dau1_tau': 5., 'dau2_tau': 5. }
+#         if any(x not in iso_allowed for x in iso_cuts.keys()):
+#             mes = 'At least one of the keys is not allowed. '
+#             mes += 'Keys introduced: {}.'.format(iso_cuts.keys())
+#             raise ValueError(mes)
 
-        # setting to the defaults in case the user did not specify the values
-        for k, v in iso_allowed.items():
-            if k not in iso_cuts: iso_cuts[k] = v
+#         # setting to the defaults in case the user did not specify the values
+#         for k, v in iso_allowed.items():
+#             if k not in iso_cuts: iso_cuts[k] = v
         
-        bool0 = pairtype==0 and (dau1_muiso >= iso_cuts['dau1_mu'] or
-                                 dau2_tauiso < iso_cuts['dau2_tau'])
-        bool1 = pairtype==1 and (dau1_eleiso != iso_cuts['dau1_ele'] or
-                                 dau2_tauiso < iso_cuts['dau2_tau'])
-        bool2 = pairtype==2 and (dau1_tauiso < iso_cuts['dau1_tau'] or
-                                 dau2_tauiso < iso_cuts['dau2_tau'])
-        if bool0 or bool1 or bool2:
-            return False
+#         bool0 = pairtype==0 and (dau1_muiso >= iso_cuts['dau1_mu'] or
+#                                  dau2_tauiso < iso_cuts['dau2_tau'])
+#         bool1 = pairtype==1 and (dau1_eleiso != iso_cuts['dau1_ele'] or
+#                                  dau2_tauiso < iso_cuts['dau2_tau'])
+#         bool2 = pairtype==2 and (dau1_tauiso < iso_cuts['dau1_tau'] or
+#                                  dau2_tauiso < iso_cuts['dau2_tau'])
+#         if bool0 or bool1 or bool2:
+#             return False
 
-        #((tauH_SVFIT_mass-116.)*(tauH_SVFIT_mass-116.))/(35.*35.) + ((bH_mass_raw-111.)*(bH_mass_raw-111.))/(45.*45.) <  1.0
-        svfit_mass = entries['tauH_SVFIT_mass']
-        bh_mass    = entries['bH_mass_raw']
+#         #((tauH_SVFIT_mass-116.)*(tauH_SVFIT_mass-116.))/(35.*35.) + ((bH_mass_raw-111.)*(bH_mass_raw-111.))/(45.*45.) <  1.0
+#         svfit_mass = entries['tauH_SVFIT_mass']
+#         bh_mass    = entries['bH_mass_raw']
 
-        # mcut_outside = ((svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
-        #                 (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) > 1.0
-        # if mcut_outside: # inverted elliptical mass cut (-> ttCR)
-        #     return False
+#         # mcut_outside = ((svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
+#         #                 (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) > 1.0
+#         # if mcut_outside: # inverted elliptical mass cut (-> ttCR)
+#         #     return False
 
-        return True
+#         return True
 
 def set_plot_definitions():
     ROOT.gROOT.SetBatch(ROOT.kTRUE)
@@ -172,7 +175,16 @@ def set_plot_definitions():
            }
     return ret
     
-def plot(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
+def plot(mode, hmet, hnomet, hmetcut, var, channel, sample, category, directory):
+    legends = {'met': ['MET', 'MET + cut', 'met'],
+               'tau': ['Tau', 'Tau + cut', 'tau'],
+               'met_tau': ['MET + Tau', 'MET + Tau + both cuts', 'met_and_tau']}
+    cut_strings = {'met': str(met_cut),
+                   'tau': str(tau_cut),
+                   'met_tau': str(met_cut) + '_' + str(tau_cut)}
+
+    assert mode in list(legends.keys())
+    
     defs = set_plot_definitions()
     cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
@@ -187,15 +199,7 @@ def plot(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
 
     c1 = ROOT.TCanvas('c1', '', 600, 400)
     c1.cd()
-    
-    # selBox = ROOT.TLatex(0.5, 0.5, category)
-    # selBox.SetNDC()
-    # selBox.SetTextSize(defs['BoxTextSize'])
-    # selBox.SetTextFont(defs['BoxTextFont'])
-    # selBox.SetTextColor(defs['BoxTextColor'])
-    # selBox.SetTextAlign(13)
-    # selBox.Draw('same')
-    
+        
     # Absolute shapes    
     max_met   = hmet1.GetMaximum() + (hmet1.GetMaximum()-hmet1.GetMinimum())/5.
     max_nomet = hnomet1.GetMaximum() + (hnomet1.GetMaximum()-hnomet1.GetMinimum())/5.
@@ -228,13 +232,13 @@ def plot(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
     leg1.SetTextFont(43)
     leg1.SetTextSize(10)
     #leg1.AddEntry(hmet, 'MET')
-    leg1.AddEntry(hmetcut, 'Met + Cut')
-    leg1.AddEntry(hnomet, '+'.join(triggers[channel]))
+    leg1.AddEntry(hmetcut1, legends[mode][0])
+    leg1.AddEntry(hnomet1, '+'.join(triggers[channel]))
     leg1.Draw('same')
 
     c1.Update();
     for ext in ('png', 'pdf'):
-        c1.SaveAs( os.path.join(cat_folder, 'met_abs_' + var + '_' + str(met_cut) + '.' + ext) )
+        c1.SaveAs( os.path.join(cat_folder, legends[mode][2] + '_abs_' + var + '_' + cut_strings[mode] + '.' + ext) )
     c1.Close()
 
     # Normalized shapes
@@ -280,14 +284,14 @@ def plot(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
     leg2.SetBorderSize(0)
     leg2.SetTextFont(43)
     leg2.SetTextSize(10)
-    leg2.AddEntry(hmet2, 'MET')
-    leg2.AddEntry(hmetcut2, 'Met + Cut')
+    leg2.AddEntry(hmet2, legends[mode][0])
+    leg2.AddEntry(hmetcut2, legends[mode][1])
     leg2.AddEntry(hnomet2, '+\n'.join(triggers[channel]))
     leg2.Draw('same')
     
     c2.Update();
     for ext in ('png', 'pdf'):
-        c2.SaveAs( os.path.join(cat_folder, 'met_' + var + '_' + str(met_cut) + '.' + ext) )
+        c2.SaveAs( os.path.join(cat_folder, legends[mode][2] + '_norm_' + var + '_' + cut_strings[mode] + '.' + ext) )
     c2.Close()
 
 def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory):
@@ -361,8 +365,14 @@ def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory
         c.SaveAs( os.path.join(cat_folder, 'met_' + '_VS_'.join(two_vars) + '_' + str(met_cut) + '.' + ext) )
     c.Close()
 
-def count(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
+def count(mode, hmet, hnomet, hmetcut, var, channel, sample, category, directory):
     cat_folder = os.path.join(directory, sample, category)
+    titles = {'met': ['MET', 'MET + cut', 'Trigger baseline (no MET)', 'Fraction [%]: {[MET + Cut] / [Trigger baseline]} + 1\n'],
+              'tau': ['Tau', 'Tau + cut', 'Trigger baseline (no Tau)', 'Fraction [%]: {[Tau + Cut] / [Trigger baseline]} + 1\n'],
+              'met_tau': ['MET + Tau', 'MET + Tau + cut', 'Trigger baseline (no MET + Tau)', 'Fraction [%]: {[MET + Tau + Cut] / [Trigger baseline]} + 1\n'],}
+    cut_strings = {'met': str(met_cut),
+                   'tau': str(tau_cut),
+                   'met_tau': str(met_cut) + '_' + str(tau_cut)}
 
     def calc_frac(c1, c2):
         try:
@@ -371,11 +381,10 @@ def count(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
             frac = 0
         return frac * 100
 
-    name = os.path.join(cat_folder, get_outname(suffix=var, met_cut=str(met_cut), ext='csv'))
-    utils.create_single_dir(os.path.dirname(name))
-
-    with open(name, 'w') as f:
-        f.write(','.join(('Bin label', 'MET', 'MET + Cut', 'Trigger baseline (no MET)', 'Fraction [%]: {[MET + Cut] / [Trigger baseline]} + 1\n')))
+    name_met = os.path.join(cat_folder, get_outname(suffix=var, mode=mode, cut=cut_strings[mode], ext='csv'))
+    utils.create_single_dir(os.path.dirname(name_met))
+    with open(name_met, 'w') as f:
+        f.write(','.join(('Bin label', titles[mode][0], titles[mode][1], titles[mode][2], titles[mode][3])))
         for ibin in range(1, hmet.GetNbinsX()+1):
             label = str(round(hmet.GetXaxis().GetBinLowEdge(ibin),2)) + ' / ' + str(round(hmet.GetXaxis().GetBinLowEdge(ibin+1),2))
             cmet = hmet.GetBinContent(ibin)
@@ -394,7 +403,9 @@ def count(hmet, hnomet, hmetcut, var, channel, sample, category, directory):
         f.write(','.join(('Total', str(round(totmet,2)), str(round(totmetcut,2)), str(round(totnomet,2)), str(round(totfrac,2)))) + '\n')
 
 def test_met(indir, sample, channel, plot_only):
-    outname = get_outname(suffix=sample+'_'+channel, met_cut=str(met_cut), ext='root')
+
+    outname = get_outname(suffix=sample+'_'+channel, mode='met', cut=str(met_cut), ext='root')
+
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
     elif channel == 'tautau':
@@ -415,9 +426,9 @@ def test_met(indir, sample, channel, plot_only):
     hBoth, hBothWithCut = ({} for _ in range(2))
     for v in tuple(variables):
         hBaseline[v] = {}
-        hMET[v], hMETWithCut[v] = ({} for _ in range(3))
-        hTau[v], hTauWithCut[v] = ({} for _ in range(3))
-        hBoth[v], hBothWithCut[v] = ({} for _ in range(3))
+        hMET[v], hMETWithCut[v] = ({} for _ in range(2))
+        hTau[v], hTauWithCut[v] = ({} for _ in range(2))
+        hBoth[v], hBothWithCut[v] = ({} for _ in range(2))
         for cat in categories:
             hBaseline[v][cat] = ROOT.TH1D('hBaseline_'+v+'_'+cat, '', *binning[v])
             hMET[v][cat] = ROOT.TH1D('hMET_'+v+'_'+cat, '', *binning[v])
@@ -436,7 +447,8 @@ def test_met(indir, sample, channel, plot_only):
             hMETWithCut_2D[v][cat] = ROOT.TH2D('hMETWithCut_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])        
   
     t_in.SetBranchStatus('*', 0)
-    _entries = ('triggerbit', 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted',
+    _entries = ('triggerbit', 'RunNumber',
+                'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted',
                 'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta', 'PUReweight', 'lumi', 'IdAndIsoSF_deep_pt',
                 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
@@ -447,6 +459,7 @@ def test_met(indir, sample, channel, plot_only):
     for entry in t_in:
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
+        sel = selection.EventSelection(entries, isdata=False, configuration=None)
         
         # mcweight   = entries.MC_weight
         pureweight = entries.PUReweight
@@ -463,15 +476,15 @@ def test_met(indir, sample, channel, plot_only):
             evt_weight = 1
   
         if utils.is_channel_consistent(channel, entries.pairType):
-            if not sel_cuts(entries, lepton_veto=True, bjets_cut=True):
+            if not sel.selection_cuts(lepton_veto=True, bjets_cut=True):
                 continue
   
             for v in variables:
                 for cat in categories:
-                    if sel_category(entries, cat):
+                    if sel.sel_category(cat):
   
                         # passes the OR of the trigger baseline (not including METNoMu120 trigger)
-                        if pass_triggers(triggers[channel], entries.triggerbit):
+                        if sel.pass_triggers(triggers[channel]):
                             hBaseline[v][cat].Fill(entries[v], evt_weight)
 
                         met_cut_expr = entries.metnomu_et > met_cut
@@ -479,22 +492,22 @@ def test_met(indir, sample, channel, plot_only):
                                         (entries.dau2_pt > tau_cut and args.channel!='tautau'))
 
                         # passes the METNoMu120 trigger and does *not* pass the OR of the baseline
-                        if (pass_triggers(('METNoMu120',), entries.triggerbit) and
-                            not pass_triggers(triggers[channel], entries.triggerbit)):
+                        if (sel.pass_triggers(('METNoMu120',)) and
+                            not sel.pass_triggers(triggers[channel])):
                             hMET[v][cat].Fill(entries[v], evt_weight)
                             if met_cut_expr:
                                 hMETWithCut[v][cat].Fill(entries[v], evt_weight)
                         
                         # passes the IsoTau180 trigger and does *not* pass the OR of the baseline
-                        if (pass_triggers(('IsoTau180',), entries.triggerbit) and
-                            not pass_triggers(triggers[channel], entries.triggerbit)):
+                        if (sel.pass_triggers(('IsoTau180',)) and
+                            not sel.pass_triggers(triggers[channel])):
                             hTau[v][cat].Fill(entries[v], evt_weight)
                             if tau_cut_expr:
                                 hTauWithCut[v][cat].Fill(entries[v], evt_weight)
 
                         # passes the IsoTau180 trigger and does *not* pass the OR of the baseline
-                        if (pass_triggers(('METNoMu120', 'IsoTau180',), entries.triggerbit) and
-                            not pass_triggers(triggers[channel], entries.triggerbit)):
+                        if (sel.pass_triggers(('METNoMu120', 'IsoTau180',)) and
+                            not sel.pass_triggers(triggers[channel])):
                             hBoth[v][cat].Fill(entries[v], evt_weight)
                             if met_cut_expr and tau_cut_expr:
                                 hBothWithCut[v][cat].Fill(entries[v], evt_weight)
@@ -504,12 +517,12 @@ def test_met(indir, sample, channel, plot_only):
                     if sel_category(entries, cat):
   
                         # passes the OR of the trigger baseline (not including METNoMu120 trigger)
-                        if pass_triggers(triggers[channel], entries.triggerbit):
+                        if pass_triggers(triggers[channel]):
                             hBaseline_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
   
                         # passes the METNoMu120 trigger and does *not* pass the OR of the baseline
-                        if (pass_triggers(('METNoMu120'), entries.triggerbit) and
-                            not pass_triggers(triggers[channel], entries.triggerbit)):
+                        if (pass_triggers(('METNoMu120')) and
+                            not pass_triggers(triggers[channel])):
                             hMET_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
                             if entries.metnomu_et > met_cut:
                                 hMETWithCut_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
@@ -557,7 +570,7 @@ if __name__ == '__main__':
                }
     variables = tuple(binning.keys()) + ('HHKin_mass', 'dau1_iso')
     #variables_2D = (('dau1_pt', 'dau2_pt'), ('dau1_iso', 'dau2_iso'))
-    variables_2D = (,)
+    variables_2D = ()
     #categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
     categories = ('baseline',)
     met_cut = 200
@@ -590,7 +603,7 @@ if __name__ == '__main__':
     main_dir = 'TriggerStudy_MET'+str(met_cut)+'_SingleTau'+str(tau_cut)
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.samples:
-        outname = get_outname(suffix=sample+'_'+args.channel, met_cut=str(met_cut), ext='root')
+        outname = get_outname(suffix=sample+'_'+args.channel, mode='met', cut=str(met_cut), ext='root')
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
         for cat in categories:
@@ -612,13 +625,15 @@ if __name__ == '__main__':
                     hBoth_c = hBoth.Clone('hBoth_' + v + '_' + cat + '_c')
                     hBothWithCut_c = hBothWithCut.Clone('hBothWithCut_' + v + '_' + cat + '_c')
 
-                    plot(hMET, hBaseline, hMETWithCut, v, args.channel, sample, cat, from_directory)
-                    plot(hTau, hBaseline, hTauWithCut, v, args.channel, sample, cat, from_directory)
-                    plot(hBoth, hBaseline, hBothWithCut, v, args.channel, sample, cat, from_directory)
-                    count(hMET_c, hBaseline_c, hMETWithCut_c, v, args.channel, sample, cat, from_directory)
-                    count(hTau_c, hBaseline_c, hTauWithCut_c, v, args.channel, sample, cat, from_directory)
-                    count(hBoth_c, hBaseline_c, hBothWithCut_c, v, args.channel, sample, cat, from_directory)
-                    
+                    opt = (v, args.channel, sample, cat, from_directory)
+                    plot('met', hMET, hBaseline, hMETWithCut, *opt)
+                    plot('tau', hTau, hBaseline, hTauWithCut, *opt)
+                    plot('met_tau', hBoth, hBaseline, hBothWithCut, *opt)
+                    count('met', hMET_c, hBaseline_c, hMETWithCut_c, *opt)
+                    count('tau', hTau_c, hBaseline_c, hTauWithCut_c, *opt)
+                    count('met_tau', hBoth_c, hBaseline_c, hBothWithCut_c, *opt)
+            quit()
+
             for v in variables_2D:
                 hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
                 hBaseline_2D = f_in.Get('hBaseline_2D_' + '_'.join(v)+'_'+ cat)

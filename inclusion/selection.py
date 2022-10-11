@@ -14,7 +14,7 @@ from inclusion import config
 from inclusion.config import main
 
 class EventSelection:
-    def __init__(self, entries, dataset, isdata, configuration, debug=False):
+    def __init__(self, entries, isdata, configuration=None, debug=False):
         self.entries = entries
         self.bit = self.entries['triggerbit']
         self.run = self.entries['RunNumber']
@@ -25,33 +25,26 @@ class EventSelection:
         self.cfg = configuration
 
         self.datasets = ('MET', 'EG', 'Mu', 'Tau')
+        self.categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
         self.prefix = 'Data_' if self.isdata else 'MC_'
-        self.ds_name = lambda ds : self.prefix + ds
-        
-        self.this_processed_dataset = self.ds_name(dataset)
         
         for d in self.datasets:
-            assert( d in main.data )
+            assert d in main.data
 
-        self.ref_trigs = tuple(self.ds_name(x) for x in self.datasets)
+        self.ref_trigs = tuple(self.dataset_name(x) for x in self.datasets)
         
-        if dataset not in main.data and dataset not in main.mc_processes:
-            mes = 'Dataset {} is not supported '.format(dataset)
-            mes += '(prefix `{}` added).'.format(self.prefix)
-            raise ValueError(mes)
-
     def any_trigger(self, trigs):
         """
         Checks at least one trigger was fired.
         Considers all framework triggers.
         """
-        return self._pass_triggers(trigs)
+        return self.pass_triggers(trigs)
 
     def check_bit(self, bitpos):
         bitdigit = 1
         res = bool(self.bit&(bitdigit<<bitpos))
         return res
-
+    
     def dataset_cuts(self, tcomb, channel):
         """
         Applies selection depending on the reference trigger being considered.
@@ -73,16 +66,25 @@ class EventSelection:
         return self.selection_cuts(lepton_veto=lepton_veto,
                                    bjets_cut=self.cfg.bjets_cut)
 
-    def dataset_triggers(self, tcomb, channel, trigs):
+    def dataset_name(self, dataset):
+        if dataset not in main.data and dataset not in main.mc_processes:
+            mes = 'Dataset {} is not supported '.format(dataset)
+            mes += '(prefix `{}` added).'.format(self.prefix)
+            raise ValueError(mes)
+
+        return self.prefix + dataset
+    
+    def dataset_triggers(self, tcomb, channel, trigs, dataset):
         """
         Checks at least one trigger was fired.
         Considers framework triggers for a specific dataset.
         """
+        this_processed_dataset = self.dataset_name(dataset)
         dataset_ref_trigs = {
-            self.ds_name('MET') : ('METNoMu120',),
-            self.ds_name('EG')  : ('Ele32',),
-            self.ds_name('Mu')  : ('IsoMu24',),
-            self.ds_name('Tau') : ('IsoTau180',),
+            self.dataset_name('MET') : ('METNoMu120',),
+            self.dataset_name('EG')  : ('Ele32',),
+            self.dataset_name('Mu')  : ('IsoMu24',),
+            self.dataset_name('Tau') : ('IsoTau180',),
             }
         for k in dataset_ref_trigs:
             if k not in self.ref_trigs:
@@ -92,7 +94,7 @@ class EventSelection:
         for k in self.ref_trigs:
             if k not in dataset_ref_trigs:
                 mes = 'Specify the reference trigger {} for dataset {}!'
-                raise ValueError(mes.format(k, self.this_processed_dataset))
+                raise ValueError(mes.format(k, this_processed_dataset))
         for vals in dataset_ref_trigs.values():
             for v in vals:
                 if v not in trigs:
@@ -103,7 +105,7 @@ class EventSelection:
         if reference is None:
             raise OverflowError('Intersection is too long.')
 
-        return (self._pass_triggers(dataset_ref_trigs[reference]), dataset_ref_trigs[reference])
+        return (self.pass_triggers(dataset_ref_trigs[reference]), dataset_ref_trigs[reference])
 
     def get_trigger_bit(self, trigger_name):
         """
@@ -129,31 +131,31 @@ class EventSelection:
         # general triggers
         for k in main.data:
             if tcomb in self.cfg.inters_general[k]:
-                return self.ds_name(k)
+                return self.dataset_name(k)
                  
         # channel-specific triggers
         if channel == 'etau':
             for k in main.data:
                 if tcomb in self.cfg.inters_etau[k]:
-                    return self.ds_name(k)
+                    return self.dataset_name(k)
             raise ValueError(wrong_comb.format(tcomb, channel))
             
         elif channel == 'mutau':
             for k in main.data:
                 if tcomb in self.cfg.inters_mutau[k]:
-                    return self.ds_name(k)
+                    return self.dataset_name(k)
             raise ValueError(wrong_comb.format(tcomb, channel))
             
         elif channel == 'tautau':
             for k in main.data:
                 if tcomb in self.cfg.inters_tautau[k]:
-                    return self.ds_name(k)
+                    return self.dataset_name(k)
             raise ValueError(wrong_comb.format(tcomb, channel))
             
         else:
             raise ValueError('Channel {} is not supported.'.format(channel))
 
-    def check_inters_with_dataset(self, tcomb, channel):
+    def check_inters_with_dataset(self, tcomb, channel, dataset):
         """
         All input files on which the selection is applied correspond
         to a different dataset.  This function makes sure there is a
@@ -170,14 +172,15 @@ class EventSelection:
         """
         if not self.isdata:
             return True
-        
+
+        this_processed_dataset = self.dataset_name(dataset)
         reference = self.find_inters_for_reference(tcomb, channel)
         if reference is None:
             return False
 
-        return True if self.this_processed_dataset == reference else False
+        return True if this_processed_dataset == reference else False
 
-    def _pass_triggers(self, trigs):
+    def pass_triggers(self, trigs):
         """
         Internal only function.
         Checks at least one trigger was fired.
@@ -185,12 +188,32 @@ class EventSelection:
         flag = False
         for trig in trigs:
             if trig in main.trig_custom:
-                flag = set_custom_trigger_bit(trig)
+                flag = self.set_custom_trigger_bit(trig)
             else:
                 flag = self.check_bit(self.get_trigger_bit(trig))
             if flag:
                 return True
         return False    
+
+    def sel_category(self, category):
+        assert category in self.categories
+        btagLL = self.entries['bjet1_bID_deepFlavor'] > 0.0490 and self.entries['bjet2_bID_deepFlavor'] > 0.0490
+        btagM  = ((self.entries['bjet1_bID_deepFlavor'] > 0.2783 and self.entries['bjet2_bID_deepFlavor'] < 0.2783) or
+                  (self.entries['bjet1_bID_deepFlavor'] < 0.2783 and self.entries['bjet2_bID_deepFlavor'] > 0.2783))
+        btagMM = self.entries['bjet1_bID_deepFlavor'] > 0.2783 and self.entries['bjet2_bID_deepFlavor'] > 0.2783
+        
+        common = not (self.entries['isVBF'] == 1 and self.entries['VBFjj_mass'] > 500 and self.entries['VBFjj_deltaEta'] > 3 and (self.entries['bjet1_bID_deepFlavor'] > 0.2783 or self.entries['bjet2_bID_deepFlavor'] > 0.2783))
+
+        if category == 'baseline':
+            specific = True
+        elif category == 's1b1jresolvedMcut':
+            specific = self.isBoosted != 1 and btagM
+        elif category == 's2b0jresolvedMcut':
+            specific = self.isBoosted != 1 and btagMM
+        elif category == 'sboostedLLMcut':
+            specific = self.isBoosted == 1 and btagLL
+
+        return common and specific
 
     def selection_cuts(self, iso_cuts=dict(), lepton_veto=True,
                        bjets_cut=True, invert_mass_cut=True):
