@@ -372,7 +372,8 @@ def test_met(indir, sample, channel, plot_only):
                             # passes the METNoMu120 or the IsoTau180 triggers and does *not* pass the OR of the baseline
                             if sel.pass_triggers(('METNoMu120', 'IsoTau180',)):
                                 hBoth[v][cat].Fill(entries[v], evt_weight)
-                                if met_cut_expr and tau_cut_expr:
+                                if ((sel.pass_triggers(('METNoMu120')) and met_cut_expr) or
+                                    (sel.pass_triggers(('IsoTau180')) and tau_cut_expr)):
                                     hBothWithCut[v][cat].Fill(entries[v], evt_weight)
 
             for v in variables_2D:
