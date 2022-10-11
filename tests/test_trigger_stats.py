@@ -27,141 +27,6 @@ def get_outname(suffix, mode, cut, ext):
         s = 'met_{}_{}_{}.{}'.format(suffix, pref[mode], cut, ext)
     return s
 
-# def check_bit(bitpos, bit):
-#     bitdigit = 1
-#     res = bool(bit&(bitdigit<<bitpos))
-#     return res
-
-# def get_trigger_bit(trigger_name):
-#     """
-#     Returns the trigger bit corresponding to 'main.trig_map'
-#     """
-#     res = main.trig_map[trigger_name]
-#     try:
-#         res = res['mc']
-#     except KeyError:
-#         print('You likely forgot to add your custom trigger to `main.trig_custom`.')
-#         raise
-#     return res
-
-# def pass_triggers(trigs, bit):
-#     """
-#     Internal only function.
-#     Checks at least one trigger was fired.
-#     """
-#     flag = False
-#     for trig in trigs:
-#         if trig in main.trig_custom:
-#             flag = set_custom_trigger_bit(trig, bit)
-#         else:
-#             flag = check_bit(get_trigger_bit(trig), bit)
-#         if flag:
-#             return True
-#     return False    
-
-# def set_custom_trigger_bit(trigger, bit):
-#     """
-#     The VBF trigger was updated during data taking, adding HPS
-#     https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger
-#     """
-#     if trigger not in main.trig_custom:
-#         import inspect
-#         currentFunction = inspect.getframeinfo(frame).function
-#         raise ValueError('[{}] option not supported.'.format(currentFunction))
-
-#     if trigger == 'VBFTauCustom':
-#         bits = check_bit(main.trig_map[trigger]['VBFTauHPS']['mc'], bit)
-#     elif trigger == 'IsoDoubleTauCustom':
-#         bits = check_bit(main.trig_map[trigger]['IsoDoubleTauHPS']['mc'], bit)
-#     elif trigger == 'IsoMuIsoTauCustom':
-#         bits = check_bit(main.trig_map[trigger]['IsoMuIsoTauHPS']['mc'], bit)
-#     elif trigger == 'EleIsoTauCustom':
-#         bits = check_bit(main.trig_map[trigger]['EleIsoTauHPS']['mc'], bit)
-
-#     return bits
-
-# def sel_category(entries, category):
-#     btagLL = entries.bjet1_bID_deepFlavor > 0.0490 and entries.bjet2_bID_deepFlavor > 0.0490
-#     btagM  = ((entries.bjet1_bID_deepFlavor > 0.2783 and entries.bjet2_bID_deepFlavor < 0.2783) or
-#               (entries.bjet1_bID_deepFlavor < 0.2783 and entries.bjet2_bID_deepFlavor > 0.2783))
-#     btagMM = entries.bjet1_bID_deepFlavor > 0.2783 and entries.bjet2_bID_deepFlavor > 0.2783
-
-#     common = not (entries.isVBF == 1 and entries.VBFjj_mass > 500 and entries.VBFjj_deltaEta > 3 and
-#                   (entries.bjet1_bID_deepFlavor > 0.2783 or entries.bjet2_bID_deepFlavor > 0.2783))
-
-#     if category == 'baseline':
-#         specific = True
-#     elif category == 's1b1jresolvedMcut':
-#         specific = entries.isBoosted != 1 and btagM
-#     elif category == 's2b0jresolvedMcut':
-#         specific = entries.isBoosted != 1 and btagMM
-#     elif category == 'sboostedLLMcut':
-#         specific = entries.isBoosted == 1 and btagLL
-
-#     return common and specific
-
-# def sel_cuts(entries, iso_cuts=dict(), lepton_veto=True,
-#              bjets_cut=True, invert_mass_cut=True):
-#         """
-#         Applies selection cut to one event.
-#         Returns `True` only if all selection cuts pass.
-#         """
-#         mhh = entries['HHKin_mass']
-
-#         # When one only has 0 or 1 bjet th HH mass is not well defined,
-#         # and a value of -1 is assigned. One thus has to remove the cut below
-#         # when considering events with less than 2 b-jets.
-#         if mhh < 1 and bjets_cut:
-#             return False
-
-#         pairtype    = entries['pairType']
-#         dau1_eleiso = entries['dau1_eleMVAiso']
-#         dau1_muiso  = entries['dau1_iso']
-#         dau1_tauiso = entries['dau1_deepTauVsJet']
-#         dau2_tauiso = entries['dau2_deepTauVsJet']
-
-#         # third lepton veto
-#         nleps = entries['nleps']
-#         if nleps > 0 and lepton_veto:
-#             return False
-
-#         # require at least two b jet candidates
-#         nbjetscand = entries['nbjetscand']
-#         if nbjetscand <= 1 and bjets_cut:
-#             return False
-
-#         # Loose / Medium / Tight
-#         iso_allowed = { 'dau1_ele': 1., 'dau1_mu': 0.15,
-#                         'dau1_tau': 5., 'dau2_tau': 5. }
-#         if any(x not in iso_allowed for x in iso_cuts.keys()):
-#             mes = 'At least one of the keys is not allowed. '
-#             mes += 'Keys introduced: {}.'.format(iso_cuts.keys())
-#             raise ValueError(mes)
-
-#         # setting to the defaults in case the user did not specify the values
-#         for k, v in iso_allowed.items():
-#             if k not in iso_cuts: iso_cuts[k] = v
-        
-#         bool0 = pairtype==0 and (dau1_muiso >= iso_cuts['dau1_mu'] or
-#                                  dau2_tauiso < iso_cuts['dau2_tau'])
-#         bool1 = pairtype==1 and (dau1_eleiso != iso_cuts['dau1_ele'] or
-#                                  dau2_tauiso < iso_cuts['dau2_tau'])
-#         bool2 = pairtype==2 and (dau1_tauiso < iso_cuts['dau1_tau'] or
-#                                  dau2_tauiso < iso_cuts['dau2_tau'])
-#         if bool0 or bool1 or bool2:
-#             return False
-
-#         #((tauH_SVFIT_mass-116.)*(tauH_SVFIT_mass-116.))/(35.*35.) + ((bH_mass_raw-111.)*(bH_mass_raw-111.))/(45.*45.) <  1.0
-#         svfit_mass = entries['tauH_SVFIT_mass']
-#         bh_mass    = entries['bH_mass_raw']
-
-#         # mcut_outside = ((svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
-#         #                 (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) > 1.0
-#         # if mcut_outside: # inverted elliptical mass cut (-> ttCR)
-#         #     return False
-
-#         return True
-
 def set_plot_definitions():
     ROOT.gROOT.SetBatch(ROOT.kTRUE)
     ROOT.gStyle.SetOptStat(ROOT.kFALSE)
@@ -231,7 +96,6 @@ def plot(mode, hmet, hnomet, hmetcut, var, channel, sample, category, directory)
     leg1.SetBorderSize(0)
     leg1.SetTextFont(43)
     leg1.SetTextSize(10)
-    #leg1.AddEntry(hmet, 'MET')
     leg1.AddEntry(hmetcut1, legends[mode][0])
     leg1.AddEntry(hnomet1, '+'.join(triggers[channel]))
     leg1.Draw('same')
@@ -484,7 +348,8 @@ def test_met(indir, sample, channel, plot_only):
                     if sel.sel_category(cat):
   
                         # passes the OR of the trigger baseline (not including METNoMu120 trigger)
-                        if sel.pass_triggers(triggers[channel]):
+                        pass_trg = sel.pass_triggers(triggers[channel])
+                        if pass_trg:
                             hBaseline[v][cat].Fill(entries[v], evt_weight)
 
                         met_cut_expr = entries.metnomu_et > met_cut
@@ -492,29 +357,27 @@ def test_met(indir, sample, channel, plot_only):
                                         (entries.dau2_pt > tau_cut and args.channel!='tautau'))
 
                         # passes the METNoMu120 trigger and does *not* pass the OR of the baseline
-                        if (sel.pass_triggers(('METNoMu120',)) and
-                            not sel.pass_triggers(triggers[channel])):
-                            hMET[v][cat].Fill(entries[v], evt_weight)
-                            if met_cut_expr:
-                                hMETWithCut[v][cat].Fill(entries[v], evt_weight)
-                        
-                        # passes the IsoTau180 trigger and does *not* pass the OR of the baseline
-                        if (sel.pass_triggers(('IsoTau180',)) and
-                            not sel.pass_triggers(triggers[channel])):
-                            hTau[v][cat].Fill(entries[v], evt_weight)
-                            if tau_cut_expr:
-                                hTauWithCut[v][cat].Fill(entries[v], evt_weight)
-
-                        # passes the IsoTau180 trigger and does *not* pass the OR of the baseline
-                        if (sel.pass_triggers(('METNoMu120', 'IsoTau180',)) and
-                            not sel.pass_triggers(triggers[channel])):
-                            hBoth[v][cat].Fill(entries[v], evt_weight)
-                            if met_cut_expr and tau_cut_expr:
-                                hBothWithCut[v][cat].Fill(entries[v], evt_weight)
+                        if not pass_trg:
+                            if sel.pass_triggers(('METNoMu120',)):
+                                hMET[v][cat].Fill(entries[v], evt_weight)
+                                if met_cut_expr:
+                                    hMETWithCut[v][cat].Fill(entries[v], evt_weight)
+                            
+                            # passes the IsoTau180 trigger and does *not* pass the OR of the baseline
+                            if sel.pass_triggers(('IsoTau180',)):
+                                hTau[v][cat].Fill(entries[v], evt_weight)
+                                if tau_cut_expr:
+                                    hTauWithCut[v][cat].Fill(entries[v], evt_weight)
+     
+                            # passes the METNoMu120 or the IsoTau180 triggers and does *not* pass the OR of the baseline
+                            if sel.pass_triggers(('METNoMu120', 'IsoTau180',)):
+                                hBoth[v][cat].Fill(entries[v], evt_weight)
+                                if met_cut_expr and tau_cut_expr:
+                                    hBothWithCut[v][cat].Fill(entries[v], evt_weight)
 
             for v in variables_2D:
                 for cat in categories:
-                    if sel_category(entries, cat):
+                    if sel.sel_category(cat):
   
                         # passes the OR of the trigger baseline (not including METNoMu120 trigger)
                         if pass_triggers(triggers[channel]):
