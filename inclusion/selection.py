@@ -215,12 +215,13 @@ class EventSelection:
 
         return common and specific
 
-    def selection_cuts(self, iso_cuts=dict(), lepton_veto=True,
-                       bjets_cut=True, invert_mass_cut=True):
+    def selection_cuts(self, iso_cuts=dict(), lepton_veto=True, bjets_cut=True,
+                       invert_mass_cut=True, standard_mass_cut=False):
         """
         Applies selection cut to one event.
         Returns `True` only if all selection cuts pass.
         """
+        assert invert_mass_cut is not standard_mass_cut
         mhh = self.entries['HHKin_mass']
 
         # When one only has 0 or 1 bjet th HH mass is not well defined,
@@ -270,9 +271,13 @@ class EventSelection:
         svfit_mass = self.entries['tauH_SVFIT_mass']
         bh_mass    = self.entries['bH_mass_raw']
 
-        mcut = ( (svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
-                 (bh_mass-169.)*(bh_mass-169.) / (145.*145.) ) < 1.0
-        if mcut and invert_mass_cut: # inverted elliptical mass cut (-> ttCR)
+        mpoint = ((svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
+                  (bh_mass-169.)*(bh_mass-169.) / (145.*145.))
+        mcut_std = mpoint < 1.0
+        if mcut_std and invert_mass_cut: # inverted elliptical mass cut
+            return False
+        mcut_inv = mpoint > 1.0
+        if mcut_inv and standard_mass_cut: # standard elliptical mass cut
             return False
 
         return True
