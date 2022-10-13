@@ -354,7 +354,7 @@ def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory
         c.SaveAs( os.path.join(cat_folder, 'met_' + '_VS_'.join(two_vars) + '_' + str(met_cut) + '.' + ext) )
     c.Close()
 
-def count(mode, hmet, hnomet, hmetcut, var, channel, sample, category, directory):
+def count(mode, hbase, htrg, htrgcut, var, channel, sample, category, directory):
     cat_folder = os.path.join(directory, sample, category)
     titles = {'met': ['MET', 'MET + cut', 'Trigger baseline (no MET)', 'Fraction [%]: {[MET + Cut] / [Trigger baseline]} + 1\n'],
               'tau': ['Tau', 'Tau + cut', 'Trigger baseline (no Tau)', 'Fraction [%]: {[Tau + Cut] / [Trigger baseline]} + 1\n'],
@@ -374,19 +374,19 @@ def count(mode, hmet, hnomet, hmetcut, var, channel, sample, category, directory
     utils.create_single_dir(os.path.dirname(name_met))
     with open(name_met, 'w') as f:
         f.write(','.join(('Bin label', titles[mode][0], titles[mode][1], titles[mode][2], titles[mode][3])))
-        for ibin in range(1, hmet.GetNbinsX()+1):
-            label = str(round(hmet.GetXaxis().GetBinLowEdge(ibin),2)) + ' / ' + str(round(hmet.GetXaxis().GetBinLowEdge(ibin+1),2))
-            cmet = hmet.GetBinContent(ibin)
-            cnomet = hnomet.GetBinContent(ibin)
-            cmetcut = hmetcut.GetBinContent(ibin)
+        for ibin in range(1, htrg.GetNbinsX()+1):
+            label = str(round(htrg.GetXaxis().GetBinLowEdge(ibin),2)) + ' / ' + str(round(htrg.GetXaxis().GetBinLowEdge(ibin+1),2))
+            cmet = htrg.GetBinContent(ibin)
+            cnomet = hbase.GetBinContent(ibin)
+            cmetcut = htrgcut.GetBinContent(ibin)
             assert cmet >= cmetcut
 
             frac  = calc_frac(cnomet, cmetcut)
             f.write(','.join((label, str(round(cmet,2)), str(round(cmetcut,2)), str(round(cnomet,2)), str(round(frac,2)))) + '\n')
 
-        totmet = hmet.Integral(0,hmet.GetNbinsX()+1)
-        totnomet = hnomet.Integral(0,hnomet.GetNbinsX()+1)
-        totmetcut = hmetcut.Integral(0,hmetcut.GetNbinsX()+1)
+        totmet = htrg.Integral(0,htrg.GetNbinsX()+1)
+        totnomet = hbase.Integral(0,hbase.GetNbinsX()+1)
+        totmetcut = htrgcut.Integral(0,htrgcut.GetNbinsX()+1)
 
         totfrac = calc_frac(totnomet, totmetcut)
         f.write(','.join(('Total', str(round(totmet,2)), str(round(totmetcut,2)), str(round(totnomet,2)), str(round(totfrac,2)))) + '\n')
@@ -664,10 +664,10 @@ if __name__ == '__main__':
                     plot('tau', hBaseline, hTau, hTauWithCut, *opt)
                     plot('met_tau', hBaseline, [hMET,hTauNoMET], [hORWithCut,hTauNoMETWithCut], *opt)
 
-                    c1 = count('met', hMET_c, hBaseline_c, hMETWithCut_c, *opt)
-                    c2 = count('tau', hTau_c, hBaseline_c, hTauWithCut_c, *opt)
-                    c3 = count('met_tau', hTauNoMET_c, hBaseline_c, hTauNoMETWithCut_c, *opt)
-                    c4 = count('met_tau', hTauNoMET_c, hOverlayBaseline_c, hTauNoMETWithCut_c, *opt)
+                    c1 = count('met', hBaseline_c, hMET_c, hMETWithCut_c, *opt)
+                    c2 = count('tau', hBaseline_c, hTau_c, hTauWithCut_c, *opt)
+                    c3 = count('met_tau',  hBaseline_c, hTauNoMET_c, hTauNoMETWithCut_c, *opt)
+                    c4 = count('met_tau', hOverlayBaseline_c, hTauNoMET_c, hTauNoMETWithCut_c, *opt)
                     assert c3 <= c2
                     assert c4 <= c2
                     assert c4 <= c3
