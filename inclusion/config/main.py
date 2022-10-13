@@ -13,7 +13,8 @@ folders = {'base'    : 'METTriggerStudies',
            'outs'    : 'outputs' }
 
 base_folder = os.path.join(os.environ['HOME'],
-                           os.environ['CMSSW_VERSION'], 'src',
+                           'CMSSW_12_5_0_pre1',#os.environ['CMSSW_VERSION'],
+                           'src',
                            folders['base'])
 local_folder = os.path.join(base_folder, folders['main'])
 

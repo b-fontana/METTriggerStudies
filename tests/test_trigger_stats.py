@@ -40,55 +40,67 @@ def set_plot_definitions():
            }
     return ret
     
-def plot(mode, hmet, hnomet, hmetcut, var, channel, sample, category, directory):
+def plot(mode, hbase, htrg, htrgcut, var, channel, sample, category, directory):
     legends = {'met': ['MET', 'MET + cut', 'met'],
                'tau': ['Tau', 'Tau + cut', 'tau'],
-               'met_tau': ['MET + Tau', 'MET + Tau + both cuts', 'met_and_tau']}
+               'met_tau': ['MET', 'MET + both cuts', 'met_and_tau', 'Tau', 'Tau + cuts']}
     cut_strings = {'met': str(met_cut),
                    'tau': str(tau_cut),
                    'met_tau': str(met_cut) + '_' + str(tau_cut)}
 
     assert mode in list(legends.keys())
     
-    defs = set_plot_definitions()
-    cat_folder = os.path.join(directory, sample, category)
-    utils.create_single_dir(cat_folder)
-    
-    hmet1 = hmet.Clone('hmet1')
-    hnomet1 = hnomet.Clone('hnomet1')
-    hmetcut1 = hmetcut.Clone('hmetcut1')
+    cat_dir = os.path.join(directory, sample, category)
+    utils.create_single_dir(cat_dir)
 
-    hmet2 = hmet.Clone('hmet2')
-    hnomet2 = hnomet.Clone('hnomet2')
-    hmetcut2 = hmetcut.Clone('hmetcut2')
+    if isinstance(htrg, (tuple,list)):
+        plot_three_histos(legends[mode], cut_strings[mode],
+                          hbase, htrg, htrgcut, var, channel, directory, cat_dir)
+    else:
+        plot_two_histos(legends[mode], cut_strings[mode],
+                        hbase, htrg, htrgcut, var, channel, directory, cat_dir)
+
+
+def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, sample, directory, cat_folder):
+    defs = set_plot_definitions()
+    
+    hbase1 = hbase.Clone('hbase1')
+    htrgcut1a = [ h.Clone('htrgcut1a_' + str(ih)) for ih,h in enumerate(htrgcut) ]
+    #htrgcut1b = [ h.Clone('htrgcut1b_' + str(ih)) for ih,h in enumerate(htrgcut) ]
+
+    hbase2 = hbase.Clone('hbase2')
+    htrg2 = [ h.Clone('htrg2_' + str(ih)) for ih,h in enumerate(htrg) ]
+    htrgcut2 = [ h.Clone('htrg2_' + str(ih)) for ih,h in enumerate(htrgcut) ]
 
     c1 = ROOT.TCanvas('c1', '', 600, 400)
     c1.cd()
         
     # Absolute shapes    
-    max_met   = hmet1.GetMaximum() + (hmet1.GetMaximum()-hmet1.GetMinimum())/5.
-    max_nomet = hnomet1.GetMaximum() + (hnomet1.GetMaximum()-hnomet1.GetMinimum())/5.
-    max_cut   = hmetcut1.GetMaximum() + (hmetcut1.GetMaximum()-hmetcut1.GetMinimum())/5.
-    hmet1.SetMaximum( max(max_met, max_nomet, max_cut) )
+    max_base = hbase1.GetMaximum() + (hbase1.GetMaximum()-hbase1.GetMinimum())/5.
+    max_cut   = htrgcut1a[0].GetMaximum() + (htrgcut1a[0].GetMaximum()-htrgcut1a[0].GetMinimum())/5.
+    htrgcut1a[0].SetMaximum( max(max_base, max_cut) )
 
-    hmetcut1.GetXaxis().SetTitleSize(defs['XTitleSize']);
-    hmetcut1.GetXaxis().SetTitle(var + ' [GeV]');
-    hmetcut1.GetYaxis().SetTitleSize(defs['YTitleSize']);
-    hmetcut1.GetYaxis().SetTitle('a. u.');
-    hmetcut1.SetLineWidth(defs['LineWidth']);
-    hmetcut1.SetLineColor(8);
+    htrgcut1a[0].GetXaxis().SetTitleSize(defs['XTitleSize']);
+    htrgcut1a[0].GetXaxis().SetTitle(var + ' [GeV]');
+    htrgcut1a[0].GetYaxis().SetTitleSize(defs['YTitleSize']);
+    htrgcut1a[0].GetYaxis().SetTitle('a. u.');
+    htrgcut1a[0].SetLineWidth(defs['LineWidth']);
+    htrgcut1a[0].SetLineColor(8);
 
-    hnomet1.SetLineWidth(2);
-    hnomet1.SetLineColor(4);
-    hmetcut1.SetLineWidth(2);
-    hmetcut1.SetLineColor(2);
+    hbase1.SetLineWidth(2);
+    hbase1.SetLineColor(4);
+    htrgcut1a[0].SetLineWidth(2);
+    htrgcut1a[0].SetLineColor(2);
 
-    #hmet.Draw('hist')
-    hmetcut1.Add(hnomet)
-    hmetcut1.SetFillColor(2)
-    hmetcut1.Draw('hist')
-    hnomet1.SetFillColor(4)
-    hnomet1.Draw('histsame')
+    htrgcut1a[1].Add(hbase)
+    htrgcut1a[1].Add(htrgcut1a[0])
+    htrgcut1a[1].SetFillColor(8)
+    htrgcut1a[1].Draw('hist')
+    htrgcut1a[0].Add(hbase)
+    htrgcut1a[0].SetFillColor(2)
+    htrgcut1a[0].Draw('hist')
+    hbase1.SetFillColor(4)
+    hbase1.Draw('histsame')
 
     leg1 = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
     leg1.SetNColumns(1)
@@ -96,51 +108,57 @@ def plot(mode, hmet, hnomet, hmetcut, var, channel, sample, category, directory)
     leg1.SetBorderSize(0)
     leg1.SetTextFont(43)
     leg1.SetTextSize(10)
-    leg1.AddEntry(hmetcut1, legends[mode][0])
-    leg1.AddEntry(hnomet1, '+'.join(triggers[channel]))
+    leg1.AddEntry(htrgcut1a[1], legends[3])
+    leg1.AddEntry(htrgcut1a[0], legends[0])
+    leg1.AddEntry(hbase1, '+'.join(triggers[channel]))
     leg1.Draw('same')
 
     c1.Update();
     for ext in ('png', 'pdf'):
-        c1.SaveAs( os.path.join(cat_folder, legends[mode][2] + '_abs_' + var + '_' + cut_strings[mode] + '.' + ext) )
+        c1.SaveAs( os.path.join(cat_folder, legends[2] + '_abs_' + var + '_' + cut_strings + '.' + ext) )
     c1.Close()
 
     # Normalized shapes
     c2 = ROOT.TCanvas('c2', '', 600, 400)
     c2.cd()
     try:
-        hmet2.Scale(1/hmet2.Integral())
+        for h in htrg2:
+            h.Scale(1/h.Integral())
     except ZeroDivisionError:
         pass
     try:
-        hnomet2.Scale(1/hnomet2.Integral())
+        hbase2.Scale(1/hbase2.Integral())
     except ZeroDivisionError:
         pass
     try:
-        hmetcut2.Scale(1/hmetcut2.Integral())
+        for h in htrgcut2:
+            h.Scale(1/h.Integral())
     except ZeroDivisionError:
         pass
 
-    max_met2   = hmet2.GetMaximum() + (hmet2.GetMaximum()-hmet2.GetMinimum())/5.
-    max_nomet2 = hnomet2.GetMaximum() + (hnomet2.GetMaximum()-hnomet2.GetMinimum())/5.
-    max_cut2   = hmetcut2.GetMaximum() + (hmetcut2.GetMaximum()-hmetcut2.GetMinimum())/5.
-    hmet2.SetMaximum( max(max_met2, max_nomet2, max_cut2) )
+    max_met2   = htrg2[0].GetMaximum() + (htrg2[0].GetMaximum()-htrg2[0].GetMinimum())/5.
+    max_base2 = hbase2.GetMaximum() + (hbase2.GetMaximum()-hbase2.GetMinimum())/5.
+    max_cut2   = htrgcut2[0].GetMaximum() + (htrgcut2[0].GetMaximum()-htrgcut2[0].GetMinimum())/5.
+    htrg2[0].SetMaximum( max(max_met2, max_base2, max_cut2) )
 
-    hmet2.GetXaxis().SetTitleSize(defs['XTitleSize']);
-    hmet2.GetXaxis().SetTitle(var + ' [GeV]');
-    hmet2.GetYaxis().SetTitleSize(defs['YTitleSize']);
-    hmet2.GetYaxis().SetTitle('Normalized to 1');
-    hmet2.SetLineWidth(defs['LineWidth']);
-    hmet2.SetLineColor(8);
+    htrg2[0].GetXaxis().SetTitleSize(defs['XTitleSize']);
+    htrg2[0].GetXaxis().SetTitle(var + ' [GeV]');
+    htrg2[0].GetYaxis().SetTitleSize(defs['YTitleSize']);
+    htrg2[0].GetYaxis().SetTitle('Normalized to 1');
+    htrg2[0].SetLineWidth(defs['LineWidth']);
+    htrg2[0].SetLineColor(8);
 
-    hnomet2.SetLineWidth(2);
-    hnomet2.SetLineColor(4);
-    hmetcut2.SetLineWidth(2);
-    hmetcut2.SetLineColor(2);
+    hbase2.SetLineWidth(2);
+    hbase2.SetLineColor(4);
+    htrgcut2[0].SetLineWidth(2);
+    htrgcut2[0].SetLineColor(2);
+    htrgcut2[1].SetLineWidth(2);
+    htrgcut2[1].SetLineColor(8);
 
-    hmet2.Draw('hist')
-    hnomet2.Draw('histsame')
-    hmetcut2.Draw('histsame')
+    #htrg2.Draw('hist')
+    hbase2.Draw('histsame')
+    htrgcut2[0].Draw('histsame')
+    htrgcut2[1].Draw('histsame')
 
     leg2 = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
     leg2.SetNColumns(1)
@@ -148,16 +166,123 @@ def plot(mode, hmet, hnomet, hmetcut, var, channel, sample, category, directory)
     leg2.SetBorderSize(0)
     leg2.SetTextFont(43)
     leg2.SetTextSize(10)
-    leg2.AddEntry(hmet2, legends[mode][0])
-    leg2.AddEntry(hmetcut2, legends[mode][1])
-    leg2.AddEntry(hnomet2, '+\n'.join(triggers[channel]))
+    #leg2.AddEntry(htrg2, legends[0])
+    leg2.AddEntry(htrgcut2[0], legends[1])
+    leg2.AddEntry(htrgcut2[1], legends[4])
+    leg2.AddEntry(hbase2, '+\n'.join(triggers[channel]))
     leg2.Draw('same')
     
     c2.Update();
     for ext in ('png', 'pdf'):
-        c2.SaveAs( os.path.join(cat_folder, legends[mode][2] + '_norm_' + var + '_' + cut_strings[mode] + '.' + ext) )
+        c2.SaveAs( os.path.join(cat_folder, legends[2] + '_norm_' + var + '_' + cut_strings + '.' + ext) )
+    c2.Close()
+    
+def plot_two_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, directory, cat_folder):
+    defs = set_plot_definitions()
+    
+    hbase1 = hbase.Clone('hbase1')
+    htrgcut1 = htrgcut.Clone('htrgcut1')
+
+    htrg2 = htrg.Clone('htrg2')
+    hbase2 = hbase.Clone('hbase2')
+    htrgcut2 = htrgcut.Clone('htrgcut2')
+
+    c1 = ROOT.TCanvas('c1', '', 600, 400)
+    c1.cd()
+        
+    # Absolute shapes    
+    max_base = hbase1.GetMaximum() + (hbase1.GetMaximum()-hbase1.GetMinimum())/5.
+    max_cut   = htrgcut1.GetMaximum() + (htrgcut1.GetMaximum()-htrgcut1.GetMinimum())/5.
+    htrgcut1.SetMaximum( max(max_base, max_cut) )
+
+    htrgcut1.GetXaxis().SetTitleSize(defs['XTitleSize']);
+    htrgcut1.GetXaxis().SetTitle(var + ' [GeV]');
+    htrgcut1.GetYaxis().SetTitleSize(defs['YTitleSize']);
+    htrgcut1.GetYaxis().SetTitle('a. u.');
+    htrgcut1.SetLineWidth(defs['LineWidth']);
+    htrgcut1.SetLineColor(8);
+
+    hbase1.SetLineWidth(2);
+    hbase1.SetLineColor(4);
+    htrgcut1.SetLineWidth(2);
+    htrgcut1.SetLineColor(2);
+
+    #htrg.Draw('hist')
+    htrgcut1.Add(hbase)
+    htrgcut1.SetFillColor(2)
+    htrgcut1.Draw('hist')
+    hbase1.SetFillColor(4)
+    hbase1.Draw('histsame')
+
+    leg1 = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
+    leg1.SetNColumns(1)
+    leg1.SetFillStyle(0)
+    leg1.SetBorderSize(0)
+    leg1.SetTextFont(43)
+    leg1.SetTextSize(10)
+    leg1.AddEntry(htrgcut1, legends[0])
+    leg1.AddEntry(hbase1, '+'.join(triggers[channel]))
+    leg1.Draw('same')
+
+    c1.Update();
+    for ext in ('png', 'pdf'):
+        c1.SaveAs( os.path.join(cat_folder, legends[2] + '_abs_' + var + '_' + cut_strs + '.' + ext) )
+    c1.Close()
+
+    # Normalized shapes
+    c2 = ROOT.TCanvas('c2', '', 600, 400)
+    c2.cd()
+    try:
+        htrg2.Scale(1/htrg2.Integral())
+    except ZeroDivisionError:
+        pass
+    try:
+        hbase2.Scale(1/hbase2.Integral())
+    except ZeroDivisionError:
+        pass
+    try:
+        htrgcut2.Scale(1/htrgcut2.Integral())
+    except ZeroDivisionError:
+        pass
+
+    max_met2   = htrg2.GetMaximum() + (htrg2.GetMaximum()-htrg2.GetMinimum())/5.
+    max_base2 = hbase2.GetMaximum() + (hbase2.GetMaximum()-hbase2.GetMinimum())/5.
+    max_cut2   = htrgcut2.GetMaximum() + (htrgcut2.GetMaximum()-htrgcut2.GetMinimum())/5.
+    htrg2.SetMaximum( max(max_met2, max_base2, max_cut2) )
+
+    htrg2.GetXaxis().SetTitleSize(defs['XTitleSize']);
+    htrg2.GetXaxis().SetTitle(var + ' [GeV]');
+    htrg2.GetYaxis().SetTitleSize(defs['YTitleSize']);
+    htrg2.GetYaxis().SetTitle('Normalized to 1');
+    htrg2.SetLineWidth(defs['LineWidth']);
+    htrg2.SetLineColor(8);
+
+    hbase2.SetLineWidth(2);
+    hbase2.SetLineColor(4);
+    htrgcut2.SetLineWidth(2);
+    htrgcut2.SetLineColor(2);
+
+    htrg2.Draw('hist')
+    hbase2.Draw('histsame')
+    htrgcut2.Draw('histsame')
+
+    leg2 = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
+    leg2.SetNColumns(1)
+    leg2.SetFillStyle(0)
+    leg2.SetBorderSize(0)
+    leg2.SetTextFont(43)
+    leg2.SetTextSize(10)
+    leg2.AddEntry(htrg2, legends[0])
+    leg2.AddEntry(htrgcut2, legends[1])
+    leg2.AddEntry(hbase2, '+\n'.join(triggers[channel]))
+    leg2.Draw('same')
+    
+    c2.Update();
+    for ext in ('png', 'pdf'):
+        c2.SaveAs( os.path.join(cat_folder, legends[2] + '_norm_' + var + '_' + cut_strs + '.' + ext) )
     c2.Close()
 
+        
 def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory):
     hmet1 = hmet.Clone('hmet1')
     hnomet1 = hnomet.Clone('hnomet1')
@@ -529,15 +654,15 @@ if __name__ == '__main__':
                     # hOR_c = hOR.Clone(suff('hOR_') + '_c')
                     # hORWithCut_c = hORWithCut.Clone(suff('hORWithCut_') + '_c')
 
-                    hOverlayBaseline_c = hBaseline.Clone(suff('hverlayBaseline_') + '_c')
+                    hOverlayBaseline_c = hBaseline.Clone(suff('hOverlayBaseline_') + '_c')
                     hOverlayMET_c = hMET.Clone(suff('hOverlayMET_') + '_c')
                     hOverlayBaseline_c.Add(hOverlayMET_c)
                     
                     opt = (v, args.channel, sample, cat, from_directory)
 
-                    plot('met', hMET, hBaseline, hMETWithCut, *opt)
-                    plot('tau', hTau, hBaseline, hTauWithCut, *opt)
-                    plot('met_tau', hOR, hBaseline, hORWithCut, *opt)
+                    plot('met', hBaseline, hMET, hMETWithCut, *opt)
+                    plot('tau', hBaseline, hTau, hTauWithCut, *opt)
+                    plot('met_tau', hBaseline, hMET, hORWithCut, *opt)
 
                     c1 = count('met', hMET_c, hBaseline_c, hMETWithCut_c, *opt)
                     c2 = count('tau', hTau_c, hBaseline_c, hTauWithCut_c, *opt)
