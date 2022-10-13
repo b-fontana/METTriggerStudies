@@ -61,7 +61,7 @@ def plot(mode, hbase, htrg, htrgcut, var, channel, sample, category, directory):
                         hbase, htrg, htrgcut, var, channel, directory, cat_dir)
 
 
-def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, sample, directory, cat_folder):
+def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, directory, cat_folder):
     defs = set_plot_definitions()
     
     hbase1 = hbase.Clone('hbase1')
@@ -80,17 +80,19 @@ def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, sam
     max_cut   = htrgcut1a[0].GetMaximum() + (htrgcut1a[0].GetMaximum()-htrgcut1a[0].GetMinimum())/5.
     htrgcut1a[0].SetMaximum( max(max_base, max_cut) )
 
-    htrgcut1a[0].GetXaxis().SetTitleSize(defs['XTitleSize']);
-    htrgcut1a[0].GetXaxis().SetTitle(var + ' [GeV]');
-    htrgcut1a[0].GetYaxis().SetTitleSize(defs['YTitleSize']);
-    htrgcut1a[0].GetYaxis().SetTitle('a. u.');
-    htrgcut1a[0].SetLineWidth(defs['LineWidth']);
-    htrgcut1a[0].SetLineColor(8);
+    htrgcut1a[1].GetXaxis().SetTitleSize(defs['XTitleSize']);
+    htrgcut1a[1].GetXaxis().SetTitle(var + ' [GeV]');
+    htrgcut1a[1].GetYaxis().SetTitleSize(defs['YTitleSize']);
+    htrgcut1a[1].GetYaxis().SetTitle('a. u.');
+    htrgcut1a[1].SetLineWidth(defs['LineWidth']);
+    htrgcut1a[1].SetLineColor(8);
 
-    hbase1.SetLineWidth(2);
-    hbase1.SetLineColor(4);
-    htrgcut1a[0].SetLineWidth(2);
-    htrgcut1a[0].SetLineColor(2);
+    hbase1.SetLineWidth(1);
+    hbase1.SetLineColor(1);
+    htrgcut1a[0].SetLineWidth(1);
+    htrgcut1a[0].SetLineColor(1);
+    htrgcut1a[1].SetLineWidth(1);
+    htrgcut1a[1].SetLineColor(1);
 
     htrgcut1a[1].Add(hbase)
     htrgcut1a[1].Add(htrgcut1a[0])
@@ -102,20 +104,20 @@ def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, sam
     hbase1.SetFillColor(4)
     hbase1.Draw('histsame')
 
-    leg1 = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
+    leg1 = ROOT.TLegend(0.65, 0.75, 0.90, 0.9)
     leg1.SetNColumns(1)
     leg1.SetFillStyle(0)
     leg1.SetBorderSize(0)
     leg1.SetTextFont(43)
     leg1.SetTextSize(10)
-    leg1.AddEntry(htrgcut1a[1], legends[3])
-    leg1.AddEntry(htrgcut1a[0], legends[0])
-    leg1.AddEntry(hbase1, '+'.join(triggers[channel]))
+    leg1.AddEntry(htrgcut1a[1], legends[3], "F")
+    leg1.AddEntry(htrgcut1a[0], legends[0], "F")
+    leg1.AddEntry(hbase1, '+'.join(triggers[channel]), "F")
     leg1.Draw('same')
 
     c1.Update();
     for ext in ('png', 'pdf'):
-        c1.SaveAs( os.path.join(cat_folder, legends[2] + '_abs_' + var + '_' + cut_strings + '.' + ext) )
+        c1.SaveAs( os.path.join(cat_folder, legends[2] + '_abs_' + var + '_' + cut_strs + '.' + ext) )
     c1.Close()
 
     # Normalized shapes
@@ -174,7 +176,7 @@ def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, sam
     
     c2.Update();
     for ext in ('png', 'pdf'):
-        c2.SaveAs( os.path.join(cat_folder, legends[2] + '_norm_' + var + '_' + cut_strings + '.' + ext) )
+        c2.SaveAs( os.path.join(cat_folder, legends[2] + '_norm_' + var + '_' + cut_strs + '.' + ext) )
     c2.Close()
     
 def plot_two_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, directory, cat_folder):
@@ -404,7 +406,7 @@ def counts_total(mode, totarr, channel, category, directory):
         for sample, frac in totarr:
             f.write(','.join((sample, str(round(frac,3)))) + '\n')
 
-def test_met(indir, sample, channel, plot_only):
+def test_triger_stats(indir, sample, channel, plot_only):
     outname = get_outname(suffix=sample+'_'+channel, mode='met', cut=str(met_cut), ext='root')
 
     if channel == 'etau' or channel == 'mutau':
@@ -452,7 +454,7 @@ def test_met(indir, sample, channel, plot_only):
             hMETWithCut_2D[v][cat] = ROOT.TH2D('hMETWithCut_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])        
   
     t_in.SetBranchStatus('*', 0)
-    _entries = ('triggerbit', 'RunNumber',
+    _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
                 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted',
                 'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta', 'PUReweight', 'lumi', 'IdAndIsoSF_deep_pt',
                 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
@@ -490,7 +492,7 @@ def test_met(indir, sample, channel, plot_only):
                     if sel.sel_category(cat):
   
                         # passes the OR of the trigger baseline (not including METNoMu120 trigger)
-                        pass_trg = sel.pass_triggers(triggers[channel])
+                        pass_trg = sel.pass_triggers(triggers[channel]) and entries.isLeptrigger
                         if pass_trg:
                             hBaseline[v][cat].Fill(entries[v], evt_weight)
 
@@ -569,7 +571,7 @@ if __name__ == '__main__':
                'dau2_iso': (20, 0.88, 1.01),
                'dau2_pt': (30, 0, 350),
                'dau2_eta': (20, -2.5, 2.5),
-               'ditau_deltaR': (25, 0, 1.7),
+               'ditau_deltaR': (20, 0.3, 1.5),
                'dib_deltaR': (25, 0, 2.5),
                'bH_pt': (20, 70, 600),
                'bH_mass': (30, 0, 280),
@@ -583,6 +585,7 @@ if __name__ == '__main__':
                'bjet2_eta': (20, -2.5, 2.5),
                }
     variables = tuple(binning.keys()) + ('HHKin_mass', 'dau1_iso')
+    #variables = tuple(('dau1_pt', 'dau2_pt', 'metnomu_et', 'HHKin_mass', 'dau1_iso', 'dau2_iso'))
     #variables_2D = (('dau1_pt', 'dau2_pt'), ('dau1_iso', 'dau2_iso'))
     variables_2D = ()
     #categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
@@ -607,13 +610,20 @@ if __name__ == '__main__':
                         help='Customisable cut provided by the user.')
     parser.add_argument('--no_copy', action='store_true',
                         help='Do not copy the outputs to EOS at the end.')
+    parser.add_argument('--sequential', action='store_true',
+                        help='Do not use the multiprocess package.')
     args = utils.parse_args(parser)
-    print(args)
-    if not args.plot_only and not args.plot_2D_only:
-        pool = multiprocessing.Pool(processes=4)    
-        pool.starmap(test_met, zip(it.repeat(args.indir), args.samples,
-                                   it.repeat(args.channel), it.repeat(args.plot_only)))
 
+    if args.sequential:
+        if not args.plot_only:
+            for sample in args.samples:
+                test_triger_stats(args.indir, sample, args.channel, args.plot_only)
+    else:
+        if not args.plot_only and not args.plot_2D_only:
+            pool = multiprocessing.Pool(processes=1)
+            pool.starmap(test_triger_stats, zip(it.repeat(args.indir), args.samples,
+                                                it.repeat(args.channel), it.repeat(args.plot_only)))
+            
     main_dir = 'TriggerStudy_MET'+str(met_cut)+'_SingleTau'+str(tau_cut)
     if '_'.join(args.custom_cut) != 'True':
         main_dir += '_CUT_' + '_'.join(args.custom_cut).replace('.','_').replace('>','LT').replace('<','ST')
@@ -662,7 +672,7 @@ if __name__ == '__main__':
 
                     plot('met', hBaseline, hMET, hMETWithCut, *opt)
                     plot('tau', hBaseline, hTau, hTauWithCut, *opt)
-                    plot('met_tau', hBaseline, [hMET,hTauNoMET], [hORWithCut,hTauNoMETWithCut], *opt)
+                    plot('met_tau', hBaseline, [hMET,hTauNoMET], [hMETWithCut,hTauNoMETWithCut], *opt)
 
                     c1 = count('met', hBaseline_c, hMET_c, hMETWithCut_c, *opt)
                     c2 = count('tau', hBaseline_c, hTau_c, hTauWithCut_c, *opt)
