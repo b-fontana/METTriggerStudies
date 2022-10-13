@@ -43,7 +43,7 @@ def set_plot_definitions():
 def plot(mode, hbase, htrg, htrgcut, var, channel, sample, category, directory):
     legends = {'met': ['MET', 'MET + cut', 'met'],
                'tau': ['Tau', 'Tau + cut', 'tau'],
-               'met_tau': ['MET', 'MET + both cuts', 'met_and_tau', 'Tau', 'Tau + cuts']}
+               'met_tau': ['MET', 'MET + cuts', 'met_and_tau', 'Tau', 'Tau + cuts']}
     cut_strings = {'met': str(met_cut),
                    'tau': str(tau_cut),
                    'met_tau': str(met_cut) + '_' + str(tau_cut)}
@@ -571,7 +571,7 @@ if __name__ == '__main__':
                'dau2_iso': (20, 0.88, 1.01),
                'dau2_pt': (30, 0, 350),
                'dau2_eta': (20, -2.5, 2.5),
-               'ditau_deltaR': (20, 0.3, 1.5),
+               'ditau_deltaR': (30, 0.3, 1.3),
                'dib_deltaR': (25, 0, 2.5),
                'bH_pt': (20, 70, 600),
                'bH_mass': (30, 0, 280),
@@ -606,7 +606,7 @@ if __name__ == '__main__':
                         help='Reuse previously produced data for quick plot changes.')
     parser.add_argument('--plot_2D_only', action='store_true',
                         help='Reuse previously produced data for quick plot changes.')
-    parser.add_argument('--custom_cut', type=str, nargs='+', default=['True'],
+    parser.add_argument('--custom_cut', nargs='+', default=['True'],
                         help='Customisable cut provided by the user.')
     parser.add_argument('--no_copy', action='store_true',
                         help='Do not copy the outputs to EOS at the end.')
@@ -620,13 +620,14 @@ if __name__ == '__main__':
                 test_triger_stats(args.indir, sample, args.channel, args.plot_only)
     else:
         if not args.plot_only and not args.plot_2D_only:
-            pool = multiprocessing.Pool(processes=1)
+            pool = multiprocessing.Pool(processes=len(args.samples))
             pool.starmap(test_triger_stats, zip(it.repeat(args.indir), args.samples,
                                                 it.repeat(args.channel), it.repeat(args.plot_only)))
             
     main_dir = 'TriggerStudy_MET'+str(met_cut)+'_SingleTau'+str(tau_cut)
     if '_'.join(args.custom_cut) != 'True':
-        main_dir += '_CUT_' + '_'.join(args.custom_cut).replace('.','_').replace('>','LT').replace('<','ST')
+        main_dir += '_CUT_' + '_'.join(args.custom_cut)
+        main_dir = main_dir.replace('.','_').replace(' ','_').replace('>','GT').replace('<','ST')
         
     from_directory = os.path.join(main_dir, args.channel)
     totcounts = {'met': {}, 'tau': {}, 'met_tau': {}}
