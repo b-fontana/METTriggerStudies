@@ -23,8 +23,11 @@ def get_outname(suffix, mode, cut, ext):
     assert mode in list(pref.keys())
     if ext == 'csv':
         s = 'counts_{}_{}_{}/table.csv'.format(suffix, pref[mode], cut)
+    elif ext == 'root':
+        utils.create_single_dir('data')
+        s = 'data/data_{}_{}_{}.{}'.format(suffix, pref[mode], cut, ext)
     else:
-        s = 'met_{}_{}_{}.{}'.format(suffix, pref[mode], cut, ext)
+        raise ValueError('The {} extension is not supported.'.format(ext))
     return s
 
 def set_plot_definitions():
@@ -40,13 +43,10 @@ def set_plot_definitions():
            }
     return ret
     
-def plot(mode, hbase, htrg, htrgcut, var, channel, sample, category, directory):
+def plot(mode, hbase, htrg, htrgcut, cut_strs, var, channel, sample, category, directory):
     legends = {'met': ['MET', 'MET + cut', 'met'],
                'tau': ['Tau', 'Tau + cut', 'tau'],
                'met_tau': ['MET', 'MET + cuts', 'met_and_tau', 'Tau', 'Tau + cuts']}
-    cut_strings = {'met': str(met_cut),
-                   'tau': str(tau_cut),
-                   'met_tau': str(met_cut) + '_' + str(tau_cut)}
 
     assert mode in list(legends.keys())
     
@@ -54,10 +54,10 @@ def plot(mode, hbase, htrg, htrgcut, var, channel, sample, category, directory):
     utils.create_single_dir(cat_dir)
 
     if isinstance(htrg, (tuple,list)):
-        plot_three_histos(legends[mode], cut_strings[mode],
+        plot_three_histos(legends[mode], cut_strs,
                           hbase, htrg, htrgcut, var, channel, directory, cat_dir)
     else:
-        plot_two_histos(legends[mode], cut_strings[mode],
+        plot_two_histos(legends[mode], cut_strs,
                         hbase, htrg, htrgcut, var, channel, directory, cat_dir)
 
 
@@ -77,7 +77,7 @@ def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, dir
         
     # Absolute shapes    
     max_base = hbase1.GetMaximum() + (hbase1.GetMaximum()-hbase1.GetMinimum())/5.
-    max_cut   = htrgcut1a[0].GetMaximum() + (htrgcut1a[0].GetMaximum()-htrgcut1a[0].GetMinimum())/5.
+    max_cut   = max(htrgcut1a[0].GetMaximum(),htrgcut1a[1].GetMaximum()) + (htrgcut1a[0].GetMaximum()-htrgcut1a[0].GetMinimum())/5.
     htrgcut1a[0].SetMaximum( max(max_base, max_cut) )
 
     htrgcut1a[1].GetXaxis().SetTitleSize(defs['XTitleSize']);
@@ -110,9 +110,9 @@ def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, dir
     leg1.SetBorderSize(0)
     leg1.SetTextFont(43)
     leg1.SetTextSize(10)
-    leg1.AddEntry(htrgcut1a[1], legends[3], "F")
-    leg1.AddEntry(htrgcut1a[0], legends[0], "F")
-    leg1.AddEntry(hbase1, '+'.join(triggers[channel]), "F")
+    leg1.AddEntry(htrgcut1a[1], legends[3], 'F')
+    leg1.AddEntry(htrgcut1a[0], legends[0], 'F')
+    leg1.AddEntry(hbase1, '+'.join(triggers[channel]), 'F')
     leg1.Draw('same')
 
     c1.Update();
@@ -356,14 +356,11 @@ def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory
         c.SaveAs( os.path.join(cat_folder, 'met_' + '_VS_'.join(two_vars) + '_' + str(met_cut) + '.' + ext) )
     c.Close()
 
-def count(mode, hbase, htrg, htrgcut, var, channel, sample, category, directory):
+def count(mode, hbase, htrg, htrgcut, cut_strings, var, channel, sample, category, directory):
     cat_folder = os.path.join(directory, sample, category)
     titles = {'met': ['MET', 'MET + cut', 'Trigger baseline (no MET)', 'Fraction [%]: {[MET + Cut] / [Trigger baseline]} + 1\n'],
               'tau': ['Tau', 'Tau + cut', 'Trigger baseline (no Tau)', 'Fraction [%]: {[Tau + Cut] / [Trigger baseline]} + 1\n'],
               'met_tau': ['MET + Tau', 'MET + Tau + cut', 'Trigger baseline (no MET + Tau)', 'Fraction [%]: {[MET + Tau + Cut] / [Trigger baseline]} + 1\n'],}
-    cut_strings = {'met': str(met_cut),
-                   'tau': str(tau_cut),
-                   'met_tau': str(met_cut) + '_' + str(tau_cut)}
 
     def calc_frac(c1, c2):
         try:
@@ -372,7 +369,8 @@ def count(mode, hbase, htrg, htrgcut, var, channel, sample, category, directory)
             frac = 0
         return frac * 100
 
-    name_met = os.path.join(cat_folder, get_outname(suffix=var, mode=mode, cut=cut_strings[mode], ext='csv'))
+    name_met = os.path.join(cat_folder,
+                            get_outname(suffix=var, mode=mode, cut=cut_strings, ext='csv'))
     utils.create_single_dir(os.path.dirname(name_met))
     with open(name_met, 'w') as f:
         f.write(','.join(('Bin label', titles[mode][0], titles[mode][1], titles[mode][2], titles[mode][3])))
@@ -406,8 +404,9 @@ def counts_total(mode, totarr, channel, category, directory):
         for sample, frac in totarr:
             f.write(','.join((sample, str(round(frac,3)))) + '\n')
 
-def test_triger_stats(indir, sample, channel, plot_only):
-    outname = get_outname(suffix=sample+'_'+channel, mode='met', cut=str(met_cut), ext='root')
+def test_triger_stats(indir, sample, channel, plot_only, cut_strings):
+    outname = get_outname(suffix=sample+'_'+channel, mode='met',
+                          cut=cut_strings['met_tau'], ext='root')
 
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
@@ -613,22 +612,31 @@ if __name__ == '__main__':
     parser.add_argument('--sequential', action='store_true',
                         help='Do not use the multiprocess package.')
     args = utils.parse_args(parser)
+            
+    main_dir = 'TriggerStudy_MET'+str(met_cut)+'_SingleTau'+str(tau_cut)
+    cut_expr = ''
+    if '_'.join(args.custom_cut) != 'True':
+        cut_expr = '_CUT_' + '_'.join(args.custom_cut)
+        cut_expr = cut_expr.replace('.','_').replace(' ','_').replace('>','GT').replace('<','ST')
+        main_dir += cut_expr
 
+    cut_strings = {'met': str(met_cut) + cut_expr,
+                   'tau': str(tau_cut) + cut_expr,
+                   'met_tau': str(met_cut) + '_' + str(tau_cut) + cut_expr}
+
+    #### run major function ###
     if args.sequential:
         if not args.plot_only:
             for sample in args.samples:
-                test_triger_stats(args.indir, sample, args.channel, args.plot_only)
+                test_triger_stats(args.indir, sample, args.channel, args.plot_only, cut_strings)
     else:
         if not args.plot_only and not args.plot_2D_only:
-            pool = multiprocessing.Pool(processes=len(args.samples))
+            pool = multiprocessing.Pool(processes=6)
             pool.starmap(test_triger_stats, zip(it.repeat(args.indir), args.samples,
-                                                it.repeat(args.channel), it.repeat(args.plot_only)))
-            
-    main_dir = 'TriggerStudy_MET'+str(met_cut)+'_SingleTau'+str(tau_cut)
-    if '_'.join(args.custom_cut) != 'True':
-        main_dir += '_CUT_' + '_'.join(args.custom_cut)
-        main_dir = main_dir.replace('.','_').replace(' ','_').replace('>','GT').replace('<','ST')
-        
+                                                it.repeat(args.channel), it.repeat(args.plot_only),
+                                                it.repeat(cut_strings)))
+    ###########################
+
     from_directory = os.path.join(main_dir, args.channel)
     totcounts = {'met': {}, 'tau': {}, 'met_tau': {}}
     for cat in categories:
@@ -637,7 +645,8 @@ if __name__ == '__main__':
         totcounts['met_tau'][cat] = []
         
     for sample in args.samples:
-        outname = get_outname(suffix=sample+'_'+args.channel, mode='met', cut=str(met_cut), ext='root')
+        outname = get_outname(suffix=sample+'_'+args.channel, mode='met',
+                              cut=cut_strings['met_tau'], ext='root')
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
         for cat in categories:
@@ -671,14 +680,17 @@ if __name__ == '__main__':
                     
                     opt = (v, args.channel, sample, cat, from_directory)
 
-                    plot('met', hBaseline, hMET, hMETWithCut, *opt)
-                    plot('tau', hBaseline, hTau, hTauWithCut, *opt)
-                    plot('met_tau', hBaseline, [hMET,hTauNoMET], [hMETWithCut,hTauNoMETWithCut], *opt)
+                    plot('met', hBaseline, hMET, hMETWithCut, cut_strings['met'], *opt)
+                    plot('tau', hBaseline, hTau, hTauWithCut, cut_strings['tau'], *opt)
+                    plot('met_tau', hBaseline, [hMET,hTauNoMET], [hMETWithCut,hTauNoMETWithCut],
+                         cut_strings['met_tau'], *opt)
 
-                    c1 = count('met', hBaseline_c, hMET_c, hMETWithCut_c, *opt)
-                    c2 = count('tau', hBaseline_c, hTau_c, hTauWithCut_c, *opt)
-                    c3 = count('met_tau',  hBaseline_c, hTauNoMET_c, hTauNoMETWithCut_c, *opt)
-                    c4 = count('met_tau', hOverlayBaseline_c, hTauNoMET_c, hTauNoMETWithCut_c, *opt)
+                    c1 = count('met', hBaseline_c, hMET_c, hMETWithCut_c, cut_strings['met'], *opt)
+                    c2 = count('tau', hBaseline_c, hTau_c, hTauWithCut_c, cut_strings['tau'], *opt)
+                    c3 = count('met_tau',  hBaseline_c, hTauNoMET_c, hTauNoMETWithCut_c,
+                               cut_strings['met_tau'],*opt)
+                    c4 = count('met_tau', hOverlayBaseline_c, hTauNoMET_c, hTauNoMETWithCut_c,
+                               cut_strings['met_tau'], *opt)
                     assert c3 <= c2
                     assert c4 <= c2
                     assert c4 <= c3
