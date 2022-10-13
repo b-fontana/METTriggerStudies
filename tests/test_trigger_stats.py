@@ -98,7 +98,7 @@ def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, sam
     htrgcut1a[1].Draw('hist')
     htrgcut1a[0].Add(hbase)
     htrgcut1a[0].SetFillColor(2)
-    htrgcut1a[0].Draw('hist')
+    htrgcut1a[0].Draw('histsame')
     hbase1.SetFillColor(4)
     hbase1.Draw('histsame')
 
@@ -156,7 +156,7 @@ def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, sam
     htrgcut2[1].SetLineColor(8);
 
     #htrg2.Draw('hist')
-    hbase2.Draw('histsame')
+    hbase2.Draw('hist')
     htrgcut2[0].Draw('histsame')
     htrgcut2[1].Draw('histsame')
 
@@ -662,7 +662,7 @@ if __name__ == '__main__':
 
                     plot('met', hBaseline, hMET, hMETWithCut, *opt)
                     plot('tau', hBaseline, hTau, hTauWithCut, *opt)
-                    plot('met_tau', hBaseline, hMET, hORWithCut, *opt)
+                    plot('met_tau', hBaseline, [hMET,hTauNoMET], [hORWithCut,hTauNoMETWithCut], *opt)
 
                     c1 = count('met', hMET_c, hBaseline_c, hMETWithCut_c, *opt)
                     c2 = count('tau', hTau_c, hBaseline_c, hTauWithCut_c, *opt)
