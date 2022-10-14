@@ -65,8 +65,7 @@ def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, dir
     defs = set_plot_definitions()
     
     hbase1 = hbase.Clone('hbase1')
-    htrgcut1a = [ h.Clone('htrgcut1a_' + str(ih)) for ih,h in enumerate(htrgcut) ]
-    #htrgcut1b = [ h.Clone('htrgcut1b_' + str(ih)) for ih,h in enumerate(htrgcut) ]
+    htrgcut1 = [ h.Clone('htrgcut1_' + str(ih)) for ih,h in enumerate(htrgcut) ]
 
     hbase2 = hbase.Clone('hbase2')
     htrg2 = [ h.Clone('htrg2_' + str(ih)) for ih,h in enumerate(htrg) ]
@@ -77,30 +76,30 @@ def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, dir
         
     # Absolute shapes    
     max_base = hbase1.GetMaximum() + (hbase1.GetMaximum()-hbase1.GetMinimum())/5.
-    max_cut   = max(htrgcut1a[0].GetMaximum(),htrgcut1a[1].GetMaximum()) + (htrgcut1a[0].GetMaximum()-htrgcut1a[0].GetMinimum())/5.
-    htrgcut1a[0].SetMaximum( max(max_base, max_cut) )
+    max_cut   = max(htrgcut1[0].GetMaximum(),htrgcut1[1].GetMaximum()) + (htrgcut1[0].GetMaximum()-htrgcut1[0].GetMinimum())/5.
+    htrgcut1[0].SetMaximum( max(max_base, max_cut) )
 
-    htrgcut1a[1].GetXaxis().SetTitleSize(defs['XTitleSize']);
-    htrgcut1a[1].GetXaxis().SetTitle(var + ' [GeV]');
-    htrgcut1a[1].GetYaxis().SetTitleSize(defs['YTitleSize']);
-    htrgcut1a[1].GetYaxis().SetTitle('a. u.');
-    htrgcut1a[1].SetLineWidth(defs['LineWidth']);
-    htrgcut1a[1].SetLineColor(8);
+    htrgcut1[1].GetXaxis().SetTitleSize(defs['XTitleSize']);
+    htrgcut1[1].GetXaxis().SetTitle(var + ' [GeV]');
+    htrgcut1[1].GetYaxis().SetTitleSize(defs['YTitleSize']);
+    htrgcut1[1].GetYaxis().SetTitle('a. u.');
+    htrgcut1[1].SetLineWidth(defs['LineWidth']);
+    htrgcut1[1].SetLineColor(8);
 
     hbase1.SetLineWidth(1);
     hbase1.SetLineColor(1);
-    htrgcut1a[0].SetLineWidth(1);
-    htrgcut1a[0].SetLineColor(1);
-    htrgcut1a[1].SetLineWidth(1);
-    htrgcut1a[1].SetLineColor(1);
+    htrgcut1[0].SetLineWidth(1);
+    htrgcut1[0].SetLineColor(1);
+    htrgcut1[1].SetLineWidth(1);
+    htrgcut1[1].SetLineColor(1);
 
-    htrgcut1a[1].Add(hbase)
-    htrgcut1a[1].Add(htrgcut1a[0])
-    htrgcut1a[1].SetFillColor(8)
-    htrgcut1a[1].Draw('hist')
-    htrgcut1a[0].Add(hbase)
-    htrgcut1a[0].SetFillColor(2)
-    htrgcut1a[0].Draw('histsame')
+    htrgcut1[1].Add(hbase)
+    htrgcut1[1].Add(htrgcut1[0])
+    htrgcut1[1].SetFillColor(8)
+    htrgcut1[1].Draw('hist')
+    htrgcut1[0].Add(hbase)
+    htrgcut1[0].SetFillColor(2)
+    htrgcut1[0].Draw('histsame')
     hbase1.SetFillColor(4)
     hbase1.Draw('histsame')
 
@@ -110,8 +109,8 @@ def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, dir
     leg1.SetBorderSize(0)
     leg1.SetTextFont(43)
     leg1.SetTextSize(10)
-    leg1.AddEntry(htrgcut1a[1], legends[3], 'F')
-    leg1.AddEntry(htrgcut1a[0], legends[0], 'F')
+    leg1.AddEntry(htrgcut1[1], legends[3], 'F')
+    leg1.AddEntry(htrgcut1[0], legends[0], 'F')
     leg1.AddEntry(hbase1, '+'.join(triggers[channel]), 'F')
     leg1.Draw('same')
 
@@ -138,23 +137,20 @@ def plot_three_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, dir
     except ZeroDivisionError:
         pass
 
-    max_met2   = htrg2[0].GetMaximum() + (htrg2[0].GetMaximum()-htrg2[0].GetMinimum())/5.
     max_base2 = hbase2.GetMaximum() + (hbase2.GetMaximum()-hbase2.GetMinimum())/5.
-    max_cut2   = htrgcut2[0].GetMaximum() + (htrgcut2[0].GetMaximum()-htrgcut2[0].GetMinimum())/5.
-    htrg2[0].SetMaximum( max(max_met2, max_base2, max_cut2) )
-
-    htrg2[0].GetXaxis().SetTitleSize(defs['XTitleSize']);
-    htrg2[0].GetXaxis().SetTitle(var + ' [GeV]');
-    htrg2[0].GetYaxis().SetTitleSize(defs['YTitleSize']);
-    htrg2[0].GetYaxis().SetTitle('Normalized to 1');
-    htrg2[0].SetLineWidth(defs['LineWidth']);
-    htrg2[0].SetLineColor(8);
-
-    hbase2.SetLineWidth(2);
+    max_cut2   = (max(htrgcut2[0].GetMaximum(),htrgcut2[1].GetMaximum()) +
+                  max((htrgcut2[0].GetMaximum()-htrgcut2[0].GetMinimum())/5., (htrgcut2[1].GetMaximum()-htrgcut2[1].GetMinimum())/5.))
+    hbase2.SetMaximum( max(max_base2, max_cut2) )
+    
+    hbase2.GetXaxis().SetTitleSize(defs['XTitleSize']);
+    hbase2.GetXaxis().SetTitle(var + ' [GeV]');
+    hbase2.GetYaxis().SetTitleSize(defs['YTitleSize']);
+    hbase2.GetYaxis().SetTitle('Normalized to 1');
+    hbase2.SetLineWidth(defs['LineWidth']);
     hbase2.SetLineColor(4);
-    htrgcut2[0].SetLineWidth(2);
+    htrgcut2[0].SetLineWidth(defs['LineWidth']);
     htrgcut2[0].SetLineColor(2);
-    htrgcut2[1].SetLineWidth(2);
+    htrgcut2[1].SetLineWidth(defs['LineWidth']);
     htrgcut2[1].SetLineColor(8);
 
     #htrg2.Draw('hist')
@@ -609,8 +605,8 @@ if __name__ == '__main__':
                'tauH_pt': (30, 0, 500),
                'tauH_SVFIT_mass': (30, 0, 250),
                'tauH_SVFIT_pt': (20, 200, 650),
-               'bjet1_pt': (16, 20, 500),
-               'bjet2_pt': (16, 20, 500),
+               'bjet1_pt': (25, 10, 600),
+               'bjet2_pt': (25, 10, 550),
                'bjet1_eta': (20, -2.5, 2.5),
                'bjet2_eta': (20, -2.5, 2.5),
                }
