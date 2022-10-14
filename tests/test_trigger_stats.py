@@ -553,7 +553,7 @@ def test_triger_stats(indir, sample, channel, plot_only, cut_strings):
 
                             if sel.pass_triggers(('IsoTau180',)):
                                 hTau_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
-                                if met_cut_expr:
+                                if tau_cut_expr:
                                     hTauWithCut_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
 
                             if sel.pass_triggers(('METNoMu120', 'IsoTau180',)):
