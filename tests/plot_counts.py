@@ -84,7 +84,9 @@ for md in main_dir:
         p.yaxis.axis_label = 'Trigger acceptance gain (w.r.t. trigger baseline) [%]'
      
         p.xaxis.major_label_overrides = dict(zip(linear_x,x_str))
-        
+
+        p.legend.click_policy='hide'        
+
         p.output_backend = 'svg'
         #export_svg(p, filename='line_graph.svg')
      

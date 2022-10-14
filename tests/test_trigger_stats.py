@@ -285,33 +285,35 @@ def plot_two_histos(legends, cut_strs, hbase, htrg, htrgcut, var, channel, direc
     c2.Close()
 
         
-def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory):
-    hmet1 = hmet.Clone('hmet1')
-    hnomet1 = hnomet.Clone('hnomet1')
-    hmetcut1 = hmetcut.Clone('hmetcut1')
+def plot2D(mode, hbase, htrg, htrgcut, cut_strs, two_vars, channel, sample, category, directory):
+    legends = {'met': ['MET', 'MET + cut', 'met'],
+               'tau': ['Tau', 'Tau + cut', 'tau'],
+               'met_tau': ['MET', 'MET + cuts', 'met_and_tau', 'Tau', 'Tau + cuts']}
+
+    htrg1 = htrg.Clone('htrg1')
+    hbase1 = hbase.Clone('hbase1')
+    htrgcut1 = htrgcut.Clone('htrgcut1')
 
     defs = set_plot_definitions()    
     c = ROOT.TCanvas('c', '', 600, 400)
 
     c.cd()
-    pad = ROOT.TPad('pad1', 'pad1', 0., 0., 0.333, 1.)
-    pad.SetFrameLineWidth(defs['FrameLineWidth'])
-    pad.SetLeftMargin(0.15);
-    pad.SetRightMargin(0.0);
-    pad.SetBottomMargin(0.08);
-    pad.SetTopMargin(0.055);
-    pad.Draw()
-    pad.cd()
+    pad1 = ROOT.TPad('pad1', 'pad1', 0., 0., 0.333, 1.)
+    pad1.SetFrameLineWidth(defs['FrameLineWidth'])
+    pad1.SetLeftMargin(0.15);
+    pad1.SetRightMargin(0.0);
+    pad1.SetBottomMargin(0.08);
+    pad1.SetTopMargin(0.055);
+    pad1.Draw()
+    pad1.cd()
 
-    hmet1.GetXaxis().SetTitle('')
-    hmet1.GetYaxis().SetTitle(two_vars[1])
-    hmetcut1.GetYaxis().SetTitleSize(0.045)
-    hmetcut1.GetYaxis().SetTitle(two_vars[1])
+    hbase.GetXaxis().SetTitle('');
+    hbase.GetYaxis().SetTitle('');
     try:
-        hmet1.Scale(1/hmet1.Integral())
+        hbase.Scale(1/hbase.Integral())
     except ZeroDivisionError:
         pass
-    hmet1.Draw('colz');
+    hbase.Draw('colz');
 
     c.cd()
     pad2 = ROOT.TPad('pad2', 'pad2', 0.333, 0.0, 0.665, 1.0)
@@ -323,14 +325,16 @@ def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory
     pad2.Draw()
     pad2.cd()
 
-    hnomet.GetXaxis().SetTitle('');
-    hnomet.GetYaxis().SetTitle('');
+    htrg1.GetXaxis().SetTitle('')
+    htrg1.GetYaxis().SetTitle(two_vars[1])
+    htrgcut1.GetYaxis().SetTitleSize(0.045)
+    htrgcut1.GetYaxis().SetTitle(two_vars[1])
     try:
-        hnomet.Scale(1/hnomet.Integral())
+        htrg1.Scale(1/htrg1.Integral())
     except ZeroDivisionError:
         pass
-    hnomet.Draw('colz');
-
+    htrg1.Draw('colz');
+ 
     c.cd()
     pad3 = ROOT.TPad('pad3', 'pad3', 0.665, 0.0, 1.0, 1.0)
     pad3.SetFrameLineWidth(defs['FrameLineWidth'])
@@ -341,19 +345,19 @@ def plot2D(hmet, hnomet, hmetcut, two_vars, channel, sample, category, directory
     pad3.Draw()
     pad3.cd()
 
-    hmetcut1.GetXaxis().SetTitle(two_vars[0])
-    hmetcut1.GetXaxis().SetTitleSize(0.045)
+    htrgcut1.GetXaxis().SetTitle(two_vars[0])
+    htrgcut1.GetXaxis().SetTitleSize(0.045)
     try:
-        hmetcut1.Scale(1/hmetcut1.Integral())
+        htrgcut1.Scale(1/htrgcut1.Integral())
     except ZeroDivisionError:
         pass
-    hmetcut1.Draw('colz')
+    htrgcut1.Draw('colz')
 
     cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
     c.Update();
     for ext in ('png', 'pdf'):
-        c.SaveAs( os.path.join(cat_folder, 'met_' + '_VS_'.join(two_vars) + '_' + str(met_cut) + '.' + ext) )
+        c.SaveAs( os.path.join(cat_folder, legends[mode][2] + '_' + '_VS_'.join(two_vars) + '_' + cut_strs + '.' + ext) )
     c.Close()
 
 def count(mode, hbase, htrg, htrgcut, cut_strings, var, channel, sample, category, directory):
@@ -443,15 +447,25 @@ def test_triger_stats(indir, sample, channel, plot_only, cut_strings):
             hTauNoMETWithCut[v][cat] = ROOT.TH1D('hTauNoMETWithCut_'+v+'_'+cat, '', *binning[v])
             hOR[v][cat] = ROOT.TH1D('hOR_'+v+'_'+cat, '', *binning[v])
             hORWithCut[v][cat] = ROOT.TH1D('hORWithCut_'+v+'_'+cat, '', *binning[v])
-  
-    hMET_2D, hBaseline_2D, hMETWithCut_2D = ({} for _ in range(3))
+
+    hBaseline_2D = {}
+    hMET_2D, hMETWithCut_2D = ({} for _ in range(2))
+    hTau_2D, hTauWithCut_2D = ({} for _ in range(2))
+    hOR_2D, hORWithCut_2D = ({} for _ in range(2))
     for v in variables_2D:
-        hMET_2D[v], hBaseline_2D[v], hMETWithCut_2D[v] = ({} for _ in range(3))
+        hBaseline_2D[v] = {}
+        hMET_2D[v], hMETWithCut_2D[v] = ({} for _ in range(2))
+        hTau_2D[v], hTauWithCut_2D[v] = ({} for _ in range(2))
+        hOR_2D[v], hORWithCut_2D[v] = ({} for _ in range(2))
         for cat in categories:
-            hMET_2D[v][cat] = ROOT.TH2D('hMET_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
             hBaseline_2D[v][cat] = ROOT.TH2D('hBaseline_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
+            hMET_2D[v][cat] = ROOT.TH2D('hMET_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
             hMETWithCut_2D[v][cat] = ROOT.TH2D('hMETWithCut_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])        
-  
+            hTau_2D[v][cat] = ROOT.TH2D('hTau_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
+            hTauWithCut_2D[v][cat] = ROOT.TH2D('hTauWithCut_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])        
+            hOR_2D[v][cat] = ROOT.TH2D('hOR_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
+            hORWithCut_2D[v][cat] = ROOT.TH2D('hORWithCut_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])        
+
     t_in.SetBranchStatus('*', 0)
     _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
                 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted',
@@ -530,15 +544,28 @@ def test_triger_stats(indir, sample, channel, plot_only, cut_strings):
                     if sel.sel_category(cat):
   
                         # passes the OR of the trigger baseline (not including METNoMu120 trigger)
-                        if pass_triggers(triggers[channel]):
+                        pass_trg = sel.pass_triggers(triggers[channel]) and entries.isLeptrigger
+                        if pass_trg:
                             hBaseline_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
   
                         # passes the METNoMu120 trigger and does *not* pass the OR of the baseline
-                        if (pass_triggers(('METNoMu120',)) and
-                            not pass_triggers(triggers[channel])):
-                            hMET_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
-                            if entries.metnomu_et > met_cut:
-                                hMETWithCut_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+                        if not pass_trg and eval(' '.join(args.custom_cut)):
+                            if sel.pass_triggers(('METNoMu120',)):
+                                hMET_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+                                if met_cut_expr:
+                                    hMETWithCut_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+
+                            if sel.pass_triggers(('IsoTau180',)):
+                                hTau_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+                                if met_cut_expr:
+                                    hTauWithCut_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+
+                            if sel.pass_triggers(('METNoMu120', 'IsoTau180',)):
+                                hOR_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+                                if ((sel.pass_triggers(('METNoMu120',)) and met_cut_expr) or
+                                    (sel.pass_triggers(('IsoTau180',)) and tau_cut_expr)):
+                                    hORWithCut_2D[v][cat].Fill(entries[v[0]], entries[v[1]], evt_weight)
+
 
     f_out = ROOT.TFile(outname, 'RECREATE')
     f_out.cd()
@@ -554,9 +581,13 @@ def test_triger_stats(indir, sample, channel, plot_only, cut_strings):
             hOR[v][cat].Write('hOR_' + v + '_' + cat)
             hORWithCut[v][cat].Write('hORWithCut_' + v + '_' + cat)
         for v in variables_2D:
-            hMET_2D[v][cat].Write('hMET_2D_' + '_'.join(v)+'_'+ cat)
             hBaseline_2D[v][cat].Write('hBaseline_2D_' + '_'.join(v)+'_'+ cat)
+            hMET_2D[v][cat].Write('hMET_2D_' + '_'.join(v)+'_'+ cat)
             hMETWithCut_2D[v][cat].Write('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
+            hTau_2D[v][cat].Write('hTau_2D_' + '_'.join(v)+'_'+ cat)
+            hTauWithCut_2D[v][cat].Write('hTauWithCut_2D_' + '_'.join(v)+'_'+ cat)
+            hOR_2D[v][cat].Write('hOR_2D_' + '_'.join(v)+'_'+ cat)
+            hORWithCut_2D[v][cat].Write('hORWithCut_2D_' + '_'.join(v)+'_'+ cat)
     f_out.Close()
     print('Raw histograms saved in {}.'.format(outname), flush=True)
 
@@ -585,8 +616,8 @@ if __name__ == '__main__':
                }
     variables = tuple(binning.keys()) + ('HHKin_mass', 'dau1_iso')
     #variables = tuple(('dau1_pt', 'dau2_pt', 'metnomu_et', 'HHKin_mass', 'dau1_iso', 'dau2_iso'))
-    #variables_2D = (('dau1_pt', 'dau2_pt'), ('dau1_iso', 'dau2_iso'))
-    variables_2D = ()
+    variables_2D = (('dau1_pt', 'dau2_pt'),)#('dau1_iso', 'dau2_iso'))
+
     #categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
     categories = ('baseline',)
     met_cut = 200
@@ -626,7 +657,7 @@ if __name__ == '__main__':
 
     #### run major function ###
     if args.sequential:
-        if not args.plot_only:
+        if not args.plot_only and not args.plot_2D_only:
             for sample in args.samples:
                 test_triger_stats(args.indir, sample, args.channel, args.plot_only, cut_strings)
     else:
@@ -699,11 +730,19 @@ if __name__ == '__main__':
                 totcounts['tau'][cat].append((sample, c2))
                 totcounts['met_tau'][cat].append((sample, c4))
                     
-                for v in variables_2D:
-                    hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
-                    hBaseline_2D = f_in.Get('hBaseline_2D_' + '_'.join(v)+'_'+ cat)
-                    hMETWithCut_2D = f_in.Get('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
-                    plot2D(hMET_2D, hBaseline_2D, hMETWithCut_2D, v, args.channel, sample, cat, from_directory)
+            for v in variables_2D:
+                opt_2D = (v, args.channel, sample, cat, from_directory)
+                hBaseline_2D = f_in.Get('hBaseline_2D_' + '_'.join(v)+'_'+ cat)
+                hMET_2D = f_in.Get('hMET_2D_' + '_'.join(v)+'_'+ cat)
+                hMETWithCut_2D = f_in.Get('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
+                plot2D('met', hBaseline_2D, hMET_2D, hMETWithCut_2D, cut_strings['met'], *opt_2D)
+                hTau_2D = f_in.Get('hTau_2D_' + '_'.join(v)+'_'+ cat)
+                hTauWithCut_2D = f_in.Get('hTauWithCut_2D_' + '_'.join(v)+'_'+ cat)
+                plot2D('tau', hBaseline_2D, hTau_2D, hTauWithCut_2D, cut_strings['tau'], *opt_2D)
+                hOR_2D = f_in.Get('hOR_2D_' + '_'.join(v)+'_'+ cat)
+                hORWithCut_2D = f_in.Get('hORWithCut_2D_' + '_'.join(v)+'_'+ cat)
+                plot2D('met_tau', hBaseline_2D, hOR_2D, hORWithCut_2D, cut_strings['met_tau'], *opt_2D)
+                    
         f_in.Close()
 
     for cat in categories:
