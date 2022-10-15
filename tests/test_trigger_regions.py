@@ -10,6 +10,7 @@ import argparse
 import glob
 import multiprocessing
 import itertools as it
+import csv
 
 import inclusion
 from inclusion import selection
@@ -49,31 +50,33 @@ def set_plot_definitions():
            }
     return ret
         
-def plot2D(histo, two_vars, channel, sample, category, directory):
-    histo = htrg.Clone('histo')
+def plot2D(histo, two_vars, channel, sample, category, directory, region):
+    histo = histo.Clone('histo')
     defs = set_plot_definitions()    
 
-    c = ROOT.TCanvas('c', '', 600, 400)
+    c = ROOT.TCanvas('c', '', 800, 800)
     c.cd()
     
-    pad1 = ROOT.TPad('pad1', 'pad1', 0., 0., 0.333, 1.)
-    pad1.SetFrameLineWidth(defs['FrameLineWidth'])
-    pad1.SetLeftMargin(0.15);
-    pad1.SetRightMargin(0.0);
-    pad1.SetBottomMargin(0.08);
-    pad1.SetTopMargin(0.055);
-    pad1.Draw()
-    pad1.cd()
+    # pad1 = ROOT.TPad('pad1', 'pad1', 0., 0., 1., 1.)
+    # pad1.cd()
+    # pad1.SetFrameLineWidth(defs['FrameLineWidth'])
+    # pad1.SetLeftMargin(0.15);
+    # pad1.SetRightMargin(0.0);
+    # pad1.SetBottomMargin(0.08);
+    # pad1.SetTopMargin(0.055);
+    # pad1.Draw()
 
     histo.GetXaxis().SetTitle(two_vars[0])
     histo.GetXaxis().SetTitleSize(0.045)
+    histo.GetYaxis().SetTitle(two_vars[1])
+    histo.GetYaxis().SetTitleSize(0.045)
     histo.Draw('colz')
 
     cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
     c.Update();
     for ext in ('png', 'pdf'):
-        c.SaveAs( os.path.join(cat_folder, 'plot_' + '_VS_'.join(two_vars) + '_' + cut_strs + '.' + ext) )
+        c.SaveAs( os.path.join(cat_folder, 'reg' + region + '_' + '_VS_'.join(two_vars) + '.' + ext) )
     c.Close()
 
 def test_trigger_regions(indir, sample, channel):
@@ -152,7 +155,7 @@ def test_trigger_regions(indir, sample, channel):
             if not sel.selection_cuts(lepton_veto=True, bjets_cut=True,
                                       standard_mass_cut=True, invert_mass_cut=False):
                 continue
-  
+
             for vx, vy in variables_2D:
                 for cat in categories:
                     if sel.sel_category(cat) and entries.ditau_deltaR > 0.5:
@@ -206,7 +209,7 @@ def test_trigger_regions(indir, sample, channel):
                 hBase_Tau[ireg][v][cat].Write(suff('hBase_Tau'))
                 hMET_Tau[ireg][v][cat].Write(suff('hMET_Tau'))
 
-                hBase_MET_Tau[ireg][v][cat].Write(suff('hBase_MET_Tau_'))
+                hBase_MET_Tau[ireg][v][cat].Write(suff('hBase_MET_Tau'))
                 
     f_out.Close()
     print('Raw histograms saved in {}.'.format(outname), flush=True)
@@ -252,9 +255,9 @@ if __name__ == '__main__':
                         help='Full path of ROOT input file')
     parser.add_argument('--channel', required=True, type=str,  
                         help='Select the channel over which the workflow will be run.' )
-    parser.add_argument('--plot_only', action='store_true',
+    parser.add_argument('--plot', action='store_true',
                         help='Reuse previously produced data for quick plot changes.')
-    parser.add_argument('--no_copy', action='store_true',
+    parser.add_argument('--copy', action='store_true',
                         help='Do not copy the outputs to EOS at the end.')
     parser.add_argument('--sequential', action='store_true',
                         help='Do not use the multiprocess package.')
@@ -269,11 +272,11 @@ if __name__ == '__main__':
 
     #### run major function ###
     if args.sequential:
-        if not args.plot_only:
+        if not args.plot:
             for sample in args.samples:
                 test_trigger_regions(args.indir, sample, args.channel)
     else:
-        if not args.plot_only:
+        if not args.plot:
             pool = multiprocessing.Pool(processes=6)
             pool.starmap(test_trigger_regions,
                          zip(it.repeat(args.indir), args.samples, it.repeat(args.channel)))
@@ -284,37 +287,53 @@ if __name__ == '__main__':
         outname = get_outname(suffix=sample+'_'+args.channel, mode='met', ext='root')
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
+
+        # write csv header, one per category
+        out_counts = []
+        for cat in categories:
+            out_counts.append( os.path.join(from_directory, sample, cat, 'counts') )
+            utils.create_single_dir(out_counts[-1])
+            with open(os.path.join(out_counts[-1], 'table.csv'), 'w') as f:
+                reader = csv.writer(f, delimiter=',', quotechar='|')
+                header_row = ['Region', 'Base', 'MET', 'Tau', 'Base && MET',
+                              'Base && Tau', 'MET && Tau', 'Base && MET && Tau']
+                reader.writerow(header_row)
+
+        # plot histograms and fill CSV with histogram integrals
         for ireg in range(nregions):
             for cat in categories:
-                if not args.plot_only:
-                    for v in variables_2D:
-                        suff = lambda x : x + '_' + str(ireg) + '_' + v[0] + '_VS_' + v[1] + '_' + cat
-                        
-                        hBase = f_in.Get(suff('hBase'))
-                        hMET = f_in.Get(suff('hMET'))
-                        hTau = f_in.Get(suff('hTau'))
+                for v in variables_2D:
+                    suff = lambda x : x+'_'+str(ireg)+'_'+v[0]+'_VS_'+v[1]+'_'+cat
+                    
+                    hBase = f_in.Get(suff('hBase'))
+                    hMET = f_in.Get(suff('hMET'))
+                    hTau = f_in.Get(suff('hTau'))
+ 
+                    hBase_MET = f_in.Get(suff('hBase_MET'))
+                    hBase_Tau = f_in.Get(suff('hBase_Tau'))
+                    hMET_Tau = f_in.Get(suff('hMET_Tau'))
+ 
+                    hBase_MET_Tau = f_in.Get(suff('hBase_MET_Tau'))
+ 
+                    plot2D(hMET, v, args.channel, sample, cat, from_directory, str(ireg))
+ 
+                nbinsx, nbinsy = hBase.GetNbinsX(), hBase.GetNbinsY()
+                cBase         = round(hBase.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
+                cMET          = round(hMET.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
+                cTau          = round(hTau.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
+                cBase_MET     = round(hBase_MET.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
+                cBase_Tau     = round(hBase_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
+                cMET_Tau      = round(hMET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
+                cBase_MET_Tau = round(hBase_MET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
 
-                        hBase_MET = f_in.Get(suff('hBase_MET'))
-                        hBase_Tau = f_in.Get(suff('hBase_Tau'))
-                        hMET_Tau = f_in.Get(suff('hMET_Tau'))
-
-                        hBase_MET_Tau = f_in.Get(suff('hBase_MET_Tau'))
-
-                        plot2D(hMET, v, args.channel, sample, cat, from_directory)
-
-                    nbinsx, nbinsy = hBase.GetNbinsX(), hBase.GetNbinsY()
-                    cBase         = hBase.GetIntegral(0, nbinsx+1, 0, nbinsy+1)
-                    cMET          = hMET.GetIntegral(0, nbinsx+1, 0, nbinsy+1)
-                    cTau          = hTau.GetIntegral(0, nbinsx+1, 0, nbinsy+1)
-                    cBase_MET     = hBase_MET.GetIntegral(0, nbinsx+1, 0, nbinsy+1)
-                    cBase_Tau     = hBase_Tau.GetIntegral(0, nbinsx+1, 0, nbinsy+1)
-                    cMET_Tau      = hMET_TauGetIntegral(0, nbinsx+1, 0, nbinsy+1)
-                    cBase_MET_Tau = hBase_MET_TauGetIntegral(0, nbinsx+1, 0, nbinsy+1)
-                    print(ireg, cat, cBase, cMET, cTau)
+                with open(os.path.join(out_counts[categories.index(cat)], 'table.csv'), 'a') as f:
+                    reader = csv.writer(f, delimiter=',', quotechar='|')
+                    row = [ireg, cBase, cMET, cTau, cBase_MET, cBase_Tau, cMET_Tau, cBase_MET_Tau]
+                    reader.writerow(row)
                         
         f_in.Close()
 
-    if not args.no_copy:
+    if args.copy:
         import subprocess
         to_directory = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors', main_dir)
         to_directory = os.path.join(to_directory, args.channel)
