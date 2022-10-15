@@ -107,16 +107,17 @@ def test_trigger_regions(indir, sample, channel):
             hBase_MET_Tau[ireg][v] = {}
 
             for cat in categories:
-                suff = '_' + '_'.join((str(ireg), v[0]+'_VS_'+v[1], cat))
-                hBase[ireg][v][cat] = ROOT.TH1D('hBase' + suff, '', *binning[v])
-                hMET[ireg][v][cat]  = ROOT.TH1D('hMET' + suff, '', *binning[v])
-                hTau[ireg][v][cat]  = ROOT.TH1D('hTau' + suff, '', *binning[v])
+                suff = lambda x: x + '_' + str(ireg) + '_' + v[0] + '_VS_' + v[1] + '_' + cat
+                hopt = (*binning[v[0]], *binning[v[1]])
+                hBase[ireg][v][cat] = ROOT.TH2D(suff('hBase'), '', *hopt)
+                hMET[ireg][v][cat]  = ROOT.TH2D(suff('hMET'), '', *hopt)
+                hTau[ireg][v][cat]  = ROOT.TH2D(suff('hTau'), '', *hopt)
                 
-                hBase_MET[ireg][v][cat] = ROOT.TH1D('hBase_MET' + suff, '', *binning[v])
-                hBase_Tau[ireg][v][cat] = ROOT.TH1D('hBase_Tau' + suff, '', *binning[v])
-                hMET_Tau[ireg][v][cat]  = ROOT.TH1D('hMET_Tau' + suff, '', *binning[v])
+                hBase_MET[ireg][v][cat] = ROOT.TH2D(suff('hBase_MET'), '', *hopt)
+                hBase_Tau[ireg][v][cat] = ROOT.TH2D(suff('hBase_Tau'), '', *hopt)
+                hMET_Tau[ireg][v][cat]  = ROOT.TH2D(suff('hMET_Tau') , '', *hopt)
                 
-                hBase_MET_Tau[ireg][v][cat] = ROOT.TH1D('hBase_MET_Tau' + suff, '', *binning[v])
+                hBase_MET_Tau[ireg][v][cat] = ROOT.TH2D(suff('hBase_MET_Tau'), '', *hopt)
 
     t_in.SetBranchStatus('*', 0)
     _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
@@ -196,14 +197,14 @@ def test_trigger_regions(indir, sample, channel):
     for ireg in range(nregions):
         for cat in categories:
             for v in variables_2D:
-                suff = lambda x: x + '_' + ireg + '_' + v[0] + '_VS_' + v[1] + '_' + cat
-                hBase[ireg][v][cat].Write(suff('hBase_'))
-                hMET[ireg][v][cat].Write(suff('hMET_'))
-                hTau[ireg][v][cat].Write(suff('hTau_'))
+                suff = lambda x: x + '_' + str(ireg) + '_' + v[0] + '_VS_' + v[1] + '_' + cat
+                hBase[ireg][v][cat].Write(suff('hBase'))
+                hMET[ireg][v][cat].Write(suff('hMET'))
+                hTau[ireg][v][cat].Write(suff('hTau'))
 
-                hBase_MET[ireg][v][cat].Write(suff('hBase_MET_'))
-                hBase_Tau[ireg][v][cat].Write(suff('hBase_Tau_'))
-                hMET_Tau[ireg][v][cat].Write(suff('hMET_Tau_'))
+                hBase_MET[ireg][v][cat].Write(suff('hBase_MET'))
+                hBase_Tau[ireg][v][cat].Write(suff('hBase_Tau'))
+                hMET_Tau[ireg][v][cat].Write(suff('hMET_Tau'))
 
                 hBase_MET_Tau[ireg][v][cat].Write(suff('hBase_MET_Tau_'))
                 
@@ -278,16 +279,16 @@ if __name__ == '__main__':
                          zip(it.repeat(args.indir), args.samples, it.repeat(args.channel)))
     ###########################
 
-    from_directory = os.path.join(main_dir[ic], args.channel)
+    from_directory = os.path.join(main_dir, args.channel)
     for sample in args.samples:
         outname = get_outname(suffix=sample+'_'+args.channel, mode='met', ext='root')
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
         for ireg in range(nregions):
             for cat in categories:
-                if not args.plot_2D_only:
+                if not args.plot_only:
                     for v in variables_2D:
-                        suff = lambda x : x + '_' + ireg + '_' + v[0] + '_VS_' + v[1] + '_' + cat
+                        suff = lambda x : x + '_' + str(ireg) + '_' + v[0] + '_VS_' + v[1] + '_' + cat
                         
                         hBase = f_in.Get(suff('hBase'))
                         hMET = f_in.Get(suff('hMET'))
