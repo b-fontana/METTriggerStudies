@@ -286,7 +286,7 @@ def plot2D(mode, hbase, htrg, htrgcut, cut_strs, two_vars, channel, sample, cate
                'tau': ['Tau', 'Tau + cut', 'tau'],
                'met_tau': ['MET', 'MET + cuts', 'met_and_tau', 'Tau', 'Tau + cuts']}
 
-    htrg1 = htrg.Clone('htrg1')
+    #htrg1 = htrg.Clone('htrg1')
     hbase1 = hbase.Clone('hbase1')
     htrgcut1 = htrgcut.Clone('htrgcut1')
 
@@ -294,7 +294,7 @@ def plot2D(mode, hbase, htrg, htrgcut, cut_strs, two_vars, channel, sample, cate
     c = ROOT.TCanvas('c', '', 600, 400)
 
     c.cd()
-    pad1 = ROOT.TPad('pad1', 'pad1', 0., 0., 0.333, 1.)
+    pad1 = ROOT.TPad('pad1', 'pad1', 0., 0., 0.5, 1.)
     pad1.SetFrameLineWidth(defs['FrameLineWidth'])
     pad1.SetLeftMargin(0.15);
     pad1.SetRightMargin(0.0);
@@ -311,28 +311,28 @@ def plot2D(mode, hbase, htrg, htrgcut, cut_strs, two_vars, channel, sample, cate
         pass
     hbase.Draw('colz');
 
-    c.cd()
-    pad2 = ROOT.TPad('pad2', 'pad2', 0.333, 0.0, 0.665, 1.0)
-    pad2.SetFrameLineWidth(defs['FrameLineWidth'])
-    pad2.SetLeftMargin(0.0);
-    pad2.SetRightMargin(0.0);
-    pad2.SetBottomMargin(0.08);
-    pad2.SetTopMargin(0.055);
-    pad2.Draw()
-    pad2.cd()
+    # c.cd()
+    # pad2 = ROOT.TPad('pad2', 'pad2', 0.333, 0.0, 0.665, 1.0)
+    # pad2.SetFrameLineWidth(defs['FrameLineWidth'])
+    # pad2.SetLeftMargin(0.0);
+    # pad2.SetRightMargin(0.0);
+    # pad2.SetBottomMargin(0.08);
+    # pad2.SetTopMargin(0.055);
+    # pad2.Draw()
+    # pad2.cd()
 
-    htrg1.GetXaxis().SetTitle('')
-    htrg1.GetYaxis().SetTitle(two_vars[1])
-    htrgcut1.GetYaxis().SetTitleSize(0.045)
-    htrgcut1.GetYaxis().SetTitle(two_vars[1])
-    try:
-        htrg1.Scale(1/htrg1.Integral())
-    except ZeroDivisionError:
-        pass
-    htrg1.Draw('colz');
+    # htrg1.GetXaxis().SetTitle('')
+    # htrg1.GetYaxis().SetTitle(two_vars[1])
+    # htrgcut1.GetYaxis().SetTitleSize(0.045)
+    # htrgcut1.GetYaxis().SetTitle(two_vars[1])
+    # try:
+    #     htrg1.Scale(1/htrg1.Integral())
+    # except ZeroDivisionError:
+    #     pass
+    # htrg1.Draw('colz');
  
     c.cd()
-    pad3 = ROOT.TPad('pad3', 'pad3', 0.665, 0.0, 1.0, 1.0)
+    pad3 = ROOT.TPad('pad3', 'pad3', 0.5, 0.0, 1.0, 1.0)
     pad3.SetFrameLineWidth(defs['FrameLineWidth'])
     pad3.SetLeftMargin(0.0);
     pad3.SetRightMargin(0.15);
@@ -347,7 +347,7 @@ def plot2D(mode, hbase, htrg, htrgcut, cut_strs, two_vars, channel, sample, cate
         htrgcut1.Scale(1/htrgcut1.Integral())
     except ZeroDivisionError:
         pass
-    htrgcut1.Draw('colz')
+    htrgcut1.Draw('colz same')
 
     cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
