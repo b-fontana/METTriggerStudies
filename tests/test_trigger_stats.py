@@ -10,6 +10,7 @@ import argparse
 import glob
 import multiprocessing
 import itertools as it
+from collections import defaultdict
 
 import inclusion
 from inclusion import selection
@@ -19,7 +20,8 @@ from inclusion.utils import utils
 import ROOT
 
 def get_outname(suffix, mode, cut, ext):
-    pref = {'met': 'MET', 'tau': 'Tau', 'met_tau': 'MET_and_Tau'}
+    pref = {'met': 'MET', 'tau': 'Tau',
+            'tau_nomet': 'noMET_and_Tau', 'met_notau': 'MET_and_noTau'}
     assert mode in list(pref.keys())
     if ext == 'csv':
         s = 'counts_{}_{}_{}/table.csv'.format(suffix, pref[mode], cut)
@@ -46,7 +48,8 @@ def set_plot_definitions():
 def plot(mode, hbase, htrg, htrgcut, cut_strs, var, channel, sample, category, directory):
     legends = {'met': ['MET', 'MET + cut', 'met'],
                'tau': ['Tau', 'Tau + cut', 'tau'],
-               'met_tau': ['MET', 'MET + cuts', 'met_and_tau', 'Tau', 'Tau + cuts']}
+               'tau_nomet': ['MET', 'MET + cuts', 'tau_nomet', 'Tau', 'Tau + cuts'],
+               'met_notau': ['Tau', 'Tau + cuts', 'met_notau', 'MET', 'MET + cuts']}
 
     assert mode in list(legends.keys())
     
@@ -360,7 +363,8 @@ def count(mode, hbase, htrg, htrgcut, cut_strings, var, channel, sample, categor
     cat_folder = os.path.join(directory, sample, category)
     titles = {'met': ['MET', 'MET + cut', 'Trigger baseline (no MET)', 'Fraction [%]: {[MET + Cut] / [Trigger baseline]} + 1\n'],
               'tau': ['Tau', 'Tau + cut', 'Trigger baseline (no Tau)', 'Fraction [%]: {[Tau + Cut] / [Trigger baseline]} + 1\n'],
-              'met_tau': ['MET + Tau', 'MET + Tau + cut', 'Trigger baseline (no MET + Tau)', 'Fraction [%]: {[MET + Tau + Cut] / [Trigger baseline]} + 1\n'],}
+              'tau_nomet': ['MET + Tau', 'MET + Tau + cut', 'Trigger baseline (no MET + Tau)', 'Fraction [%]: {[MET + Tau + Cut] / [Trigger baseline]} + 1\n'],
+              'met_notau': ['Tau + MET', 'Tau + MET + cut', 'Trigger baseline (MET + no Tau)', 'Fraction [%]: {[MET + Tau + Cut] / [Trigger baseline]} + 1\n'],}
 
     def calc_frac(c1, c2):
         try:
@@ -395,7 +399,8 @@ def count(mode, hbase, htrg, htrgcut, cut_strings, var, channel, sample, categor
 def counts_total(mode, totarr, channel, category, directory):
     titles = {'met': ['MET', 'MET + cut', 'Trigger baseline (no MET)', 'Fraction [%]: {[MET + Cut] / [Trigger baseline]} + 1\n'],
               'tau': ['Tau', 'Tau + cut', 'Trigger baseline (no Tau)', 'Fraction [%]: {[Tau + Cut] / [Trigger baseline]} + 1\n'],
-              'met_tau': ['MET + Tau', 'MET + Tau + cut', 'Trigger baseline (no MET + Tau)', 'Fraction [%]: {[MET + Tau + Cut] / [Trigger baseline]} + 1\n'],}
+              'tau_nomet': ['MET + Tau', 'MET + Tau + cut', 'Trigger baseline (no MET + Tau)', 'Fraction [%]: {[MET + Tau + Cut] / [Trigger baseline]} + 1\n'],
+              'met_notau': ['Tau + MET', 'Tau + MET + cut', 'Trigger baseline (no Tau + MET)', 'Fraction [%]: {[MET + Tau + Cut] / [Trigger baseline]} + 1\n'],}
 
     name = os.path.join(directory, 'counts_total_' + category + '_' + mode,  'table.csv')
     utils.create_single_dir(os.path.dirname(name))
@@ -422,45 +427,43 @@ def test_triger_stats(indir, sample, channel, plot_only, cut_strings):
     for f in glob_files:
         t_in.Add(f)
 
-    hBaseline = {}
-    hMET, hMETWithCut = ({} for _ in range(2))
-    hTau, hTauWithCut = ({} for _ in range(2))
-    hTauNoMET, hTauNoMETWithCut = ({} for _ in range(2))
-    hOR, hORWithCut = ({} for _ in range(2))
+    hBaseline = defaultdict(dict)
+    hMET, hMETWithCut = (defaultdict(dict) for _ in range(2))
+    hTau, hTauWithCut = (defaultdict(dict) for _ in range(2))
+    hTauNoMET, hTauNoMETWithCut = (defaultdict(dict) for _ in range(2))
+    hMETNoTau, hMETNoTauWithCut = (defaultdict(dict) for _ in range(2))
+    hOR, hORWithCut = (defaultdict(dict) for _ in range(2))
     for v in tuple(variables):
-        hBaseline[v] = {}
-        hMET[v], hMETWithCut[v] = ({} for _ in range(2))
-        hTau[v], hTauWithCut[v] = ({} for _ in range(2))
-        hTauNoMET[v], hTauNoMETWithCut[v] = ({} for _ in range(2))
-        hOR[v], hORWithCut[v] = ({} for _ in range(2))
         for cat in categories:
-            hBaseline[v][cat] = ROOT.TH1D('hBaseline_'+v+'_'+cat, '', *binning[v])
-            hMET[v][cat] = ROOT.TH1D('hMET_'+v+'_'+cat, '', *binning[v])
-            hMETWithCut[v][cat] = ROOT.TH1D('hMETWithCut_'+v+'_'+cat, '', *binning[v])
-            hTau[v][cat] = ROOT.TH1D('hTau_'+v+'_'+cat, '', *binning[v])
-            hTauWithCut[v][cat] = ROOT.TH1D('hTauWithCut_'+v+'_'+cat, '', *binning[v])
-            hTauNoMET[v][cat] = ROOT.TH1D('hTauNoMET_'+v+'_'+cat, '', *binning[v])
-            hTauNoMETWithCut[v][cat] = ROOT.TH1D('hTauNoMETWithCut_'+v+'_'+cat, '', *binning[v])
-            hOR[v][cat] = ROOT.TH1D('hOR_'+v+'_'+cat, '', *binning[v])
-            hORWithCut[v][cat] = ROOT.TH1D('hORWithCut_'+v+'_'+cat, '', *binning[v])
+            suff = lambda x : x + '_' + v + '_' + cat
+            hopt = ('', *binning[v])
+            hBaseline[v][cat] = ROOT.TH1D(suff('hBaseline'), *hopt)
+            hMET[v][cat] = ROOT.TH1D(suff('hMET'), *hopt)
+            hMETWithCut[v][cat] = ROOT.TH1D(suff('hMETWithCut'), *hopt)
+            hTau[v][cat] = ROOT.TH1D(suff('hTau'), *hopt)
+            hTauWithCut[v][cat] = ROOT.TH1D(suff('hTauWithCut'), *hopt)
+            hTauNoMET[v][cat] = ROOT.TH1D(suff('hTauNoMET'), *hopt)
+            hTauNoMETWithCut[v][cat] = ROOT.TH1D(suff('hTauNoMETWithCut'), *hopt)
+            hMETNoTau[v][cat] = ROOT.TH1D(suff('hMETNoTau'), *hopt)
+            hMETNoTauWithCut[v][cat] = ROOT.TH1D(suff('hMETNoTauWithCut'), *hopt)
+            hOR[v][cat] = ROOT.TH1D(suff('hOR'), *hopt)
+            hORWithCut[v][cat] = ROOT.TH1D(suff('hORWithCut'), *hopt)
 
-    hBaseline_2D = {}
-    hMET_2D, hMETWithCut_2D = ({} for _ in range(2))
-    hTau_2D, hTauWithCut_2D = ({} for _ in range(2))
-    hOR_2D, hORWithCut_2D = ({} for _ in range(2))
+    hBaseline_2D = defaultdict(dict)
+    hMET_2D, hMETWithCut_2D = (defaultdict(dict) for _ in range(2))
+    hTau_2D, hTauWithCut_2D = (defaultdict(dict) for _ in range(2))
+    hOR_2D, hORWithCut_2D = (defaultdict(dict) for _ in range(2))
     for v in variables_2D:
-        hBaseline_2D[v] = {}
-        hMET_2D[v], hMETWithCut_2D[v] = ({} for _ in range(2))
-        hTau_2D[v], hTauWithCut_2D[v] = ({} for _ in range(2))
-        hOR_2D[v], hORWithCut_2D[v] = ({} for _ in range(2))
         for cat in categories:
-            hBaseline_2D[v][cat] = ROOT.TH2D('hBaseline_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
-            hMET_2D[v][cat] = ROOT.TH2D('hMET_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
-            hMETWithCut_2D[v][cat] = ROOT.TH2D('hMETWithCut_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])        
-            hTau_2D[v][cat] = ROOT.TH2D('hTau_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
-            hTauWithCut_2D[v][cat] = ROOT.TH2D('hTauWithCut_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])        
-            hOR_2D[v][cat] = ROOT.TH2D('hOR_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])
-            hORWithCut_2D[v][cat] = ROOT.TH2D('hORWithCut_2D_'+'_'.join(v)+'_'+cat, '', *binning[v[0]], *binning[v[1]])        
+            suff = lambda x: x + '_' + '_'.join(v) + '_' + cat
+            hopt = ('', *binning[v[0]], *binning[v[1]])
+            hBaseline_2D[v][cat]   = ROOT.TH2D(suff('hBaseline_2D'), *hopt)
+            hMET_2D[v][cat]        = ROOT.TH2D(suff('hMET_2D'), *hopt)
+            hMETWithCut_2D[v][cat] = ROOT.TH2D(suff('hMETWithCut_2D'), *hopt)        
+            hTau_2D[v][cat]        = ROOT.TH2D(suff('hTau_2D'), *hopt)
+            hTauWithCut_2D[v][cat] = ROOT.TH2D(suff('hTauWithCut_2D'), *hopt)
+            hOR_2D[v][cat]         = ROOT.TH2D(suff('hOR_2D'), *hopt)
+            hORWithCut_2D[v][cat]  = ROOT.TH2D(suff('hORWithCut_2D'), *hopt)
 
     t_in.SetBranchStatus('*', 0)
     _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
@@ -528,6 +531,12 @@ def test_triger_stats(indir, sample, channel, plot_only, cut_strings):
                                 if tau_cut_expr:
                                     hTauNoMETWithCut[v][cat].Fill(entries[v], evt_weight)
 
+                            # passes the METNoMu120 trigger and does *not* pass the OR of the baseline and IsoTau180
+                            if sel.pass_triggers(('METNoMu120',)) and not sel.pass_triggers(('IsoTau180',)):
+                                hMETNoTau[v][cat].Fill(entries[v], evt_weight)
+                                if met_cut_expr:
+                                    hMETNoTauWithCut[v][cat].Fill(entries[v], evt_weight)
+
                             # passes the METNoMu120 or the IsoTau180 triggers and does *not* pass the OR of the baseline
                             if sel.pass_triggers(('METNoMu120', 'IsoTau180',)):
                                 hOR[v][cat].Fill(entries[v], evt_weight)
@@ -567,23 +576,27 @@ def test_triger_stats(indir, sample, channel, plot_only, cut_strings):
     f_out.cd()
     for cat in categories:
         for v in variables:
-            hBaseline[v][cat].Write('hBaseline_' + v + '_' + cat)
-            hMET[v][cat].Write('hMET_' + v + '_' + cat)
-            hMETWithCut[v][cat].Write('hMETWithCut_' + v + '_' + cat)
-            hTau[v][cat].Write('hTau_' + v + '_' + cat)
-            hTauWithCut[v][cat].Write('hTauWithCut_' + v + '_' + cat)
-            hTauNoMET[v][cat].Write('hTauNoMET_' + v + '_' + cat)
-            hTauNoMETWithCut[v][cat].Write('hTauNoMETWithCut_' + v + '_' + cat)
-            hOR[v][cat].Write('hOR_' + v + '_' + cat)
-            hORWithCut[v][cat].Write('hORWithCut_' + v + '_' + cat)
+            suff = lambda x : x + '_' + v + '_' + cat
+            hBaseline[v][cat].Write(suff('hBaseline'))
+            hMET[v][cat].Write(suff('hMET'))
+            hMETWithCut[v][cat].Write(suff('hMETWithCut'))
+            hTau[v][cat].Write(suff('hTau'))
+            hTauWithCut[v][cat].Write(suff('hTauWithCut'))
+            hTauNoMET[v][cat].Write(suff('hTauNoMET'))
+            hTauNoMETWithCut[v][cat].Write(suff('hTauNoMETWithCut'))
+            hMETNoTau[v][cat].Write(suff('hMETNoTau'))
+            hMETNoTauWithCut[v][cat].Write(suff('hMETNoTauWithCut'))
+            hOR[v][cat].Write(suff('hOR'))
+            hORWithCut[v][cat].Write(suff('hORWithCut'))
         for v in variables_2D:
-            hBaseline_2D[v][cat].Write('hBaseline_2D_' + '_'.join(v)+'_'+ cat)
-            hMET_2D[v][cat].Write('hMET_2D_' + '_'.join(v)+'_'+ cat)
-            hMETWithCut_2D[v][cat].Write('hMETWithCut_2D_' + '_'.join(v)+'_'+ cat)
-            hTau_2D[v][cat].Write('hTau_2D_' + '_'.join(v)+'_'+ cat)
-            hTauWithCut_2D[v][cat].Write('hTauWithCut_2D_' + '_'.join(v)+'_'+ cat)
-            hOR_2D[v][cat].Write('hOR_2D_' + '_'.join(v)+'_'+ cat)
-            hORWithCut_2D[v][cat].Write('hORWithCut_2D_' + '_'.join(v)+'_'+ cat)
+            suff2 = lambda x: x + '_' + '_'.join(v) + '_' + cat
+            hBaseline_2D[v][cat].Write(suff2('hBaseline_2D'))
+            hMET_2D[v][cat].Write(suff2('hMET_2D'))
+            hMETWithCut_2D[v][cat].Write(suff2('hMETWithCut_2D'))
+            hTau_2D[v][cat].Write(suff2('hTau_2D'))
+            hTauWithCut_2D[v][cat].Write(suff2('hTauWithCut_2D'))
+            hOR_2D[v][cat].Write(suff2('hOR_2D'))
+            hORWithCut_2D[v][cat].Write(suff2('hORWithCut_2D'))
     f_out.Close()
     print('Raw histograms saved in {}.'.format(outname), flush=True)
 
@@ -634,7 +647,7 @@ if __name__ == '__main__':
                         help='Reuse previously produced data for quick plot changes.')
     parser.add_argument('--custom_cut', nargs='+', default=['True'],
                         help='Customisable cut provided by the user.')
-    parser.add_argument('--no_copy', action='store_true',
+    parser.add_argument('--copy', action='store_true',
                         help='Do not copy the outputs to EOS at the end.')
     parser.add_argument('--sequential', action='store_true',
                         help='Do not use the multiprocess package.')
@@ -647,9 +660,9 @@ if __name__ == '__main__':
         cut_expr = cut_expr.replace('.','_').replace(' ','_').replace('>','GT').replace('<','ST')
         main_dir += cut_expr
 
-    cut_strings = {'met': str(met_cut) + cut_expr,
-                   'tau': str(tau_cut) + cut_expr,
-                   'met_tau': str(met_cut) + '_' + str(tau_cut) + cut_expr}
+    cut_strings = {'met': 'met' + str(met_cut) + cut_expr,
+                   'tau': 'tau' + str(tau_cut) + cut_expr,
+                   'met_tau': 'met' + str(met_cut) + '_tau' + str(tau_cut) + cut_expr}
 
     #### run major function ###
     if args.sequential:
@@ -665,11 +678,12 @@ if __name__ == '__main__':
     ###########################
 
     from_directory = os.path.join(main_dir, args.channel)
-    totcounts = {'met': {}, 'tau': {}, 'met_tau': {}}
+    totcounts = {'met': {}, 'tau': {}, 'tau_nomet': {}, 'met_notau': {}}
     for cat in categories:
         totcounts['met'][cat] = []
         totcounts['tau'][cat] = []
-        totcounts['met_tau'][cat] = []
+        totcounts['tau_nomet'][cat] = []
+        totcounts['met_notau'][cat] = []
         
     for sample in args.samples:
         outname = get_outname(suffix=sample+'_'+args.channel, mode='met',
@@ -679,27 +693,31 @@ if __name__ == '__main__':
         for cat in categories:
             if not args.plot_2D_only:
                 for v in variables:
-                    suff = lambda x : x + v + '_' + cat
+                    suff = lambda x : x + '_' + v + '_' + cat
                     
-                    hBaseline = f_in.Get(suff('hBaseline_'))
-                    hMET = f_in.Get(suff('hMET_'))
-                    hMETWithCut = f_in.Get(suff('hMETWithCut_'))
-                    hTau = f_in.Get(suff('hTau_'))
-                    hTauWithCut = f_in.Get(suff('hTauWithCut_'))
-                    hTauNoMET = f_in.Get(suff('hTauNoMET_'))
-                    hTauNoMETWithCut = f_in.Get(suff('hTauNoMETWithCut_'))
-                    hOR = f_in.Get(suff('hOR_'))
-                    hORWithCut = f_in.Get(suff('hORWithCut_'))
+                    hBaseline = f_in.Get(suff('hBaseline'))
+                    hMET = f_in.Get(suff('hMET'))
+                    hMETWithCut = f_in.Get(suff('hMETWithCut'))
+                    hTau = f_in.Get(suff('hTau'))
+                    hTauWithCut = f_in.Get(suff('hTauWithCut'))
+                    hTauNoMET = f_in.Get(suff('hTauNoMET'))
+                    hTauNoMETWithCut = f_in.Get(suff('hTauNoMETWithCut'))
+                    hMETNoTau = f_in.Get(suff('hMETNoTau'))
+                    hMETNoTauWithCut = f_in.Get(suff('hMETNoTauWithCut'))
+                    hOR = f_in.Get(suff('hOR'))
+                    hORWithCut = f_in.Get(suff('hORWithCut'))
 
-                    hBaseline_c = hBaseline.Clone(suff('hBaseline_') + '_c')
-                    hMET_c = hMET.Clone(suff('hMET_') + '_c')
-                    hMETWithCut_c = hMETWithCut.Clone(suff('hMETWithCut_') + '_c')
-                    hTau_c = hTau.Clone(suff('hTau_') + '_c')
-                    hTauWithCut_c = hTauWithCut.Clone(suff('hTauWithCut_') + '_c')
-                    hTauNoMET_c = hTauNoMET.Clone(suff('hTauNoMET_') + '_c')
-                    hTauNoMETWithCut_c = hTauNoMETWithCut.Clone(suff('hTauNoMETWithCut_') + '_c')
-                    # hOR_c = hOR.Clone(suff('hOR_') + '_c')
-                    # hORWithCut_c = hORWithCut.Clone(suff('hORWithCut_') + '_c')
+                    hBaseline_c = hBaseline.Clone(suff('hBaseline') + '_c')
+                    hMET_c = hMET.Clone(suff('hMET') + '_c')
+                    hMETWithCut_c = hMETWithCut.Clone(suff('hMETWithCut') + '_c')
+                    hTau_c = hTau.Clone(suff('hTau') + '_c')
+                    hTauWithCut_c = hTauWithCut.Clone(suff('hTauWithCut') + '_c')
+                    hTauNoMET_c = hTauNoMET.Clone(suff('hTauNoMET') + '_c')
+                    hTauNoMETWithCut_c = hTauNoMETWithCut.Clone(suff('hTauNoMETWithCut') + '_c')
+                    hMETNoTau_c = hMETNoTau.Clone(suff('hMETNoTau') + '_c')
+                    hMETNoTauWithCut_c = hMETNoTauWithCut.Clone(suff('hMETNoTauWithCut') + '_c')
+                    # hOR_c = hOR.Clone(suff('hOR') + '_c')
+                    # hORWithCut_c = hORWithCut.Clone(suff('hORWithCut') + '_c')
 
                     hOverlayBaseline_c = hBaseline.Clone(suff('hOverlayBaseline_') + '_c')
                     hOverlayMET_c = hMET.Clone(suff('hOverlayMET_') + '_c')
@@ -709,22 +727,30 @@ if __name__ == '__main__':
 
                     plot('met', hBaseline, hMET, hMETWithCut, cut_strings['met'], *opt)
                     plot('tau', hBaseline, hTau, hTauWithCut, cut_strings['tau'], *opt)
-                    plot('met_tau', hBaseline, [hMET,hTauNoMET], [hMETWithCut,hTauNoMETWithCut],
+                    plot('tau_nomet', hBaseline, [hMET,hTauNoMET], [hMETWithCut,hTauNoMETWithCut],
+                         cut_strings['met_tau'], *opt)
+                    plot('met_notau', hBaseline, [hTau,hMETNoTau], [hTauWithCut,hMETNoTauWithCut],
                          cut_strings['met_tau'], *opt)
 
                     c1 = count('met', hBaseline_c, hMET_c, hMETWithCut_c, cut_strings['met'], *opt)
                     c2 = count('tau', hBaseline_c, hTau_c, hTauWithCut_c, cut_strings['tau'], *opt)
-                    c3 = count('met_tau',  hBaseline_c, hTauNoMET_c, hTauNoMETWithCut_c,
+                    c3 = count('tau_nomet', hBaseline_c, hTauNoMET_c, hTauNoMETWithCut_c,
                                cut_strings['met_tau'],*opt)
-                    c4 = count('met_tau', hOverlayBaseline_c, hTauNoMET_c, hTauNoMETWithCut_c,
+                    c4 = count('tau_nomet', hOverlayBaseline_c, hTauNoMET_c, hTauNoMETWithCut_c,
+                               cut_strings['met_tau'], *opt)
+                    c5 = count('met_notau', hBaseline_c, hMETNoTau_c, hMETNoTauWithCut_c,
+                               cut_strings['met_tau'],*opt)
+                    c6 = count('met_notau', hOverlayBaseline_c, hMETNoTau_c, hMETNoTauWithCut_c,
                                cut_strings['met_tau'], *opt)
                     assert c3 <= c2
                     assert c4 <= c2
                     assert c4 <= c3
+                    assert c6 <= c5
 
                 totcounts['met'][cat].append((sample, c1))
                 totcounts['tau'][cat].append((sample, c2))
-                totcounts['met_tau'][cat].append((sample, c4))
+                totcounts['tau_nomet'][cat].append((sample, c4))
+                totcounts['met_notau'][cat].append((sample, c6))
                     
             for v in variables_2D:
                 opt_2D = (v, args.channel, sample, cat, from_directory)
@@ -745,14 +771,15 @@ if __name__ == '__main__':
         opt2 = (args.channel, cat, from_directory)
         counts_total('met', totcounts['met'][cat], *opt2)
         counts_total('tau', totcounts['tau'][cat], *opt2)
-        counts_total('met_tau', totcounts['met_tau'][cat], *opt2)
+        counts_total('tau_nomet', totcounts['tau_nomet'][cat], *opt2)
+        counts_total('met_notau', totcounts['met_notau'][cat], *opt2)
 
-    if not args.no_copy:
+    if args.copy:
         import subprocess
         to_directory = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors', main_dir)
         to_directory = os.path.join(to_directory, args.channel)
 
-        for m in ('met', 'tau', 'met_tau'):
+        for m in ('met', 'tau', 'tau_nomet', 'met_notau'):
             for cat in categories:
                 folder_name = 'counts_total_' + cat + '_' + m
                 folder_to = os.path.join(to_directory, folder_name)
