@@ -11,6 +11,7 @@ import glob
 import multiprocessing
 import itertools as it
 import csv
+from collections import defaultdict
 
 import inclusion
 from inclusion import selection
@@ -18,6 +19,9 @@ from inclusion.config import main
 from inclusion.utils import utils
 
 import ROOT
+
+import matplotlib.pyplot as plt
+from matplotlib_venn import venn3, venn3_circles
 
 def get_outname(suffix, mode, cut='', ext=''):
     pref = {'met': 'MET', 'tau': 'Tau', 'met_tau': 'MET_and_Tau'}
@@ -97,22 +101,17 @@ def test_trigger_regions(indir, sample, channel):
     for f in glob_files:
         t_in.Add(f)
 
-    hBase, hMET, hTau = ({} for _ in range(3)) # one trigger
-    hBase_MET, hBase_Tau, hMET_Tau = ({} for _ in range(3)) # intersection of two triggers
-    hBase_MET_Tau = {} # intersection of three triggers
+    hBase, hMET, hTau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # one trigger
+    hBase_MET, hBase_Tau, hMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # intersection of two triggers
+    hNoBase_MET, hNoBase_NoMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(2)) # negations
+    hNoBase_Tau, hNoBase_MET_NoTau = (defaultdict(lambda: defaultdict(dict)) for _ in range(2)) # negations
+    hBase_MET_Tau = defaultdict(lambda: defaultdict(dict)) # intersection of three triggers
     for ireg in range(nregions):
-        hBase[ireg], hMET[ireg], hTau[ireg] = ({} for _ in range(3))
-        hBase_MET[ireg], hBase_Tau[ireg], hMET_Tau[ireg] = ({} for _ in range(3))
-        hBase_MET_Tau[ireg] = {}
-        
         for v in tuple(variables_2D):
-            hBase[ireg][v], hMET[ireg][v], hTau[ireg][v] = ({} for _ in range(3))
-            hBase_MET[ireg][v], hBase_Tau[ireg][v], hMET_Tau[ireg][v] = ({} for _ in range(3))
-            hBase_MET_Tau[ireg][v] = {}
-
             for cat in categories:
                 suff = lambda x: x + '_' + str(ireg) + '_' + v[0] + '_VS_' + v[1] + '_' + cat
                 hopt = (*binning[v[0]], *binning[v[1]])
+
                 hBase[ireg][v][cat] = ROOT.TH2D(suff('hBase'), '', *hopt)
                 hMET[ireg][v][cat]  = ROOT.TH2D(suff('hMET'), '', *hopt)
                 hTau[ireg][v][cat]  = ROOT.TH2D(suff('hTau'), '', *hopt)
@@ -120,7 +119,12 @@ def test_trigger_regions(indir, sample, channel):
                 hBase_MET[ireg][v][cat] = ROOT.TH2D(suff('hBase_MET'), '', *hopt)
                 hBase_Tau[ireg][v][cat] = ROOT.TH2D(suff('hBase_Tau'), '', *hopt)
                 hMET_Tau[ireg][v][cat]  = ROOT.TH2D(suff('hMET_Tau') , '', *hopt)
-                
+
+                hNoBase_MET[ireg][v][cat]       = ROOT.TH2D(suff('hNoBase_MET'), '', *hopt)
+                hNoBase_NoMET_Tau[ireg][v][cat] = ROOT.TH2D(suff('hNoBase_NoMET_Tau'), '', *hopt)
+                hNoBase_Tau[ireg][v][cat]       = ROOT.TH2D(suff('hNoBase_Tau'), '', *hopt)
+                hNoBase_MET_NoTau[ireg][v][cat] = ROOT.TH2D(suff('hNoBase_MET_NoTau'), '', *hopt)
+
                 hBase_MET_Tau[ireg][v][cat] = ROOT.TH2D(suff('hBase_MET_Tau'), '', *hopt)
 
     t_in.SetBranchStatus('*', 0)
@@ -184,6 +188,7 @@ def test_trigger_regions(indir, sample, channel):
                         if pass_tau:
                             hTau[ireg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
 
+                        # intersections with two triggers
                         if pass_trg and pass_met:
                             hBase_MET[ireg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
 
@@ -193,6 +198,20 @@ def test_trigger_regions(indir, sample, channel):
                         if pass_met and pass_tau:
                             hMET_Tau[ireg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
 
+                        # negations
+                        if not pass_trg and pass_met:
+                            hNoBase_MET[ireg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
+
+                        if not pass_trg and not pass_met and pass_tau:
+                            hNoBase_NoMET_Tau[ireg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
+
+                        if not pass_trg and pass_tau:
+                            hNoBase_Tau[ireg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
+
+                        if not pass_trg and pass_met and not pass_tau:
+                            hNoBase_MET_NoTau[ireg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
+
+                        # intersection with three triggers
                         if pass_trg and pass_met and pass_tau:
                             hBase_MET_Tau[ireg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
 
@@ -209,6 +228,11 @@ def test_trigger_regions(indir, sample, channel):
                 hBase_MET[ireg][v][cat].Write(suff('hBase_MET'))
                 hBase_Tau[ireg][v][cat].Write(suff('hBase_Tau'))
                 hMET_Tau[ireg][v][cat].Write(suff('hMET_Tau'))
+
+                hNoBase_MET[ireg][v][cat].Write(suff('hNoBase_MET'))
+                hNoBase_NoMET_Tau[ireg][v][cat].Write(suff('hNoBase_NoMET_Tau'))
+                hNoBase_Tau[ireg][v][cat].Write(suff('hNoBase_Tau'))
+                hNoBase_MET_NoTau[ireg][v][cat].Write(suff('hNoBase_MET_NoTau'))
 
                 hBase_MET_Tau[ireg][v][cat].Write(suff('hBase_MET_Tau'))
                 
@@ -296,8 +320,11 @@ if __name__ == '__main__':
             utils.create_single_dir(out_counts[-1])
             with open(os.path.join(out_counts[-1], 'table.csv'), 'w') as f:
                 reader = csv.writer(f, delimiter=',', quotechar='|')
-                header_row = ['Region', 'Base', 'MET', 'Tau', 'Base && MET',
-                              'Base && Tau', 'MET && Tau', 'Base && MET && Tau']
+                header_row = ['Region', 'Base', 'MET', 'Tau',
+                              'Base && MET', 'Base && Tau', 'MET && Tau',
+                              '!Base && MET', '!Base && !MET && Tau',
+                              '!Base && Tau', '!Base && MET && !Tau',
+                              'Base && MET && Tau']
                 reader.writerow(header_row)
 
         # plot histograms and fill CSV with histogram integrals
@@ -307,12 +334,17 @@ if __name__ == '__main__':
                     suff = lambda x : x+'_'+str(ireg)+'_'+v[0]+'_VS_'+v[1]+'_'+cat
                     
                     hBase = f_in.Get(suff('hBase'))
-                    hMET = f_in.Get(suff('hMET'))
-                    hTau = f_in.Get(suff('hTau'))
+                    hMET  = f_in.Get(suff('hMET'))
+                    hTau  = f_in.Get(suff('hTau'))
  
                     hBase_MET = f_in.Get(suff('hBase_MET'))
                     hBase_Tau = f_in.Get(suff('hBase_Tau'))
-                    hMET_Tau = f_in.Get(suff('hMET_Tau'))
+                    hMET_Tau  = f_in.Get(suff('hMET_Tau'))
+
+                    hNoBase_MET       = f_in.Get(suff('hNoBase_MET'))
+                    hNoBase_NoMET_Tau = f_in.Get(suff('hNoBase_NoMET_Tau'))
+                    hNoBase_Tau       = f_in.Get(suff('hNoBase_Tau'))
+                    hNoBase_MET_NoTau = f_in.Get(suff('hNoBase_MET_NoTau'))
  
                     hBase_MET_Tau = f_in.Get(suff('hBase_MET_Tau'))
 
@@ -322,17 +354,41 @@ if __name__ == '__main__':
 
                 # count only for one of the variables, it does not matter which
                 nbinsx, nbinsy = hBase.GetNbinsX(), hBase.GetNbinsY()
-                cBase         = round(hBase.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
-                cMET          = round(hMET.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
-                cTau          = round(hTau.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
-                cBase_MET     = round(hBase_MET.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
-                cBase_Tau     = round(hBase_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
-                cMET_Tau      = round(hMET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
-                cBase_MET_Tau = round(hBase_MET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 3)
+                cBase = round(hBase.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cMET  = round(hMET.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cTau  = round(hTau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                
+                cBase_MET = round(hBase_MET.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cBase_Tau = round(hBase_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cMET_Tau  = round(hMET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                
+                cNoBase_MET       = round(hNoBase_MET.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cNoBase_NoMET_Tau = round(hNoBase_NoMET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cNoBase_Tau       = round(hNoBase_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cNoBase_MET_NoTau = round(hNoBase_MET_NoTau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                
+                cBase_MET_Tau = round(hBase_MET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+
+                if ireg==0:
+                    subsets = (cBase, cMET, cBase_MET, cTau, cBase_Tau, cMET_Tau, cBase_MET_Tau)
+                    plt.figure(figsize=(10,8))
+                    v = venn3(subsets=subsets, set_labels = (r'$\tau\tau$', 'MET', 'Tau'))
+                    v.get_patch_by_id('100').set_alpha(1.0)
+                    #v.get_patch_by_id('100').set_color('white')
+                    #v.get_label_by_id('100').set_text('Unknown')
+                    c = venn3_circles(subsets=subsets, linestyle='dashed')
+                    #c[0].set_lw(1.0)
+                    #c[0].set_ls('dotted')
+                    #plt.title('Baseline, MET, Tau')
+                    for ext in ('png', 'pdf'):
+                        plt.savefig(os.path.join(out_counts[categories.index(cat)], 'venn.' + ext))
 
                 with open(os.path.join(out_counts[categories.index(cat)], 'table.csv'), 'a') as f:
                     reader = csv.writer(f, delimiter=',', quotechar='|')
-                    row = [ireg, cBase, cMET, cTau, cBase_MET, cBase_Tau, cMET_Tau, cBase_MET_Tau]
+                    row = [ireg, cBase, cMET, cTau,
+                           cBase_MET, cBase_Tau, cMET_Tau,
+                           cNoBase_MET, cNoBase_NoMET_Tau, cNoBase_Tau, cNoBase_MET_NoTau,
+                           cBase_MET_Tau]
                     reader.writerow(row)
                         
         f_in.Close()
