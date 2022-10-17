@@ -110,22 +110,22 @@ def test_trigger_regions(indir, sample, channel):
         for v in tuple(variables_2D):
             for cat in categories:
                 suff = lambda x: x + '_' + str(ireg) + '_' + v[0] + '_VS_' + v[1] + '_' + cat
-                hopt = (*binning[v[0]], *binning[v[1]])
+                hopt = ('', *binning[v[0]], *binning[v[1]])
 
-                hBase[ireg][v][cat] = ROOT.TH2D(suff('hBase'), '', *hopt)
-                hMET[ireg][v][cat]  = ROOT.TH2D(suff('hMET'), '', *hopt)
-                hTau[ireg][v][cat]  = ROOT.TH2D(suff('hTau'), '', *hopt)
+                hBase[ireg][v][cat] = ROOT.TH2D(suff('hBase'), *hopt)
+                hMET[ireg][v][cat]  = ROOT.TH2D(suff('hMET'), *hopt)
+                hTau[ireg][v][cat]  = ROOT.TH2D(suff('hTau'), *hopt)
                 
-                hBase_MET[ireg][v][cat] = ROOT.TH2D(suff('hBase_MET'), '', *hopt)
-                hBase_Tau[ireg][v][cat] = ROOT.TH2D(suff('hBase_Tau'), '', *hopt)
-                hMET_Tau[ireg][v][cat]  = ROOT.TH2D(suff('hMET_Tau') , '', *hopt)
+                hBase_MET[ireg][v][cat] = ROOT.TH2D(suff('hBase_MET'), *hopt)
+                hBase_Tau[ireg][v][cat] = ROOT.TH2D(suff('hBase_Tau'), *hopt)
+                hMET_Tau[ireg][v][cat]  = ROOT.TH2D(suff('hMET_Tau') , *hopt)
 
-                hNoBase_MET[ireg][v][cat]       = ROOT.TH2D(suff('hNoBase_MET'), '', *hopt)
-                hNoBase_NoMET_Tau[ireg][v][cat] = ROOT.TH2D(suff('hNoBase_NoMET_Tau'), '', *hopt)
-                hNoBase_Tau[ireg][v][cat]       = ROOT.TH2D(suff('hNoBase_Tau'), '', *hopt)
-                hNoBase_MET_NoTau[ireg][v][cat] = ROOT.TH2D(suff('hNoBase_MET_NoTau'), '', *hopt)
+                hNoBase_MET[ireg][v][cat]       = ROOT.TH2D(suff('hNoBase_MET'), *hopt)
+                hNoBase_NoMET_Tau[ireg][v][cat] = ROOT.TH2D(suff('hNoBase_NoMET_Tau'), *hopt)
+                hNoBase_Tau[ireg][v][cat]       = ROOT.TH2D(suff('hNoBase_Tau'), *hopt)
+                hNoBase_MET_NoTau[ireg][v][cat] = ROOT.TH2D(suff('hNoBase_MET_NoTau'), *hopt)
 
-                hBase_MET_Tau[ireg][v][cat] = ROOT.TH2D(suff('hBase_MET_Tau'), '', *hopt)
+                hBase_MET_Tau[ireg][v][cat] = ROOT.TH2D(suff('hBase_MET_Tau'), *hopt)
 
     t_in.SetBranchStatus('*', 0)
     _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
@@ -374,12 +374,8 @@ if __name__ == '__main__':
                     plt.figure(figsize=(10,8))
                     v = venn3(subsets=subsets, set_labels = (r'$\tau\tau$', 'MET', 'Tau'))
                     v.get_patch_by_id('100').set_alpha(1.0)
-                    #v.get_patch_by_id('100').set_color('white')
-                    #v.get_label_by_id('100').set_text('Unknown')
                     c = venn3_circles(subsets=subsets, linestyle='dashed')
-                    #c[0].set_lw(1.0)
-                    #c[0].set_ls('dotted')
-                    #plt.title('Baseline, MET, Tau')
+                    plt.title('Baseline selection')
                     for ext in ('png', 'pdf'):
                         plt.savefig(os.path.join(out_counts[categories.index(cat)], 'venn.' + ext))
 
