@@ -66,7 +66,10 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg, output_name):
     for elem in stats_ditau.values():
         p.add_layout(elem)
 
-    contam_tau = str(round(100*float(c_tau_trg['met'])/(c_met_trg['met']+c_tau_trg['met']),2))
+    try:
+        contam_tau = str(round(100*float(c_tau_trg['met'])/(c_met_trg['met']+c_tau_trg['met']),2))
+    except ZeroDivisionError:
+        contam_tau = '0'
     stats_met = {'met':   Label(x=2.2, y=1.3, text='met: '+str(c_met_trg['met']),
                                 text_color='blue', **label_opt),
                  'tau':   Label(x=2.2, y=0.9, text=tau+'+!met: '+str(c_tau_trg['met']),
@@ -78,7 +81,11 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg, output_name):
     for elem in stats_met.values():
         p.add_layout(elem)
 
-    contam_met = str(round(100*float(c_met_trg['tau'])/(c_met_trg['tau']+c_tau_trg['tau']),2))
+    try:
+        contam_met = str(round(100*float(c_met_trg['tau'])/(c_met_trg['tau']+c_tau_trg['tau']),2))
+    except ZeroDivisionError:
+        contam_met = '0'
+        
     stats_tau = {'tau':   Label(x=6.5, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
                                  text_color='red', **label_opt),
                  'met':   Label(x=6.5, y=0.9, text='met+!'+tau+': '+str(c_met_trg['tau']),
@@ -87,6 +94,7 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg, output_name):
                                 text_color='green', **label_opt),
                  'contamination': Label(x=6.5, y=0.1, text='Contam.: '+contam_met+'%',
                                         text_color='black', **label_opt),}
+
     for elem in stats_tau.values():
         p.add_layout(elem)
      
@@ -115,7 +123,7 @@ def get_outname(suffix, mode, cut='', ext=''):
         s += '/table.csv'
     elif ext == 'root':
         utils.create_single_dir('data')
-        s = 'data/data_{}_{}'.format(suffix, pref[mode])
+        s = 'data/regions_{}_{}'.format(suffix, pref[mode])
         if cut:
             s += '_{}'
         s += '.{}'.format(ext)
@@ -345,8 +353,18 @@ if __name__ == '__main__':
                'bjet2_eta': (20, -2.5, 2.5),
                }
     variables = tuple(binning.keys()) + ('HHKin_mass', 'dau1_iso')
-    #variables = tuple(('dau1_pt', 'dau2_pt', 'metnomu_et', 'HHKin_mass', 'dau1_iso', 'dau2_iso'))
-    variables_2D = (('dau1_pt', 'dau2_pt'),)#('dau1_iso', 'dau2_iso'))
+    variables_2D = (('dau1_pt',  'dau2_pt'),
+                    ('dau1_iso', 'dau2_iso'),
+                    ('dau1_eta', 'dau2_eta'),
+                    ('dau1_eta', 'dau1_iso'),
+                    ('dau1_pt',  'dau1_eta'),
+                    ('dau2_eta', 'dau2_iso'),
+                    ('dau2_pt',  'dau2_eta'),
+                    ('dau1_pt',  'dau2_eta'),
+                    ('dau1_pt',  'dau2_iso'),
+                    ('dau2_pt',  'dau1_eta'),
+                    ('dau2_pt',  'dau1_iso'),
+                    )
 
     #categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
     categories = ('baseline',)
@@ -488,8 +506,8 @@ if __name__ == '__main__':
                         
         f_in.Close()
 
-    square_diagram(sample, c_ditau_trg, c_met_trg, c_tau_trg,
-                   output_name=os.path.join(out_counts[categories.index(cat)], 'diagram.html'))
+        square_diagram(sample, c_ditau_trg, c_met_trg, c_tau_trg,
+                       output_name=os.path.join(out_counts[categories.index(cat)], 'diagram.html'))
     
     if args.copy:
         import subprocess
