@@ -42,8 +42,9 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg,
      
     # add a square renderer with a size, color, and alpha
     polyg_opt = dict(alpha=0.3)
-    p.multi_polygons(xs=[[[[2.6, 9.9, 9.9, 2.6]]]],
-                     ys=[[[[9.9, 9.9, 2.6, 2.6]]]], color='green', legend_label=ditau, **polyg_opt)
+    xgap = 2.6 if pt_cuts[0] == '40' and pt_cuts[1] == '40' else 2.1
+    p.multi_polygons(xs=[[[[xgap, 9.9, 9.9, xgap]]]],
+                     ys=[[[[9.9, 9.9, xgap, xgap]]]], color='green', legend_label=ditau, **polyg_opt)
     p.multi_polygons(xs=[[[[0.1, 1.9, 1.9, 5.4, 5.4, 0.1]]]],
                      ys=[[[[5.4, 5.4, 1.9, 1.9, 0.1, 0.1]]]], color='blue', legend_label='MET', **polyg_opt)
     p.multi_polygons(xs=[[[[0.1, 0.1, 1.9, 1.9], [5.6, 5.6, 9.9, 9.9]]]],
@@ -71,13 +72,13 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg,
         contam_tau = str(round(100*float(c_tau_trg['met'])/(c_met_trg['met']+c_tau_trg['met']),2))
     except ZeroDivisionError:
         contam_tau = '0'
-    stats_met = {'met':   Label(x=2.6, y=1.3, text='met: '+str(c_met_trg['met']),
+    stats_met = {'met':   Label(x=xgap, y=1.3, text='met: '+str(c_met_trg['met']),
                                 text_color='blue', **label_opt),
-                 'tau':   Label(x=2.6, y=0.9, text=tau+' && !met: '+str(c_tau_trg['met']),
+                 'tau':   Label(x=xgap, y=0.9, text=tau+' && !met: '+str(c_tau_trg['met']),
                                 text_color='red', **label_opt),
-                 'ditau': Label(x=2.6, y=0.5, text=ditau+': '+str(c_ditau_trg['met']),
+                 'ditau': Label(x=xgap, y=0.5, text=ditau+': '+str(c_ditau_trg['met']),
                                 text_color='green', **label_opt),
-                 'contamination': Label(x=2.6, y=0.1, text='Contam.: '+contam_tau+'%',
+                 'contamination': Label(x=xgap, y=0.1, text='Contam.: '+contam_tau+'%',
                                         text_color='black', **label_opt),}
     for elem in stats_met.values():
         p.add_layout(elem)
@@ -107,12 +108,14 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg,
     if pt_cuts[1] != '40':
         p.line(x=[0.0, 10.0], y=[2.5, 2.5], **line_opt)
      
-    p.xaxis.ticker = [2.0, 2.5, 5.5]
-    p.xaxis.major_label_overrides = {2: '40', 2.5: pt_cuts[0], 5.5: region_cuts[0]}
+    p.xaxis.ticker = [2.0, 2.5, 5.5] if pt_cuts[0] == '40' and pt_cuts[1] == '40' else [2.0, 5.5]
+    p.xaxis.major_label_overrides = ({2: '40', 5.5: region_cuts[0]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
+                                     else {2: '40', 2.5: pt_cuts[0], 5.5: region_cuts[0]})
     p.xaxis.axis_label = 'dau1_pT [GeV]'
      
     p.yaxis.ticker = [2.0, 2.5, 5.5]
-    p.yaxis.major_label_overrides = {2: '40', 2.5: pt_cuts[1], 5.5: region_cuts[1]}
+    p.yaxis.major_label_overrides = ({2: '40', 5.5: region_cuts[1]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
+                                     else {2: '40', 2.5: pt_cuts[1], 5.5: region_cuts[1]})
     p.yaxis.axis_label = 'dau2_pT [GeV]'
      
     p.output_backend = "svg"
@@ -162,42 +165,38 @@ def plot(hbase, hmet, htau, var, channel, sample, region, category, directory):
     try:
         hbase2.Scale(1/hbase2.Integral())
     except ZeroDivisionError:
-        pass
+        hbase2.Scale(0.)
     try:
         hmet2.Scale(1/hmet2.Integral())
     except ZeroDivisionError:
-        pass
+        hmet2.Scale(0.)
     try:
-        htau.Scale(1/htau.Integral())
+        htau2.Scale(1/htau2.Integral())
     except ZeroDivisionError:
-        pass
+        htau2.Scale(0.)
 
     shift_scale = 5.
     amax = hbase2.GetMaximum() + (hbase2.GetMaximum()-hbase2.GetMinimum()) /  shift_scale
-    amax = max(amax, hmet2.GetMaximum() + (hmet2.GetMaximum()-hmet2.GetMinimum()) /  shift_scale)
-    amax = max(amax, htau2.GetMaximum() + (htau2.GetMaximum()-htau2.GetMinimum()) /  shift_scale)
+    amax = max(amax, hmet2.GetMaximum() + (hmet2.GetMaximum()-hmet2.GetMinimum()) / shift_scale)
+    amax = max(amax, htau2.GetMaximum() + (htau2.GetMaximum()-htau2.GetMinimum()) / shift_scale)
     hbase2.SetMaximum(amax)
     
     hbase2.GetXaxis().SetTitleSize(defs['XTitleSize']);
     hbase2.GetXaxis().SetTitle(var + ' [GeV]');
     hbase2.GetYaxis().SetTitleSize(defs['YTitleSize']);
-    hbase2.GetYaxis().SetTitle('Normalized to 1');
+    hbase2.GetYaxis().SetTitle('a. u.');
     hbase2.SetLineWidth(defs['LineWidth']);
     hbase2.SetLineColor(4);
 
-    hmet2.SetLineWidth(defs['LineWidth']);
-    hmet2.SetLineColor(2);
     hmet2.SetLineWidth(defs['LineWidth']);
     hmet2.SetLineColor(8);
 
     htau2.SetLineWidth(defs['LineWidth']);
     htau2.SetLineColor(2);
-    htau2.SetLineWidth(defs['LineWidth']);
-    htau2.SetLineColor(8);
 
     hbase2.Draw('hist')
-    hmet.Draw('histsame')
-    htau.Draw('histsame')
+    hmet2.Draw('histsame')
+    htau2.Draw('histsame')
 
     leg2 = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
     leg2.SetNColumns(1)
@@ -205,9 +204,10 @@ def plot(hbase, hmet, htau, var, channel, sample, region, category, directory):
     leg2.SetBorderSize(0)
     leg2.SetTextFont(43)
     leg2.SetTextSize(10)
+    leg2.AddEntry(hbase2, 'ditau')
     leg2.AddEntry(hmet2, '!ditau && MET')
     leg2.AddEntry(htau2, '!ditau && !MET && tau')
-    leg2.AddEntry(hbase2, '+\n'.join(triggers[channel]))
+
     leg2.Draw('same')
     
     c2.Update();
@@ -347,13 +347,16 @@ def test_trigger_regions(indir, sample, channel):
                             reg = 'tau'
                         elif eval(ditau_region):
                             reg = 'ditau'
-
+                        else:
+                            continue
+                        assert reg in regions
+                            
                         met_turnon_expr = entries.metnomu_et > met_turnon
                         tau_turnon_expr = ((entries.dau1_pt > tau_turnon and args.channel=='tautau') or
                                            (entries.dau2_pt > tau_turnon and args.channel!='tautau'))
                         pass_trg = sel.pass_triggers(triggers[channel]) and entries.isLeptrigger
-                        pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr and not entries.isLeptrigger
-                        pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr and not entries.isLeptrigger
+                        pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr
+                        pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr
                         
                         if pass_trg:
                             jBase[reg][v][cat].Fill(entries[v], evt_weight)
@@ -382,7 +385,8 @@ def test_trigger_regions(indir, sample, channel):
                             if v == variables_2D[0]:
                                 norphans[cat] += 1
                             continue
-
+                        assert reg in regions
+                        
                         met_turnon_expr = entries.metnomu_et > met_turnon
                         tau_turnon_expr = ((entries.dau1_pt > tau_turnon and args.channel=='tautau') or
                                            (entries.dau2_pt > tau_turnon and args.channel!='tautau'))
@@ -463,8 +467,8 @@ if __name__ == '__main__':
                 #'mutau': ('IsoMu24', 'IsoMuIsoTauCustom'),
                 'tautau': ('IsoDoubleTauCustom',)
                 }
-    binning = {'metnomu_et': (20, 0, 400),
-               'dau1_pt': (30, 0, 350),
+    binning = {'metnomu_et': (20, 0, 450),
+               'dau1_pt': (30, 0, 400),
                'dau1_eta': (20, -2.5, 2.5),
                'dau2_iso': (20, 0.88, 1.01),
                'dau2_pt': (30, 0, 300),
@@ -523,9 +527,9 @@ if __name__ == '__main__':
                         help='Do not use the multiprocess package.')
     args = utils.parse_args(parser)
 
-    region_cuts = '200', '200'
-    pt_cuts = '40', '40'
-    main_dir = 'Region_CUT1_' + region_cuts[0] + '_' + region_cuts[1] + '_CUT2_' + pt_cuts[0] + '_' + pt_cuts[1]
+    region_cuts = ('200', '200')
+    pt_cuts = ('40', '40')
+    main_dir = 'Region_PTCUTS_' + pt_cuts[0] + '_' + pt_cuts[1] + '_TURNONCUTS_' + region_cuts[0] + '_' + region_cuts[1]
 
     regions = ('ditau', 'met', 'tau')
     met_region = ('(entries.dau2_pt < 40 and entries.dau1_pt < {}) or '.format(region_cuts[0]) +
