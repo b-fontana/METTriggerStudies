@@ -23,7 +23,8 @@ import ROOT
 import matplotlib.pyplot as plt
 from matplotlib_venn import venn3, venn3_circles
 
-def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg, output_name):
+def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg,
+                   region_cuts, pt_cuts, output_name):
     from bokeh.plotting import figure, output_file, save
     from bokeh.models import Range1d, Label
 
@@ -41,8 +42,8 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg, output_name):
      
     # add a square renderer with a size, color, and alpha
     polyg_opt = dict(alpha=0.3)
-    p.multi_polygons(xs=[[[[2.1, 9.9, 9.9, 2.1]]]],
-                     ys=[[[[9.9, 9.9, 2.1, 2.1]]]], color='green', legend_label=ditau, **polyg_opt)
+    p.multi_polygons(xs=[[[[2.6, 9.9, 9.9, 2.6]]]],
+                     ys=[[[[9.9, 9.9, 2.6, 2.6]]]], color='green', legend_label=ditau, **polyg_opt)
     p.multi_polygons(xs=[[[[0.1, 1.9, 1.9, 5.4, 5.4, 0.1]]]],
                      ys=[[[[5.4, 5.4, 1.9, 1.9, 0.1, 0.1]]]], color='blue', legend_label='MET', **polyg_opt)
     p.multi_polygons(xs=[[[[0.1, 0.1, 1.9, 1.9], [5.6, 5.6, 9.9, 9.9]]]],
@@ -57,9 +58,9 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg, output_name):
     stats_ditau_fraction = str(round(100*float(c_met_trg['ditau']+c_tau_trg['ditau'])/(c_ditau_trg['ditau']+c_met_trg['ditau']+c_tau_trg['ditau']),2))
     stats_ditau = {'ditau': Label(x=6., y=9.3, text=ditau+': '+str(c_ditau_trg['ditau']),
                                   text_color='green', **label_opt),
-                   'met':   Label(x=6., y=8.9, text='met+!'+ditau+': '+str(c_met_trg['ditau']),
+                   'met':   Label(x=6., y=8.9, text='met && !'+ditau+': '+str(c_met_trg['ditau']),
                                   text_color='blue', **label_opt),
-                   'tau':   Label(x=6., y=8.5, text=tau+'+!met+!'+ditau+': '+str(c_tau_trg['ditau']),
+                   'tau':   Label(x=6., y=8.5, text=tau+' && !met && !'+ditau+': '+str(c_tau_trg['ditau']),
                                   text_color='red', **label_opt),
                    'gain':  Label(x=6., y=8.1, text='Gain: '+stats_ditau_fraction+'%',
                                   text_color='black', **label_opt),}
@@ -70,13 +71,13 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg, output_name):
         contam_tau = str(round(100*float(c_tau_trg['met'])/(c_met_trg['met']+c_tau_trg['met']),2))
     except ZeroDivisionError:
         contam_tau = '0'
-    stats_met = {'met':   Label(x=2.2, y=1.3, text='met: '+str(c_met_trg['met']),
+    stats_met = {'met':   Label(x=2.6, y=1.3, text='met: '+str(c_met_trg['met']),
                                 text_color='blue', **label_opt),
-                 'tau':   Label(x=2.2, y=0.9, text=tau+'+!met: '+str(c_tau_trg['met']),
+                 'tau':   Label(x=2.6, y=0.9, text=tau+' && !met: '+str(c_tau_trg['met']),
                                 text_color='red', **label_opt),
-                 'ditau': Label(x=2.2, y=0.5, text=ditau+': '+str(c_ditau_trg['met']),
+                 'ditau': Label(x=2.6, y=0.5, text=ditau+': '+str(c_ditau_trg['met']),
                                 text_color='green', **label_opt),
-                 'contamination': Label(x=2.2, y=0.1, text='Contam.: '+contam_tau+'%',
+                 'contamination': Label(x=2.6, y=0.1, text='Contam.: '+contam_tau+'%',
                                         text_color='black', **label_opt),}
     for elem in stats_met.values():
         p.add_layout(elem)
@@ -88,7 +89,7 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg, output_name):
         
     stats_tau = {'tau':   Label(x=6.5, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
                                  text_color='red', **label_opt),
-                 'met':   Label(x=6.5, y=0.9, text='met+!'+tau+': '+str(c_met_trg['tau']),
+                 'met':   Label(x=6.5, y=0.9, text='met && !'+tau+': '+str(c_met_trg['tau']),
                                 text_color='blue', **label_opt),
                  'ditau': Label(x=6.5, y=0.5, text=ditau+': '+str(c_ditau_trg['tau']),
                                 text_color='green', **label_opt),
@@ -101,13 +102,17 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg, output_name):
     line_opt = dict(color='black', line_dash='dashed', line_width=2)
     p.line(x=[2.0, 2.0], y=[0.0, 10.0], **line_opt)
     p.line(x=[0.0, 10.0], y=[2.0, 2.0], **line_opt)
+    if pt_cuts[0] != '40':
+        p.line(x=[2.5, 2.5], y=[0.0, 10.0], **line_opt)
+    if pt_cuts[1] != '40':
+        p.line(x=[0.0, 10.0], y=[2.5, 2.5], **line_opt)
      
-    p.xaxis.ticker = [2.0, 5.5]
-    p.xaxis.major_label_overrides = {2: '40', 5.5: '200'}
+    p.xaxis.ticker = [2.0, 2.5, 5.5]
+    p.xaxis.major_label_overrides = {2: '40', 2.5: pt_cuts[0], 5.5: region_cuts[0]}
     p.xaxis.axis_label = 'dau1_pT [GeV]'
      
-    p.yaxis.ticker = [2.0, 5.5]
-    p.yaxis.major_label_overrides = {2: '40', 5.5: '200'}
+    p.yaxis.ticker = [2.0, 2.5, 5.5]
+    p.yaxis.major_label_overrides = {2: '40', 2.5: pt_cuts[1], 5.5: region_cuts[1]}
     p.yaxis.axis_label = 'dau2_pT [GeV]'
      
     p.output_backend = "svg"
@@ -143,7 +148,75 @@ def set_plot_definitions():
            'FrameLineWidth' : 1,
            }
     return ret
-        
+
+def plot(hbase, hmet, htau, var, channel, sample, region, category, directory):
+    defs = set_plot_definitions()
+    
+    hbase2 = hbase.Clone('hbase2')
+    hmet2  = hmet.Clone('hmet2')
+    htau2  = htau.Clone('htau2')
+
+    # Normalized shapes
+    c2 = ROOT.TCanvas('c2', '', 600, 400)
+    c2.cd()
+    try:
+        hbase2.Scale(1/hbase2.Integral())
+    except ZeroDivisionError:
+        pass
+    try:
+        hmet2.Scale(1/hmet2.Integral())
+    except ZeroDivisionError:
+        pass
+    try:
+        htau.Scale(1/htau.Integral())
+    except ZeroDivisionError:
+        pass
+
+    shift_scale = 5.
+    amax = hbase2.GetMaximum() + (hbase2.GetMaximum()-hbase2.GetMinimum()) /  shift_scale
+    amax = max(amax, hmet2.GetMaximum() + (hmet2.GetMaximum()-hmet2.GetMinimum()) /  shift_scale)
+    amax = max(amax, htau2.GetMaximum() + (htau2.GetMaximum()-htau2.GetMinimum()) /  shift_scale)
+    hbase2.SetMaximum(amax)
+    
+    hbase2.GetXaxis().SetTitleSize(defs['XTitleSize']);
+    hbase2.GetXaxis().SetTitle(var + ' [GeV]');
+    hbase2.GetYaxis().SetTitleSize(defs['YTitleSize']);
+    hbase2.GetYaxis().SetTitle('Normalized to 1');
+    hbase2.SetLineWidth(defs['LineWidth']);
+    hbase2.SetLineColor(4);
+
+    hmet2.SetLineWidth(defs['LineWidth']);
+    hmet2.SetLineColor(2);
+    hmet2.SetLineWidth(defs['LineWidth']);
+    hmet2.SetLineColor(8);
+
+    htau2.SetLineWidth(defs['LineWidth']);
+    htau2.SetLineColor(2);
+    htau2.SetLineWidth(defs['LineWidth']);
+    htau2.SetLineColor(8);
+
+    hbase2.Draw('hist')
+    hmet.Draw('histsame')
+    htau.Draw('histsame')
+
+    leg2 = ROOT.TLegend(0.69, 0.77, 0.90, 0.9)
+    leg2.SetNColumns(1)
+    leg2.SetFillStyle(0)
+    leg2.SetBorderSize(0)
+    leg2.SetTextFont(43)
+    leg2.SetTextSize(10)
+    leg2.AddEntry(hmet2, '!ditau && MET')
+    leg2.AddEntry(htau2, '!ditau && !MET && tau')
+    leg2.AddEntry(hbase2, '+\n'.join(triggers[channel]))
+    leg2.Draw('same')
+    
+    c2.Update();
+    cat_dir = os.path.join(directory, sample, category)
+    utils.create_single_dir(cat_dir)
+    for ext in ('png', 'pdf'):
+        c2.SaveAs( os.path.join(cat_dir, 'norm_' + reg + '_' + var + '.' + ext) )
+    c2.Close()
+
 def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region):
     histo = histo.Clone('histo_clone')
     defs = set_plot_definitions()    
@@ -191,12 +264,22 @@ def test_trigger_regions(indir, sample, channel):
     for f in glob_files:
         t_in.Add(f)
 
+    jBase, jNoBase_MET, jNoBase_NoMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # one trigger, 1-dimensional
     hBase, hMET, hTau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # one trigger
     hBase_MET, hBase_Tau, hMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # intersection of two triggers
     hNoBase_MET, hNoBase_NoMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(2)) # negations
     hNoBase_Tau, hNoBase_MET_NoTau = (defaultdict(lambda: defaultdict(dict)) for _ in range(2)) # negations
     hBase_MET_Tau = defaultdict(lambda: defaultdict(dict)) # intersection of three triggers
+    norphans, ntotal = ({k:0 for k in categories} for _ in range(2))
     for reg in regions:
+        for v in tuple(variables):
+            for cat in categories:
+                suff = lambda x : x + '_' + reg + '_' + v + '_' + cat
+                jopt = ('', *binning[v])
+                jBase[reg][v][cat] = ROOT.TH1D(suff('jBase'), *jopt)
+                jNoBase_MET[reg][v][cat] = ROOT.TH1D(suff('jNoBase_MET'), *jopt)
+                jNoBase_NoMET_Tau[reg][v][cat] = ROOT.TH1D(suff('jNoBase_NoMET_Tau'), *jopt)
+                
         for v in tuple(variables_2D):
             for cat in categories:
                 suff = lambda x: x + '_' + reg + '_' + v[0] + '_VS_' + v[1] + '_' + cat
@@ -251,23 +334,61 @@ def test_trigger_regions(indir, sample, channel):
                                       standard_mass_cut=True, invert_mass_cut=False):
                 continue
 
-            for vx, vy in variables_2D:
+            for v in variables:
                 for cat in categories:
                     if sel.sel_category(cat) and entries.ditau_deltaR > 0.5:
+
+                        if v == variables_2D[0]:
+                            ntotal[cat] += 1
 
                         if eval(met_region):
                             reg = 'met'
                         elif eval(tau_region):
                             reg = 'tau'
-                        else: # trigger baseline
+                        elif eval(ditau_region):
                             reg = 'ditau'
 
                         met_turnon_expr = entries.metnomu_et > met_turnon
                         tau_turnon_expr = ((entries.dau1_pt > tau_turnon and args.channel=='tautau') or
-                                        (entries.dau2_pt > tau_turnon and args.channel!='tautau'))
+                                           (entries.dau2_pt > tau_turnon and args.channel!='tautau'))
                         pass_trg = sel.pass_triggers(triggers[channel]) and entries.isLeptrigger
-                        pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr
-                        pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr
+                        pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr and not entries.isLeptrigger
+                        pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr and not entries.isLeptrigger
+                        
+                        if pass_trg:
+                            jBase[reg][v][cat].Fill(entries[v], evt_weight)
+
+                        if not pass_trg and pass_met:
+                            jNoBase_MET[reg][v][cat].Fill(entries[v], evt_weight)
+
+                        if not pass_trg and not pass_met and pass_tau:
+                            jNoBase_NoMET_Tau[reg][v][cat].Fill(entries[v], evt_weight)
+
+            for v in variables_2D:
+                vx, vy = v
+                for cat in categories:
+                    if sel.sel_category(cat) and entries.ditau_deltaR > 0.5:
+
+                        if v == variables_2D[0]:
+                            ntotal[cat] += 1
+
+                        if eval(met_region):
+                            reg = 'met'
+                        elif eval(tau_region):
+                            reg = 'tau'
+                        elif eval(ditau_region):
+                            reg = 'ditau'
+                        else:
+                            if v == variables_2D[0]:
+                                norphans[cat] += 1
+                            continue
+
+                        met_turnon_expr = entries.metnomu_et > met_turnon
+                        tau_turnon_expr = ((entries.dau1_pt > tau_turnon and args.channel=='tautau') or
+                                           (entries.dau2_pt > tau_turnon and args.channel!='tautau'))
+                        pass_trg = sel.pass_triggers(triggers[channel]) and entries.isLeptrigger
+                        pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr and not entries.isLeptrigger
+                        pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr and not entries.isLeptrigger
                         
                         if pass_trg:
                             hBase[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
@@ -309,6 +430,12 @@ def test_trigger_regions(indir, sample, channel):
     f_out.cd()
     for reg in regions:
         for cat in categories:
+            for v in variables:
+                suff = lambda x : x + '_' + reg + '_' + v + '_' + cat
+                jBase[reg][v][cat].Write(suff('jBase'))
+                jNoBase_MET[reg][v][cat].Write(suff('jNoBase_MET'))
+                jNoBase_NoMET_Tau[reg][v][cat].Write(suff('jNoBase_NoMET_Tau'))
+                
             for v in variables_2D:
                 suff = lambda x: x + '_' + reg + '_' + v[0] + '_VS_' + v[1] + '_' + cat
                 hBase[reg][v][cat].Write(suff('hBase'))
@@ -327,17 +454,20 @@ def test_trigger_regions(indir, sample, channel):
                 hBase_MET_Tau[reg][v][cat].Write(suff('hBase_MET_Tau'))
                 
     f_out.Close()
+    for cat in categories:
+        print('Category {} (m(X)={}GeV) had {} orphans ({}%)'.format(cat, sample, norphans[cat], float(norphans[cat])/ntotal[cat]))
     print('Raw histograms saved in {}.'.format(outname), flush=True)
 
 if __name__ == '__main__':
-    triggers = {'etau': ('Ele32', 'EleIsoTauCustom'),
-                'mutau': ('IsoMu24', 'IsoMuIsoTauCustom'),
-                'tautau': ('IsoDoubleTauCustom',)}
-    binning = {'metnomu_et': (20, 0, 450),
-               'dau1_pt': (30, 0, 450),
+    triggers = {#'etau': ('Ele32', 'EleIsoTauCustom'),
+                #'mutau': ('IsoMu24', 'IsoMuIsoTauCustom'),
+                'tautau': ('IsoDoubleTauCustom',)
+                }
+    binning = {'metnomu_et': (20, 0, 400),
+               'dau1_pt': (30, 0, 350),
                'dau1_eta': (20, -2.5, 2.5),
                'dau2_iso': (20, 0.88, 1.01),
-               'dau2_pt': (30, 0, 350),
+               'dau2_pt': (30, 0, 300),
                'dau2_eta': (20, -2.5, 2.5),
                'ditau_deltaR': (30, 0.3, 1.3),
                'dib_deltaR': (25, 0, 2.5),
@@ -355,15 +485,20 @@ if __name__ == '__main__':
     variables = tuple(binning.keys()) + ('HHKin_mass', 'dau1_iso')
     variables_2D = (('dau1_pt',  'dau2_pt'),
                     ('dau1_iso', 'dau2_iso'),
-                    ('dau1_eta', 'dau2_eta'),
-                    ('dau1_eta', 'dau1_iso'),
-                    ('dau1_pt',  'dau1_eta'),
-                    ('dau2_eta', 'dau2_iso'),
-                    ('dau2_pt',  'dau2_eta'),
-                    ('dau1_pt',  'dau2_eta'),
-                    ('dau1_pt',  'dau2_iso'),
-                    ('dau2_pt',  'dau1_eta'),
-                    ('dau2_pt',  'dau1_iso'),
+                    # ('dau1_eta', 'dau2_eta'),
+                    # ('dau1_eta', 'dau1_iso'),
+                    # ('dau1_pt',  'dau1_eta'),
+                    # ('dau1_pt',  'dau1_iso'),
+                    # ('dau2_eta', 'dau2_iso'),
+                    # ('dau2_pt',  'dau2_eta'),
+                    # ('dau1_pt',  'dau2_eta'),
+                    # ('dau1_pt',  'dau2_iso'),
+                    # ('dau2_pt',  'dau1_eta'),
+                    # ('dau2_pt',  'dau1_iso'),
+                    ('dau1_pt',  'metnomu_et'),
+                    ('dau2_pt',  'metnomu_et'),
+                    ('dau1_iso',  'metnomu_et'),
+                    ('dau2_iso',  'metnomu_et'),
                     )
 
     #categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
@@ -388,14 +523,15 @@ if __name__ == '__main__':
                         help='Do not use the multiprocess package.')
     args = utils.parse_args(parser)
 
-    region_cut_1 = '200'
-    region_cut_2 = '200'
-    main_dir = 'Region_' + region_cut_1 + '_' + region_cut_2
+    region_cuts = '200', '200'
+    pt_cuts = '40', '40'
+    main_dir = 'Region_CUT1_' + region_cuts[0] + '_' + region_cuts[1] + '_CUT2_' + pt_cuts[0] + '_' + pt_cuts[1]
 
     regions = ('ditau', 'met', 'tau')
-    met_region = ('(entries.dau2_pt < 40 and entries.dau1_pt < {})'.format(region_cut_1))# +
-                  #'(entries.dau1_pt < 40 and entries.dau2_pt < {})'.format(region_cut_2)) 
-    tau_region = 'entries.dau2_pt < 40 and entries.dau1_pt >= {}'.format(region_cut_1)
+    met_region = ('(entries.dau2_pt < 40 and entries.dau1_pt < {}) or '.format(region_cuts[0]) +
+                  '(entries.dau1_pt < 40 and entries.dau2_pt < {})'.format(region_cuts[1])) 
+    tau_region = 'entries.dau2_pt < 40 and entries.dau1_pt >= {}'.format(region_cuts[0])
+    ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(pt_cuts[0], pt_cuts[1])
 
     #### run major function ###
     if args.sequential:
@@ -434,6 +570,15 @@ if __name__ == '__main__':
         
         for reg in regions:
             for cat in categories:
+                for v in variables:                    
+                    suff = lambda x : x + '_' + reg + '_' + v + '_' + cat
+                    jBase = f_in.Get(suff('jBase'))
+                    jNoBase_MET = f_in.Get(suff('jNoBase_MET'))
+                    jNoBase_NoMET_Tau = f_in.Get(suff('jNoBase_NoMET_Tau'))
+
+                    jopt = (v, args.channel, sample, reg, cat, from_directory)
+                    plot(jBase, jNoBase_MET, jNoBase_NoMET_Tau, *jopt)
+                    
                 for v in variables_2D:
                     suff = lambda x : x+'_'+reg+'_'+v[0]+'_VS_'+v[1]+'_'+cat
                     
@@ -507,6 +652,7 @@ if __name__ == '__main__':
         f_in.Close()
 
         square_diagram(sample, c_ditau_trg, c_met_trg, c_tau_trg,
+                       region_cuts, pt_cuts,
                        output_name=os.path.join(out_counts[categories.index(cat)], 'diagram.html'))
     
     if args.copy:
@@ -518,5 +664,5 @@ if __name__ == '__main__':
             sample_from = os.path.join(from_directory, sample)
             print('Copying: {}\t\t--->\t{}'.format(sample_from, to_directory), flush=True)
             subprocess.run(['rsync', '-ah', sample_from, to_directory])
-     
+        
     print('Done.')
