@@ -151,7 +151,7 @@ def get_outname(suffix, mode, cut='', ext=''):
         utils.create_single_dir('data')
         s = 'data/regions_{}_{}'.format(suffix, pref[mode])
         if cut:
-            s += '_{}'
+            s += '_{}'.format(cut)
         s += '.{}'.format(ext)
     else:
         raise ValueError('The {} extension is not supported.'.format(ext))
@@ -272,7 +272,7 @@ def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region
     c.Close()
 
 def test_trigger_regions(indir, sample, channel):
-    outname = get_outname(suffix=sample+'_'+channel, mode='met', ext='root')
+    outname = get_outname(suffix=sample+'_'+channel, mode='met', ext='root', cut='bigtau')
 
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
@@ -580,12 +580,6 @@ if __name__ == '__main__':
                       '(entries.dau1_pt < 40 and entries.dau2_pt >= {})'.format(region_cuts[1])) #this one is never realized due to the 190GeV trigger cut
         ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(*pt_cuts)
     
-
-    print(met_region)
-    print(tau_region)
-    print(ditau_region)
-    quit()
-
     #### run major function ###
     if args.sequential:
         if not args.plot:
@@ -600,7 +594,7 @@ if __name__ == '__main__':
 
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.samples:
-        outname = get_outname(suffix=sample+'_'+args.channel, mode='met', ext='root')
+        outname = get_outname(suffix=sample+'_'+args.channel, mode='met', ext='root',  cut='bigtau')
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
 
