@@ -139,22 +139,9 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
     p.output_backend = 'svg'
     save(p)
     
-def get_outname(suffix, mode, cut='', ext=''):
-    pref = {'met': 'MET', 'tau': 'Tau', 'met_tau': 'MET_and_Tau'}
-    assert mode in list(pref.keys())
-    if ext == 'csv':
-        s = 'counts_{}_{}'.format(suffix, pref[mode])
-        if cut:
-            s += '_{}'.format(cut)
-        s += '/table.csv'
-    elif ext == 'root':
-        utils.create_single_dir('data')
-        s = 'data/regions_{}_{}'.format(suffix, pref[mode])
-        if cut:
-            s += '_{}'.format(cut)
-        s += '.{}'.format(ext)
-    else:
-        raise ValueError('The {} extension is not supported.'.format(ext))
+def get_outname(name):
+    utils.create_single_dir('data')
+    s = 'data/regions_{}'.format(name)
     return s
 
 def set_plot_definitions():
@@ -272,7 +259,11 @@ def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region
     c.Close()
 
 def test_trigger_regions(indir, sample, channel):
-    outname = get_outname(suffix=sample+'_'+channel, mode='met', ext='root', cut='bigtau')
+    name = sample + '_' + channel + '_'
+    name += pt_cuts[0] + '_' + pt_cuts[1] + '_turnon_' + region_cuts[0] + '_' + region_cuts[1]
+    if args.bigtau:
+        name += '_BIGTAU'
+    outname = get_outname(name=name)
 
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
@@ -559,7 +550,7 @@ if __name__ == '__main__':
                         help='Consider a larger single tau region, reducing the ditau one.')
     args = utils.parse_args(parser)
 
-    region_cuts = ('200', '200')
+    region_cuts = ('190', '190')
     pt_cuts = ('40', '40')
     main_dir = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors/',
                             'Region_PTCUTS_' + pt_cuts[0] + '_' + pt_cuts[1] + '_TURNONCUTS_' + region_cuts[0] + '_' + region_cuts[1])
