@@ -29,36 +29,51 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
                    region_cuts, pt_cuts, text, bigtau=False):
     tau = '\u03C4'
     ditau = tau+tau
-
     output_file(text['out'])
+
+    topr = 9.9
+    shft = 0.1
+    start, b1, b2, b3 = 0.0, 2, 2.5, 7.2
+    xgap = b1+shft if pt_cuts[0] == '40' and pt_cuts[1] == '40' else b2+sft
     
     p = figure(title='m(X)={}GeV'.format(text['mass']), width=600, height=400)
-    p.x_range = Range1d(0, 12)
+    p.x_range = Range1d(0, 11.5)
     p.y_range = Range1d(0, 10)
     p.outline_line_color = None
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
+    p.xaxis.ticker = [b1,b3] if pt_cuts[0] == '40' else [b1, b2, b3]
+    p.xaxis.major_label_overrides = ({b1: '40',
+                                      b3: region_cuts[0]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
+                                     else {b1: '40',
+                                           b2: pt_cuts[0],
+                                           b3: region_cuts[0]})
+    p.xaxis.axis_label = 'dau1_pT [GeV]'
+     
+    p.yaxis.ticker = [b1, b3] if pt_cuts[1] == '40' else [b1, b2, b3]
+    p.yaxis.major_label_overrides = ({b1: '40',
+                                      b3: region_cuts[1]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
+                                     else {b1: '40',
+                                           b2: pt_cuts[1], b3:
+                                           region_cuts[1]})
+    p.yaxis.axis_label = 'dau2_pT [GeV]'
+
      
     # add a square renderer with a size, color, and alpha
-    topr = 9.9
-    shft = 0.1
-    start, b1, b2, b3 = 0.0, 2.0, 2.5, 5.5
-    xgap = b1+shft if pt_cuts[0] == '40' and pt_cuts[1] == '40' else b2+sft
-    
     polyg_opt = dict(alpha=0.3)
     p.multi_polygons(color='green',
-                     xs=[[[[xgap,topr,topr,xgap]]]] if bigtau else [[[[xgap,b3-shft,b3-shft,xgap]]]],
-                     ys=[[[[topr,topr,xgap,xgap]]]] if bigtau else [[[[b3-shft,b3-shft,xgap,xgap]]]],
+                     xs=[[[[xgap,b3-shft,b3-shft,xgap]]]] if bigtau else [[[[xgap,topr,topr,xgap]]]],
+                     ys=[[[[b3-shft,b3-shft,xgap,xgap]]]] if bigtau else [[[[topr,topr,xgap,xgap]]]],
                      legend_label=ditau, **polyg_opt)
     p.multi_polygons(color='blue',
-                     xs=[[[[start+shft,b1-shft,b1-shft,b3-shift,b3-shft,shft]]]],
-                     ys=[[[[b3-shift,b3-shift,b1-shft,b1-shft,shft,shft]]]],
+                     xs=[[[[start+shft,b1-shft,b1-shft,b3-shft,b3-shft,shft]]]],
+                     ys=[[[[b3-shft,b3-shft,b1-shft,b1-shft,shft,shft]]]],
                      legend_label='MET', **polyg_opt)
     p.multi_polygons(color='red',
-                     xs=([[[[shft,shft,b1-shft,b1-shft], [b3+shft,b3+shft,topr,topr]]]] if bigtau else
-                         [[[[shft,shft,topr,topr,b3+shft,b3+shft,shft]]]]),
-                     ys=([[[[b3+shft,topr,topr,b3+shft], [shft,b1-shft,b1_shft,shft]]]] if bigtau else
-                         [[[[b3+shft,topr,topr,sht,shft,b3+sfht,b3+shft]]]]),
+                     xs=([[[[shft,shft,topr,topr,b3+shft,b3+shft,shft]]]] if bigtau else
+                         [[[[shft,shft,b1-shft,b1-shft], [b3+shft,b3+shft,topr,topr]]]]),
+                     ys=([[[[b3+shft,topr,topr,shft,shft,b3+shft,b3+shft]]]] if bigtau else
+                         [[[[b3+shft,topr,topr,b3+shft], [shft,b1-shft,b1-shft,shft]]]]),
                      legend_label=tau, **polyg_opt)
     p.legend.title = 'Regions'
     p.legend.title_text_font_style = 'bold'
@@ -68,13 +83,13 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
     label_opt = dict(x_units='data', y_units='data', text_font_size='10pt', render_mode='canvas')
 
     stats_ditau_fraction = str(round(100*float(c_met_trg['ditau']+c_tau_trg['ditau'])/(c_ditau_trg['ditau']+c_met_trg['ditau']+c_tau_trg['ditau']),2))
-    stats_ditau = {'ditau': Label(x=6., y=9.3, text=ditau+': '+str(c_ditau_trg['ditau']),
+    stats_ditau = {'ditau': Label(x=b1+0.3, y=b1+1.5, text=ditau+': '+str(c_ditau_trg['ditau']),
                                   text_color='green', **label_opt),
-                   'met':   Label(x=6., y=8.9, text='met && !'+ditau+': '+str(c_met_trg['ditau']),
+                   'met':   Label(x=b1+0.3, y=b1+1.1, text='met && !'+ditau+': '+str(c_met_trg['ditau']),
                                   text_color='blue', **label_opt),
-                   'tau':   Label(x=6., y=8.5, text=tau+' && !met && !'+ditau+': '+str(c_tau_trg['ditau']),
+                   'tau':   Label(x=b1+0.3, y=b1+0.7, text=tau+' && !met && !'+ditau+': '+str(c_tau_trg['ditau']),
                                   text_color='red', **label_opt),
-                   'gain':  Label(x=6., y=8.1, text='Gain: '+stats_ditau_fraction+'%',
+                   'gain':  Label(x=b1+0.3, y=b1+0.3, text='Gain: '+stats_ditau_fraction+'%',
                                   text_color='black', **label_opt),}
     for elem in stats_ditau.values():
         p.add_layout(elem)
@@ -83,13 +98,13 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
         contam_tau = str(round(100*float(c_tau_trg['met'])/(c_met_trg['met']+c_tau_trg['met']),2))
     except ZeroDivisionError:
         contam_tau = '0'
-    stats_met = {'met':   Label(x=xgap, y=1.3, text='met: '+str(c_met_trg['met']),
+    stats_met = {'met':   Label(x=b1+0.3, y=1.3, text='met: '+str(c_met_trg['met']),
                                 text_color='blue', **label_opt),
-                 'tau':   Label(x=xgap, y=0.9, text=tau+' && !met: '+str(c_tau_trg['met']),
+                 'tau':   Label(x=b1+0.3, y=0.9, text=tau+' && !met: '+str(c_tau_trg['met']),
                                 text_color='red', **label_opt),
-                 'ditau': Label(x=xgap, y=0.5, text=ditau+': '+str(c_ditau_trg['met']),
+                 'ditau': Label(x=b1+0.3, y=0.5, text=ditau+': '+str(c_ditau_trg['met']),
                                 text_color='green', **label_opt),
-                 'contamination': Label(x=xgap, y=0.1, text='Contam.: '+contam_tau+'%',
+                 'contamination': Label(x=b1+0.3, y=0.1, text='Contam.: '+contam_tau+'%',
                                         text_color='black', **label_opt),}
     for elem in stats_met.values():
         p.add_layout(elem)
@@ -99,13 +114,13 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
     except ZeroDivisionError:
         contam_met = '0'
         
-    stats_tau = {'tau':   Label(x=6.5, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
+    stats_tau = {'tau':   Label(x=b3+0.3, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
                                  text_color='red', **label_opt),
-                 'met':   Label(x=6.5, y=0.9, text='met && !'+tau+': '+str(c_met_trg['tau']),
+                 'met':   Label(x=b3+0.3, y=0.9, text='met && !'+tau+': '+str(c_met_trg['tau']),
                                 text_color='blue', **label_opt),
-                 'ditau': Label(x=6.5, y=0.5, text=ditau+': '+str(c_ditau_trg['tau']),
+                 'ditau': Label(x=b3+0.3, y=0.5, text=ditau+': '+str(c_ditau_trg['tau']),
                                 text_color='green', **label_opt),
-                 'contamination': Label(x=6.5, y=0.1, text='Contam.: '+contam_met+'%',
+                 'contamination': Label(x=b3+0.3, y=0.1, text='Contam.: '+contam_met+'%',
                                         text_color='black', **label_opt),}
 
     for elem in stats_tau.values():
@@ -118,18 +133,10 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
         p.line(x=[b2,b2], y=[start,topr+shft], **line_opt)
     if pt_cuts[1] != '40':
         p.line(x=[start,topr+shft], y=[b2,b2], **line_opt)
+    p.line(x=[b3,b3], y=[start,topr+shft], **line_opt)
+    p.line(x=[start,topr+shft], y=[b3,b3], **line_opt)
      
-    p.xaxis.ticker = [b1,b3] if pt_cuts[0] == '40' else [b1, b2, b3]
-    p.xaxis.major_label_overrides = ({b1: '40', b3: region_cuts[0]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
-                                     else {b1: '40', b2: pt_cuts[0], b3: region_cuts[0]})
-    p.xaxis.axis_label = 'dau1_pT [GeV]'
-     
-    p.yaxis.ticker = [b1, b3] if pt_cuts[1] == '40' else [b1, b2, b3]
-    p.yaxis.major_label_overrides = ({b1: '40', b3: region_cuts[1]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
-                                     else {b1: '40', b2: pt_cuts[1], b3: region_cuts[1]})
-    p.yaxis.axis_label = 'dau2_pT [GeV]'
-     
-    p.output_backend = "svg"
+    p.output_backend = 'svg'
     save(p)
     
 def get_outname(suffix, mode, cut='', ext=''):
@@ -476,7 +483,13 @@ def test_trigger_regions(indir, sample, channel):
                 
     f_out.Close()
     for cat in categories:
-        print('Category {} (m(X)={}GeV) had {} orphans ({}%)'.format(cat, sample, norphans[cat], float(norphans[cat])/ntotal[cat]))
+        orph_frac = float(norphans[cat])/ntotal[cat]
+        if orph_frac > 0.1:
+            print('{}% orphans ({}/{}). This is unusual.'.format(orph_frac, norphans[cat], ntotal[cat]))
+            print(met_region)
+            print(tau_region)
+            print(ditau_region)
+        print('Category {} (m(X)={}GeV) had {} orphans ({}%)'.format(cat, sample, norphans[cat], orph_frac))
     print('Raw histograms saved in {}.'.format(outname), flush=True)
 
 if __name__ == '__main__':
@@ -542,18 +555,36 @@ if __name__ == '__main__':
                         help='Do not copy the outputs to EOS at the end.')
     parser.add_argument('--sequential', action='store_true',
                         help='Do not use the multiprocess package.')
+    parser.add_argument('--bigtau', action='store_true',
+                        help='Consider a larger single tau region, reducing the ditau one.')
     args = utils.parse_args(parser)
 
     region_cuts = ('200', '200')
     pt_cuts = ('40', '40')
     main_dir = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors/',
                             'Region_PTCUTS_' + pt_cuts[0] + '_' + pt_cuts[1] + '_TURNONCUTS_' + region_cuts[0] + '_' + region_cuts[1])
+    if args.bigtau:
+        main_dir += '_BIGTAU'
 
     regions = ('ditau', 'met', 'tau')
     met_region = ('(entries.dau2_pt < 40 and entries.dau1_pt < {}) or '.format(region_cuts[0]) +
-                  '(entries.dau1_pt < 40 and entries.dau2_pt < {})'.format(region_cuts[1])) 
-    tau_region = 'entries.dau2_pt < 40 and entries.dau1_pt >= {}'.format(region_cuts[0])
-    ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(pt_cuts[0], pt_cuts[1])
+                  '(entries.dau1_pt < 40 and entries.dau2_pt < {})'.format(region_cuts[1]))
+
+    if args.bigtau:
+        tau_region = 'entries.dau1_pt >= {} or entries.dau2_pt >= {}'.format(*region_cuts)
+        ditau_region = ('entries.dau1_pt > {} and entries.dau2_pt > {} and '.format(*pt_cuts) +
+                        'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(*region_cuts))
+
+    else:
+        tau_region = ('(entries.dau2_pt < 40 and entries.dau1_pt >= {}) or '.format(region_cuts[0]) +
+                      '(entries.dau1_pt < 40 and entries.dau2_pt >= {})'.format(region_cuts[1])) #this one is never realized due to the 190GeV trigger cut
+        ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(*pt_cuts)
+    
+
+    print(met_region)
+    print(tau_region)
+    print(ditau_region)
+    quit()
 
     #### run major function ###
     if args.sequential:
@@ -672,10 +703,12 @@ if __name__ == '__main__':
                     c_tau_trg[reg] = cTau
                         
         f_in.Close()
+
         text = {'mass': sample,
-                'out': os.path.join(out_counts[categories.index(cat)], 'diagram.html')}
+                'out': os.path.join(out_counts[categories.index(cat)],
+                                    'diagram.html')}
         square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
-                       region_cuts, pt_cuts, text=text, bigtau=False)
+                       region_cuts, pt_cuts, text=text, bigtau=args.bigtau)
     
     if args.copy:
         import subprocess
