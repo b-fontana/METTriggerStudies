@@ -20,20 +20,19 @@ from inclusion.utils import utils
 
 import ROOT
 
+from bokeh.plotting import figure, output_file, save
+from bokeh.models import Range1d, Label
 import matplotlib.pyplot as plt
 from matplotlib_venn import venn3, venn3_circles
 
-def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg,
-                   region_cuts, pt_cuts, output_name):
-    from bokeh.plotting import figure, output_file, save
-    from bokeh.models import Range1d, Label
-
+def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
+                   region_cuts, pt_cuts, text, bigtau=False):
     tau = '\u03C4'
     ditau = tau+tau
 
-    output_file(output_name)
+    output_file(text['out'])
     
-    p = figure(title='m(X)={}GeV'.format(mass), width=600, height=400)
+    p = figure(title='m(X)={}GeV'.format(text['mass']), width=600, height=400)
     p.x_range = Range1d(0, 12)
     p.y_range = Range1d(0, 10)
     p.outline_line_color = None
@@ -41,14 +40,26 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg,
     p.ygrid.grid_line_color = None
      
     # add a square renderer with a size, color, and alpha
+    topr = 9.9
+    shft = 0.1
+    start, b1, b2, b3 = 0.0, 2.0, 2.5, 5.5
+    xgap = b1+shft if pt_cuts[0] == '40' and pt_cuts[1] == '40' else b2+sft
+    
     polyg_opt = dict(alpha=0.3)
-    xgap = 2.1 if pt_cuts[0] == '40' and pt_cuts[1] == '40' else 2.6
-    p.multi_polygons(xs=[[[[xgap, 9.9, 9.9, xgap]]]],
-                     ys=[[[[9.9, 9.9, xgap, xgap]]]], color='green', legend_label=ditau, **polyg_opt)
-    p.multi_polygons(xs=[[[[0.1, 1.9, 1.9, 5.4, 5.4, 0.1]]]],
-                     ys=[[[[5.4, 5.4, 1.9, 1.9, 0.1, 0.1]]]], color='blue', legend_label='MET', **polyg_opt)
-    p.multi_polygons(xs=[[[[0.1, 0.1, 1.9, 1.9], [5.6, 5.6, 9.9, 9.9]]]],
-                     ys=[[[[5.6, 9.9, 9.9, 5.6], [0.1, 1.9, 1.9, 0.1]]]], legend_label=tau, color='red', **polyg_opt)
+    p.multi_polygons(color='green',
+                     xs=[[[[xgap,topr,topr,xgap]]]] if bigtau else [[[[xgap,b3-shft,b3-shft,xgap]]]],
+                     ys=[[[[topr,topr,xgap,xgap]]]] if bigtau else [[[[b3-shft,b3-shft,xgap,xgap]]]],
+                     legend_label=ditau, **polyg_opt)
+    p.multi_polygons(color='blue',
+                     xs=[[[[start+shft,b1-shft,b1-shft,b3-shift,b3-shft,shft]]]],
+                     ys=[[[[b3-shift,b3-shift,b1-shft,b1-shft,shft,shft]]]],
+                     legend_label='MET', **polyg_opt)
+    p.multi_polygons(color='red',
+                     xs=([[[[shft,shft,b1-shft,b1-shft], [b3+shft,b3+shft,topr,topr]]]] if bigtau else
+                         [[[[shft,shft,topr,topr,b3+shft,b3+shft,shft]]]]),
+                     ys=([[[[b3+shft,topr,topr,b3+shft], [shft,b1-shft,b1_shft,shft]]]] if bigtau else
+                         [[[[b3+shft,topr,topr,sht,shft,b3+sfht,b3+shft]]]]),
+                     legend_label=tau, **polyg_opt)
     p.legend.title = 'Regions'
     p.legend.title_text_font_style = 'bold'
     p.legend.border_line_color = None
@@ -101,21 +112,21 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg,
         p.add_layout(elem)
      
     line_opt = dict(color='black', line_dash='dashed', line_width=2)
-    p.line(x=[2.0, 2.0], y=[0.0, 10.0], **line_opt)
-    p.line(x=[0.0, 10.0], y=[2.0, 2.0], **line_opt)
+    p.line(x=[b1,b1], y=[start, topr+shft], **line_opt)
+    p.line(x=[start,topr+shft], y=[b1,b1], **line_opt)
     if pt_cuts[0] != '40':
-        p.line(x=[2.5, 2.5], y=[0.0, 10.0], **line_opt)
+        p.line(x=[b2,b2], y=[start,topr+shft], **line_opt)
     if pt_cuts[1] != '40':
-        p.line(x=[0.0, 10.0], y=[2.5, 2.5], **line_opt)
+        p.line(x=[start,topr+shft], y=[b2,b2], **line_opt)
      
-    p.xaxis.ticker = [2.0, 5.5] if pt_cuts[0] == '40' else [2.0, 2.5, 5.5]
-    p.xaxis.major_label_overrides = ({2: '40', 5.5: region_cuts[0]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
-                                     else {2: '40', 2.5: pt_cuts[0], 5.5: region_cuts[0]})
+    p.xaxis.ticker = [b1,b3] if pt_cuts[0] == '40' else [b1, b2, b3]
+    p.xaxis.major_label_overrides = ({b1: '40', b3: region_cuts[0]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
+                                     else {b1: '40', b2: pt_cuts[0], b3: region_cuts[0]})
     p.xaxis.axis_label = 'dau1_pT [GeV]'
      
-    p.yaxis.ticker = [2.0, 5.5] if pt_cuts[1] == '40' else [2.0, 2.5, 5.5]
-    p.yaxis.major_label_overrides = ({2: '40', 5.5: region_cuts[1]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
-                                     else {2: '40', 2.5: pt_cuts[1], 5.5: region_cuts[1]})
+    p.yaxis.ticker = [b1, b3] if pt_cuts[1] == '40' else [b1, b2, b3]
+    p.yaxis.major_label_overrides = ({b1: '40', b3: region_cuts[1]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
+                                     else {b1: '40', b2: pt_cuts[1], b3: region_cuts[1]})
     p.yaxis.axis_label = 'dau2_pT [GeV]'
      
     p.output_backend = "svg"
@@ -661,10 +672,10 @@ if __name__ == '__main__':
                     c_tau_trg[reg] = cTau
                         
         f_in.Close()
-
-        square_diagram(sample, c_ditau_trg, c_met_trg, c_tau_trg,
-                       region_cuts, pt_cuts,
-                       output_name=os.path.join(out_counts[categories.index(cat)], 'diagram.html'))
+        text = {'mass': sample,
+                'out': os.path.join(out_counts[categories.index(cat)], 'diagram.html')}
+        square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
+                       region_cuts, pt_cuts, text=text, bigtau=False)
     
     if args.copy:
         import subprocess
