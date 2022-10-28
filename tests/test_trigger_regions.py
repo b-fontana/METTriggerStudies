@@ -42,7 +42,7 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg,
      
     # add a square renderer with a size, color, and alpha
     polyg_opt = dict(alpha=0.3)
-    xgap = 2.6 if pt_cuts[0] == '40' and pt_cuts[1] == '40' else 2.1
+    xgap = 2.1 if pt_cuts[0] == '40' and pt_cuts[1] == '40' else 2.6
     p.multi_polygons(xs=[[[[xgap, 9.9, 9.9, xgap]]]],
                      ys=[[[[9.9, 9.9, xgap, xgap]]]], color='green', legend_label=ditau, **polyg_opt)
     p.multi_polygons(xs=[[[[0.1, 1.9, 1.9, 5.4, 5.4, 0.1]]]],
@@ -108,12 +108,12 @@ def square_diagram(mass, c_ditau_trg, c_met_trg, c_tau_trg,
     if pt_cuts[1] != '40':
         p.line(x=[0.0, 10.0], y=[2.5, 2.5], **line_opt)
      
-    p.xaxis.ticker = [2.0, 2.5, 5.5] if pt_cuts[0] == '40' and pt_cuts[1] == '40' else [2.0, 5.5]
+    p.xaxis.ticker = [2.0, 5.5] if pt_cuts[0] == '40' else [2.0, 2.5, 5.5]
     p.xaxis.major_label_overrides = ({2: '40', 5.5: region_cuts[0]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
                                      else {2: '40', 2.5: pt_cuts[0], 5.5: region_cuts[0]})
     p.xaxis.axis_label = 'dau1_pT [GeV]'
      
-    p.yaxis.ticker = [2.0, 2.5, 5.5]
+    p.yaxis.ticker = [2.0, 5.5] if pt_cuts[1] == '40' else [2.0, 2.5, 5.5]
     p.yaxis.major_label_overrides = ({2: '40', 5.5: region_cuts[1]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
                                      else {2: '40', 2.5: pt_cuts[1], 5.5: region_cuts[1]})
     p.yaxis.axis_label = 'dau2_pT [GeV]'
@@ -214,7 +214,7 @@ def plot(hbase, hmet, htau, var, channel, sample, region, category, directory):
     cat_dir = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_dir)
     for ext in ('png', 'pdf'):
-        c2.SaveAs( os.path.join(cat_dir, 'norm_' + reg + '_' + var + '.' + ext) )
+        c2.SaveAs( os.path.join(cat_dir, 'norm_' + region + '_' + var + '.' + ext) )
     c2.Close()
 
 def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region):
@@ -227,7 +227,7 @@ def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region
     pad1 = ROOT.TPad('pad1', 'pad1', 0., 0., 1., 1.)
     pad1.SetFrameLineWidth(defs['FrameLineWidth'])
     pad1.SetLeftMargin(0.12);
-    pad1.SetRightMargin(0.1);
+    pad1.SetRightMargin(0.14);
     pad1.SetBottomMargin(0.12);
     pad1.SetTopMargin(0.04);
     pad1.Draw()
@@ -237,6 +237,12 @@ def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region
     histo.GetXaxis().SetTitleSize(0.04)
     histo.GetYaxis().SetTitle(two_vars[1])
     histo.GetYaxis().SetTitleSize(0.04)
+
+    try:
+        histo.Scale(1/histo.Integral())
+    except ZeroDivisionError:
+        histo.Scale(0.)
+
     histo.Draw('colz')
 
     c.cd()
@@ -253,7 +259,7 @@ def test_trigger_regions(indir, sample, channel):
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
     elif channel == 'tautau':
-        iso1 = binning['dau2_iso']
+        iso1 = (20, 0.965, 1.005)
     binning.update({'HHKin_mass': (20, float(sample)-300, float(sample)+300),
                     'dau1_iso': iso1})
     
@@ -391,8 +397,8 @@ def test_trigger_regions(indir, sample, channel):
                         tau_turnon_expr = ((entries.dau1_pt > tau_turnon and args.channel=='tautau') or
                                            (entries.dau2_pt > tau_turnon and args.channel!='tautau'))
                         pass_trg = sel.pass_triggers(triggers[channel]) and entries.isLeptrigger
-                        pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr and not entries.isLeptrigger
-                        pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr and not entries.isLeptrigger
+                        pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr
+                        pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr
                         
                         if pass_trg:
                             hBase[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
@@ -470,7 +476,7 @@ if __name__ == '__main__':
     binning = {'metnomu_et': (20, 0, 450),
                'dau1_pt': (30, 0, 400),
                'dau1_eta': (20, -2.5, 2.5),
-               'dau2_iso': (20, 0.88, 1.01),
+               'dau2_iso': (20, 0.88, 1.005),
                'dau2_pt': (30, 0, 300),
                'dau2_eta': (20, -2.5, 2.5),
                'ditau_deltaR': (30, 0.3, 1.3),
@@ -489,16 +495,16 @@ if __name__ == '__main__':
     variables = tuple(binning.keys()) + ('HHKin_mass', 'dau1_iso')
     variables_2D = (('dau1_pt',  'dau2_pt'),
                     ('dau1_iso', 'dau2_iso'),
-                    # ('dau1_eta', 'dau2_eta'),
-                    # ('dau1_eta', 'dau1_iso'),
-                    # ('dau1_pt',  'dau1_eta'),
-                    # ('dau1_pt',  'dau1_iso'),
-                    # ('dau2_eta', 'dau2_iso'),
-                    # ('dau2_pt',  'dau2_eta'),
-                    # ('dau1_pt',  'dau2_eta'),
-                    # ('dau1_pt',  'dau2_iso'),
-                    # ('dau2_pt',  'dau1_eta'),
-                    # ('dau2_pt',  'dau1_iso'),
+                    ('dau1_eta', 'dau2_eta'),
+                    ('dau1_eta', 'dau1_iso'),
+                    ('dau1_pt',  'dau1_eta'),
+                    ('dau1_pt',  'dau1_iso'),
+                    ('dau2_eta', 'dau2_iso'),
+                    ('dau2_pt',  'dau2_eta'),
+                    ('dau1_pt',  'dau2_eta'),
+                    ('dau1_pt',  'dau2_iso'),
+                    ('dau2_pt',  'dau1_eta'),
+                    ('dau2_pt',  'dau1_iso'),
                     ('dau1_pt',  'metnomu_et'),
                     ('dau2_pt',  'metnomu_et'),
                     ('dau1_iso',  'metnomu_et'),
@@ -529,7 +535,8 @@ if __name__ == '__main__':
 
     region_cuts = ('200', '200')
     pt_cuts = ('40', '40')
-    main_dir = 'Region_PTCUTS_' + pt_cuts[0] + '_' + pt_cuts[1] + '_TURNONCUTS_' + region_cuts[0] + '_' + region_cuts[1]
+    main_dir = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors/',
+                            'Region_PTCUTS_' + pt_cuts[0] + '_' + pt_cuts[1] + '_TURNONCUTS_' + region_cuts[0] + '_' + region_cuts[1])
 
     regions = ('ditau', 'met', 'tau')
     met_region = ('(entries.dau2_pt < 40 and entries.dau1_pt < {}) or '.format(region_cuts[0]) +
@@ -630,7 +637,7 @@ if __name__ == '__main__':
                     c = venn3_circles(subsets=subsets, linestyle='dashed')
                     plt.title('Baseline selection')
                     for ext in ('png', 'pdf'):
-                        plt.savefig(os.path.join(out_counts[categories.index(cat)], 'venn.' + ext))
+                        plt.savefig(os.path.join(out_counts[categories.index(cat)], 'venn_' + reg + '.' + ext))
 
                 with open(os.path.join(out_counts[categories.index(cat)], 'table.csv'), 'a') as f:
                     reader = csv.writer(f, delimiter=',', quotechar='|')
