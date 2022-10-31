@@ -180,7 +180,6 @@ bins_params = {'nbins'             : FLAGS.nbins,
                'subtag'            : subtag,
                'debug'             : FLAGS.debug_workflow}
 
-
 #### condor/dag
 write_params = {'data_name' : data_name,
                 'localdir'  : main.base_folder,
