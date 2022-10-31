@@ -17,6 +17,8 @@ from inclusion.config import main
 
 import ROOT
 
+pm = ' \u+00B1 '
+
 @utils.set_pure_input_namespace
 def add_trigger_counts(args):
     def are_there_files(files, regex):
@@ -280,9 +282,9 @@ def add_trigger_counts(args):
                     eff = ROOT.TEfficiency(passed[(comb,ref)], total[(comb,ref)])
                     efflow = str(round(eff.GetEfficiencyErrorLow(1),3))
                     effup  = str(round(eff.GetEfficiencyErrorUp(1),3))
-                    effval = (str(round(eff.GetEfficiency(1),3)) + ' +' + effup + ' -' + efflow)
-                    pass_str = (str(round(passed[(comb,ref)].GetBinContent(1),3)) + ' +-' + str(round(w2_pass[(comb,ref)],3)))
-                    total_str = (str(round(total[(comb,ref)].GetBinContent(1),3)) + ' +-' + str(round(w2_total[(comb,ref)],3)))
+                    effval = (str(round(eff.GetEfficiency(1),3)) + ' +' + effup + ' -'  + efflow)
+                    pass_str = (str(round(passed[(comb,ref)].GetBinContent(1),3)) + pm + str(round(w2_pass[(comb,ref)],3)))
+                    total_str = (str(round(total[(comb,ref)].GetBinContent(1),3)) + pm + str(round(w2_total[(comb,ref)],3)))
                     
                     newline = sep.join((dataset, ref, comb, pass_str, total_str, effval))
                     fcsv2.write(newline + '\n')
@@ -338,8 +340,8 @@ def add_trigger_counts(args):
                 assert pk == tk
                 assert pk == euk
                 assert euk == edk
-                pass_v = str(round(pv,3)) + ' +- ' + str(round(pev,3))
-                tot_v = str(round(tv,3)) + ' +- ' + str(round(tev,3))
+                pass_v = str(round(pv,3)) + pm + str(round(pev,3))
+                tot_v = str(round(tv,3)) + pm + str(round(tev,3))
                 eff = str(round(float(pv)/float(tv),3)) + ' +' + str(round(float(euv),3)) + ' -' + str(round(float(edv),3))
                 newline = sep.join((pk[1], pk[0], pass_v, tot_v, eff))
                 fcsv2_squash.write(newline + '\n')
