@@ -70,8 +70,7 @@ def get_trig_counts(args):
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
         weight = entries.MC_weight
 
-        sel = selection.EventSelection(entries, args.dataset, args.isdata,
-                                       configuration=config_module)
+        sel = selection.EventSelection(entries, args.isdata, configuration=config_module)
         
         pass_trigger = {}
         for trig in args.triggers:
@@ -86,11 +85,11 @@ def get_trig_counts(args):
                         [ pass_trigger[x] for x in tcomb ]
                     )
 
-                    if not sel.check_inters_with_dataset(tcomb, chn):
+                    if not sel.check_inters_with_dataset(tcomb, chn, args.dataset):
                         continue
                     if not sel.dataset_cuts(tcomb, chn):
                         continue
-                    if not sel.dataset_triggers(tcomb, chn, args.triggers)[0]:
+                    if not sel.dataset_triggers(tcomb, chn, args.triggers, args.dataset)[0]:
                         continue
                     
                     tstr = joinNTC(tcomb)
@@ -117,7 +116,7 @@ def get_trig_counts(args):
         for chn in args.channels:
             for tcomb in triggercomb[chn]:
                 try:
-                    reftrig = sel.dataset_triggers(tcomb, chn, args.triggers)[1]
+                    reftrig = sel.dataset_triggers(tcomb, chn, args.triggers, args.dataset)[1]
                 except OverflowError:
                     continue
                 
