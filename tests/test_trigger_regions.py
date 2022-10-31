@@ -585,7 +585,11 @@ if __name__ == '__main__':
 
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.samples:
-        outname = get_outname(suffix=sample+'_'+args.channel, mode='met', ext='root',  cut='bigtau')
+        name = sample + '_' + args.channel + '_'
+        name += pt_cuts[0] + '_' + pt_cuts[1] + '_turnon_' + region_cuts[0] + '_' + region_cuts[1]
+        if args.bigtau:
+            name += '_BIGTAU'
+        outname = get_outname(name=name)
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
 
