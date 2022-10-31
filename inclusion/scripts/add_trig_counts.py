@@ -417,35 +417,48 @@ def add_trigger_counts(args):
             c_gzip = zip(c_ref_vals, c_ref_combs, c_int_vals, c_int_combs, c_refs)
             for refv, refc, intv, intc, refref in c_gzip:
                 c_effs.append(float(intv) / float(refv))
-            c_effs = np.sort(np.array(c_effs))[::-1]
+            c_effs = np.array(c_effs)
 
             w_gzip = zip(w_ref_vals, w_ref_combs, w_int_vals, w_int_combs, w_refs)
             for refv, refc, intv, intc, refref in w_gzip:
                 w_effs.append(float(intv) / float(refv))
-            w_effs = np.sort(np.array(w_effs))[::-1]
+            w_effs = np.array(w_effs)
 
             w2_gzip = zip(w2_ref_vals, w2_ref_combs, w2_int_vals, w2_int_combs, w2_refs)
             for refv, refc, intv, intc, refref in w2_gzip:
-                w_effs.append(float(intv) / float(refv))
-            w2_effs = np.sort(np.array(w2_effs))[::-1]
+                w2_effs.append(float(intv) / float(refv))
+            w2_effs = np.array(w2_effs)
 
-            # sort other columns following unweighted efficiencies descending order
+            # sort other columns following unweighted efficiencies descending order for CSV display
             c_idxs_sort  = c_effs.argsort(axis=None)[::-1]
+            c_refs       = c_refs[c_idxs_sort]
             c_ref_vals   = c_ref_vals[c_idxs_sort]
             c_ref_combs  = c_ref_combs[c_idxs_sort]
             c_int_vals   = c_int_vals[c_idxs_sort]
             c_int_combs  = c_int_combs[c_idxs_sort]
-            
+            c_effs       = c_effs[c_idxs_sort]
+
+            w_refs       = w_refs[c_idxs_sort]
             w_ref_vals   = w_ref_vals[c_idxs_sort]
             w_ref_combs  = w_ref_combs[c_idxs_sort]
             w_int_vals   = w_int_vals[c_idxs_sort]
             w_int_combs  = w_int_combs[c_idxs_sort]
-            
+            w_effs       = w_effs[c_idxs_sort]
+
+            w2_refs      = w2_refs[c_idxs_sort]
             w2_ref_vals  = w2_ref_vals[c_idxs_sort]
             w2_ref_combs = w2_ref_combs[c_idxs_sort]
             w2_int_vals  = w2_int_vals[c_idxs_sort]
             w2_int_combs = w2_int_combs[c_idxs_sort]
+            w2_effs      = w2_effs[c_idxs_sort]
 
+            check_length_lists = [c_refs, c_ref_vals, c_ref_combs, c_int_vals, c_int_combs, c_effs,
+                                  w_refs, w_ref_vals, w_ref_combs, w_int_vals, w_int_combs, w_effs,
+                                  w2_refs, w2_ref_vals, w2_ref_combs, w2_int_vals, w2_int_combs, w2_effs]
+            n = check_length_lists[0].shape
+            if not all(x.shape == n for x in check_length_lists):
+                raise RuntimeError('Lengths must be the same!')
+            
             c_gzip = zip(c_effs, c_ref_vals, c_ref_combs, c_int_vals, c_int_combs, c_refs)
             for eff, refv, refc, intv, intc, refref in c_gzip:
                 newline = sep.join(('Numerator',
@@ -471,7 +484,6 @@ def add_trigger_counts(args):
                 fcsv.write(newline)
 
             w2_gzip = zip(w2_effs, w2_ref_vals, w2_ref_combs, w2_int_vals, w2_int_combs, w2_refs)
-            print('check')
             for eff, refv, refc, intv, intc, refref in w2_gzip:
                 newline = sep.join(('Numerator_w2',
                                     str(intc).replace(main.inters_str, '  AND  '),
@@ -482,8 +494,6 @@ def add_trigger_counts(args):
                                     str(refc).replace(main.inters_str, '  AND  '),
                                     refref, str(refv), '1\n' ))
                 fcsv.write(newline)
-                print(newline)
-                breakpoint()
 
     print('Save files: ')
     if args.aggr:
