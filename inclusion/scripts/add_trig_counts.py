@@ -118,7 +118,6 @@ def add_trigger_counts(args):
                         mes = 'Column {} is not supported.'
                         raise ValueError(mes.format(mes))
 
-
     if args.aggr:
         table_name = 'table.csv'
         sub = os.path.join(args.outdir, args.channel, 'Tables')
@@ -144,7 +143,9 @@ def add_trigger_counts(args):
     passed, w2_pass, w2_total = 0, 0., 0.
     
     if args.aggr:
-        # Unweighted counts
+        ########################################################
+        ### Unweighted counts ##################################
+        ########################################################
         with open(outs_c, 'w') as fcsv1:
             for il,l in enumerate(aggr_outs):
                 split_line = [x.replace('\n', '') for x in l.split(sep)]
@@ -156,12 +157,12 @@ def add_trigger_counts(args):
                 if atype != 'Type':
                     if atype=='Numerator':
                         passed = ROOT.TH1I('h_pass'+str(il), 'h_pass'+str(il), 1, 0., 1.)
-                        for _ in range(int(c)):
+                        for _ in range(utils.stoi(c)):
                             passed.Fill(0.5)
                         continue
                     elif atype=='Denominator':
                         total = ROOT.TH1I('h_pass'+str(il), 'h_pass'+str(il), 1, 0., 1.)
-                        for _ in range(int(c)):
+                        for _ in range(utils.stoi(c)):
                             total.Fill(0.5)
                     else:
                         if (atype != 'Numerator_weighted' and atype != 'Denominator_weighted' and
@@ -230,8 +231,9 @@ def add_trigger_counts(args):
                 newline = sep.join((pk[1], pk[0], str(pv), str(tv), eff))
                 fcsv1_squash.write(newline + '\n')
 
-
-        # Weighted counts
+        ########################################################
+        ### Weighted counts ####################################
+        ########################################################
         with open(outs_w, 'w') as fcsv2:
             for il,l in enumerate(aggr_outs):
                 split_line = [x.replace('\n', '') for x in l.split(sep)]
@@ -240,19 +242,21 @@ def add_trigger_counts(args):
 
                 # write a new line only once per numerator/denominator pair of lines
                 dataset, atype, comb, ref, c, eff = split_line
+                print('yes ', split_line)
                 if atype != 'Type':
                     if atype=='Numerator_weighted':
                         passed = ROOT.TH1F('hw_pass'+str(il), 'hw_pass'+str(il), 1, 0., 1.)
-                        for _ in range(int(c)):
+                        for _ in range(utils.stoi(c)):
                             passed.Fill(0.5)
                         continue                            
                     elif atype=='Denominator_weighted':
                         total = ROOT.TH1F('hw_pass'+str(il), 'hw_pass'+str(il), 1, 0., 1.)
-                        for _ in range(int(c)):
+                        for _ in range(utils.stoi(c)):
                             total.Fill(0.5)
                         continue
                     elif atype=='Numerator_w2':
                         w2_pass = np.sqrt(c)
+                        print(c, w2_pass)
                         continue
                     elif atype=='Denominator_w2':
                         w2_total = np.sqrt(c)
@@ -282,21 +286,24 @@ def add_trigger_counts(args):
                     fcsv2.write(newline + '\n')
 
         pass_vals, tot_vals = ({} for _ in range(2))
+        pass_err_vals, tot_err_vals = ({} for _ in range(2))
         eff_up_vals, eff_down_vals = ({} for _ in range(2))
             
         with open(outs_w_squash, 'w') as fcsv2_squash:
             # sum values from different samples for the same trigger intersection ("squash")
-            for il,l in enumerate(aggr_c_squash):
+            for il,l in enumerate(aggr_w_squash):
                 split_line = [x.replace('\n', '') for x in l.split(sep)]
                 if all( not x for x in split_line ):
                     continue
 
                 _, ref, comb, npass, ntot, eff = split_line
+                print(l)
+                print(split_line)
                 pass_vals.setdefault((comb,ref), 0.)
                 tot_vals.setdefault((comb,ref), 0.)
                 eff_up_vals.setdefault((comb,ref), 0.)
                 eff_down_vals.setdefault((comb,ref), 0.)
-
+                
                 npass, npass_err = re.findall('(.+)\+-(.+)$', npass)[0]
                 ntot, ntot_err = re.findall('(.+)\+-(.+)$', ntot)[0]
                 pass_vals[(comb,ref)] += float(npass)
@@ -364,7 +371,7 @@ def add_trigger_counts(args):
                 w2_int_combs.append(comb)
                 w2_int_vals.append(val)
                 w2_refs.append(reftrigs[comb])
-     
+
             c_ref_combs = np.array(c_ref_combs)
             c_ref_vals  = np.array(c_ref_vals)
             c_int_combs = np.array(c_int_combs)
@@ -417,6 +424,11 @@ def add_trigger_counts(args):
                 w_effs.append(float(intv) / float(refv))
             w_effs = np.sort(np.array(w_effs))[::-1]
 
+            w2_gzip = zip(w2_ref_vals, w2_ref_combs, w2_int_vals, w2_int_combs, w2_refs)
+            for refv, refc, intv, intc, refref in w2_gzip:
+                w_effs.append(float(intv) / float(refv))
+            w2_effs = np.sort(np.array(w2_effs))[::-1]
+
             # sort other columns following unweighted efficiencies descending order
             c_idxs_sort  = c_effs.argsort(axis=None)[::-1]
             c_ref_vals   = c_ref_vals[c_idxs_sort]
@@ -458,7 +470,29 @@ def add_trigger_counts(args):
                                     refref, str(refv), '1\n' ))
                 fcsv.write(newline)
 
-    print('Save file {}.'.format(outs))
+            w2_gzip = zip(w2_effs, w2_ref_vals, w2_ref_combs, w2_int_vals, w2_int_combs, w2_refs)
+            print('check')
+            for eff, refv, refc, intv, intc, refref in w2_gzip:
+                newline = sep.join(('Numerator_w2',
+                                    str(intc).replace(main.inters_str, '  AND  '),
+                                    refref, str(intv), str(round(eff,4)))) + '\n'
+                fcsv.write(newline)
+     
+                newline = sep.join(('Denominator_w2',
+                                    str(refc).replace(main.inters_str, '  AND  '),
+                                    refref, str(refv), '1\n' ))
+                fcsv.write(newline)
+                print(newline)
+                breakpoint()
+
+    print('Save files: ')
+    if args.aggr:
+        print('- {}'.format(outs_c))
+        print('- {}'.format(outs_w))
+        print('- {}'.format(outs_c_squash))
+        print('- {}'.format(outs_w_squash))
+    else:
+        print('- {}'.format(outs))
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line parser')

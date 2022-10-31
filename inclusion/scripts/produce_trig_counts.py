@@ -78,7 +78,7 @@ def get_trig_counts(args):
 
         for chn in args.channels:
             if utils.is_channel_consistent(chn, entries.pairType):
-
+                    
                 for tcomb in triggercomb[chn]:                
                     pass_trigger_intersection = functools.reduce(
                         lambda x,y: x and y, #logic AND to join all triggers in this option
@@ -91,7 +91,7 @@ def get_trig_counts(args):
                         continue
                     if not sel.dataset_triggers(tcomb, chn, args.triggers, args.dataset)[0]:
                         continue
-                    
+
                     tstr = joinNTC(tcomb)
                     c_ref[chn][tstr] += 1
                     w_ref[chn][tstr] += weight
