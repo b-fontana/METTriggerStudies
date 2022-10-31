@@ -105,7 +105,7 @@ class EventSelection:
         if reference is None:
             raise OverflowError('Intersection is too long.')
 
-        return (self.pass_triggers(dataset_ref_trigs[reference]), dataset_ref_trigs[reference])
+        return self.pass_triggers(dataset_ref_trigs[reference]), dataset_ref_trigs[reference]
 
     def get_trigger_bit(self, trigger_name):
         """
@@ -182,7 +182,6 @@ class EventSelection:
 
     def pass_triggers(self, trigs):
         """
-        Internal only function.
         Checks at least one trigger was fired.
         """
         flag = False
@@ -223,6 +222,9 @@ class EventSelection:
         """
         assert invert_mass_cut is not standard_mass_cut
 
+        if not self.entries['isLeptrigger']:
+            return False
+        
         # When one only has 0 or 1 bjet th HH mass is not well defined,
         # and a value of -1 is assigned. One thus has to remove the cut below
         # when considering events with less than 2 b-jets.
