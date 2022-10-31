@@ -416,6 +416,9 @@ def set_pure_input_namespace(func):
 def split_vnames(joinvars):
     return joinvars.split('_VERSUS_')
 
+def stoi(s):
+    return int(float(s))
+    
 def print_configuration(parse_args):
     filename = inspect.stack()[1].filename 
     
