@@ -17,7 +17,9 @@ from inclusion.config import main
 
 import ROOT
 
-pm = ' \u+00B1 '
+pm = ' \u00B1 '
+types = ('Numerator_weighted', 'Denominator_weighted', 'Numerator_w2', 'Denominator_w2')
+around = lambda x : str(round(x,3))
 
 @utils.set_pure_input_namespace
 def add_trigger_counts(args):
@@ -154,6 +156,11 @@ def add_trigger_counts(args):
 
                 # write a new line only once per numerator/denominator pair of lines
                 dataset, atype, comb, ref, c, eff = split_line
+                if atype=='Type' and il==0:
+                    newline = sep.join(('File Type', 'Reference', 'Intersection',
+                                        'Pass', 'Total', 'Efficiency'))
+                    fcsv1.write(newline + '\n')
+
                 if atype != 'Type':
                     if atype=='Numerator':
                         passed = ROOT.TH1I('h_pass'+str(il), 'h_pass'+str(il), 1, 0., 1.)
@@ -163,28 +170,23 @@ def add_trigger_counts(args):
                         total = ROOT.TH1I('h_pass'+str(il), 'h_pass'+str(il), 1, 0., 1.)
                         total.AddBinContent(1, float(c))
                     else:
-                        if (atype != 'Numerator_weighted' and atype != 'Denominator_weighted' and
-                            atype != 'Numerator_w2' and atype != 'Denominator_w2'):
+                        if atype not in types:
                             mes = 'Type {} does not exist.'
                             raise ValueError(mes.format(atype))
+                        continue
 
                     # only lines with "Denominator" reach the following
                     if not ROOT.TEfficiency.CheckConsistency(passed,total):
                         raise ValueError('Bad histogram for TEfficiency')
                     eff = ROOT.TEfficiency(passed, total)
-                    efflow = str(round(eff.GetEfficiencyErrorLow(1),3))
-                    effup  = str(round(eff.GetEfficiencyErrorUp(1),3))
-                    effval = (str(round(eff.GetEfficiency(1),3)) + ' +' + effup + ' -' + efflow)
+                    efflow = around(eff.GetEfficiencyErrorLow(1))
+                    effup  = around(eff.GetEfficiencyErrorUp(1))
+                    effval = around(eff.GetEfficiency(1)) + ' +' + effup + ' -' + efflow
                     newline = sep.join((dataset, ref, comb,
-                                        str(round(passed.GetBinContent(1),3)), str(round(total.GetBinContent(1),3)), effval))
+                                        around(passed.GetBinContent(1)), around(total.GetBinContent(1)), effval))
                     fcsv1.write(newline + '\n')
                     aggr_c_squash.append(newline)
-
-                if atype=='Type' and il==0:
-                    newline = sep.join(('File Type', 'Reference', 'Intersection',
-                                        'Pass', 'Total', 'Efficiency'))
-                    fcsv1.write(newline + '\n')
-
+          
         pass_vals, tot_vals = ({} for _ in range(2))
         eff_up_vals, eff_down_vals = ({} for _ in range(2))
             
@@ -224,7 +226,7 @@ def add_trigger_counts(args):
                 assert pk == tk
                 assert pk == euk
                 assert euk == edk
-                eff = str(round(float(pv)/float(tv),3)) + ' +' + str(round(euv,3)) + ' -' + str(round(edv,3))
+                eff = around(float(pv)/float(tv)) + ' +' + around(euv) + ' -' + around(edv)
                 newline = sep.join((pk[1], pk[0], str(pv), str(tv), eff))
                 fcsv1_squash.write(newline + '\n')
 
@@ -273,18 +275,18 @@ def add_trigger_counts(args):
                 if atype == 'Type': #first line
                     continue
 
-                if atype == 'Denominator_w2': #"groups" per reference trigger 'ref' and combination intersection 'comb'
+                if atype == types[-1]: #"groups" per reference trigger 'ref' and combination intersection 'comb'
                    
                     # only lines with "Denominator_w2" reach the following
                     if not ROOT.TEfficiency.CheckConsistency(passed[(comb,ref)], total[(comb,ref)]):
                         raise ValueError('Bad histogram for TEfficiency')
                         
                     eff = ROOT.TEfficiency(passed[(comb,ref)], total[(comb,ref)])
-                    efflow = str(round(eff.GetEfficiencyErrorLow(1),3))
-                    effup  = str(round(eff.GetEfficiencyErrorUp(1),3))
-                    effval = (str(round(eff.GetEfficiency(1),3)) + ' +' + effup + ' -'  + efflow)
-                    pass_str = (str(round(passed[(comb,ref)].GetBinContent(1),3)) + pm + str(round(w2_pass[(comb,ref)],3)))
-                    total_str = (str(round(total[(comb,ref)].GetBinContent(1),3)) + pm + str(round(w2_total[(comb,ref)],3)))
+                    efflow = around(eff.GetEfficiencyErrorLow(1))
+                    effup  = around(eff.GetEfficiencyErrorUp(1))
+                    effval = around(eff.GetEfficiency(1)) + ' +' + effup + ' -'  + efflow
+                    pass_str = around(passed[(comb,ref)].GetBinContent(1)) + pm + around(w2_pass[(comb,ref)])
+                    total_str = around(total[(comb,ref)].GetBinContent(1)) + pm + around(w2_total[(comb,ref)])
                     
                     newline = sep.join((dataset, ref, comb, pass_str, total_str, effval))
                     fcsv2.write(newline + '\n')
@@ -309,9 +311,9 @@ def add_trigger_counts(args):
                 tot_err_vals.setdefault((comb,ref), 0.)
                 eff_up_vals.setdefault((comb,ref), 0.)
                 eff_down_vals.setdefault((comb,ref), 0.)
-                
-                npass, npass_err = re.findall('(.+)\+-(.+)$', npass)[0]
-                ntot, ntot_err = re.findall('(.+)\+-(.+)$', ntot)[0]
+
+                npass, npass_err = re.findall('(.+)'+pm+'(.+)$', npass)[0]
+                ntot, ntot_err = re.findall('(.+)'+pm+'(.+)$', ntot)[0]
                 pass_vals[(comb,ref)] += float(npass)
                 tot_vals[(comb,ref)] += float(ntot)
                 # square the errors of each sample (later sqrt is applied on the sum)
@@ -340,9 +342,9 @@ def add_trigger_counts(args):
                 assert pk == tk
                 assert pk == euk
                 assert euk == edk
-                pass_v = str(round(pv,3)) + pm + str(round(pev,3))
-                tot_v = str(round(tv,3)) + pm + str(round(tev,3))
-                eff = str(round(float(pv)/float(tv),3)) + ' +' + str(round(float(euv),3)) + ' -' + str(round(float(edv),3))
+                pass_v = around(pv) + pm + around(pev)
+                tot_v = around(tv) + pm + around(tev)
+                eff = around(float(pv)/float(tv)) + ' +' + around(float(euv)) + ' -' + around(float(edv))
                 newline = sep.join((pk[1], pk[0], pass_v, tot_v, eff))
                 fcsv2_squash.write(newline + '\n')
 
@@ -466,7 +468,7 @@ def add_trigger_counts(args):
             for eff, refv, refc, intv, intc, refref in c_gzip:
                 newline = sep.join(('Numerator',
                                     str(intc).replace(main.inters_str, '  AND  '),
-                                    refref, str(intv), str(round(eff,3)))) + '\n'
+                                    refref, str(intv), around(eff))) + '\n'
                 fcsv.write(newline)
      
                 newline = sep.join(('Denominator',
@@ -478,7 +480,7 @@ def add_trigger_counts(args):
             for eff, refv, refc, intv, intc, refref in w_gzip:
                 newline = sep.join(('Numerator_weighted',
                                     str(intc).replace(main.inters_str, '  AND  '),
-                                    refref, str(intv), str(round(eff,3)))) + '\n'
+                                    refref, str(intv), around(eff))) + '\n'
                 fcsv.write(newline)
      
                 newline = sep.join(('Denominator_weighted',
@@ -490,7 +492,7 @@ def add_trigger_counts(args):
             for eff, refv, refc, intv, intc, refref in w2_gzip:
                 newline = sep.join(('Numerator_w2',
                                     str(intc).replace(main.inters_str, '  AND  '),
-                                    refref, str(intv), str(round(eff,3)))) + '\n'
+                                    refref, str(intv), around(eff))) + '\n'
                 fcsv.write(newline)
      
                 newline = sep.join(('Denominator_w2',
