@@ -139,8 +139,15 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
     p.output_backend = 'svg'
     save(p)
     
-def get_outname(name):
+def get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon, bigtau):
     utils.create_single_dir('data')
+
+    name = sample + '_' + channel + '_'
+    name += '_'.join((*region_cuts, 'ptcuts', *pt_cuts, 'turnon', met_turnon, tau_turnon))
+    if bigtau:
+        name += '_BIGTAU'
+    name += '.root'
+
     s = 'data/regions_{}'.format(name)
     return s
 
@@ -259,11 +266,7 @@ def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region
     c.Close()
 
 def test_trigger_regions(indir, sample, channel):
-    name = sample + '_' + channel + '_'
-    name += pt_cuts[0] + '_' + pt_cuts[1] + '_turnon_' + region_cuts[0] + '_' + region_cuts[1]
-    if args.bigtau:
-        name += '_BIGTAU'
-    outname = get_outname(name=name)
+    outname = get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon, args.bigtau)
 
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
@@ -366,9 +369,9 @@ def test_trigger_regions(indir, sample, channel):
                             continue
                         assert reg in regions
                             
-                        met_turnon_expr = entries.metnomu_et > met_turnon
-                        tau_turnon_expr = ((entries.dau1_pt > tau_turnon and args.channel=='tautau') or
-                                           (entries.dau2_pt > tau_turnon and args.channel!='tautau'))
+                        met_turnon_expr = entries.metnomu_et > float(met_turnon)
+                        tau_turnon_expr = ((entries.dau1_pt > float(tau_turnon) and args.channel=='tautau') or
+                                           (entries.dau2_pt > float(tau_turnon) and args.channel!='tautau'))
                         pass_trg = sel.pass_triggers(triggers[channel]) and entries.isLeptrigger
                         pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr
                         pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr
@@ -402,9 +405,9 @@ def test_trigger_regions(indir, sample, channel):
                             continue
                         assert reg in regions
                         
-                        met_turnon_expr = entries.metnomu_et > met_turnon
-                        tau_turnon_expr = ((entries.dau1_pt > tau_turnon and args.channel=='tautau') or
-                                           (entries.dau2_pt > tau_turnon and args.channel!='tautau'))
+                        met_turnon_expr = entries.metnomu_et > float(met_turnon)
+                        tau_turnon_expr = ((entries.dau1_pt > float(tau_turnon) and args.channel=='tautau') or
+                                           (entries.dau2_pt > float(tau_turnon) and args.channel!='tautau'))
                         pass_trg = sel.pass_triggers(triggers[channel]) and entries.isLeptrigger
                         pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr
                         pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr
@@ -526,10 +529,7 @@ if __name__ == '__main__':
                     ('dau2_iso',  'metnomu_et'),
                     )
 
-    #categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
-    categories = ('baseline',)
-    met_turnon = 180
-    tau_turnon = 190
+    categories = ('baseline',) #('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
     
     # Parse input arguments
     parser = argparse.ArgumentParser(description='Producer trigger histograms.')
@@ -548,12 +548,17 @@ if __name__ == '__main__':
                         help='Do not use the multiprocess package.')
     parser.add_argument('--bigtau', action='store_true',
                         help='Consider a larger single tau region, reducing the ditau one.')
+    parser.add_argument('--met_turnon', required=False, type=str,  default='200',
+                        help='MET trigger turnon cut [GeV].' )
     args = utils.parse_args(parser)
 
+    met_turnon = args.met_turnon
+    tau_turnon = '190'
     region_cuts = ('190', '190')
     pt_cuts = ('40', '40')
     main_dir = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors/',
-                            '_'.join(('Region', *region_cuts, 'PT', *pt_cuts, 'TURNON', met_turnon, tau_turnon)))
+                            '_'.join(('Region', *region_cuts, 'PT', *pt_cuts, 'TURNON',
+                                      met_turnon, tau_turnon)))
     if args.bigtau:
         main_dir += '_BIGTAU'
 
@@ -571,7 +576,7 @@ if __name__ == '__main__':
                       '(entries.dau1_pt < 40 and entries.dau2_pt >= {})'.format(region_cuts[1])) #this one is never realized due to the 190GeV trigger cut
         ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(*pt_cuts)
     
-    #### run major function ###
+    #### run main function ###
     if args.sequential:
         if not args.plot:
             for sample in args.samples:
@@ -585,11 +590,7 @@ if __name__ == '__main__':
 
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.samples:
-        name = sample + '_' + args.channel + '_'
-        name += pt_cuts[0] + '_' + pt_cuts[1] + '_turnon_' + region_cuts[0] + '_' + region_cuts[1]
-        if args.bigtau:
-            name += '_BIGTAU'
-        outname = get_outname(name=name)
+        outname = get_outname(sample, args.channel, region_cuts, pt_cuts, met_turnon, tau_turnon, args.bigtau)
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
 
