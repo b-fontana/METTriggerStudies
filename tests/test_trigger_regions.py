@@ -528,7 +528,7 @@ if __name__ == '__main__':
 
     #categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
     categories = ('baseline',)
-    met_turnon = 200
+    met_turnon = 180
     tau_turnon = 190
     
     # Parse input arguments
@@ -543,7 +543,7 @@ if __name__ == '__main__':
     parser.add_argument('--plot', action='store_true',
                         help='Reuse previously produced data for quick plot changes.')
     parser.add_argument('--copy', action='store_true',
-                        help='Do not copy the outputs to EOS at the end.')
+                        help='Copy the outputs to EOS at the end.')
     parser.add_argument('--sequential', action='store_true',
                         help='Do not use the multiprocess package.')
     parser.add_argument('--bigtau', action='store_true',
