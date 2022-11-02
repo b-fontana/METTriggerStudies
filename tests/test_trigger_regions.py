@@ -553,7 +553,7 @@ if __name__ == '__main__':
     region_cuts = ('190', '190')
     pt_cuts = ('40', '40')
     main_dir = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors/',
-                            'Region_PTCUTS_' + pt_cuts[0] + '_' + pt_cuts[1] + '_TURNONCUTS_' + region_cuts[0] + '_' + region_cuts[1])
+                            '_'.join(('Region', *region_cuts, 'PT', *pt_cuts, 'TURNON', met_turnon, tau_turnon)))
     if args.bigtau:
         main_dir += '_BIGTAU'
 
