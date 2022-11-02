@@ -19,7 +19,8 @@ import ROOT
 from array import array
 import ctypes
 
-pm = ' ' + '\u00B1' + ' '
+#pm = ' ' + '\u{00B1}' + ' '
+pm = ' ' + '+-' + ' '
 types = ('Numerator_weighted', 'Denominator_weighted', 'Numerator_w2', 'Denominator_w2')
 around = lambda x : str(round(x,3))
 
@@ -210,8 +211,8 @@ def add_trigger_counts(args):
                 tot_vals[(comb,ref)] += float(ntot)
                 
             for ikey,key in enumerate(pass_vals):
-                pass_v = around(pass_vals[key]) + pm + around(np.sqrt(pass_vals[key]))
-                tot_v = around(tot_vals[key]) + pm + around(np.sqrt(tot_vals[key]))
+                pass_v = around(pass_vals[key])# + pm + around(np.sqrt(pass_vals[key]))
+                tot_v = around(tot_vals[key])# + pm + around(np.sqrt(tot_vals[key]))
 
                 passed_sq = ROOT.TH1I('h_pass_sq_'+str(ikey), 'h_pass_sq_'+str(ikey), 1, 0., 1.)
                 passed_sq.AddBinContent(1, pass_vals[key])
@@ -303,14 +304,14 @@ def add_trigger_counts(args):
                 pass_vals.setdefault((comb,ref), 0.)
                 tot_vals.setdefault((comb,ref), 0.)
 
-                npass, _ = re.findall('(.+)'+pm+'(.+)$', npass)[0]
-                ntot, _ = re.findall('(.+)'+pm+'(.+)$', ntot)[0]
+                npass, _ = re.findall('(.+) \+- (.+)$', npass)[0]
+                ntot, _ = re.findall('(.+) \+- (.+)$', ntot)[0]
                 pass_vals[(comb,ref)] += float(npass)
                 tot_vals[(comb,ref)] += float(ntot)
 
             for ikey,key in enumerate(pass_vals):
-                pass_v = around(pass_vals[key]) + pm + around(np.sqrt(pass_vals[key]))
-                tot_v = around(tot_vals[key]) + pm + around(np.sqrt(tot_vals[key]))
+                pass_v = around(pass_vals[key])# + pm + around(np.sqrt(pass_vals[key]))
+                tot_v = around(tot_vals[key])# + pm + around(np.sqrt(tot_vals[key]))
 
                 passed_sq = ROOT.TH1I('hw_pass_sq_'+str(ikey), 'hw_pass_sq_'+str(ikey), 1, 0., 1.)
                 passed_sq.AddBinContent(1, pass_vals[key])
