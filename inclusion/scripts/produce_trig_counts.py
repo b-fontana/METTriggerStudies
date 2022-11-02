@@ -32,6 +32,7 @@ def get_trig_counts(args):
 
     f_in = ROOT.TFile(args.filename)
     t_in = f_in.Get('HTauTauTree')
+    xsec_norm = f_in.Get('h_eff').GetBinContent(1)
 
     triggercomb = {}
     for chn in args.channels:
@@ -67,8 +68,8 @@ def get_trig_counts(args):
 
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-        weight = entries.MC_weight * entries.lumi
-        
+        weight = entries.MC_weight / xsec_norm * entries.lumi
+
         sel = selection.EventSelection(entries, args.isdata, configuration=config_module)
         
         pass_trigger = {}
