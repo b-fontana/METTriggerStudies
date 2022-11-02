@@ -210,6 +210,9 @@ def add_trigger_counts(args):
                 tot_vals[(comb,ref)] += float(ntot)
                 
             for ikey,key in enumerate(pass_vals):
+                pass_v = around(pass_vals[key]) + pm + around(np.sqrt(pass_vals[key]))
+                tot_v = around(tot_vals[key]) + pm + around(np.sqrt(tot_vals[key]))
+
                 passed_sq = ROOT.TH1I('h_pass_sq_'+str(ikey), 'h_pass_sq_'+str(ikey), 1, 0., 1.)
                 passed_sq.AddBinContent(1, pass_vals[key])
                 total_sq = ROOT.TH1I('h_tot_sq_'+str(ikey), 'h_tot_sq_'+str(ikey), 1, 0., 1.)
@@ -218,8 +221,7 @@ def add_trigger_counts(args):
                 efflow_sq = around(eff_sq.GetEfficiencyErrorLow(1))
                 effup_sq  = around(eff_sq.GetEfficiencyErrorUp(1))
                 effval_sq = around(eff_sq.GetEfficiency(1)) + ' +' + effup + ' -' + efflow
-                newline = sep.join((key[1], key[0], 
-                                    around(pass_vals[key]), around(tot_vals[key]), effval_sq))
+                newline = sep.join((key[1], key[0], pass_v, tot_v, effval_sq))
                 fcsv1_squash.write(newline + '\n')
 
         ########################################################
@@ -287,10 +289,10 @@ def add_trigger_counts(args):
      
      
         pass_vals, tot_vals = ({} for _ in range(2))
-        pass_err_vals, tot_err_vals = ({} for _ in range(2))
-        eff_up_vals, eff_down_vals = ({} for _ in range(2))
-            
         with open(outs_w_squash, 'w') as fcsv2_squash:
+            newline = sep.join(('Reference', 'Intersection', 'Pass', 'Total', 'Efficiency'))
+            fcsv2_squash.write(newline + '\n')
+
             # sum values from different samples for the same trigger intersection ("squash")
             for il,l in enumerate(aggr_w_squash):
                 split_line = [x.replace('\n', '') for x in l.split(sep)]
@@ -300,47 +302,27 @@ def add_trigger_counts(args):
                 _, ref, comb, npass, ntot, eff = split_line
                 pass_vals.setdefault((comb,ref), 0.)
                 tot_vals.setdefault((comb,ref), 0.)
-                pass_err_vals.setdefault((comb,ref), 0.)
-                tot_err_vals.setdefault((comb,ref), 0.)
-                eff_up_vals.setdefault((comb,ref), 0.)
-                eff_down_vals.setdefault((comb,ref), 0.)
 
-                npass, npass_err = re.findall('(.+)'+pm+'(.+)$', npass)[0]
-                ntot, ntot_err = re.findall('(.+)'+pm+'(.+)$', ntot)[0]
+                npass, _ = re.findall('(.+)'+pm+'(.+)$', npass)[0]
+                ntot, _ = re.findall('(.+)'+pm+'(.+)$', ntot)[0]
                 pass_vals[(comb,ref)] += float(npass)
                 tot_vals[(comb,ref)] += float(ntot)
-                # square the errors of each sample (later sqrt is applied on the sum)
-                pass_err_vals[(comb,ref)] += float(npass_err)*float(npass_err)
-                tot_err_vals[(comb,ref)] += float(ntot_err)*float(ntot_err)
-                
-                eff_up = float(re.findall('.+\+(.+)\s.+', eff)[0])
-                eff_down = float(re.findall('.+-(.+)$', eff)[0])
-                eff_up_vals[(comb,ref)] += eff_up*eff_up
-                eff_down_vals[(comb,ref)] += eff_down*eff_down
 
-            pass_err_vals = {k:np.sqrt(v) for k,v in pass_err_vals.items()}
-            tot_err_vals  = {k:np.sqrt(v) for k,v in tot_err_vals.items()}
-            eff_up_vals   = {k:np.sqrt(v) for k,v in eff_up_vals.items()}
-            eff_down_vals = {k:np.sqrt(v) for k,v in eff_down_vals.items()}
-                
-            newline = sep.join(('Reference', 'Intersection',
-                                'Pass', 'Total', 'Efficiency'))
-            fcsv2_squash.write(newline + '\n')
-    
-            # calculate the new efficiency and write
-            gzip = zip(pass_vals.items(), tot_vals.items(),
-                       pass_err_vals.items(), tot_err_vals.items(),
-                       eff_up_vals.items(), eff_down_vals.items())
-            for (pk,pv),(tk,tv),(pek,pev),(tek,tev),(euk,euv),(edk,edv) in gzip:
-                assert pk == tk
-                assert pk == euk
-                assert euk == edk
-                pass_v = around(pv) + pm + around(pev)
-                tot_v = around(tv) + pm + around(tev)
-                eff = around(float(pv)/float(tv)) + ' +' + around(float(euv)) + ' -' + around(float(edv))
-                newline = sep.join((pk[1], pk[0], pass_v, tot_v, eff))
+            for ikey,key in enumerate(pass_vals):
+                pass_v = around(pass_vals[key]) + pm + around(np.sqrt(pass_vals[key]))
+                tot_v = around(tot_vals[key]) + pm + around(np.sqrt(tot_vals[key]))
+
+                passed_sq = ROOT.TH1I('hw_pass_sq_'+str(ikey), 'hw_pass_sq_'+str(ikey), 1, 0., 1.)
+                passed_sq.AddBinContent(1, pass_vals[key])
+                total_sq = ROOT.TH1I('hw_tot_sq_'+str(ikey), 'hw_tot_sq_'+str(ikey), 1, 0., 1.)
+                total_sq.AddBinContent(1, tot_vals[key])
+                eff_sq    = ROOT.TEfficiency(passed_sq, total_sq)                        
+                efflow_sq = around(eff_sq.GetEfficiencyErrorLow(1))
+                effup_sq  = around(eff_sq.GetEfficiencyErrorUp(1))
+                effval_sq = around(eff_sq.GetEfficiency(1)) + ' +' + effup + ' -' + efflow
+
+                newline = sep.join((key[1], key[0], pass_v, tot_v, effval_sq))
                 fcsv2_squash.write(newline + '\n')
-
 
     else: # paired with 'if args.aggr'
         with open(outs, 'w') as fcsv:
