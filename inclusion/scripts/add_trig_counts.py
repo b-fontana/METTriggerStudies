@@ -16,8 +16,10 @@ from inclusion.utils import utils
 from inclusion.config import main
 
 import ROOT
+from array import array
+import ctypes
 
-pm = ' \u00B1 '
+pm = ' ' + '\u00B1' + ' '
 types = ('Numerator_weighted', 'Denominator_weighted', 'Numerator_w2', 'Denominator_w2')
 around = lambda x : str(round(x,3))
 
@@ -156,11 +158,12 @@ def add_trigger_counts(args):
 
                 # write a new line only once per numerator/denominator pair of lines
                 dataset, atype, comb, ref, c, eff = split_line
+                
                 if atype=='Type' and il==0:
                     newline = sep.join(('File Type', 'Reference', 'Intersection',
                                         'Pass', 'Total', 'Efficiency'))
                     fcsv1.write(newline + '\n')
-
+                    
                 if atype != 'Type':
                     if atype=='Numerator':
                         passed = ROOT.TH1I('h_pass'+str(il), 'h_pass'+str(il), 1, 0., 1.)
@@ -178,19 +181,21 @@ def add_trigger_counts(args):
                     # only lines with "Denominator" reach the following
                     if not ROOT.TEfficiency.CheckConsistency(passed,total):
                         raise ValueError('Bad histogram for TEfficiency')
-                    eff = ROOT.TEfficiency(passed, total)
-                    efflow = around(eff.GetEfficiencyErrorLow(1))
-                    effup  = around(eff.GetEfficiencyErrorUp(1))
-                    effval = around(eff.GetEfficiency(1)) + ' +' + effup + ' -' + efflow
+
+                    efficiency = ROOT.TEfficiency(passed, total)                        
+                    efflow = around(efficiency.GetEfficiencyErrorLow(1))
+                    effup  = around(efficiency.GetEfficiencyErrorUp(1))
+                    effval = around(efficiency.GetEfficiency(1)) + ' +' + effup + ' -' + efflow
                     newline = sep.join((dataset, ref, comb,
                                         around(passed.GetBinContent(1)), around(total.GetBinContent(1)), effval))
                     fcsv1.write(newline + '\n')
                     aggr_c_squash.append(newline)
           
-        pass_vals, tot_vals = ({} for _ in range(2))
-        eff_up_vals, eff_down_vals = ({} for _ in range(2))
-            
+        pass_vals, tot_vals = ({} for _ in range(2))          
         with open(outs_c_squash, 'w') as fcsv1_squash:
+            newline = sep.join(('Reference', 'Intersection', 'Pass', 'Total', 'Efficiency'))
+            fcsv1_squash.write(newline + '\n')
+
             # sum values from different samples for the same trigger intersection ("squash")
             for il,l in enumerate(aggr_c_squash):
                 split_line = [x.replace('\n', '') for x in l.split(sep)]
@@ -200,34 +205,21 @@ def add_trigger_counts(args):
                 _, ref, comb, npass, ntot, eff = split_line
                 pass_vals.setdefault((comb,ref), 0.)
                 tot_vals.setdefault((comb,ref), 0.)
-                eff_up_vals.setdefault((comb,ref), 0.)
-                eff_down_vals.setdefault((comb,ref), 0.)
 
                 pass_vals[(comb,ref)] += float(npass)
                 tot_vals[(comb,ref)] += float(ntot)
-
-                eff_up = float(re.findall('.+\+(.+)\s.+', eff)[0])
-                eff_down = float(re.findall('.+-(.+)$', eff)[0])
-                eff_up_vals[(comb,ref)] += eff_up*eff_up
-                eff_down_vals[(comb,ref)] += eff_down*eff_down
-
-            for k in eff_up_vals:
-                eff_up_vals[k] = np.sqrt(eff_up_vals[k])
-            for k in eff_down_vals:
-                eff_down_vals[k] = np.sqrt(eff_down_vals[k])
                 
-            newline = sep.join(('File Type', 'Reference', 'Intersection',
-                                'Pass', 'Total', 'Efficiency'))
-            fcsv1_squash.write(newline + '\n')
-    
-            # calculate the new efficiency and write
-            gzip = zip(pass_vals.items(), tot_vals.items(), eff_up_vals.items(), eff_down_vals.items())
-            for (pk,pv),(tk,tv),(euk,euv),(edk,edv) in gzip:
-                assert pk == tk
-                assert pk == euk
-                assert euk == edk
-                eff = around(float(pv)/float(tv)) + ' +' + around(euv) + ' -' + around(edv)
-                newline = sep.join((pk[1], pk[0], str(pv), str(tv), eff))
+            for ikey,key in enumerate(pass_vals):
+                passed_sq = ROOT.TH1I('h_pass_sq_'+str(ikey), 'h_pass_sq_'+str(ikey), 1, 0., 1.)
+                passed_sq.AddBinContent(1, pass_vals[key])
+                total_sq = ROOT.TH1I('h_tot_sq_'+str(ikey), 'h_tot_sq_'+str(ikey), 1, 0., 1.)
+                total_sq.AddBinContent(1, tot_vals[key])
+                eff_sq    = ROOT.TEfficiency(passed_sq, total_sq)                        
+                efflow_sq = around(eff_sq.GetEfficiencyErrorLow(1))
+                effup_sq  = around(eff_sq.GetEfficiencyErrorUp(1))
+                effval_sq = around(eff_sq.GetEfficiency(1)) + ' +' + effup + ' -' + efflow
+                newline = sep.join((key[1], key[0], 
+                                    around(pass_vals[key]), around(tot_vals[key]), effval_sq))
                 fcsv1_squash.write(newline + '\n')
 
         ########################################################
@@ -260,6 +252,7 @@ def add_trigger_counts(args):
                         if atype != 'Numerator' and atype != 'Denominator':
                             mes = 'Type {} does not exist.'
                             raise ValueError(mes.format(atype))
+                        continue
 
             # write to file
             newline = sep.join(('File Type', 'Reference', 'Intersection',
@@ -394,24 +387,24 @@ def add_trigger_counts(args):
             w2_refs      = np.array(w2_refs)
      
             #remove zeros
-            c_zeromask   = c_int_vals == 0
-            c_ref_vals   = c_ref_vals[~c_zeromask]
-            c_ref_combs  = c_ref_combs[~c_zeromask]
-            c_int_vals   = c_int_vals[~c_zeromask]
-            c_int_combs  = c_int_combs[~c_zeromask]
-            c_refs       = c_refs[~c_zeromask]
+            # c_zeromask   = c_int_vals == 0
+            # c_ref_vals   = c_ref_vals[~c_zeromask]
+            # c_ref_combs  = c_ref_combs[~c_zeromask]
+            # c_int_vals   = c_int_vals[~c_zeromask]
+            # c_int_combs  = c_int_combs[~c_zeromask]
+            # c_refs       = c_refs[~c_zeromask]
 
-            w_ref_vals   = w_ref_vals[~c_zeromask]
-            w_ref_combs  = w_ref_combs[~c_zeromask]
-            w_int_vals   = w_int_vals[~c_zeromask]
-            w_int_combs  = w_int_combs[~c_zeromask]
-            w_refs       = w_refs[~c_zeromask]
+            # w_ref_vals   = w_ref_vals[~c_zeromask]
+            # w_ref_combs  = w_ref_combs[~c_zeromask]
+            # w_int_vals   = w_int_vals[~c_zeromask]
+            # w_int_combs  = w_int_combs[~c_zeromask]
+            # w_refs       = w_refs[~c_zeromask]
 
-            w2_ref_vals  = w2_ref_vals[~c_zeromask]
-            w2_ref_combs = w2_ref_combs[~c_zeromask]
-            w2_int_vals  = w2_int_vals[~c_zeromask]
-            w2_int_combs = w2_int_combs[~c_zeromask]
-            w2_refs      = w2_refs[~c_zeromask]
+            # w2_ref_vals  = w2_ref_vals[~c_zeromask]
+            # w2_ref_combs = w2_ref_combs[~c_zeromask]
+            # w2_int_vals  = w2_int_vals[~c_zeromask]
+            # w2_int_combs = w2_int_combs[~c_zeromask]
+            # w2_refs      = w2_refs[~c_zeromask]
 
             line = sep.join(('Type', 'Trigger Intersection', 'Reference', 'Counts', 'Efficiency\n'))
             fcsv.write(line)
