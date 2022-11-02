@@ -191,7 +191,10 @@ def add_trigger_counts(args):
                                         around(passed.GetBinContent(1)), around(total.GetBinContent(1)), effval))
                     fcsv1.write(newline + '\n')
                     aggr_c_squash.append(newline)
-          
+
+        # "squash", i.e., merge samples belonging to the same Intersection
+        # for MC we are mixing different production processes
+        # for data each intersection is evaluated only by a single dataset, so we are only dropping empty information
         pass_vals, tot_vals = ({} for _ in range(2))          
         with open(outs_c_squash, 'w') as fcsv1_squash:
             newline = sep.join(('Reference', 'Intersection', 'Pass', 'Total', 'Efficiency'))
@@ -221,7 +224,7 @@ def add_trigger_counts(args):
                 eff_sq    = ROOT.TEfficiency(passed_sq, total_sq)                        
                 efflow_sq = around(eff_sq.GetEfficiencyErrorLow(1))
                 effup_sq  = around(eff_sq.GetEfficiencyErrorUp(1))
-                effval_sq = around(eff_sq.GetEfficiency(1)) + ' +' + effup + ' -' + efflow
+                effval_sq = around(eff_sq.GetEfficiency(1)) + ' +' + effup_sq + ' -' + efflow_sq
                 newline = sep.join((key[1], key[0], pass_v, tot_v, effval_sq))
                 fcsv1_squash.write(newline + '\n')
 
@@ -320,7 +323,7 @@ def add_trigger_counts(args):
                 eff_sq    = ROOT.TEfficiency(passed_sq, total_sq)                        
                 efflow_sq = around(eff_sq.GetEfficiencyErrorLow(1))
                 effup_sq  = around(eff_sq.GetEfficiencyErrorUp(1))
-                effval_sq = around(eff_sq.GetEfficiency(1)) + ' +' + effup + ' -' + efflow
+                effval_sq = around(eff_sq.GetEfficiency(1)) + ' +' + effup_sq + ' -' + efflow_sq
 
                 newline = sep.join((key[1], key[0], pass_v, tot_v, effval_sq))
                 fcsv2_squash.write(newline + '\n')
@@ -397,17 +400,26 @@ def add_trigger_counts(args):
 
             c_gzip = zip(c_ref_vals, c_ref_combs, c_int_vals, c_int_combs, c_refs)
             for refv, refc, intv, intc, _ in c_gzip:
-                c_effs.append(float(intv) / float(refv))
+                try:
+                    c_effs.append(float(intv) / float(refv))
+                except ZeroDivisionError:
+                    c_effs.append(0.)                    
             c_effs = np.array(c_effs)
 
             w_gzip = zip(w_ref_vals, w_ref_combs, w_int_vals, w_int_combs, w_refs)
             for refv, refc, intv, intc, _ in w_gzip:
-                w_effs.append(float(intv) / float(refv))
+                try:
+                    w_effs.append(float(intv) / float(refv))
+                except ZeroDivisionError:
+                    w_effs.append(0.)
             w_effs = np.array(w_effs)
 
             w2_gzip = zip(w2_ref_vals, w2_ref_combs, w2_int_vals, w2_int_combs, w2_refs)
             for refv, refc, intv, intc, _ in w2_gzip:
-                w2_effs.append(float(intv) / float(refv))
+                try:
+                    w2_effs.append(float(intv) / float(refv))
+                except ZeroDivisionError:
+                    w2_effs.append(0.)
             w2_effs = np.array(w2_effs)
 
             # sort other columns following unweighted efficiencies descending order for CSV display
