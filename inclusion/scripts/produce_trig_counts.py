@@ -54,7 +54,7 @@ def get_trig_counts(args):
             w2_inters[chn][tstr] = 0.
 
     t_in.SetBranchStatus('*', 0)
-    _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'HHKin_mass',
+    _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi', 'HHKin_mass',
                 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
     for ientry in _entries:
@@ -67,8 +67,8 @@ def get_trig_counts(args):
 
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-        weight = entries.MC_weight
-
+        weight = entries.MC_weight * entries.lumi
+        
         sel = selection.EventSelection(entries, args.isdata, configuration=config_module)
         
         pass_trigger = {}
