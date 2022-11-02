@@ -173,10 +173,8 @@ def generate_trigger_combinations(channel, trigs):
     Each intersection is sorted alphabetically
     (useful for matching with the KLUB framework).
     """
-    exclusive = get_exclusive_intersections()
-
     # look only at combinations where the channel is imcompatible with the trigger
-    pruntrigs = [ exclusive[x] for x in exclusive if x not in (channel, 'general') ]
+    pruntrigs = [ main.exclusive[x] for x in main.exclusive if x not in (channel, 'general') ]
     pruntrigs = set(it.chain(*pruntrigs))
     pruntrigs = set(trigs) - pruntrigs
 
@@ -198,11 +196,6 @@ def get_display_variable_name(channel, var):
     else:
         var_custom = var
     return var_custom
-
-def get_exclusive_intersections():
-    flat = sorted([x for v in main.exclusive.values() for x in v])
-    assert flat == sorted(list(main.trig_map.keys()))
-    return exclusive
 
 def get_key_list(afile, inherits=['TH1']):
     tmp = []
