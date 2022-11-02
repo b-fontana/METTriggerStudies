@@ -14,7 +14,6 @@ from inclusion.utils.utils import join_name_trigger_intersection as joinNTC
 
 import functools
 import argparse
-from array import array
 import importlib
 
 import ROOT
