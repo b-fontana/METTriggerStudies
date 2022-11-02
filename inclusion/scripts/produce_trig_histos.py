@@ -85,7 +85,7 @@ def build_histograms(args):
                         h2Trig[chn][vname][cstr] = {}
 
     t_in.SetBranchStatus('*', 0)
-    _entries = ('triggerbit', 'RunNumber',
+    _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
                 'PUReweight', 'lumi', 'IdAndIsoSF_deep_pt',
                 'HHKin_mass', 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
