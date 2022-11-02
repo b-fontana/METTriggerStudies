@@ -75,6 +75,18 @@ trig_custom = {'VBFTauCustom',
                'IsoDoubleTauCustom',
                'IsoMuIsoTauCustom',
                'EleIsoTauCustom'}
+assert all(x in trig_map.keys() for x in trig_custom)
+
+exclusive = {'etau'   : ('Ele32', 'EleIsoTauCustom'),
+             'mutau'  : ('IsoMu24', 'IsoMuIsoTauCustom'),
+             'tautau' : ('IsoDoubleTauCustom', 'VBFTauCustom'),
+             'general': ('METNoMu120', 'IsoTau180')}
+for excl in exclusive.values():
+    assert all(x in trig_map.keys() for x in excl)
+    
+lep_triggers = {'Ele32', 'EleIsoTauCustom', 'IsoMu24', 'IsoMuIsoTauCustom',
+                'IsoDoubleTauCustom'}
+assert all(x in trig_map.keys() for x in lep_triggers)
 
 cuts = {#'METNoMu120': {'metnomu_et': ('>', [120,180]), 'mhtnomu_et': ('>', [100,160])},
          #'IsoTau50':   {'dau1_pt': ('>', [80]), 'dau1_eta': ('<', [2.0]), 'met_et': ('>', [150])},

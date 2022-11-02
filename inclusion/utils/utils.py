@@ -200,11 +200,7 @@ def get_display_variable_name(channel, var):
     return var_custom
 
 def get_exclusive_intersections():
-    exclusive = {'etau'   : ('Ele32', 'EleIsoTauCustom'),
-                 'mutau'  : ('IsoMu24', 'IsoMuIsoTauCustom'),
-                 'tautau' : ('IsoDoubleTauCustom', 'VBFTauCustom'),
-                 'general': ('METNoMu120', 'IsoTau180')}
-    flat = sorted([x for v in exclusive.values() for x in v])
+    flat = sorted([x for v in main.exclusive.values() for x in v])
     assert flat == sorted(list(main.trig_map.keys()))
     return exclusive
 
