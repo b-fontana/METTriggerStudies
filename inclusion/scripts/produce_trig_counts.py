@@ -6,7 +6,8 @@ import os
 import sys
 parent_dir = os.path.abspath(__file__ + 3 * '/..')
 sys.path.insert(0, parent_dir)
-
+import glob
+    
 import inclusion
 from inclusion import selection
 from inclusion.utils import utils
@@ -30,9 +31,15 @@ def get_trig_counts(args):
         mes = '[' + os.path.basename(__file__) + '] {} does not exist.'.format(args.filename)
         raise ValueError(mes)
 
+    search_str = os.path.join(os.path.dirname(args.filename), '*.root')
+    xsec_norm = 1. if args.isdata else 0
+    if not args.isdata:
+        for elem in glob.glob(search_str):
+            ftmp = ROOT.TFile(elem)
+            xsec_norm += ftmp.Get('h_eff').GetBinContent(1)
+    
     f_in = ROOT.TFile(args.filename)
     t_in = f_in.Get('HTauTauTree')
-    xsec_norm = f_in.Get('h_eff').GetBinContent(1)
 
     triggercomb = {}
     for chn in args.channels:
@@ -68,8 +75,8 @@ def get_trig_counts(args):
 
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-        weight = entries.MC_weight / xsec_norm * entries.lumi
-
+        weight = (entries.MC_weight / xsec_norm) * entries.lumi
+        
         sel = selection.EventSelection(entries, args.isdata, configuration=config_module)
         
         pass_trigger = {}
