@@ -13,7 +13,8 @@ import argparse
 from inclusion.utils import utils
 
 import bokeh
-from bokeh.plotting import figure, save
+from bokeh.plotting import figure, output_file, save
+output_file('plots/trigger_gains.html')
 from bokeh.layouts import gridplot
 #from bokeh.io import export_svg
 
@@ -21,57 +22,60 @@ def main(args):
    channels = args.channels
    linear_x = [k for k in range(1,len(args.masses)+1)]
     
-   y = {}
+   yindep, yboth = ({} for _ in range(2))
    for md in main_dir:
-       y[md] = {}
+       d_base = Path(base_dir) / md
+       output_file(d_base / 'trigger_gains.html')
+       yindep[md], yboth[md] = ({} for _ in range(2))
        for chn in channels:
-           y[md][chn] = {}
+           yindep[md][chn], yboth[md][chn] = ({} for _ in range(2))
+           yindep[md][chn]['met'], yindep[md][chn]['tau'] = ([] for _ in range(2))
+           yboth[md][chn]['met'],  yboth[md][chn]['add_met_tau']  = ([] for _ in range(2))
+
            for mass in args.masses:
-               y[md][chn][mass] = []
-               d = Path(base_dir) / md / chn / str(mass)
+               d = d_base / chn / str(mass)
                fullpath = Path(d) / 'baseline/counts/table.csv'
-               print(fullpath)
-               quit()
-    
+
                with open(fullpath) as f:
                    reader = csv.reader(f, delimiter=',', quotechar='|')
                    next(reader, None) #ignore header line
-                   for sample, frac in reader:
-                       y[md][chn][mass].append(float(frac))
-    
-   for md in main_dir:
-       for chn in channels:
-           y[md][chn]['add_met_tau'] = []
-           for elem1, elem2 in zip(y[md][chn]['met'], y[md][chn]['met_tau']):
-               y[md][chn]['add_met_tau'].append(elem1+elem2)
+                   for line in reader:
+                       frac_indep_met = float(line[7]) / float(line[1])
+                       frac_indep_tau = float(line[9]) / float(line[1])
+                       frac_both_met  = float(line[7]) / float(line[1])
+                       frac_both_tau  = (float(line[7]) + float(line[8])) / float(line[1])
+                       yindep[md][chn]['met'].append(frac_indep_met)
+                       yindep[md][chn]['tau'].append(frac_indep_tau)
+                       yboth[md][chn]['met'].append(frac_both_met)
+                       yboth[md][chn]['add_met_tau'].append(frac_both_tau)
+                       break #only first line ('ditau') is being considered
     
    opt_points = dict(size=8)
    opt_line = dict(width=1.5)
    colors = ('green', 'blue', 'red')
    styles = ('solid', 'dashed')
-   legends = {'met': ' (MET)',
-              'tau': ' (Tau)',
-              'add_met_tau': ' (MET + Tau)'}
+   legends = {'met': ' (MET)', 'tau': ' (Tau)', 'add_met_tau': ' (MET + Tau)'}
     
    x_str = [str(k) for k in args.masses]
    xticks = linear_x[:]
    yticks = [x for x in range(0,100,10)]
     
    for md in main_dir:
-       p1 = figure(title='Inclusion of MET and Single Tau triggers',
-                   plot_width=800, plot_height=400,
-                   x_axis_label='x', y_axis_label='y')
-       p2 = figure(title='Acceptance gain of MET + SingleTau triggers',
-                   plot_width=800, plot_height=400,
-                   x_axis_label='x', y_axis_label='y')
+       p_opt = dict(width=800, height=400, x_axis_label='x', y_axis_label='y')
+       p1 = figure(title='Inclusion of MET and Single Tau triggers', **p_opt)
+       p2 = figure(title='Acceptance gain of MET + SingleTau triggers', **p_opt)
+       p1.toolbar.logo = None
+       p2.toolbar.logo = None
        for ichn,chn in enumerate(channels):
            for itd,td in enumerate(('met', 'tau')):
-               p1.circle(linear_x, y[md][chn][td], color=colors[ichn], fill_alpha=1., **opt_points)
-               p1.line(linear_x, y[md][chn][td], color=colors[ichn], line_dash=styles[itd],
+               p1.circle(linear_x, yindep[md][chn][td], color=colors[ichn], fill_alpha=1.,
+                         **opt_points)
+               p1.line(linear_x, yindep[md][chn][td], color=colors[ichn], line_dash=styles[itd],
                        legend_label=chn+legends[td], **opt_line)
            for itd,td in enumerate(('met', 'add_met_tau')):
-               p2.circle(linear_x, y[md][chn][td], color=colors[ichn], fill_alpha=1., **opt_points)
-               p2.line(linear_x, y[md][chn][td], color=colors[ichn], line_dash=styles[itd],
+               p2.circle(linear_x, yboth[md][chn][td], color=colors[ichn], fill_alpha=1.,
+                         **opt_points)
+               p2.line(linear_x, yboth[md][chn][td], color=colors[ichn], line_dash=styles[itd],
                        legend_label=chn+legends[td], **opt_line)
                
        for p in (p1, p2):
@@ -96,7 +100,7 @@ def main(args):
            #export_svg(p, filename='line_graph.svg')
         
        g = gridplot([[p1], [p2]])
-       save(g, title=md, filename='plots/'+md+'.html')
+       save(g, title=md)
 
 if __name__ == '__main__':
     base_dir = '/eos/user/b/bfontana/www/TriggerScaleFactors/'
