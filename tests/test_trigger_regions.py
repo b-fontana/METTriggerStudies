@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 from matplotlib_venn import venn3, venn3_circles
 
 def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
-                   region_cuts, pt_cuts, text, bigtau=False, notau=False):
+                   region_cuts, pt_cuts, text, bigtau=False, notau=False, nomet=False):
     tau = '\u03C4'
     ditau = tau+tau
     output_file(text['out'])
@@ -66,10 +66,11 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
                      xs=[[[[xgap,b3-shft,b3-shft,xgap]]]] if bigtau else [[[[xgap,topr,topr,xgap]]]],
                      ys=[[[[b3-shft,b3-shft,xgap,xgap]]]] if bigtau else [[[[topr,topr,xgap,xgap]]]],
                      legend_label=ditau, **polyg_opt)
-    p.multi_polygons(color='blue',
-                     xs=[[[[start+shft,b1-shft,b1-shft,b3-shft,b3-shft,shft]]]],
-                     ys=[[[[b3-shft,b3-shft,b1-shft,b1-shft,shft,shft]]]],
-                     legend_label='MET', **polyg_opt)
+    if not nomet:
+        p.multi_polygons(color='blue',
+                         xs=[[[[start+shft,b1-shft,b1-shft,b3-shft,b3-shft,shft]]]],
+                         ys=[[[[b3-shft,b3-shft,b1-shft,b1-shft,shft,shft]]]],
+                         legend_label='MET', **polyg_opt)
     if not notau:
         p.multi_polygons(color='red',
                          xs=([[[[shft,shft,topr,topr,b3+shft,b3+shft,shft]]]] if bigtau else
@@ -93,40 +94,43 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
                                   text_color='red', **label_opt),
                    'gain':  Label(x=b1+0.3, y=b1+0.3, text='Gain: '+stats_ditau_fraction+'%',
                                   text_color='black', **label_opt),}
-    for elem in stats_ditau.values():
+    for key,elem in stats_ditau.items():
+        if nomet and notau and key=='gain':
+            continue
         p.add_layout(elem)
 
-    try:
-        contam_tau = str(round(100*float(c_tau_trg['met'])/(c_met_trg['met']+c_tau_trg['met']),2))
-    except ZeroDivisionError:
-        contam_tau = '0'
-    stats_met = {'met':   Label(x=b1+0.3, y=1.3, text='met: '+str(c_met_trg['met']),
-                                text_color='blue', **label_opt),
-                 'tau':   Label(x=b1+0.3, y=0.9, text=tau+' && !met: '+str(c_tau_trg['met']),
-                                text_color='red', **label_opt),
-                 'ditau': Label(x=b1+0.3, y=0.5, text=ditau+': '+str(c_ditau_trg['met']),
-                                text_color='green', **label_opt),
-                 'contamination': Label(x=b1+0.3, y=0.1, text='Contam.: '+contam_tau+'%',
-                                        text_color='black', **label_opt),}
-    for elem in stats_met.values():
-        p.add_layout(elem)
+    if not nomet:
+        try:
+            contam_tau = str(round(100*float(c_tau_trg['met'])/(c_met_trg['met']+c_tau_trg['met']),2))
+        except ZeroDivisionError:
+            contam_tau = '0'
+        stats_met = {'met':   Label(x=b1+0.3, y=1.3, text='met: '+str(c_met_trg['met']),
+                                    text_color='blue', **label_opt),
+                     'tau':   Label(x=b1+0.3, y=0.9, text=tau+' && !met: '+str(c_tau_trg['met']),
+                                    text_color='red', **label_opt),
+                     'ditau': Label(x=b1+0.3, y=0.5, text=ditau+': '+str(c_ditau_trg['met']),
+                                    text_color='green', **label_opt),
+                     'contamination': Label(x=b1+0.3, y=0.1, text='Contam.: '+contam_tau+'%',
+                                            text_color='black', **label_opt),}
+        for elem in stats_met.values():
+            p.add_layout(elem)
 
-    try:
-        contam_met = str(round(100*float(c_met_trg['tau'])/(c_met_trg['tau']+c_tau_trg['tau']),2))
-    except ZeroDivisionError:
-        contam_met = '0'
-        
-    stats_tau = {'tau':   Label(x=b3+0.3, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
-                                 text_color='red', **label_opt),
-                 'met':   Label(x=b3+0.3, y=0.9, text='met && !'+tau+': '+str(c_met_trg['tau']),
-                                text_color='blue', **label_opt),
-                 'ditau': Label(x=b3+0.3, y=0.5, text=ditau+': '+str(c_ditau_trg['tau']),
-                                text_color='green', **label_opt),
-                 'contamination': Label(x=b3+0.3, y=0.1, text='Contam.: '+contam_met+'%',
-                                        text_color='black', **label_opt),}
+    if not notau:
+        try:
+            contam_met = str(round(100*float(c_met_trg['tau'])/(c_met_trg['tau']+c_tau_trg['tau']),2))
+        except ZeroDivisionError:
+            contam_met = '0'
 
-    for elem in stats_tau.values():
-        p.add_layout(elem)
+        stats_tau = {'tau':   Label(x=b3+0.3, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
+                                    text_color='red', **label_opt),
+                     'met':   Label(x=b3+0.3, y=0.9, text='met && !'+tau+': '+str(c_met_trg['tau']),
+                                    text_color='blue', **label_opt),
+                     'ditau': Label(x=b3+0.3, y=0.5, text=ditau+': '+str(c_ditau_trg['tau']),
+                                    text_color='green', **label_opt),
+                     'contamination': Label(x=b3+0.3, y=0.1, text='Contam.: '+contam_met+'%',
+                                            text_color='black', **label_opt),}
+        for elem in stats_tau.values():
+            p.add_layout(elem)
      
     line_opt = dict(color='black', line_dash='dashed', line_width=2)
     p.line(x=[b1,b1], y=[start, topr+shft], **line_opt)
@@ -141,7 +145,8 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
     p.output_backend = 'svg'
     save(p)
     
-def get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon, bigtau, notau):
+def get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon,
+                bigtau, notau, nomet):
     utils.create_single_dir('data')
 
     name = sample + '_' + channel + '_'
@@ -150,7 +155,9 @@ def get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon, b
         name += '_BIGTAU'
     if notau:
         name += '_NOTAU'
-    name += '_CHECK.root'
+    if nomet:
+        name += '_NOMET'
+    name += '.root'
 
     s = 'data/regions_{}'.format(name)
     return s
@@ -271,7 +278,7 @@ def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region
 
 def test_trigger_regions(indir, sample, channel):
     outname = get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon,
-                          args.bigtau, args.notau)
+                          args.bigtau, args.notau, args.nomet)
 
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
@@ -555,6 +562,8 @@ if __name__ == '__main__':
                         help='Consider a larger single tau region, reducing the ditau one.')
     parser.add_argument('--notau', action='store_true',
                         help='Remove the single tau region (default analysis).')
+    parser.add_argument('--nomet', action='store_true',
+                        help='Remove the MET region (default analysis).')
     parser.add_argument('--met_turnon', required=False, type=str,  default='200',
                         help='MET trigger turnon cut [GeV].' )
     args = utils.parse_args(parser)
@@ -570,6 +579,8 @@ if __name__ == '__main__':
         main_dir += '_BIGTAU'
     if args.notau:
         main_dir += '_NOTAU'
+    if args.nomet:
+        main_dir += '_NOMET'
 
     regions = ('ditau', 'met', 'tau')
     met_region = ('(entries.dau2_pt < 40 and entries.dau1_pt < {}) or '.format(region_cuts[0]) +
@@ -587,6 +598,8 @@ if __name__ == '__main__':
 
     if args.notau:
         tau_region = 'False'
+    if args.nomet:
+        met_region = 'False'
         
     #### run main function ###
     if args.sequential:
@@ -603,7 +616,7 @@ if __name__ == '__main__':
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.masses:
         outname = get_outname(sample, args.channel, region_cuts, pt_cuts, met_turnon, tau_turnon,
-                              args.bigtau, args.notau)
+                              args.bigtau, args.notau, args.nomet)
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
 
@@ -711,7 +724,8 @@ if __name__ == '__main__':
                 'out': os.path.join(out_counts[categories.index(cat)],
                                     'diagram.html')}
         square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
-                       region_cuts, pt_cuts, text=text, bigtau=args.bigtau, notau=args.notau)
+                       region_cuts, pt_cuts, text=text,
+                       bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
     
     if args.copy:
         import subprocess
