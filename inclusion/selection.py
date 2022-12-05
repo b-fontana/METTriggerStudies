@@ -275,11 +275,9 @@ class EventSelection:
 
         mpoint = ((svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
                   (bh_mass-169.)*(bh_mass-169.) / (145.*145.))
-        mcut_std = mpoint < 1.0
-        if mcut_std and invert_mass_cut: # inverted elliptical mass cut
+        if mpoint < 1.0 and invert_mass_cut: # inverted elliptical mass cut
             return False
-        mcut_inv = mpoint > 1.0
-        if mcut_inv and standard_mass_cut: # standard elliptical mass cut
+        if mpoint > 1.0 and standard_mass_cut: # standard elliptical mass cut
             return False
 
         return True
