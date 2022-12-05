@@ -11,26 +11,41 @@ from pathlib import Path
 import csv
 import argparse
 from inclusion.utils import utils
+import numpy as np
 
 import bokeh
 from bokeh.plotting import figure, output_file, save
 output_file('plots/trigger_gains.html')
+from bokeh.models import Whisker
 from bokeh.layouts import gridplot
 #from bokeh.io import export_svg
+
+def ZeroDivError(func):
+    try:
+        res = func()
+    except ZeroDivisionError:
+        res = 0.
+    return res
+
 
 def main(args):
     channels = args.channels
     linear_x = [k for k in range(1,len(args.masses)+1)]
      
     yindep, yboth = ({} for _ in range(2))
+    errindep, errboth = ({} for _ in range(2))
     for md in main_dir:
         d_base = Path(base_dir) / md
         output_file(d_base / 'trigger_gains.html')
         yindep[md], yboth[md] = ({} for _ in range(2))
+        errindep[md], errboth[md] = ({} for _ in range(2))
         for chn in channels:
             yindep[md][chn], yboth[md][chn] = ({} for _ in range(2))
+            errindep[md][chn], errboth[md][chn] = ({} for _ in range(2))
             yindep[md][chn]['met'], yindep[md][chn]['tau'] = ([] for _ in range(2))
+            errindep[md][chn]['met'], errindep[md][chn]['tau'] = ([] for _ in range(2))
             yboth[md][chn]['met'],  yboth[md][chn]['add_met_tau']  = ([] for _ in range(2))
+            errboth[md][chn]['met'],  errboth[md][chn]['add_met_tau']  = ([] for _ in range(2))
   
             for mass in args.masses:
                 d = d_base / chn / str(mass)
@@ -40,25 +55,28 @@ def main(args):
                     reader = csv.reader(f, delimiter=',', quotechar='|')
                     next(reader, None) #ignore header line
                     ditau_line = next(reader, None)
-                    next(reader, None) #ignore met region line
-                    tau_line = next(reader, None)
   
                     sum_base     = float(ditau_line[1])
-                    sum_met      = float(ditau_line[7]) + float(tau_line[7])
-                    sum_tau      = float(ditau_line[9]) + float(tau_line[9])
-                    sum_only_tau = float(ditau_line[8]) + float(tau_line[8])
+                    sum_met      = float(ditau_line[7])
+                    sum_tau      = float(ditau_line[9])
+                    sum_only_tau = float(ditau_line[8])
                         
                     frac_indep_met = sum_met / sum_base
+                    err_indep_met = ZeroDivError(lambda : np.sqrt(1/sum_base + 1/sum_met))
                     frac_indep_tau = sum_tau / sum_base
-                    print(sum_tau, sum_base)
+                    err_indep_tau = ZeroDivError(lambda : np.sqrt(1/sum_base + 1/sum_tau))
                     frac_both  = (sum_met + sum_only_tau) / sum_base
+                    err_rel_both = sum_met + sum_only_tau
+                    err_both = ZeroDivError(lambda : np.sqrt(1/sum_base + 1/err_rel_both))
+
                     yindep[md][chn]['met'].append(frac_indep_met*100)
                     yindep[md][chn]['tau'].append(frac_indep_tau*100)
                     yboth[md][chn]['met'].append(frac_indep_met*100)
                     yboth[md][chn]['add_met_tau'].append(frac_both*100)
-
-    print(yindep[md][chn]['tau'])
-    quit()
+                    errindep[md][chn]['met'].append(err_indep_met*100)
+                    errindep[md][chn]['tau'].append(err_indep_tau*100)
+                    errboth[md][chn]['met'].append(err_indep_met*100)
+                    errboth[md][chn]['add_met_tau'].append(err_both*100)
 
     opt_points = dict(size=8)
     opt_line = dict(width=1.5)
@@ -68,25 +86,41 @@ def main(args):
      
     x_str = [str(k) for k in args.masses]
     xticks = linear_x[:]
-    yticks = [x for x in range(0,100,10)]
+    yticks = [x for x in range(0,110,10)]
+    shift_indep = {'met': [-0.15, 0., 0.15], 'tau': [-0.20, -0.05, 0.1]}
+    shift_both = {'met': [-0.15, 0., 0.15], 'add_met_tau': [-0.20, -0.05, 0.1]}
      
     for md in main_dir:
         p_opt = dict(width=800, height=400, x_axis_label='x', y_axis_label='y')
-        p1 = figure(title='Inclusion of MET and Single Tau triggers', **p_opt)
+        p1 = figure(title='Inclusion of MET or Single Tau triggers', **p_opt)
         p2 = figure(title='Acceptance gain of MET + SingleTau triggers', **p_opt)
         p1.toolbar.logo = None
         p2.toolbar.logo = None
         for ichn,chn in enumerate(channels):
             for itd,td in enumerate(('met', 'tau')):
-                p1.circle(linear_x, yindep[md][chn][td], color=colors[ichn], fill_alpha=1.,
+                p1.circle([x+shift_indep[td][ichn] for x in linear_x],
+                          yindep[md][chn][td], color=colors[ichn], fill_alpha=1.,
                           **opt_points)
-                p1.line(linear_x, yindep[md][chn][td], color=colors[ichn], line_dash=styles[itd],
+                p1.line([x+shift_indep[td][ichn] for x in linear_x],
+                        yindep[md][chn][td], color=colors[ichn], line_dash=styles[itd],
                         legend_label=chn+legends[td], **opt_line)
+                p1.multi_line(
+                    [(x+shift_indep[td][ichn],x+shift_indep[td][ichn]) for x in linear_x],
+                    [(max(0,x-y/2),min(100,x+y/2))
+                     for x,y in zip(yindep[md][chn][td],errindep[md][chn][td])],
+                    color=colors[ichn], **opt_line)
             for itd,td in enumerate(('met', 'add_met_tau')):
-                p2.circle(linear_x, yboth[md][chn][td], color=colors[ichn], fill_alpha=1.,
+                p2.circle([x+shift_both[td][ichn] for x in linear_x],
+                          yboth[md][chn][td], color=colors[ichn], fill_alpha=1.,
                           **opt_points)
-                p2.line(linear_x, yboth[md][chn][td], color=colors[ichn], line_dash=styles[itd],
+                p2.line([x+shift_both[td][ichn] for x in linear_x],
+                        yboth[md][chn][td], color=colors[ichn], line_dash=styles[itd],
                         legend_label=chn+legends[td], **opt_line)
+                p2.multi_line(
+                    [(x+shift_both[td][ichn],x+shift_both[td][ichn]) for x in linear_x], 
+                    [(max(0,x-y/2),min(100,x+y/2))
+                     for x,y in zip(yboth[md][chn][td],errboth[md][chn][td])],
+                    color=colors[ichn], **opt_line)
                 
         for p in (p1, p2):
             p.xaxis[0].ticker = xticks
