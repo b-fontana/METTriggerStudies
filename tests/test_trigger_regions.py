@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 from matplotlib_venn import venn3, venn3_circles
 
 def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
-                   region_cuts, pt_cuts, text, bigtau=False):
+                   region_cuts, pt_cuts, text, bigtau=False, notau=False):
     tau = '\u03C4'
     ditau = tau+tau
     output_file(text['out'])
@@ -40,6 +40,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
     p.x_range = Range1d(0, 11.5)
     p.y_range = Range1d(0, 10)
     p.outline_line_color = None
+    p.toolbar.logo = None
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
     p.xaxis.ticker = [b1,b3] if pt_cuts[0] == '40' else [b1, b2, b3]
@@ -69,18 +70,19 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
                      xs=[[[[start+shft,b1-shft,b1-shft,b3-shft,b3-shft,shft]]]],
                      ys=[[[[b3-shft,b3-shft,b1-shft,b1-shft,shft,shft]]]],
                      legend_label='MET', **polyg_opt)
-    p.multi_polygons(color='red',
-                     xs=([[[[shft,shft,topr,topr,b3+shft,b3+shft,shft]]]] if bigtau else
-                         [[[[shft,shft,b1-shft,b1-shft], [b3+shft,b3+shft,topr,topr]]]]),
-                     ys=([[[[b3+shft,topr,topr,shft,shft,b3+shft,b3+shft]]]] if bigtau else
-                         [[[[b3+shft,topr,topr,b3+shft], [shft,b1-shft,b1-shft,shft]]]]),
-                     legend_label=tau, **polyg_opt)
+    if not notau:
+        p.multi_polygons(color='red',
+                         xs=([[[[shft,shft,topr,topr,b3+shft,b3+shft,shft]]]] if bigtau else
+                             [[[[shft,shft,b1-shft,b1-shft], [b3+shft,b3+shft,topr,topr]]]]),
+                         ys=([[[[b3+shft,topr,topr,shft,shft,b3+shft,b3+shft]]]] if bigtau else
+                             [[[[b3+shft,topr,topr,b3+shft], [shft,b1-shft,b1-shft,shft]]]]),
+                         legend_label=tau, **polyg_opt)
     p.legend.title = 'Regions'
     p.legend.title_text_font_style = 'bold'
     p.legend.border_line_color = None
     p.legend.background_fill_color = 'white'
      
-    label_opt = dict(x_units='data', y_units='data', text_font_size='10pt', render_mode='canvas')
+    label_opt = dict(x_units='data', y_units='data', text_font_size='10pt')
 
     stats_ditau_fraction = str(round(100*float(c_met_trg['ditau']+c_tau_trg['ditau'])/(c_ditau_trg['ditau']+c_met_trg['ditau']+c_tau_trg['ditau']),2))
     stats_ditau = {'ditau': Label(x=b1+0.3, y=b1+1.5, text=ditau+': '+str(c_ditau_trg['ditau']),
@@ -139,14 +141,16 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
     p.output_backend = 'svg'
     save(p)
     
-def get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon, bigtau):
+def get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon, bigtau, notau):
     utils.create_single_dir('data')
 
     name = sample + '_' + channel + '_'
     name += '_'.join((*region_cuts, 'ptcuts', *pt_cuts, 'turnon', met_turnon, tau_turnon))
     if bigtau:
         name += '_BIGTAU'
-    name += '.root'
+    if notau:
+        name += '_NOTAU'
+    name += '_CHECK.root'
 
     s = 'data/regions_{}'.format(name)
     return s
@@ -266,7 +270,8 @@ def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region
     c.Close()
 
 def test_trigger_regions(indir, sample, channel):
-    outname = get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon, args.bigtau)
+    outname = get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon,
+                          args.bigtau, args.notau)
 
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
@@ -487,8 +492,8 @@ def test_trigger_regions(indir, sample, channel):
     print('Raw histograms saved in {}.'.format(outname), flush=True)
 
 if __name__ == '__main__':
-    triggers = {#'etau': ('Ele32', 'EleIsoTauCustom'),
-                #'mutau': ('IsoMu24', 'IsoMuIsoTauCustom'),
+    triggers = {'etau': ('Ele32', 'EleIsoTauCustom'),
+                'mutau': ('IsoMu24', 'IsoMuIsoTauCustom'),
                 'tautau': ('IsoDoubleTauCustom',)
                 }
     binning = {'metnomu_et': (20, 0, 450),
@@ -536,8 +541,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--indir', required=True, type=str,
                         help='Full path of ROOT input file')
-    parser.add_argument('--samples', required=True, nargs='+', type=str,
-                        help='Full path of ROOT input file')
+    parser.add_argument('--masses', required=True, nargs='+', type=str,
+                        help='Resonance mass')
     parser.add_argument('--channel', required=True, type=str,  
                         help='Select the channel over which the workflow will be run.' )
     parser.add_argument('--plot', action='store_true',
@@ -548,6 +553,8 @@ if __name__ == '__main__':
                         help='Do not use the multiprocess package.')
     parser.add_argument('--bigtau', action='store_true',
                         help='Consider a larger single tau region, reducing the ditau one.')
+    parser.add_argument('--notau', action='store_true',
+                        help='Remove the single tau region (default analysis).')
     parser.add_argument('--met_turnon', required=False, type=str,  default='200',
                         help='MET trigger turnon cut [GeV].' )
     args = utils.parse_args(parser)
@@ -561,6 +568,8 @@ if __name__ == '__main__':
                                       met_turnon, tau_turnon)))
     if args.bigtau:
         main_dir += '_BIGTAU'
+    if args.notau:
+        main_dir += '_NOTAU'
 
     regions = ('ditau', 'met', 'tau')
     met_region = ('(entries.dau2_pt < 40 and entries.dau1_pt < {}) or '.format(region_cuts[0]) +
@@ -575,22 +584,26 @@ if __name__ == '__main__':
         tau_region = ('(entries.dau2_pt < 40 and entries.dau1_pt >= {}) or '.format(region_cuts[0]) +
                       '(entries.dau1_pt < 40 and entries.dau2_pt >= {})'.format(region_cuts[1])) #this one is never realized due to the 190GeV trigger cut
         ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(*pt_cuts)
-    
+
+    if args.notau:
+        tau_region = 'False'
+        
     #### run main function ###
     if args.sequential:
         if not args.plot:
-            for sample in args.samples:
+            for sample in args.masses:
                 test_trigger_regions(args.indir, sample, args.channel)
     else:
         if not args.plot:
             pool = multiprocessing.Pool(processes=6)
             pool.starmap(test_trigger_regions,
-                         zip(it.repeat(args.indir), args.samples, it.repeat(args.channel)))
+                         zip(it.repeat(args.indir), args.masses, it.repeat(args.channel)))
     ###########################
 
     from_directory = os.path.join(main_dir, args.channel)
-    for sample in args.samples:
-        outname = get_outname(sample, args.channel, region_cuts, pt_cuts, met_turnon, tau_turnon, args.bigtau)
+    for sample in args.masses:
+        outname = get_outname(sample, args.channel, region_cuts, pt_cuts, met_turnon, tau_turnon,
+                              args.bigtau, args.notau)
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
 
@@ -620,7 +633,7 @@ if __name__ == '__main__':
                     jNoBase_NoMET_Tau = f_in.Get(suff('jNoBase_NoMET_Tau'))
 
                     jopt = (v, args.channel, sample, reg, cat, from_directory)
-                    plot(jBase, jNoBase_MET, jNoBase_NoMET_Tau, *jopt)
+                    # plot(jBase, jNoBase_MET, jNoBase_NoMET_Tau, *jopt)
                     
                 for v in variables_2D:
                     suff = lambda x : x+'_'+reg+'_'+v[0]+'_VS_'+v[1]+'_'+cat
@@ -640,9 +653,9 @@ if __name__ == '__main__':
  
                     hBase_MET_Tau = f_in.Get(suff('hBase_MET_Tau'))
 
-                    plot2D(hBase, v, args.channel, sample, 'Base', cat, from_directory, reg)
-                    plot2D(hMET, v, args.channel, sample, 'MET', cat, from_directory, reg)
-                    plot2D(hTau, v, args.channel, sample, 'Tau', cat, from_directory, reg)
+                    # plot2D(hBase, v, args.channel, sample, 'Base', cat, from_directory, reg)
+                    # plot2D(hMET, v, args.channel, sample, 'MET', cat, from_directory, reg)
+                    # plot2D(hTau, v, args.channel, sample, 'Tau', cat, from_directory, reg)
 
                 # count only for one of the variables, it does not matter which
                 nbinsx, nbinsy = hBase.GetNbinsX(), hBase.GetNbinsY()
@@ -698,14 +711,14 @@ if __name__ == '__main__':
                 'out': os.path.join(out_counts[categories.index(cat)],
                                     'diagram.html')}
         square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
-                       region_cuts, pt_cuts, text=text, bigtau=args.bigtau)
+                       region_cuts, pt_cuts, text=text, bigtau=args.bigtau, notau=args.notau)
     
     if args.copy:
         import subprocess
         to_directory = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors', main_dir)
         to_directory = os.path.join(to_directory, args.channel)
      
-        for sample in args.samples:
+        for sample in args.masses:
             sample_from = os.path.join(from_directory, sample)
             print('Copying: {}\t\t--->\t{}'.format(sample_from, to_directory), flush=True)
             subprocess.run(['rsync', '-ah', sample_from, to_directory])
