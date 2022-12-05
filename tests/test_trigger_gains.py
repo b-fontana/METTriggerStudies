@@ -44,10 +44,10 @@ def main(args):
                        frac_indep_tau = float(line[9]) / float(line[1])
                        frac_both_met  = float(line[7]) / float(line[1])
                        frac_both_tau  = (float(line[7]) + float(line[8])) / float(line[1])
-                       yindep[md][chn]['met'].append(frac_indep_met)
-                       yindep[md][chn]['tau'].append(frac_indep_tau)
-                       yboth[md][chn]['met'].append(frac_both_met)
-                       yboth[md][chn]['add_met_tau'].append(frac_both_tau)
+                       yindep[md][chn]['met'].append(frac_indep_met*100)
+                       yindep[md][chn]['tau'].append(frac_indep_tau*100)
+                       yboth[md][chn]['met'].append(frac_both_met*100)
+                       yboth[md][chn]['add_met_tau'].append(frac_both_tau*100)
                        break #only first line ('ditau') is being considered
     
    opt_points = dict(size=8)
