@@ -104,16 +104,19 @@ with options:
 ** Run standalone tests
 Studies were performed using "standalone" scripts (not part of the main chain, running locally, but using some definitions of the "core" package).
 *** Region statistics of trigger overlaps
-Install dependencies in a separate conda environment, including:
-#+BEGIN_SRC shell
-conda install h5py
-conda install -c bokeh bokeh
-#+END_SRC
-
 Run the script (=-h= for all options):
 #+BEGIN_SRC shell
 python3 tests/test_trigger_regions.py --indir /data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_Full_NoMET_NoSingleTau --masses 800 1000 1250 --channel tautau
 #+END_SRC
+Add the =--plot= option to reuse the intermediate datasets if you are running over the same data due to cosmetics changes.
+
+*** Trigger gains by adding MET and SingleTau
+Run the script (=-h= for all options):
+#+BEGIN_SRC shell
+python3 tests/test_trigger_gains.py --masses 800 1000 1250 --channels tautau
+#+END_SRC
+This runs on the CSV tables (per mass and channel) produced by the ~tests/test_trigger_regions.py~ script. It produces two plots, the first displaying the independent benefit of adding the MET trigger or the SingleTau trigger, and the second showing the added gain of including both.
+
 ** ~luigi~ related
 
 *** Debugging
