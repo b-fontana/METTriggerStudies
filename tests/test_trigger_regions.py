@@ -238,11 +238,11 @@ def plot(hbase, hmet, htau, var, channel, sample, region, category, directory):
     c2.Update();
     cat_dir = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_dir)
-    for ext in ('png', 'pdf'):
+    for ext in extensions:
         c2.SaveAs( os.path.join(cat_dir, 'norm_' + region + '_' + var + '.' + ext) )
     c2.Close()
 
-def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region):
+def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, region):
     histo = histo.Clone('histo_clone')
     defs = set_plot_definitions()    
 
@@ -258,15 +258,17 @@ def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region
     pad1.Draw()
     pad1.cd()
 
+    histo.SetTitle('Region: ' + region +' | Triggers: ' + trigger_str);
+    histo.SetTitleSize();
     histo.GetXaxis().SetTitle(two_vars[0])
     histo.GetXaxis().SetTitleSize(0.04)
     histo.GetYaxis().SetTitle(two_vars[1])
     histo.GetYaxis().SetTitleSize(0.04)
 
-    try:
-        histo.Scale(1/histo.Integral())
-    except ZeroDivisionError:
-        histo.Scale(0.)
+    # try:
+    #     histo.Scale(1/histo.Integral())
+    # except ZeroDivisionError:
+    #     histo.Scale(0.)
 
     histo.Draw('colz')
 
@@ -274,8 +276,8 @@ def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region
     cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
     c.Update();
-    for ext in ('png', 'pdf'):
-        c.SaveAs( os.path.join(cat_folder, suffix + '_' + 'reg' + region + '_' + '_VS_'.join(two_vars) + '.' + ext) )
+    for ext in extensions:
+        c.SaveAs( os.path.join(cat_folder, trigger_str + '_' + 'reg' + region + '_' + '_VS_'.join(two_vars) + '.' + ext) )
     c.Close()
 
 def test_trigger_regions(indir, sample, channel):
@@ -511,15 +513,16 @@ def test_trigger_regions(indir, sample, channel):
     print('Raw histograms saved in {}.'.format(outname), flush=True)
 
 if __name__ == '__main__':
+    extensions = ('png',) #('png', 'pdf')
     triggers = {'etau': ('Ele32', 'EleIsoTauCustom'),
                 'mutau': ('IsoMu24', 'IsoMuIsoTauCustom'),
                 'tautau': ('IsoDoubleTauCustom',)
                 }
     binning = {'metnomu_et': (20, 0, 450),
-               'dau1_pt': (30, 0, 400),
+               'dau1_pt': (30, 0, 450),
                'dau1_eta': (20, -2.5, 2.5),
                'dau2_iso': (20, 0.88, 1.005),
-               'dau2_pt': (30, 0, 300),
+               'dau2_pt': (30, 0, 400),
                'dau2_eta': (20, -2.5, 2.5),
                'ditau_deltaR': (30, 0.3, 1.3),
                'dib_deltaR': (25, 0, 2.5),
@@ -682,9 +685,10 @@ if __name__ == '__main__':
  
                     hBase_MET_Tau = f_in.Get(suff('hBase_MET_Tau'))
 
-                    # plot2D(hBase, v, args.channel, sample, 'Base', cat, from_directory, reg)
-                    # plot2D(hMET, v, args.channel, sample, 'MET', cat, from_directory, reg)
-                    # plot2D(hTau, v, args.channel, sample, 'Tau', cat, from_directory, reg)
+                    plot2D(hBase, v, args.channel, sample, 'Base', cat, from_directory, reg)
+                    plot2D(hBase_NoTau, v, args.channel, sample, 'Base + !Tau', cat, from_directory, reg)
+                    #plot2D(hMET, v, args.channel, sample, 'MET', cat, from_directory, reg)
+                    plot2D(hTau, v, args.channel, sample, 'Tau', cat, from_directory, reg)
 
                 # count only for one of the variables, it does not matter which
                 nbinsx, nbinsy = hBase.GetNbinsX(), hBase.GetNbinsY()
@@ -712,7 +716,7 @@ if __name__ == '__main__':
                 #     v.get_patch_by_id('100').set_alpha(1.0)
                 #     c = venn3_circles(subsets=subsets, linestyle='dashed')
                 #     plt.title('Baseline selection')
-                #     for ext in ('png', 'pdf'):
+                #     for ext in extensions:
                 #         plt.savefig(os.path.join(out_counts[categories.index(cat)], 'venn_' + reg + '.' + ext))
 
                 with open(os.path.join(out_counts[categories.index(cat)], 'table.csv'), 'a') as f:
