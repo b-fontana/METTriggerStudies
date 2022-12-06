@@ -167,10 +167,7 @@ def get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon,
 def set_plot_definitions():
     ROOT.gROOT.SetBatch(ROOT.kTRUE)
     ROOT.gStyle.SetOptStat(ROOT.kFALSE)
-    ret = {'BoxTextSize'    : 50,
-           'BoxTextFont'    : 43,
-           'BoxTextColor'   : ROOT.kBlack,
-           'XTitleSize'     : 0.045,
+    ret = {'XTitleSize'     : 0.045,
            'YTitleSize'     : 0.045,
            'LineWidth'      : 2,
            'FrameLineWidth' : 1,
@@ -242,7 +239,7 @@ def plot(hbase, hmet, htau, var, channel, sample, region, category, directory):
         c2.SaveAs( os.path.join(cat_dir, 'norm_' + region + '_' + var + '.' + ext) )
     c2.Close()
 
-def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, region):
+def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, region, norm=False):
     histo = histo.Clone('histo_clone')
     defs = set_plot_definitions()    
 
@@ -254,30 +251,37 @@ def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, r
     pad1.SetLeftMargin(0.12);
     pad1.SetRightMargin(0.14);
     pad1.SetBottomMargin(0.12);
-    pad1.SetTopMargin(0.04);
+    pad1.SetTopMargin(0.1);
     pad1.Draw()
     pad1.cd()
 
+    ROOT.gStyle.SetTitleX(0.44) #title X location
+    ROOT.gStyle.SetTitleY(1.015) #title Y location
+    ROOT.gStyle.SetTitleW(0.7) #title width
+    ROOT.gStyle.SetTitleH(0.15) #title height
+    ROOT.gStyle.SetTitleColor(ROOT.kBlue, 't')
     histo.SetTitle('Region: ' + region +' | Triggers: ' + trigger_str);
-    histo.SetTitleSize();
+    histo.SetTitleSize(0.02, 't')
     histo.GetXaxis().SetTitle(two_vars[0])
     histo.GetXaxis().SetTitleSize(0.04)
     histo.GetYaxis().SetTitle(two_vars[1])
     histo.GetYaxis().SetTitleSize(0.04)
 
-    # try:
-    #     histo.Scale(1/histo.Integral())
-    # except ZeroDivisionError:
-    #     histo.Scale(0.)
-
+    if norm:
+        try:
+            histo.Scale(1/histo.Integral())
+        except ZeroDivisionError:
+            histo.Scale(0.)
     histo.Draw('colz')
 
     c.cd()
     cat_folder = os.path.join(directory, sample, category)
     utils.create_single_dir(cat_folder)
     c.Update();
+    tstr = trigger_str.replace(' ', '_').replace('+', '_PLUS_').replace('!', 'NOT')
     for ext in extensions:
-        c.SaveAs( os.path.join(cat_folder, trigger_str + '_' + 'reg' + region + '_' + '_VS_'.join(two_vars) + '.' + ext) )
+        c.SaveAs(os.path.join(cat_folder,
+                              tstr + '_' + 'reg' + region + '_' + '_VS_'.join(two_vars) + '.' + ext))
     c.Close()
 
 def test_trigger_regions(indir, sample, channel):
@@ -539,21 +543,21 @@ if __name__ == '__main__':
                }
     variables = tuple(binning.keys()) + ('HHKin_mass', 'dau1_iso')
     variables_2D = (('dau1_pt',  'dau2_pt'),
-                    ('dau1_iso', 'dau2_iso'),
-                    ('dau1_eta', 'dau2_eta'),
-                    ('dau1_eta', 'dau1_iso'),
-                    ('dau1_pt',  'dau1_eta'),
-                    ('dau1_pt',  'dau1_iso'),
-                    ('dau2_eta', 'dau2_iso'),
-                    ('dau2_pt',  'dau2_eta'),
-                    ('dau1_pt',  'dau2_eta'),
-                    ('dau1_pt',  'dau2_iso'),
-                    ('dau2_pt',  'dau1_eta'),
-                    ('dau2_pt',  'dau1_iso'),
-                    ('dau1_pt',  'metnomu_et'),
-                    ('dau2_pt',  'metnomu_et'),
-                    ('dau1_iso',  'metnomu_et'),
-                    ('dau2_iso',  'metnomu_et'),
+                    # ('dau1_iso', 'dau2_iso'),
+                    # ('dau1_eta', 'dau2_eta'),
+                    # ('dau1_eta', 'dau1_iso'),
+                    # ('dau1_pt',  'dau1_eta'),
+                    # ('dau1_pt',  'dau1_iso'),
+                    # ('dau2_eta', 'dau2_iso'),
+                    # ('dau2_pt',  'dau2_eta'),
+                    # ('dau1_pt',  'dau2_eta'),
+                    # ('dau1_pt',  'dau2_iso'),
+                    # ('dau2_pt',  'dau1_eta'),
+                    # ('dau2_pt',  'dau1_iso'),
+                    # ('dau1_pt',  'metnomu_et'),
+                    # ('dau2_pt',  'metnomu_et'),
+                    # ('dau1_iso',  'metnomu_et'),
+                    # ('dau2_iso',  'metnomu_et'),
                     )
 
     categories = ('baseline',) #('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
