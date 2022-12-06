@@ -23,7 +23,7 @@ import ROOT
 from bokeh.plotting import figure, output_file, save
 from bokeh.models import Range1d, Label
 import matplotlib.pyplot as plt
-from matplotlib_venn import venn3, venn3_circles
+#from matplotlib_venn import venn3, venn3_circles
 
 def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
                    region_cuts, pt_cuts, text, bigtau=False, notau=False, nomet=False):
@@ -705,15 +705,15 @@ if __name__ == '__main__':
                 
                 cBase_MET_Tau = round(hBase_MET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
 
-                if reg=='ditau':
-                    subsets = (cBase, cMET, cBase_MET, cTau, cBase_Tau, cMET_Tau, cBase_MET_Tau)
-                    plt.figure(figsize=(10,8))
-                    v = venn3(subsets=subsets, set_labels = (r'$\tau\tau$', 'MET', 'Tau'))
-                    v.get_patch_by_id('100').set_alpha(1.0)
-                    c = venn3_circles(subsets=subsets, linestyle='dashed')
-                    plt.title('Baseline selection')
-                    for ext in ('png', 'pdf'):
-                        plt.savefig(os.path.join(out_counts[categories.index(cat)], 'venn_' + reg + '.' + ext))
+                # if reg=='ditau':
+                #     subsets = (cBase, cMET, cBase_MET, cTau, cBase_Tau, cMET_Tau, cBase_MET_Tau)
+                #     plt.figure(figsize=(10,8))
+                #     v = venn3(subsets=subsets, set_labels = (r'$\tau\tau$', 'MET', 'Tau'))
+                #     v.get_patch_by_id('100').set_alpha(1.0)
+                #     c = venn3_circles(subsets=subsets, linestyle='dashed')
+                #     plt.title('Baseline selection')
+                #     for ext in ('png', 'pdf'):
+                #         plt.savefig(os.path.join(out_counts[categories.index(cat)], 'venn_' + reg + '.' + ext))
 
                 with open(os.path.join(out_counts[categories.index(cat)], 'table.csv'), 'a') as f:
                     reader = csv.writer(f, delimiter=',', quotechar='|')
