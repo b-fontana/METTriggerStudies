@@ -33,10 +33,11 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
 
     topr = 9.9
     shft = 0.1
-    start, b1, b2, b3 = 0.0, 2, 2.5, 7.2
+    start, b1, b2, b3 = 0.0, 2, 2.5, 7.5
     xgap = b1+shft if pt_cuts[0] == '40' and pt_cuts[1] == '40' else b2+sft
     
-    p = figure(title='m(X)={}GeV'.format(text['mass']), width=600, height=400)
+    p = figure(title='m(X)={}GeV'.format(text['mass']), width=600, height=400,
+               tools='save')
     p.x_range = Range1d(0, 11.5)
     p.y_range = Range1d(0, 10)
     p.outline_line_color = None
@@ -82,6 +83,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
     p.legend.title_text_font_style = 'bold'
     p.legend.border_line_color = None
     p.legend.background_fill_color = 'white'
+    p.legend.click_policy = 'hide'
      
     label_opt = dict(x_units='data', y_units='data', text_font_size='10pt')
 
@@ -108,7 +110,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
                                     text_color='blue', **label_opt),
                      'tau':   Label(x=b1+0.3, y=0.9, text=tau+' && !met: '+str(c_tau_trg['met']),
                                     text_color='red', **label_opt),
-                     'ditau': Label(x=b1+0.3, y=0.5, text=ditau+': '+str(c_ditau_trg['met']),
+                     'ditau': Label(x=b1+0.3, y=0.5, text=ditau+' && !met: '+str(c_ditau_trg['met']),
                                     text_color='green', **label_opt),
                      'contamination': Label(x=b1+0.3, y=0.1, text='Contam.: '+contam_tau+'%',
                                             text_color='black', **label_opt),}
@@ -121,13 +123,13 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
         except ZeroDivisionError:
             contam_met = '0'
 
-        stats_tau = {'tau':   Label(x=b3+0.3, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
+        stats_tau = {'tau':   Label(x=b3+0.2, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
                                     text_color='red', **label_opt),
-                     'met':   Label(x=b3+0.3, y=0.9, text='met && !'+tau+': '+str(c_met_trg['tau']),
+                     'met':   Label(x=b3+0.2, y=0.9, text='met && !'+tau+': '+str(c_met_trg['tau']),
                                     text_color='blue', **label_opt),
-                     'ditau': Label(x=b3+0.3, y=0.5, text=ditau+': '+str(c_ditau_trg['tau']),
+                     'ditau': Label(x=b3+0.2, y=0.5, text=ditau+' && !'+tau+': '+str(c_ditau_trg['tau']),
                                     text_color='green', **label_opt),
-                     'contamination': Label(x=b3+0.3, y=0.1, text='Contam.: '+contam_met+'%',
+                     'contamination': Label(x=b3+0.2, y=0.1, text='Contam.: '+contam_met+'%',
                                             text_color='black', **label_opt),}
         for elem in stats_tau.values():
             p.add_layout(elem)
@@ -277,7 +279,7 @@ def plot2D(histo, two_vars, channel, sample, suffix, category, directory, region
     c.Close()
 
 def test_trigger_regions(indir, sample, channel):
-    outname = get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon,
+    outname = get_outname(sample, channel, region_cuts, pt_cuts[args.channel], met_turnon, tau_turnon,
                           args.bigtau, args.notau, args.nomet)
 
     if channel == 'etau' or channel == 'mutau':
@@ -297,8 +299,8 @@ def test_trigger_regions(indir, sample, channel):
     jBase, jNoBase_MET, jNoBase_NoMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # one trigger, 1-dimensional
     hBase, hMET, hTau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # one trigger
     hBase_MET, hBase_Tau, hMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # intersection of two triggers
-    hNoBase_MET, hNoBase_NoMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(2)) # negations
-    hNoBase_Tau, hNoBase_MET_NoTau = (defaultdict(lambda: defaultdict(dict)) for _ in range(2)) # negations
+    hNoBase_MET, hBase_NoMET, hNoBase_NoMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # negations
+    hNoBase_Tau, hBase_NoTau, hNoBase_MET_NoTau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # negations
     hBase_MET_Tau = defaultdict(lambda: defaultdict(dict)) # intersection of three triggers
     norphans, ntotal = ({k:0 for k in categories} for _ in range(2))
     for reg in regions:
@@ -324,8 +326,10 @@ def test_trigger_regions(indir, sample, channel):
                 hMET_Tau[reg][v][cat]  = ROOT.TH2D(suff('hMET_Tau') , *hopt)
 
                 hNoBase_MET[reg][v][cat]       = ROOT.TH2D(suff('hNoBase_MET'), *hopt)
+                hBase_NoMET[reg][v][cat]       = ROOT.TH2D(suff('hBase_NoMET'), *hopt)
                 hNoBase_NoMET_Tau[reg][v][cat] = ROOT.TH2D(suff('hNoBase_NoMET_Tau'), *hopt)
                 hNoBase_Tau[reg][v][cat]       = ROOT.TH2D(suff('hNoBase_Tau'), *hopt)
+                hBase_NoTau[reg][v][cat]       = ROOT.TH2D(suff('hBase_NoTau'), *hopt)
                 hNoBase_MET_NoTau[reg][v][cat] = ROOT.TH2D(suff('hNoBase_MET_NoTau'), *hopt)
 
                 hBase_MET_Tau[reg][v][cat] = ROOT.TH2D(suff('hBase_MET_Tau'), *hopt)
@@ -447,11 +451,17 @@ def test_trigger_regions(indir, sample, channel):
                         if not pass_trg and pass_met:
                             hNoBase_MET[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
 
+                        if pass_trg and not pass_met:
+                            hBase_NoMET[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
+
                         if not pass_trg and not pass_met and pass_tau:
                             hNoBase_NoMET_Tau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
 
                         if not pass_trg and pass_tau:
                             hNoBase_Tau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
+
+                        if pass_trg and not pass_tau:
+                            hBase_NoTau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
 
                         if not pass_trg and pass_met and not pass_tau:
                             hNoBase_MET_NoTau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
@@ -481,8 +491,10 @@ def test_trigger_regions(indir, sample, channel):
                 hMET_Tau[reg][v][cat].Write(suff('hMET_Tau'))
 
                 hNoBase_MET[reg][v][cat].Write(suff('hNoBase_MET'))
+                hBase_NoMET[reg][v][cat].Write(suff('hBase_NoMET'))
                 hNoBase_NoMET_Tau[reg][v][cat].Write(suff('hNoBase_NoMET_Tau'))
                 hNoBase_Tau[reg][v][cat].Write(suff('hNoBase_Tau'))
+                hBase_NoTau[reg][v][cat].Write(suff('hBase_NoTau'))
                 hNoBase_MET_NoTau[reg][v][cat].Write(suff('hNoBase_MET_NoTau'))
 
                 hBase_MET_Tau[reg][v][cat].Write(suff('hBase_MET_Tau'))
@@ -571,9 +583,11 @@ if __name__ == '__main__':
     met_turnon = args.met_turnon
     tau_turnon = '190'
     region_cuts = ('190', '190')
-    pt_cuts = ('40', '40')
+    pt_cuts = {'etau':   ('20', '20'),
+               'mutau':  ('20', '20'),
+               'tautau': ('40', '40')}
     main_dir = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors/',
-                            '_'.join(('Region', *region_cuts, 'PT', *pt_cuts, 'TURNON',
+                            '_'.join(('Region', *region_cuts, 'PT', *pt_cuts[args.channel], 'TURNON',
                                       met_turnon, tau_turnon)))
     if args.bigtau:
         main_dir += '_BIGTAU'
@@ -588,13 +602,13 @@ if __name__ == '__main__':
 
     if args.bigtau:
         tau_region = 'entries.dau1_pt >= {} or entries.dau2_pt >= {}'.format(*region_cuts)
-        ditau_region = ('entries.dau1_pt > {} and entries.dau2_pt > {} and '.format(*pt_cuts) +
+        ditau_region = ('entries.dau1_pt > {} and entries.dau2_pt > {} and '.format(*pt_cuts[args.channel]) +
                         'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(*region_cuts))
 
     else:
         tau_region = ('(entries.dau2_pt < 40 and entries.dau1_pt >= {}) or '.format(region_cuts[0]) +
                       '(entries.dau1_pt < 40 and entries.dau2_pt >= {})'.format(region_cuts[1])) #this one is never realized due to the 190GeV trigger cut
-        ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(*pt_cuts)
+        ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(*pt_cuts[args.channel])
 
     if args.notau:
         tau_region = 'False'
@@ -615,7 +629,7 @@ if __name__ == '__main__':
 
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.masses:
-        outname = get_outname(sample, args.channel, region_cuts, pt_cuts, met_turnon, tau_turnon,
+        outname = get_outname(sample, args.channel, region_cuts, pt_cuts[args.channel], met_turnon, tau_turnon,
                               args.bigtau, args.notau, args.nomet)
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
@@ -660,8 +674,10 @@ if __name__ == '__main__':
                     hMET_Tau  = f_in.Get(suff('hMET_Tau'))
 
                     hNoBase_MET       = f_in.Get(suff('hNoBase_MET'))
+                    hBase_NoMET       = f_in.Get(suff('hBase_NoMET'))
                     hNoBase_NoMET_Tau = f_in.Get(suff('hNoBase_NoMET_Tau'))
                     hNoBase_Tau       = f_in.Get(suff('hNoBase_Tau'))
+                    hBase_NoTau       = f_in.Get(suff('hBase_NoTau'))
                     hNoBase_MET_NoTau = f_in.Get(suff('hNoBase_MET_NoTau'))
  
                     hBase_MET_Tau = f_in.Get(suff('hBase_MET_Tau'))
@@ -681,8 +697,10 @@ if __name__ == '__main__':
                 cMET_Tau  = round(hMET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 
                 cNoBase_MET       = round(hNoBase_MET.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cBase_NoMET       = round(hBase_NoMET.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 cNoBase_NoMET_Tau = round(hNoBase_NoMET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 cNoBase_Tau       = round(hNoBase_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cBase_NoTau       = round(hBase_NoTau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 cNoBase_MET_NoTau = round(hNoBase_MET_NoTau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 
                 cBase_MET_Tau = round(hBase_MET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
@@ -710,11 +728,11 @@ if __name__ == '__main__':
                     c_met_trg[reg] = cNoBase_MET
                     c_tau_trg[reg] = cNoBase_NoMET_Tau
                 elif reg=='met':
-                    c_ditau_trg[reg] = 0.
+                    c_ditau_trg[reg] = cBase_NoMET
                     c_met_trg[reg] = cMET
                     c_tau_trg[reg] = cNoBase_NoMET_Tau
                 elif reg=='tau':
-                    c_ditau_trg[reg] = 0.
+                    c_ditau_trg[reg] = cBase_NoTau
                     c_met_trg[reg] = cNoBase_MET_NoTau
                     c_tau_trg[reg] = cTau
                         
@@ -724,7 +742,7 @@ if __name__ == '__main__':
                 'out': os.path.join(out_counts[categories.index(cat)],
                                     'diagram.html')}
         square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
-                       region_cuts, pt_cuts, text=text,
+                       region_cuts, pt_cuts[args.channel], text=text,
                        bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
     
     if args.copy:
