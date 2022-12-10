@@ -11,6 +11,7 @@ import glob
 import multiprocessing
 import itertools as it
 import csv
+import numpy as np
 from collections import defaultdict
 
 import inclusion
@@ -25,25 +26,27 @@ from bokeh.models import Range1d, Label
 import matplotlib.pyplot as plt
 #from matplotlib_venn import venn3, venn3_circles
 
-def contamination_plot(savepath, c, m):
+def contamination_plot(savepath, c, e, m):
     output_file( os.path.join(savepath, 'contaminations.html') )
     p_opt = dict(width=800, height=400, x_axis_label='x', y_axis_label='y')
-    p = figure(title='Contaminations in the MET and Single Tau regions', tools='save', **p_opt)
+    p = figure(title='Contaminations in the Single Tau regions', tools='save', **p_opt)
     p.toolbar.logo = None
-
-    opt_points = dict(size=6)
-    p.circle(m, c['by_met'], color='orange', fill_alpha=1., legend_label='tau region contamin. by met', **opt_points)
-    p.line(m, c['by_met'], color='orange', line_width=2, **opt_points)
-    #p.circle(m, c['by_tau'], color='green', fill_alpha=1., legend_label='met region contamin. by tau', **opt_points)
-
+    p.xaxis.axis_label = 'm(HH) [GeV]'
+    p.xaxis.axis_label = 'Contamination [%]'
+    
+    opt_points = dict(color='orange')
+    p.square(m, c,  fill_alpha=1., size=6,
+             legend_label='tau region contamin. by met', **opt_points)
+    p.line(m, c, line_width=1, **opt_points)
+    p.multi_line([(x,x) for x in m], [(max(0,x-y/2),min(100,x+y/2)) for x,y in zip(c,e)], line_width=2, **opt_points)
     p.output_backend = 'svg'
     save(p)
-
     
 def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                    region_cuts, pt_cuts, text, bigtau=False, notau=False, nomet=False):
     tau = '\u03C4'
     mu = '\u03BC'
+    pm = '\u00B1'
     ditau = tau+tau
     base = {'etau': 'e+e'+tau, 'mutau': mu+'+'+mu+tau, 'tautau': ditau}
     output_file(text['out'])
@@ -139,11 +142,19 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
 
     if not notau:
         try:
-            contam_by_met = (100*float(c_met_trg['tau']+c_ditau_trg['tau']) /
-                          (c_met_trg['tau']+c_tau_trg['tau']+c_ditau_trg['tau']))
-            contam_by_met = str(round(contam_by_met,2))
+            num = float(c_met_trg['tau']+c_ditau_trg['tau'])
+            den = float(c_met_trg['tau']+c_tau_trg['tau']+c_ditau_trg['tau'])
+            contam = 100*num/den
+
+            err_num = np.sqrt(c_met_trg['tau']) + np.sqrt(c_ditau_trg['tau'])
+            err_den = err_num + np.sqrt(c_tau_trg['tau'])
+            err = contam * np.sqrt(err_num**2/num**2 + err_den**2/den**2)
+
+            contam = str(round(contam,2))
+            err = str(round(err,2))
         except ZeroDivisionError:
-            contam_by_met = '0'
+            contam = '0'
+            err = '0'
 
         stats_tau = {'tau':   Label(x=b3+0.2, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
                                     text_color='black', **label_opt),
@@ -151,7 +162,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                                     text_color='black', **label_opt),
                      'ditau': Label(x=b3+0.2, y=0.9, text=ditau+' && !'+tau+': '+str(c_ditau_trg['tau']),
                                     text_color='black', **label_opt),
-                     'contamination': Label(x=b3+0.2, y=0.1, text='Contam.: '+contam_by_met+'%',
+                     'contamination': Label(x=b3+0.2, y=0.1, text='Contam.: ('+str(contam)+pm+str(err)+')%',
                                             text_color='blue', **label_opt),}
         for elem in stats_tau.values():
             p.add_layout(elem)
@@ -168,7 +179,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
      
     p.output_backend = 'svg'
     save(p)
-    return contam_by_tau, contam_by_met
+    return contam, err
     
 def get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon,
                 bigtau, notau, nomet):
@@ -657,7 +668,7 @@ if __name__ == '__main__':
                          zip(it.repeat(args.indir), args.masses, it.repeat(args.channel)))
     ###########################
 
-    contaminations = {'by_met': [], 'by_tau': []}
+    contaminations, contam_errors = ([] for _ in range(2))
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.masses:
         outname = get_outname(sample, args.channel, region_cuts, pt_cuts[args.channel], met_turnon, tau_turnon,
@@ -778,16 +789,16 @@ if __name__ == '__main__':
         text = {'mass': sample,
                 'out': os.path.join(out_counts[categories.index(cat)],
                                     'diagram.html')}
-        contam_by_met, contam_by_tau = square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
-                                                      args.channel, region_cuts, pt_cuts[args.channel], text=text,
-                                                      bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
-        contaminations['by_met'].append(contam_by_met)
-        contaminations['by_tau'].append(contam_by_tau)
+        contam, contam_err = square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
+                                            args.channel, region_cuts, pt_cuts[args.channel], text=text,
+                                            bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
+        contaminations.append(contam)
+        contam_errors.append(contam_err)
 
-    contaminations['by_met'] = [float(x) for x in contaminations['by_met']]
-    contaminations['by_tau'] = [float(x) for x in contaminations['by_tau']]
+    contaminations = [float(x) for x in contaminations]
+    contam_errors  = [float(x) for x in contam_errors]
     masses = [float(x) for x in args.masses]
-    contamination_plot(from_directory, contaminations, masses)
+    contamination_plot(from_directory, contaminations, contam_errors, masses)
 
     if args.copy:
         import subprocess
