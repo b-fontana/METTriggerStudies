@@ -12,6 +12,7 @@ import multiprocessing
 import itertools as it
 import csv
 import numpy as np
+import h5py
 from collections import defaultdict
 
 import inclusion
@@ -26,22 +27,16 @@ from bokeh.models import Range1d, Label
 import matplotlib.pyplot as plt
 #from matplotlib_venn import venn3, venn3_circles
 
-def contamination_plot(savepath, c, e, m):
-    output_file( os.path.join(savepath, 'contaminations.html') )
-    p_opt = dict(width=800, height=400, x_axis_label='x', y_axis_label='y')
-    p = figure(title='Contaminations in the Single Tau regions', tools='save', **p_opt)
-    p.toolbar.logo = None
-    p.xaxis.axis_label = 'm(HH) [GeV]'
-    p.xaxis.axis_label = 'Contamination [%]'
-    
-    opt_points = dict(color='orange')
-    p.square(m, c,  fill_alpha=1., size=6,
-             legend_label='tau region contamin. by met', **opt_points)
-    p.line(m, c, line_width=1, **opt_points)
-    p.multi_line([(x,x) for x in m], [(max(0,x-y/2),min(100,x+y/2)) for x,y in zip(c,e)], line_width=2, **opt_points)
-    p.output_backend = 'svg'
-    save(p)
-    
+def contamination_save(savepath, label, c, e, m):
+    print(os.path.join(savepath, label + '.hdf5'))
+    breakpoint()
+    with h5py.File(os.path.join(savepath, label + '.hdf5'), 'w') as f:
+        dset = f.create_dataset(label, (3,len(m)), dtype='i')
+        dset[0, :] = m
+        dset[1, :] = c
+        dset[2, :] = e
+        dset.cols = ['mass [GeV]', 'contamination (%)', 'uncertainty']
+        
 def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                    region_cuts, pt_cuts, text, bigtau=False, notau=False, nomet=False):
     tau = '\u03C4'
@@ -798,7 +793,8 @@ if __name__ == '__main__':
     contaminations = [float(x) for x in contaminations]
     contam_errors  = [float(x) for x in contam_errors]
     masses = [float(x) for x in args.masses]
-    contamination_plot(from_directory, contaminations, contam_errors, masses)
+    contamination_save('data', '_'.join(region_cuts),
+                       contaminations, contam_errors, masses)
 
     if args.copy:
         import subprocess
