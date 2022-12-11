@@ -27,22 +27,27 @@ from bokeh.models import Range1d, Label
 import matplotlib.pyplot as plt
 #from matplotlib_venn import venn3, venn3_circles
 
-def contamination_save(savepath, label, c, e, m):
-    print(os.path.join(savepath, label + '.hdf5'))
-    breakpoint()
+tau = '\u03C4'
+mu  = '\u03BC'
+pm  = '\u00B1'
+ditau = tau+tau
+
+def contamination_save(savepath, label, c1, c2, e1, e2, m):
     with h5py.File(os.path.join(savepath, label + '.hdf5'), 'w') as f:
-        dset = f.create_dataset(label, (3,len(m)), dtype='i')
+        dset = f.create_dataset(label, (5,len(m)), dtype='f')
         dset[0, :] = m
-        dset[1, :] = c
-        dset[2, :] = e
-        dset.cols = ['mass [GeV]', 'contamination (%)', 'uncertainty']
+        dset[1, :] = c1
+        dset[2, :] = c2
+        dset[3, :] = e1
+        dset[4, :] = e2
+        dset.cols = ['mass [GeV]',
+                     'contamination ' + ditau + '(%)',
+                     'contamination ' + ditau + ' MET (%)',
+                     'uncertainty' + ditau,
+                     'uncertainty' + ditau + ' MET']
         
 def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                    region_cuts, pt_cuts, text, bigtau=False, notau=False, nomet=False):
-    tau = '\u03C4'
-    mu = '\u03BC'
-    pm = '\u00B1'
-    ditau = tau+tau
     base = {'etau': 'e+e'+tau, 'mutau': mu+'+'+mu+tau, 'tautau': ditau}
     output_file(text['out'])
 
@@ -136,20 +141,29 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
             p.add_layout(elem)
 
     if not notau:
-        try:
-            num = float(c_met_trg['tau']+c_ditau_trg['tau'])
-            den = float(c_met_trg['tau']+c_tau_trg['tau']+c_ditau_trg['tau'])
-            contam = 100*num/den
+        num_ditau = float(c_ditau_trg['tau'])
+        num_both = num_ditau + float(c_met_trg['tau'])
+        den = float(c_met_trg['tau']+c_tau_trg['tau']+c_ditau_trg['tau'])
+        if num_ditau == 0 or num_both == 0:
+            contam_ditau = '0'
+            contam_both = '0'
+            err_ditau = '0'
+            err_both = '0'
+        else:
+            contam_ditau = 100*num_ditau/den
+            contam_both = 100*num_both/den
 
-            err_num = np.sqrt(c_met_trg['tau']) + np.sqrt(c_ditau_trg['tau'])
-            err_den = err_num + np.sqrt(c_tau_trg['tau'])
-            err = contam * np.sqrt(err_num**2/num**2 + err_den**2/den**2)
-
-            contam = str(round(contam,2))
-            err = str(round(err,2))
-        except ZeroDivisionError:
-            contam = '0'
-            err = '0'
+            enum_ditau = np.sqrt(c_ditau_trg['tau'])
+            eden_ditau = enum_ditau + np.sqrt(c_met_trg['tau']) + np.sqrt(c_tau_trg['tau'])
+            enum_both  = np.sqrt(c_met_trg['tau']) + np.sqrt(c_ditau_trg['tau'])
+            eden_both  = enum_both + np.sqrt(c_tau_trg['tau'])
+            err_ditau = contam_ditau * np.sqrt(enum_ditau**2/num_ditau**2 + eden_ditau**2/den**2)
+            err_both  = contam_both * np.sqrt(enum_both**2/num_both**2 + eden_both**2/den**2)
+        
+            contam_ditau = str(round(contam_ditau,2))
+            contam_both  = str(round(contam_both,2))
+            err_ditau    = str(round(err_ditau,2))
+            err_both     = str(round(err_both,2))
 
         stats_tau = {'tau':   Label(x=b3+0.2, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
                                     text_color='black', **label_opt),
@@ -157,8 +171,9 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                                     text_color='black', **label_opt),
                      'ditau': Label(x=b3+0.2, y=0.9, text=ditau+' && !'+tau+': '+str(c_ditau_trg['tau']),
                                     text_color='black', **label_opt),
-                     'contamination': Label(x=b3+0.2, y=0.1, text='Contam.: ('+str(contam)+pm+str(err)+')%',
-                                            text_color='blue', **label_opt),}
+                     'contamination_both': Label(x=b3+0.2, y=0.1,
+                                                  text='Contam.: ('+str(contam_both)+pm+str(err_both)+')%',
+                                                  text_color='blue', **label_opt),}
         for elem in stats_tau.values():
             p.add_layout(elem)
      
@@ -174,7 +189,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
      
     p.output_backend = 'svg'
     save(p)
-    return contam, err
+    return contam_ditau, contam_both, err_ditau, err_both
     
 def get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon,
                 bigtau, notau, nomet):
@@ -663,7 +678,7 @@ if __name__ == '__main__':
                          zip(it.repeat(args.indir), args.masses, it.repeat(args.channel)))
     ###########################
 
-    contaminations, contam_errors = ([] for _ in range(2))
+    contam1, contam2, contam1_errors, contam2_errors = ([] for _ in range(4))
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.masses:
         outname = get_outname(sample, args.channel, region_cuts, pt_cuts[args.channel], met_turnon, tau_turnon,
@@ -784,17 +799,22 @@ if __name__ == '__main__':
         text = {'mass': sample,
                 'out': os.path.join(out_counts[categories.index(cat)],
                                     'diagram.html')}
-        contam, contam_err = square_diagram(c_ditau_trg, c_met_trg, c_tau_trg,
-                                            args.channel, region_cuts, pt_cuts[args.channel], text=text,
-                                            bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
-        contaminations.append(contam)
-        contam_errors.append(contam_err)
+        sq_res = square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, args.channel,
+                                region_cuts, pt_cuts[args.channel], text=text,
+                                bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
+        c1, c2, e1, e2 = sq_res
+        contam1.append(c1)
+        contam2.append(c2)
+        contam1_errors.append(e1)
+        contam2_errors.append(e2)
 
-    contaminations = [float(x) for x in contaminations]
-    contam_errors  = [float(x) for x in contam_errors]
+    contam1 = [float(x) for x in contam1]
+    contam2 = [float(x) for x in contam2]
+    contam1_errors  = [float(x) for x in contam1_errors]
+    contam2_errors  = [float(x) for x in contam2_errors]
     masses = [float(x) for x in args.masses]
-    contamination_save('data', '_'.join(region_cuts),
-                       contaminations, contam_errors, masses)
+    contamination_save('data', '_'.join(region_cuts) + '_' + args.channel,
+                       contam1, contam2, contam1_errors, contam2_errors, masses)
 
     if args.copy:
         import subprocess
