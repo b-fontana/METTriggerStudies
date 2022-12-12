@@ -47,14 +47,14 @@ def contamination_save(savepath, label, c1, c2, e1, e2, m):
                      'uncertainty' + ditau + ' MET']
         
 def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
-                   region_cuts, pt_cuts, text, bigtau=False, notau=False, nomet=False):
+                   recuts, ptcuts, text, bigtau=False, notau=False, nomet=False):
     base = {'etau': 'e+e'+tau, 'mutau': mu+'+'+mu+tau, 'tautau': ditau}
     output_file(text['out'])
 
     topr = 9.9
     shft = 0.1
     start, b1, b2, b3 = 0.0, 2, 2.5, 7.5
-    xgap = b1+shft if pt_cuts[0] == '40' and pt_cuts[1] == '40' else b2+sft
+    xgap = b1+shft if ptcuts[0] == '40' and ptcuts[1] == '40' else b2+sft
     
     p = figure(title='m(X)={}GeV'.format(text['mass']), width=600, height=400,
                tools='save')
@@ -64,20 +64,20 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
     p.toolbar.logo = None
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
-    p.xaxis.ticker = [b1,b3] if pt_cuts[0] == '40' else [b1, b2, b3]
+    p.xaxis.ticker = [b1,b3] if ptcuts[0] == '40' else [b1, b2, b3]
     p.xaxis.major_label_overrides = ({b1: '40',
-                                      b3: region_cuts[0]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
+                                      b3: regcuts[0]} if ptcuts[0] == '40' and ptcuts[1] == '40'
                                      else {b1: '40',
-                                           b2: pt_cuts[0],
-                                           b3: region_cuts[0]})
+                                           b2: ptcuts[0],
+                                           b3: regcuts[0]})
     p.xaxis.axis_label = 'dau1_pT [GeV]'
      
-    p.yaxis.ticker = [b1, b3] if pt_cuts[1] == '40' else [b1, b2, b3]
+    p.yaxis.ticker = [b1, b3] if ptcuts[1] == '40' else [b1, b2, b3]
     p.yaxis.major_label_overrides = ({b1: '40',
-                                      b3: region_cuts[1]} if pt_cuts[0] == '40' and pt_cuts[1] == '40'
+                                      b3: regcuts[1]} if ptcuts[0] == '40' and ptcuts[1] == '40'
                                      else {b1: '40',
-                                           b2: pt_cuts[1], b3:
-                                           region_cuts[1]})
+                                           b2: ptcuts[1], b3:
+                                           regcuts[1]})
     p.yaxis.axis_label = 'dau2_pT [GeV]'
 
     # add a square renderer with a size, color, and alpha
@@ -180,9 +180,9 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
     line_opt = dict(color='black', line_dash='dashed', line_width=2)
     p.line(x=[b1,b1], y=[start, topr+shft], **line_opt)
     p.line(x=[start,topr+shft], y=[b1,b1], **line_opt)
-    if pt_cuts[0] != '40':
+    if ptcuts[0] != '40':
         p.line(x=[b2,b2], y=[start,topr+shft], **line_opt)
-    if pt_cuts[1] != '40':
+    if ptcuts[1] != '40':
         p.line(x=[start,topr+shft], y=[b2,b2], **line_opt)
     p.line(x=[b3,b3], y=[start,topr+shft], **line_opt)
     p.line(x=[start,topr+shft], y=[b3,b3], **line_opt)
@@ -191,12 +191,12 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
     save(p)
     return contam_ditau, contam_both, err_ditau, err_both
     
-def get_outname(sample, channel, region_cuts, pt_cuts, met_turnon, tau_turnon,
+def get_outname(sample, channel, regcuts, ptcuts, met_turnon, tau_turnon,
                 bigtau, notau, nomet):
     utils.create_single_dir('data')
 
     name = sample + '_' + channel + '_'
-    name += '_'.join((*region_cuts, 'ptcuts', *pt_cuts, 'turnon', met_turnon, tau_turnon))
+    name += '_'.join((*regcuts, 'ptcuts', *ptcuts, 'turnon', met_turnon, tau_turnon))
     if bigtau:
         name += '_BIGTAU'
     if notau:
@@ -329,7 +329,7 @@ def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, r
     c.Close()
 
 def test_trigger_regions(indir, sample, channel):
-    outname = get_outname(sample, channel, region_cuts, pt_cuts[args.channel], met_turnon, tau_turnon,
+    outname = get_outname(sample, channel, regcuts, ptcuts[args.channel], met_turnon, tau_turnon,
                           args.bigtau, args.notau, args.nomet)
 
     if channel == 'etau' or channel == 'mutau':
@@ -629,16 +629,18 @@ if __name__ == '__main__':
                         help='Remove the MET region (default analysis).')
     parser.add_argument('--met_turnon', required=False, type=str,  default='200',
                         help='MET trigger turnon cut [GeV].' )
+    parser.add_argument('--region_cuts', required=False, type=str, nargs=2, default=('200', '200'),
+                        help='MET trigger turnon cut [GeV].' )
     args = utils.parse_args(parser)
 
     met_turnon = args.met_turnon
     tau_turnon = '190'
-    region_cuts = ('190', '190')
-    pt_cuts = {'etau':   ('20', '20'),
-               'mutau':  ('20', '20'),
-               'tautau': ('40', '40')}
+    regcuts = args.region_cuts
+    ptcuts = {'etau':   ('20', '20'),
+              'mutau':  ('20', '20'),
+              'tautau': ('40', '40')}
     main_dir = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors/',
-                            '_'.join(('Region', *region_cuts, 'PT', *pt_cuts[args.channel], 'TURNON',
+                            '_'.join(('Region', *regcuts, 'PT', *ptcuts[args.channel], 'TURNON',
                                       met_turnon, tau_turnon)))
     if args.bigtau:
         main_dir += '_BIGTAU'
@@ -648,18 +650,18 @@ if __name__ == '__main__':
         main_dir += '_NOMET'
 
     regions = ('ditau', 'met', 'tau')
-    met_region = ('(entries.dau2_pt < 40 and entries.dau1_pt < {}) or '.format(region_cuts[0]) +
-                  '(entries.dau1_pt < 40 and entries.dau2_pt < {})'.format(region_cuts[1]))
+    met_region = ('(entries.dau2_pt < 40 and entries.dau1_pt < {}) or '.format(regcuts[0]) +
+                  '(entries.dau1_pt < 40 and entries.dau2_pt < {})'.format(regcuts[1]))
 
     if args.bigtau:
-        tau_region = 'entries.dau1_pt >= {} or entries.dau2_pt >= {}'.format(*region_cuts)
-        ditau_region = ('entries.dau1_pt > {} and entries.dau2_pt > {} and '.format(*pt_cuts[args.channel]) +
-                        'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(*region_cuts))
+        tau_region = 'entries.dau1_pt >= {} or entries.dau2_pt >= {}'.format(*regcuts)
+        ditau_region = ('entries.dau1_pt > {} and entries.dau2_pt > {} and '.format(*ptcuts[args.channel]) +
+                        'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(*regcuts))
 
     else:
-        tau_region = ('(entries.dau2_pt < 40 and entries.dau1_pt >= {}) or '.format(region_cuts[0]) +
-                      '(entries.dau1_pt < 40 and entries.dau2_pt >= {})'.format(region_cuts[1])) #this one is never realized due to the 190GeV trigger cut
-        ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(*pt_cuts[args.channel])
+        tau_region = ('(entries.dau2_pt < 40 and entries.dau1_pt >= {}) or '.format(regcuts[0]) +
+                      '(entries.dau1_pt < 40 and entries.dau2_pt >= {})'.format(regcuts[1])) #this one is never realized due to the 190GeV trigger cut
+        ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(*ptcuts[args.channel])
 
     if args.notau:
         tau_region = 'False'
@@ -681,7 +683,7 @@ if __name__ == '__main__':
     contam1, contam2, contam1_errors, contam2_errors = ([] for _ in range(4))
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.masses:
-        outname = get_outname(sample, args.channel, region_cuts, pt_cuts[args.channel], met_turnon, tau_turnon,
+        outname = get_outname(sample, args.channel, regcuts, ptcuts[args.channel], met_turnon, tau_turnon,
                               args.bigtau, args.notau, args.nomet)
         f_in = ROOT.TFile(outname, 'READ')
         f_in.cd()
@@ -800,7 +802,7 @@ if __name__ == '__main__':
                 'out': os.path.join(out_counts[categories.index(cat)],
                                     'diagram.html')}
         sq_res = square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, args.channel,
-                                region_cuts, pt_cuts[args.channel], text=text,
+                                regcuts, ptcuts[args.channel], text=text,
                                 bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
         c1, c2, e1, e2 = sq_res
         contam1.append(c1)
@@ -813,7 +815,7 @@ if __name__ == '__main__':
     contam1_errors  = [float(x) for x in contam1_errors]
     contam2_errors  = [float(x) for x in contam2_errors]
     masses = [float(x) for x in args.masses]
-    contamination_save('data', '_'.join(region_cuts) + '_' + args.channel,
+    contamination_save('data', '_'.join(regcuts) + '_' + args.channel,
                        contam1, contam2, contam1_errors, contam2_errors, masses)
 
     if args.copy:
