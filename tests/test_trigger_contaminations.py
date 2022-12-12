@@ -14,6 +14,8 @@ from inclusion.utils import utils
 import argparse
 import h5py
 from bokeh.plotting import figure, output_file, save
+from bokeh.palettes import Set1 as ColorSet
+from bokeh.models import Range1d, ColumnDataSource
 
 tau = '\u03C4'
 mu  = '\u03BC'
@@ -31,8 +33,8 @@ def main(args):
     p.xaxis.axis_label = 'm(HH) [GeV]'
     p.yaxis.axis_label = 'Contamination [%]'
     p.toolbar.logo = None
-    # p.x_range = Range1d(0, 11.5)
-    # p.y_range = Range1d(0, 10)
+    p.x_range = Range1d(0, 14)
+    #p.y_range = Range1d(0, 10)
 
     #linearize x axis
     linear_x = [k for k in range(1,len(args.masses)+1)]
@@ -42,8 +44,11 @@ def main(args):
     p.xgrid.grid_line_alpha = 0.2
     p.xgrid.grid_line_color = 'black'
 
-    shifts = (-0.20,-0.10,0.00,0.10,0.20)
-    colors = ('red', 'green', 'blue', 'brown', 'orange', 'black')
+    nshifts = len(args.region_cuts)
+    ns2 = int(nshifts/2)
+    diff = 0.10 if ns2%2==0 else 0.05
+    shifts = [round((-ns2+x)*diff,2) for x in range(nshifts)]
+    colors = ColorSet[9]
     for icut, cut in enumerate(args.region_cuts):
         if args.region_vary == 'dau1_pt':
             cut1, cut2 = cut, '190'
@@ -60,26 +65,35 @@ def main(args):
             errors1 = f[label][3]
             errors2 = f[label][4]
 
-            p.square([x+shifts[icut] for x in linear_x], contam1, fill_alpha=1., size=6,
-                     color=colors[icut],
-                     legend_label=label[:3] + ' ' + ditau)
-            p.triangle([x+shifts[icut] for x in linear_x], contam2, fill_alpha=1., size=8,
-                       color=colors[icut], alpha=0.5,
-                       legend_label=label[:3] + ' ' + ditau + '+MET')
-            p.line([x+shifts[icut] for x in linear_x], contam1,
-                   color=colors[icut], line_width=1)
-            p.line([x+shifts[icut] for x in linear_x], contam2, alpha=0.5,
-                   color=colors[icut], line_width=1, line_dash='dashed',)
+            source = ColumnDataSource({'x': [x+shifts[icut] for x in linear_x],
+                                       'contam1': contam1,
+                                       'contam2': contam2})
+            opt = dict(color=colors[icut], source=source)
+            leg1 = label[:3] + ' ' + ditau
+            leg2 = label[:3] + ' ' + ditau + '+MET'
+            p.line('x', 'contam1', line_width=1, legend_label=leg1, **opt)
+            p.line('x', 'contam2', line_width=1, legend_label=leg2, line_dash='4 4', **opt)
             p.multi_line([(x+shifts[icut],x+shifts[icut]) for x in linear_x], 
                          [(max(0,x-y/2),min(100,x+y/2)) for x,y in zip(contam1,errors1)],
                          color=colors[icut], line_width=2)
             p.multi_line([(x+shifts[icut],x+shifts[icut]) for x in linear_x], 
                          [(max(0,x-y/2),min(100,x+y/2)) for x,y in zip(contam2,errors2)],
-                         color=colors[icut], line_width=2, alpha=0.5)
+                         color=colors[icut], line_width=2)
+            g1 = p.circle('x', 'contam1', size=6, legend_label=leg1, **opt)
+            g2 = p.triangle('x', 'contam2', size=8, legend_label=leg2, **opt)
+            g1 = g1.glyph
+            g2 = g2.glyph
+            g1.line_color = "black"
+            g2.line_color = "black"
 
             x_str = [str(int(k)) for k in masses]
             p.xaxis.major_label_overrides = dict(zip(linear_x,x_str))
 
+    p.legend.glyph_height = 15
+    p.legend.glyph_width = 15
+    p.legend.label_height = 9
+    p.legend.label_width = 15
+    p.legend.label_text_font_size = '7pt'
     p.legend.click_policy = 'hide'
     p.output_backend = 'svg'
     save(p)
