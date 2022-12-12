@@ -21,9 +21,13 @@ pm  = '\u00B1'
 ditau = tau+tau
 
 def main(args):
-    output_file( os.path.join(basedir, 'contaminations.html') )
+    output_file( os.path.join(basedir, 'contaminations_' + args.region_vary + '_' + args.channel + '.html') )
     p_opt = dict(width=800, height=400, x_axis_label='x', y_axis_label='y')
-    p = figure(title='Contaminations in the Single Tau regions', tools='save', **p_opt)
+    title_d = {'dau1_pt': '(varying first lepton pT)',
+               'dau2_pt': '(varying second lepton pT)',
+               'both': '(varying both lepton pTs)'}
+    p = figure(title='Contaminations in the Single Tau regions '+title_d[args.region_vary],
+               tools='save', **p_opt)
     p.xaxis.axis_label = 'm(HH) [GeV]'
     p.yaxis.axis_label = 'Contamination [%]'
     p.toolbar.logo = None
@@ -38,10 +42,17 @@ def main(args):
     p.xgrid.grid_line_alpha = 0.2
     p.xgrid.grid_line_color = 'black'
 
-    shifts = (-0.15,-0.05,0.05,0.15)
-    colors = ('red', 'green', 'blue', 'brown')
+    shifts = (-0.20,-0.10,0.00,0.10,0.20)
+    colors = ('red', 'green', 'blue', 'brown', 'orange', 'black')
     for icut, cut in enumerate(args.region_cuts):
-        label = '_'.join((str(cut),str(cut),args.channel))
+        if args.region_vary == 'dau1_pt':
+            cut1, cut2 = cut, '190'
+        elif args.region_vary == 'dau2_pt':
+            cut1, cut2 = '190', cut
+        elif args.region_vary == 'both':
+            cut1, cut2 = cut, cut
+        label = '_'.join((str(cut1),str(cut2),args.channel))
+        
         with h5py.File(os.path.join('data', label + '.hdf5'), 'r') as f:
             masses  = f[label][0]
             contam1 = f[label][1]
@@ -81,6 +92,8 @@ if __name__ == '__main__':
                         help='Resonance mass')
     parser.add_argument('--region_cuts', required=True, nargs='+', type=str,
                         help='Region SingleTau pT cuts')
+    parser.add_argument('--region_vary', required=True, type=str, choices=('dau1_pt', 'dau2_pt', 'both'),
+                        help='SingleTau region to vary')
     parser.add_argument('--channel', required=True, type=str,  
                         help='Select the channel over which the workflow will be run.' )
     args = utils.parse_args(parser)
