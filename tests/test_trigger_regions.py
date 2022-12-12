@@ -25,15 +25,14 @@ import ROOT
 from bokeh.plotting import figure, output_file, save
 from bokeh.models import Range1d, Label
 import matplotlib.pyplot as plt
-#from matplotlib_venn import venn3, venn3_circles
 
 tau = '\u03C4'
 mu  = '\u03BC'
 pm  = '\u00B1'
 ditau = tau+tau
 
-def contamination_save(savepath, label, c1, c2, e1, e2, m):
-    with h5py.File(os.path.join(savepath, label + '.hdf5'), 'w') as f:
+def contamination_save(savepath, label, c1, c2, e1, e2, m, mode='w'):
+    with h5py.File(os.path.join(savepath, label + '.hdf5'), mode) as f:
         dset = f.create_dataset(label, (5,len(m)), dtype='f')
         dset[0, :] = m
         dset[1, :] = c1
@@ -45,7 +44,17 @@ def contamination_save(savepath, label, c1, c2, e1, e2, m):
                      'contamination ' + ditau + ' MET (%)',
                      'uncertainty' + ditau,
                      'uncertainty' + ditau + ' MET']
-        
+
+def stats_save(savepath, label, c1, e1, m, mode='w'):
+    with h5py.File(os.path.join(savepath, label + '.hdf5'), mode) as f:
+        dset = f.create_dataset(label+'_stats', (3,len(m)), dtype='f')
+        dset[0, :] = m
+        dset[1, :] = c1
+        dset[2, :] = e1
+        dset.cols = ['mass [GeV]',
+                     'stats',
+                     'uncertainty']
+
 def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                    recuts, ptcuts, text, bigtau=False, notau=False, nomet=False):
     base = {'etau': 'e+e'+tau, 'mutau': mu+'+'+mu+tau, 'tautau': ditau}
@@ -680,6 +689,7 @@ if __name__ == '__main__':
                          zip(it.repeat(args.indir), args.masses, it.repeat(args.channel)))
     ###########################
 
+    sum_stats, err_sum_stats = ([] for _ in range(2))
     contam1, contam2, contam1_errors, contam2_errors = ([] for _ in range(4))
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.masses:
@@ -763,16 +773,6 @@ if __name__ == '__main__':
                 cBase_MET_Tau = round(hBase_MET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 cBase_NoMET_NoTau = round(hBase_NoMET_NoTau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
 
-                # if reg=='ditau':
-                #     subsets = (cBase, cMET, cBase_MET, cTau, cBase_Tau, cMET_Tau, cBase_MET_Tau)
-                #     plt.figure(figsize=(10,8))
-                #     v = venn3(subsets=subsets, set_labels = (r'$\tau\tau$', 'MET', 'Tau'))
-                #     v.get_patch_by_id('100').set_alpha(1.0)
-                #     c = venn3_circles(subsets=subsets, linestyle='dashed')
-                #     plt.title('Baseline selection')
-                #     for ext in extensions:
-                #         plt.savefig(os.path.join(out_counts[categories.index(cat)], 'venn_' + reg + '.' + ext))
-
                 with open(os.path.join(out_counts[categories.index(cat)], 'table.csv'), 'a') as f:
                     reader = csv.writer(f, delimiter=',', quotechar='|')
                     row = [reg, cBase, cMET, cTau,
@@ -799,8 +799,7 @@ if __name__ == '__main__':
         f_in.Close()
 
         text = {'mass': sample,
-                'out': os.path.join(out_counts[categories.index(cat)],
-                                    'diagram.html')}
+                'out': os.path.join(out_counts[categories.index(cat)], 'diagram.html')}
         sq_res = square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, args.channel,
                                 regcuts, ptcuts[args.channel], text=text,
                                 bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
@@ -810,6 +809,12 @@ if __name__ == '__main__':
         contam1_errors.append(e1)
         contam2_errors.append(e2)
 
+        stats_l = [c_ditau_trg['ditau'],c_met_trg['ditau'],c_tau_trg['tau'],c_ditau_trg['tau']]
+        stats = sum(stats_l)
+        estats = sum(np.sqrt(stats_l))
+        sum_stats.append(stats)
+        err_sum_stats.append(estats)
+
     contam1 = [float(x) for x in contam1]
     contam2 = [float(x) for x in contam2]
     contam1_errors  = [float(x) for x in contam1_errors]
@@ -817,6 +822,8 @@ if __name__ == '__main__':
     masses = [float(x) for x in args.masses]
     contamination_save('data', '_'.join(regcuts) + '_' + args.channel,
                        contam1, contam2, contam1_errors, contam2_errors, masses)
+    stats_save('data', '_'.join(regcuts) + '_' + args.channel,
+               sum_stats, err_sum_stats, masses, mode='a')
 
     if args.copy:
         import subprocess
