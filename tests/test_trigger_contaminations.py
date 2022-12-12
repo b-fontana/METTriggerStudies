@@ -25,8 +25,8 @@ ditau = tau+tau
 def main(args):
     output_file( os.path.join(basedir, 'contaminations_' + args.region_vary + '_' + args.channel + '.html') )
     p_opt = dict(width=800, height=400, x_axis_label='x', y_axis_label='y')
-    title_d = {'dau1_pt': '(varying first lepton pT)',
-               'dau2_pt': '(varying second lepton pT)',
+    title_d = {'dau1_pt': '(varying first lepton pT, second set to 190 GeV)',
+               'dau2_pt': '(varying second lepton pT, first set to 190 GeV)',
                'both': '(varying both lepton pTs)'}
     p = figure(title='Contaminations in the Single Tau regions '+title_d[args.region_vary],
                tools='save', **p_opt)
@@ -75,10 +75,10 @@ def main(args):
             p.line('x', 'contam2', line_width=1, legend_label=leg2, line_dash='4 4', **opt)
             p.multi_line([(x+shifts[icut],x+shifts[icut]) for x in linear_x], 
                          [(max(0,x-y/2),min(100,x+y/2)) for x,y in zip(contam1,errors1)],
-                         color=colors[icut], line_width=2)
+                         color=colors[icut], line_width=2, legend_label=leg1)
             p.multi_line([(x+shifts[icut],x+shifts[icut]) for x in linear_x], 
                          [(max(0,x-y/2),min(100,x+y/2)) for x,y in zip(contam2,errors2)],
-                         color=colors[icut], line_width=2)
+                         color=colors[icut], line_width=2, legend_label=leg2)
             g1 = p.circle('x', 'contam1', size=6, legend_label=leg1, **opt)
             g2 = p.triangle('x', 'contam2', size=8, legend_label=leg2, **opt)
             g1 = g1.glyph
