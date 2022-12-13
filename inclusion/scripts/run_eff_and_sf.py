@@ -132,18 +132,24 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
         print(m)
         return
     
-    effdata1D, effmc1D = ({} for _ in range(2))
+    data1D, mc1D = ({} for _ in range(2))
+    data1D['eff'], mc1D['eff'] = ({} for _ in range(2))
+    data1D['norm'], mc1D['norm'] = ({} for _ in range(2))
     try:
         for kh, vh in hdata1D['trig'].items():
-            effdata1D[kh] = TGraphAsymmErrors( vh, hdata1D['ref'])
+            data1D['eff'][kh] = TGraphAsymmErrors(vh, hdata1D['ref'])
+            data1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
+            data1D['norm'][kh].Scale(1/data1D['norm'][kh].Integral())
         for kh, vh in hmc1D['trig'].items():
-            effmc1D[kh] = TGraphAsymmErrors( vh, hmc1D['ref'] )
+            mc1D['eff'][kh] = TGraphAsymmErrors(vh, hmc1D['ref'])
+            mc1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
+            mc1D['norm'][kh].Scale(1/mc1D['norm'][kh].Integral())
     except SystemError:
         m = 'There is likely a mismatch in the number of bins.'
         raise RuntimeError(m)
 
     tmpkey = list(hmc1D['trig'].keys())[0] #they all have the same binning
-    nb1D = effmc1D[tmpkey].GetN() 
+    nb1D = mc1D['eff'][tmpkey].GetN() 
 
     up_xedge  = lambda obj, i: obj.GetXaxis().GetBinUpEdge(i)
     low_xedge = lambda obj, i: obj.GetXaxis().GetBinLowEdge(i)
@@ -154,265 +160,273 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
         
     darr = lambda x : np.array(x).astype(dtype=np.double)
     sf1D = {}
-    assert len(effdata1D) == len(effmc1D)
+    sf1D['eff'], sf1D['norm'] = ({} for _ in range(2))
+    assert len(data1D['eff']) == len(mc1D['eff'])
 
     # 1-dimensional
-    for (kmc,vmc),(kdata,vdata) in zip(effmc1D.items(),effdata1D.items()):
-        assert(kmc == kdata)
+    for atype in ('eff', 'norm'):
+        for (kmc,vmc),(kdata,vdata) in zip(mc1D[atype].items(),data1D[atype].items()):
+            assert(kmc == kdata)
 
-        x, y, exu, exd, eyu, eyd = ( utils.dot_dict({'dt': [[] for _ in range(nb1D)],    # data 
-                                                     'mc': [[] for _ in range(nb1D)],    # MC
-                                                     'sf': [[] for _ in range(nb1D)] })  # scale factor
-                                     for _ in range(6) )
+            x, y, exu, exd, eyu, eyd = (utils.dot_dict({'dt': [[] for _ in range(nb1D)],    # data 
+                                                        'mc': [[] for _ in range(nb1D)],    # MC
+                                                        'sf': [[] for _ in range(nb1D)] })  # scale factor
+                                        for _ in range(6))
 
-        for i in range(nb1D):
-            x.mc[i] = ctypes.c_double(0.)
-            y.mc[i] = ctypes.c_double(0.)
-            vmc.GetPoint(i, x.mc[i], y.mc[i])
-            x.mc[i] = x.mc[i].value
-            y.mc[i] = y.mc[i].value
+            for i in range(nb1D):
+                x.mc[i] = ctypes.c_double(0.)
+                y.mc[i] = ctypes.c_double(0.)
+                vmc.GetPoint(i, x.mc[i], y.mc[i])
+                x.mc[i] = x.mc[i].value
+                y.mc[i] = y.mc[i].value
+                
+                exu.mc[i] = up_xedge(vmc,i)  - ctr_xedge(vmc,i)
+                exd.mc[i] = ctr_xedge(vmc,i) - low_xedge(vmc,i)
+                eyu.mc[i] = vmc.GetErrorYhigh(i)
+                eyd.mc[i] = vmc.GetErrorYlow(i)
+                
+                x.dt[i] = ctypes.c_double(0.)
+                y.dt[i] = ctypes.c_double(0.)
+                vdata.GetPoint(i, x.dt[i], y.dt[i])
+                x.dt[i] = x.dt[i].value
+                y.dt[i] = y.dt[i].value
 
-            exu.mc[i] = up_xedge(vmc,i)  - ctr_xedge(vmc,i)
-            exd.mc[i] = ctr_xedge(vmc,i) - low_xedge(vmc,i)
-            eyu.mc[i] = vmc.GetErrorYhigh(i)
-            eyd.mc[i] = vmc.GetErrorYlow(i)
+                exu.dt[i] = up_xedge(vdata,i)  - ctr_xedge(vdata,i)
+                exd.dt[i] = ctr_xedge(vdata,i) - low_xedge(vdata,i)
+                eyu.dt[i] = vdata.GetErrorYhigh(i)
+                eyd.dt[i] = vdata.GetErrorYlow(i)
+
+                if debug:
+                    print('X MC: xp[{}] = {} +{}/-{} '
+                          .format(i,x.mc[i],exu.mc[i],exd.mc[i]), flush=True)
+                    print('Y MC: yp[{}] = {} +{}/-{} '
+                          .format(i,y.mc[i],eyu.mc[i],eyd.mc[i]), flush=True)
+                    print('X Data: xp[{}] = {} +{}/-{} '
+                          .format(i,x.dt[i],exu.dt[i],exd.dt[i]), flush=True)
+                    print('Y Data: yp[{}] = {} +{}/-{}'
+                          .format(i,y.dt[i],eyu.dt[i],eyd.dt[i]), flush=True)
    
-            x.dt[i] = ctypes.c_double(0.)
-            y.dt[i] = ctypes.c_double(0.)
-            vdata.GetPoint(i, x.dt[i], y.dt[i])
-            x.dt[i] = x.dt[i].value
-            y.dt[i] = y.dt[i].value
+                x.sf[i] = x.mc[i]
+                exu.sf[i] = exu.mc[i]
+                exd.sf[i] = exd.mc[i]
+                assert x.dt[i] == x.mc[i]
+                assert exu.dt[i] == exu.mc[i]
+                assert exd.dt[i] == exd.mc[i]
+   
+                try:
+                    y.sf[i] = y.dt[i] / y.mc[i]
+                except ZeroDivisionError:
+                    print('There was a division by zero!', flush=True)
+                    y.sf[i] = 0
+   
+                if y.sf[i] == 0:
+                    eyu.sf[i] = 0
+                    eyd.sf[i] = 0
+                else:
+                    eyu.sf[i] = np.sqrt( eyu.mc[i]**2 + eyu.dt[i]**2 )
+                    eyd.sf[i] = np.sqrt( eyd.mc[i]**2 + eyd.dt[i]**2 )
+   
+                if debug:
+                    print('X Scale Factors: xp[{}] = {}'.format(i,x.sf[i]), flush=True)
+                    print('Y Scale Factors: yp[{}] = {} +{}/-{}'.format(i,y.sf[i],eyu.sf[i],eyd.sf[i]), flush=True)
+                    print('', flush=True)
 
-            exu.dt[i] = up_xedge(vdata,i)  - ctr_xedge(vdata,i)
-            exd.dt[i] = ctr_xedge(vdata,i) - low_xedge(vdata,i)
-            eyu.dt[i] = vdata.GetErrorYhigh(i)
-            eyd.dt[i] = vdata.GetErrorYlow(i)
-
-            if debug:
-                print('X MC: xp[{}] = {} +{}/-{} '
-                      .format(i,x.mc[i],exu.mc[i],exd.mc[i]), flush=True)
-                print('Y MC: yp[{}] = {} +{}/-{} '
-                      .format(i,y.mc[i],eyu.mc[i],eyd.mc[i]), flush=True)
-                print('X Data: xp[{}] = {} +{}/-{} '
-                      .format(i,x.dt[i],exu.dt[i],exd.dt[i]), flush=True)
-                print('Y Data: yp[{}] = {} +{}/-{}'
-                      .format(i,y.dt[i],eyu.dt[i],eyd.dt[i]), flush=True)
-   
-            x.sf[i] = x.mc[i]
-            exu.sf[i] = exu.mc[i]
-            exd.sf[i] = exd.mc[i]
-            assert x.dt[i] == x.mc[i]
-            assert exu.dt[i] == exu.mc[i]
-            assert exd.dt[i] == exd.mc[i]
-   
-            try:
-                y.sf[i] = y.dt[i] / y.mc[i]
-            except ZeroDivisionError:
-                print('There was a division by zero!', flush=True)
-                y.sf[i] = 0
-   
-            if y.sf[i] == 0:
-                eyu.sf[i] = 0
-                eyd.sf[i] = 0
-            else:
-                eyu.sf[i] = np.sqrt( eyu.mc[i]**2 + eyu.dt[i]**2 )
-                eyd.sf[i] = np.sqrt( eyd.mc[i]**2 + eyd.dt[i]**2 )
-   
-            if debug:
-                print('X Scale Factors: xp[{}] = {}'.format(i,x.sf[i]), flush=True)
-                print('Y Scale Factors: yp[{}] = {} +{}/-{}'.format(i,y.sf[i],eyu.sf[i],eyd.sf[i]), flush=True)
-                print('', flush=True)
-
-        sf1D[kdata] = TGraphAsymmErrors( nb1D, darr(x.sf), darr(y.sf),
-                                         darr(exd.sf), darr(exu.sf), darr(eyd.sf), darr(eyu.sf) )
+            sf1D[atype][kdata] = TGraphAsymmErrors(nb1D, darr(x.sf), darr(y.sf),
+                                                   darr(exd.sf), darr(exu.sf), darr(eyd.sf), darr(eyu.sf))
         
     if debug:
         print('[=debug=] 1D Plotting...', flush=True)
 
     n1dt, n1mc, n1sf = 'Data1D', 'MC1D', 'SF1D'
-    for akey in sf1D:
+    for akey in sf1D['eff']:
         canvas_name = os.path.basename(save_names_1D[0]).split('.')[0]
         canvas_name = utils.rewrite_cut_string(canvas_name, akey, regex=True)
-        canvas = TCanvas( canvas_name, 'canvas', 600, 600 )
-        canvas.cd()
-         
-        pad1 = TPad('pad1', 'pad1', 0, 0.35, 1, 1)
-        pad1.SetBottomMargin(0.005)
-        pad1.SetLeftMargin(0.2)
-        pad1.Draw()
-        pad1.cd()
+        canvas = ({} for _ in range(2))
+        canvas['eff'] = TCanvas(canvas_name, 'canvas', 600, 600)
+        canvas['norm'] = TCanvas(canvas_name + '_norm', 'canvas_norm', 600, 600)
 
-        max1, min1 = utils.get_obj_max_min(effdata1D[akey], is_histo=False)
-        max2, min2 = utils.get_obj_max_min(effmc1D[akey],   is_histo=False)
-        eff_max = max([ max1, max2 ])
-        eff_min = min([ min1, min2 ])
-        if eff_max == eff_min:
-            eff_max = 1.
-            eff_min = 0.
+        for atype in ('eff', 'norm'):
+            canvas[atype].cd()
+            pad1 = TPad('pad1', 'pad1', 0, 0.35, 1, 1)
+            pad1.SetBottomMargin(0.005)
+            pad1.SetLeftMargin(0.2)
+            pad1.Draw()
+            pad1.cd()
 
-        nbins = effdata1D[akey].GetN()
-        axor_info = nbins+1, -1, nbins
-        axor_ndiv = 605, 705
-        axor = TH2D('axor'+akey,'axor'+akey,
-                    axor_info[0], axor_info[1], axor_info[2],
-                    100, eff_min-0.1*(eff_max-eff_min), eff_max+0.4*(eff_max-eff_min) )
-        axor.GetYaxis().SetTitle('Efficiency')
-        axor.GetYaxis().SetNdivisions(axor_ndiv[1])
-        axor.GetXaxis().SetLabelOffset(1)
-        axor.GetXaxis().SetNdivisions(axor_ndiv[0])
-        axor.GetYaxis().SetTitleSize(0.08)
-        axor.GetYaxis().SetTitleOffset(.85)
-        axor.GetXaxis().SetLabelSize(0.07)
-        axor.GetYaxis().SetLabelSize(0.07)
-        axor.GetXaxis().SetTickLength(0)
-        axor.Draw()
+            max1, min1 = utils.get_obj_max_min(data1D[atype][akey], is_histo=False)
+            max2, min2 = utils.get_obj_max_min(mc1D[atype][akey], is_histo=False)
+            amax = max([max1, max2])
+            amin = min([min1, min2])
+            if amax == amin:
+                amax = 1.
+                amin = 0.
 
-        effdata1D_new = utils.apply_equal_bin_width(effdata1D[akey])
-        effmc1D_new = utils.apply_equal_bin_width(effmc1D[akey])
+            nbins = data1D[atype][akey].GetN()
+            axor_info = nbins+1, -1, nbins
+            axor_ndiv = 605, 705
+            axor = TH2D('axor'+akey,'axor'+akey,
+                        axor_info[0], axor_info[1], axor_info[2],
+                        100, amin-0.1*(amax-amin), amax+0.4*(amax-amin) )
+            axor.GetYaxis().SetTitle('Efficiency' if atype=='eff' else 'Normalized counts')
+            axor.GetYaxis().SetNdivisions(axor_ndiv[1])
+            axor.GetXaxis().SetLabelOffset(1)
+            axor.GetXaxis().SetNdivisions(axor_ndiv[0])
+            axor.GetYaxis().SetTitleSize(0.08)
+            axor.GetYaxis().SetTitleOffset(.85)
+            axor.GetXaxis().SetLabelSize(0.07)
+            axor.GetYaxis().SetLabelSize(0.07)
+            axor.GetXaxis().SetTickLength(0)
+            axor.Draw()
 
-        effdata1D_new.SetLineColor(1)
-        effdata1D_new.SetLineWidth(2)
-        effdata1D_new.SetMarkerColor(1)
-        effdata1D_new.SetMarkerSize(1.3)
-        effdata1D_new.SetMarkerStyle(20)
-        effdata1D_new.Draw('same p0 e')
+            data1D_new = utils.apply_equal_bin_width(data1D[atype][akey])
+            mc1D_new = utils.apply_equal_bin_width(mc1D[atype][akey])
 
-        effmc1D_new.SetLineColor(ROOT.kRed)
-        effmc1D_new.SetLineWidth(2)
-        effmc1D_new.SetMarkerColor(ROOT.kRed)
-        effmc1D_new.SetMarkerSize(1.3)
-        effmc1D_new.SetMarkerStyle(22)
-        effmc1D_new.Draw('same p0')
+            data1d_new[atype].SetLineColor(1)
+            data1d_new[atype].SetLineWidth(2)
+            data1d_new[atype].SetMarkerColor(1)
+            data1d_new[atype].SetMarkerSize(1.3)
+            data1d_new[atype].SetMarkerStyle(20)
+            data1d_new[atype].Draw('same p0 e')
 
-        pad1.RedrawAxis()
-        l = TLine()
-        l.SetLineWidth(2)
-        padmin = eff_min-0.1*(eff_max-eff_min)
-        padmax = eff_max+0.1*(eff_max-eff_min)
-        fraction = (padmax-padmin)/45
+            mc1d_new[atype].SetLineColor(ROOT.kRed)
+            mc1d_new[atype].SetLineWidth(2)
+            mc1d_new[atype].SetMarkerColor(ROOT.kRed)
+            mc1d_new[atype].SetMarkerSize(1.3)
+            mc1d_new[atype].SetMarkerStyle(22)
+            mc1d_new[atype].Draw('same p0')
 
-        for i in range(nbins):
-            x = axor.GetXaxis().GetBinLowEdge(i) + 1.5;
-            l.DrawLine(x,padmin-fraction,x,padmin+fraction)
-        l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
+            pad1.RedrawAxis()
+            l = TLine()
+            l.SetLineWidth(2)
+            padmin = amin-0.1*(amax-amin)
+            padmax = amax+0.1*(amax-amin)
+            fraction = (padmax-padmin)/45
 
-        leg = TLegend(0.77, 0.77, 0.96, 0.87)
-        leg.SetFillColor(0)
-        leg.SetShadowColor(0)
-        leg.SetBorderSize(0)
-        leg.SetTextSize(0.05)
-        leg.SetFillStyle(0)
-        leg.SetTextFont(42)
+            for i in range(nbins):
+                x = axor.GetXaxis().GetBinLowEdge(i) + 1.5;
+                l.DrawLine(x,padmin-fraction,x,padmin+fraction)
+            l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
 
-        leg.AddEntry(effdata1D_new, 'Data', 'p')
-        leg.AddEntry(effmc1D_new,   proc,   'p')
-        leg.Draw('same')
+            leg = TLegend(0.77, 0.77, 0.96, 0.87)
+            leg.SetFillColor(0)
+            leg.SetShadowColor(0)
+            leg.SetBorderSize(0)
+            leg.SetTextSize(0.05)
+            leg.SetFillStyle(0)
+            leg.SetTextFont(42)
 
-        utils.redraw_border()
+            leg.AddEntry(data1D_new[atype], 'Data', 'p')
+            leg.AddEntry(mc1D_new[atype], proc,   'p')
+            leg.Draw('same')
 
-        lX, lY, lYstep = 0.23, 0.84, 0.05
-        l = TLatex()
-        l.SetNDC()
-        l.SetTextFont(72)
-        l.SetTextColor(1)
+            utils.redraw_border()
 
-        latexChannel = copy(channel)
-        latexChannel.replace('mu','#mu')
-        latexChannel.replace('tau','#tau_{h}')
-        latexChannel.replace('Tau','#tau_{h}')
+            lX, lY, lYstep = 0.23, 0.84, 0.05
+            l = TLatex()
+            l.SetNDC()
+            l.SetTextFont(72)
+            l.SetTextColor(1)
 
-        l.DrawLatex( lX, lY, 'Channel: '+latexChannel)
-        textrigs = utils.write_trigger_string(trig, intersection_str,
-                                              items_per_line=2)
-        l.DrawLatex( lX, lY-lYstep, textrigs)
+            latexChannel = copy(channel)
+            latexChannel.replace('mu','#mu')
+            latexChannel.replace('tau','#tau_{h}')
+            latexChannel.replace('Tau','#tau_{h}')
 
-        canvas.cd()
-        pad2 = TPad('pad2','pad2',0,0.0,1,0.35)
-        pad2.SetTopMargin(0.01)
-        pad2.SetBottomMargin(0.4)
-        pad2.SetLeftMargin(0.2)
-        pad2.Draw()
-        pad2.cd()
-        pad2.SetGridy()
+            l.DrawLatex( lX, lY, 'Channel: '+latexChannel)
+            textrigs = utils.write_trigger_string(trig, intersection_str,
+                                                  items_per_line=2)
+            l.DrawLatex( lX, lY-lYstep, textrigs)
 
-        if max(y.sf) == min(y.sf):
-            max1, min1 = 1.1, -0.1
-        else:
-            max1, min1 = max(y.sf)+max(eyu.sf),min(y.sf)-max(eyd.sf)
+            canvas[atype].cd()
+            pad2 = TPad('pad2','pad2',0,0.0,1,0.35)
+            pad2.SetTopMargin(0.01)
+            pad2.SetBottomMargin(0.4)
+            pad2.SetLeftMargin(0.2)
+            pad2.Draw()
+            pad2.cd()
+            pad2.SetGridy()
 
-        nbins = effdata1D_new.GetN()
-        axor_info = nbins+1, -1, nbins
-        axor_ndiv = 605, 705
-        axor2 = TH2D( 'axor2'+akey,'axor2'+akey,
-                      axor_info[0], axor_info[1], axor_info[2],
-                      100, min1-0.1*(max1-min1), max1+0.1*(max1-min1) )
-        axor2.GetXaxis().SetNdivisions(axor_ndiv[0])
-        axor2.GetYaxis().SetNdivisions(axor_ndiv[1])
+            if max(y.sf) == min(y.sf):
+                max1, min1 = 1.1, -0.1
+            else:
+                max1, min1 = max(y.sf)+max(eyu.sf),min(y.sf)-max(eyd.sf)
 
-        # Change bin labels
-        rounding = lambda x: int(x) if 'pt' in variable else round(x, 2)
-        for i,elem in enumerate(sf1D[akey].GetX()):
-            axor2.GetXaxis().SetBinLabel(i+1, str(rounding(elem-sf1D[akey].GetErrorXlow(i))))
-        axor2.GetXaxis().SetBinLabel(i+2, str(rounding(elem+sf1D[akey].GetErrorXlow(i))))
+                nbins = data1D_new[atype].GetN()
+                axor_info = nbins+1, -1, nbins
+                axor_ndiv = 605, 705
+                axor2 = TH2D('axor2'+akey,'axor2'+akey,
+                             axor_info[0], axor_info[1], axor_info[2],
+                             100, min1-0.1*(max1-min1), max1+0.1*(max1-min1))
+                axor2.GetXaxis().SetNdivisions(axor_ndiv[0])
+                axor2.GetYaxis().SetNdivisions(axor_ndiv[1])
 
-        axor2.GetYaxis().SetLabelSize(0.12)
-        axor2.GetXaxis().SetLabelSize(0.18)
-        axor2.GetXaxis().SetLabelOffset(0.015)
-        axor2.SetTitleSize(0.13,'X')
-        axor2.SetTitleSize(0.12,'Y')
-        axor2.GetXaxis().SetTitleOffset(1.)
-        axor2.GetYaxis().SetTitleOffset(0.5)
-        axor2.GetYaxis().SetTitle('Data/MC')
+            # Change bin labels
+            rounding = lambda x: int(x) if 'pt' in variable else round(x, 2)
+            for i,elem in enumerate(sf1D[atype][akey].GetX()):
+                axor2.GetXaxis().SetBinLabel(i+1, str(rounding(elem-sf1D[atype][akey].GetErrorXlow(i))))
+            axor2.GetXaxis().SetBinLabel(i+2, str(rounding(elem+sf1D[atype][akey].GetErrorXlow(i))))
+
+            axor2.GetYaxis().SetLabelSize(0.12)
+            axor2.GetXaxis().SetLabelSize(0.18)
+            axor2.GetXaxis().SetLabelOffset(0.015)
+            axor2.SetTitleSize(0.13,'X')
+            axor2.SetTitleSize(0.12,'Y')
+            axor2.GetXaxis().SetTitleOffset(1.)
+            axor2.GetYaxis().SetTitleOffset(0.5)
+            axor2.GetYaxis().SetTitle('Data/MC')
             
-        axor2.GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
-        axor2.GetXaxis().SetTickLength(0)
-        axor2.Draw()
+            axor2.GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
+            axor2.GetXaxis().SetTickLength(0)
+            axor2.Draw()
 
-        sf1Dnew = utils.apply_equal_bin_width(sf1D[akey])
-        sf1Dnew.SetLineColor(ROOT.kRed)
-        sf1Dnew.SetLineWidth(2)
-        sf1Dnew.SetMarkerColor(ROOT.kRed)
-        sf1Dnew.SetMarkerSize(1.3)
-        sf1Dnew.SetMarkerStyle(22)
-        sf1Dnew.GetYaxis().SetLabelSize(0.12)
-        sf1Dnew.GetXaxis().SetLabelSize(0.12)
-        sf1Dnew.GetXaxis().SetTitleSize(0.15)
-        sf1Dnew.GetYaxis().SetTitleSize(0.15)
-        sf1Dnew.GetXaxis().SetTitleOffset(1.)
-        sf1Dnew.GetYaxis().SetTitleOffset(0.45)
-        sf1Dnew.GetYaxis().SetTitle('Data/MC')
-        sf1Dnew.GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
-        sf1Dnew.Draw('same P0')
+            sf1Dnew[atype] = utils.apply_equal_bin_width(sf1D[atype][akey])
+            sf1Dnew[atype].SetLineColor(ROOT.kRed)
+            sf1Dnew[atype].SetLineWidth(2)
+            sf1Dnew[atype].SetMarkerColor(ROOT.kRed)
+            sf1Dnew[atype].SetMarkerSize(1.3)
+            sf1Dnew[atype].SetMarkerStyle(22)
+            sf1Dnew[atype].GetYaxis().SetLabelSize(0.12)
+            sf1Dnew[atype].GetXaxis().SetLabelSize(0.12)
+            sf1Dnew[atype].GetXaxis().SetTitleSize(0.15)
+            sf1Dnew[atype].GetYaxis().SetTitleSize(0.15)
+            sf1Dnew[atype].GetXaxis().SetTitleOffset(1.)
+            sf1Dnew[atype].GetYaxis().SetTitleOffset(0.45)
+            sf1Dnew[atype].GetYaxis().SetTitle('Data/MC')
+            sf1Dnew[atype].GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
+            sf1Dnew[atype].Draw('same P0')
 
-        pad2.cd()
-        l = TLine()
-        l.SetLineWidth(2)
-        padmin = min1-0.1*(max1-min1)
-        padmax = max1+0.1*(max1-min1)
-        fraction = (padmax-padmin)/30
+            pad2.cd()
+            l = TLine()
+            l.SetLineWidth(2)
+            padmin = min1-0.1*(max1-min1)
+            padmax = max1+0.1*(max1-min1)
+            fraction = (padmax-padmin)/30
 
-        for i in range(nbins):
-            x = axor2.GetXaxis().GetBinLowEdge(i) + 1.5;
-            l.DrawLine(x,padmin-fraction,x,padmin+fraction)
-        l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
+            for i in range(nbins):
+                x = axor2.GetXaxis().GetBinLowEdge(i) + 1.5;
+                l.DrawLine(x,padmin-fraction,x,padmin+fraction)
+            l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
 
-        utils.redraw_border()
+            utils.redraw_border()
 
-        for aname in save_names_1D[:-1]:
-            _name = utils.rewrite_cut_string(aname, akey, regex=True)
-            canvas.SaveAs( _name )
+            for aname in save_names_1D[:-1]:
+                _name = utils.rewrite_cut_string(aname, akey, regex=True)
+                _name = atype + '_' + _name
+                canvas[atype].SaveAs( _name )
 
-        _name = save_names_1D[-1].replace(args.canvas_prefix, '')
-        _name = utils.rewrite_cut_string(_name, akey, regex=True)
-        eff_file = TFile.Open(_name, 'RECREATE')
-        eff_file.cd()
+        _name_base = save_names_1D[-1].replace(args.canvas_prefix, '')
+        _name_base = utils.rewrite_cut_string(_name, akey, regex=True)
+        for atype in ('eff'):
+            _name = atype + '_' + _name_base
+            afile = TFile.Open(_name, 'RECREATE')
+            afile.cd()
 
-        effdata1D[akey].SetName(n1dt)
-        effdata1D[akey].Write(n1dt)
-        effmc1D[akey].SetName(n1mc)
-        effmc1D[akey].Write(n1mc)
-        sf1D[akey].SetName(n1sf)
-        sf1D[akey].Write(n1sf)
+            data1D_new[atype][akey].SetName(n1dt)
+            data1D_new[atype][akey].Write(n1dt)
+            mc1D_new[atype][akey].SetName(n1mc)
+            mc1D_new[atype][akey].Write(n1mc)
+            sf1D[atype][akey].SetName(n1sf)
+            sf1D[atype][akey].Write(n1sf)
 
     if debug:
         print('[=debug=] 2D Plotting...', flush=True)
