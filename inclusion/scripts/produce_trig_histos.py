@@ -103,7 +103,8 @@ def build_histograms(args):
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
 
-        sel = selection.EventSelection(entries, isdata=True, configuration=config_module)
+        sel = selection.EventSelection(entries, isdata=args.isdata,
+                                       configuration=config_module)
         
         #mcweight   = entries.MC_weight
         pureweight = entries.PUReweight
@@ -211,11 +212,11 @@ def build_histograms(args):
                         for combtrig in combtrigs:
                             cstr = joinNTC(combtrig)
                             
-                            if not sel.check_inters_with_dataset(combtrig, chn):
+                            if not sel.check_inters_with_dataset(combtrig, chn, args.dataset):
                                 continue
                             if not sel.dataset_cuts(combtrig, chn):
                                 continue
-                            if not sel.dataset_triggers(combtrig, chn, args.triggers)[0]:
+                            if not sel.dataset_triggers(combtrig, chn, args.triggers, args.dataset)[0]:
                                 continue
                             
                             for j in main.pairs2D[onetrig]:
