@@ -137,26 +137,10 @@ class EventSelection:
                 return self.dataset_name(k)
                  
         # channel-specific triggers
-        if channel == 'etau':
-            for k in main.data:
-                if tcomb in self.cfg.inters_etau[k]:
-                    return self.dataset_name(k)
-            raise ValueError(wrong_comb.format(tcomb, channel))
-            
-        elif channel == 'mutau':
-            for k in main.data:
-                if tcomb in self.cfg.inters_mutau[k]:
-                    return self.dataset_name(k)
-            raise ValueError(wrong_comb.format(tcomb, channel))
-            
-        elif channel == 'tautau':
-            for k in main.data:
-                if tcomb in self.cfg.inters_tautau[k]:
-                    return self.dataset_name(k)
-            raise ValueError(wrong_comb.format(tcomb, channel))
-            
-        else:
-            raise ValueError('Channel {} is not supported.'.format(channel))
+        for k in main.data:
+            if tcomb in self.cfg.inters[channel][k]:
+                return self.dataset_name(k)
+        raise ValueError(wrong_comb.format(tcomb, channel))
 
     def check_inters_with_dataset(self, tcomb, channel, dataset):
         """
