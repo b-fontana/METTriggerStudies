@@ -70,8 +70,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
         print('[=debug=]  - Args: proc={proc}, channel={channel}, variable={variable}, trig={trig}'
               .format(proc=proc, channel=channel, variable=variable, trig=trig))
    
-    hnames1D = { 'ref':  utils.get_hnames('Ref1D')(channel, variable, trig),
-                 'trig': utils.get_hnames('Trig1D')(channel, variable, trig) }
+    hnames1D = {'ref':  utils.get_hnames('Ref1D')(channel, variable, trig),
+                'trig': utils.get_hnames('Trig1D')(channel, variable, trig)}
    
     keylist_data = utils.get_key_list(file_data, inherits=['TH1'])
     keylist_mc = utils.get_key_list(file_mc, inherits=['TH1'])
@@ -132,18 +132,30 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
         print(m)
         return
     
-    data1D, mc1D = ({} for _ in range(2))
-    data1D['eff'], mc1D['eff'] = ({} for _ in range(2))
-    data1D['norm'], mc1D['norm'] = ({} for _ in range(2))
+    data1D, mc1D, sf1D = ({} for _ in range(3)) 
+    data1D_new, mc1D_new, sf1D_new = ({} for _ in range(3))
+    for atype in ('eff', 'norm'):
+        data1D[atype], data1D_new[atype] = ({} for _ in range(2))
+        mc1D[atype], mc1D_new[atype] = ({} for _ in range(2))
+        sf1D[atype], sf1D_new[atype] = ({} for _ in range(2))
+
     try:
         for kh, vh in hdata1D['trig'].items():
             data1D['eff'][kh] = TGraphAsymmErrors(vh, hdata1D['ref'])
             data1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
-            data1D['norm'][kh].Scale(1/data1D['norm'][kh].Integral())
+            try:
+                data1D['norm'][kh].Scale(1/data1D['norm'][kh].Integral())
+            except ZeroDivisionError:
+                data1D['norm'][kh].Scale(1)
+            data1D['norm'][kh] = TGraphAsymmErrors(data1D['norm'][kh])
         for kh, vh in hmc1D['trig'].items():
             mc1D['eff'][kh] = TGraphAsymmErrors(vh, hmc1D['ref'])
             mc1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
-            mc1D['norm'][kh].Scale(1/mc1D['norm'][kh].Integral())
+            try:
+                mc1D['norm'][kh].Scale(1/mc1D['norm'][kh].Integral())
+            except ZeroDivisionError:
+                mc1D['norm'][kh].Scale(1)
+            mc1D['norm'][kh] = TGraphAsymmErrors(mc1D['norm'][kh])
     except SystemError:
         m = 'There is likely a mismatch in the number of bins.'
         raise RuntimeError(m)
@@ -151,16 +163,14 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
     tmpkey = list(hmc1D['trig'].keys())[0] #they all have the same binning
     nb1D = mc1D['eff'][tmpkey].GetN() 
 
-    up_xedge  = lambda obj, i: obj.GetXaxis().GetBinUpEdge(i)
-    low_xedge = lambda obj, i: obj.GetXaxis().GetBinLowEdge(i)
-    up_yedge  = lambda obj, i: obj.GetYaxis().GetBinUpEdge(i)
-    low_yedge = lambda obj, i: obj.GetYaxis().GetBinLowEdge(i)
-    ctr_xedge = lambda obj, i: obj.GetXaxis().GetBinCenter(i)
-    ctr_yedge = lambda obj, i: obj.GetYaxis().GetBinCenter(i)
+    up_xedge  = lambda obj,i: obj.GetXaxis().GetBinUpEdge(i)
+    low_xedge = lambda obj,i: obj.GetXaxis().GetBinLowEdge(i)
+    up_yedge  = lambda obj,i: obj.GetYaxis().GetBinUpEdge(i)
+    low_yedge = lambda obj,i: obj.GetYaxis().GetBinLowEdge(i)
+    ctr_xedge = lambda obj,i: obj.GetXaxis().GetBinCenter(i)
+    ctr_yedge = lambda obj,i: obj.GetYaxis().GetBinCenter(i)
         
     darr = lambda x : np.array(x).astype(dtype=np.double)
-    sf1D = {}
-    sf1D['eff'], sf1D['norm'] = ({} for _ in range(2))
     assert len(data1D['eff']) == len(mc1D['eff'])
 
     # 1-dimensional
@@ -241,7 +251,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
     for akey in sf1D['eff']:
         canvas_name = os.path.basename(save_names_1D[0]).split('.')[0]
         canvas_name = utils.rewrite_cut_string(canvas_name, akey, regex=True)
-        canvas = ({} for _ in range(2))
+        canvas = {}
         canvas['eff'] = TCanvas(canvas_name, 'canvas', 600, 600)
         canvas['norm'] = TCanvas(canvas_name + '_norm', 'canvas_norm', 600, 600)
 
@@ -278,22 +288,22 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             axor.GetXaxis().SetTickLength(0)
             axor.Draw()
 
-            data1D_new = utils.apply_equal_bin_width(data1D[atype][akey])
-            mc1D_new = utils.apply_equal_bin_width(mc1D[atype][akey])
+            data1D_new[atype][akey] = utils.apply_equal_bin_width(data1D[atype][akey])
+            mc1D_new[atype][akey] = utils.apply_equal_bin_width(mc1D[atype][akey])
 
-            data1d_new[atype].SetLineColor(1)
-            data1d_new[atype].SetLineWidth(2)
-            data1d_new[atype].SetMarkerColor(1)
-            data1d_new[atype].SetMarkerSize(1.3)
-            data1d_new[atype].SetMarkerStyle(20)
-            data1d_new[atype].Draw('same p0 e')
+            data1D_new[atype][akey].SetLineColor(1)
+            data1D_new[atype][akey].SetLineWidth(2)
+            data1D_new[atype][akey].SetMarkerColor(1)
+            data1D_new[atype][akey].SetMarkerSize(1.3)
+            data1D_new[atype][akey].SetMarkerStyle(20)
+            data1D_new[atype][akey].Draw('same p0 e')
 
-            mc1d_new[atype].SetLineColor(ROOT.kRed)
-            mc1d_new[atype].SetLineWidth(2)
-            mc1d_new[atype].SetMarkerColor(ROOT.kRed)
-            mc1d_new[atype].SetMarkerSize(1.3)
-            mc1d_new[atype].SetMarkerStyle(22)
-            mc1d_new[atype].Draw('same p0')
+            mc1D_new[atype][akey].SetLineColor(ROOT.kRed)
+            mc1D_new[atype][akey].SetLineWidth(2)
+            mc1D_new[atype][akey].SetMarkerColor(ROOT.kRed)
+            mc1D_new[atype][akey].SetMarkerSize(1.3)
+            mc1D_new[atype][akey].SetMarkerStyle(22)
+            mc1D_new[atype][akey].Draw('same p0')
 
             pad1.RedrawAxis()
             l = TLine()
@@ -315,8 +325,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             leg.SetFillStyle(0)
             leg.SetTextFont(42)
 
-            leg.AddEntry(data1D_new[atype], 'Data', 'p')
-            leg.AddEntry(mc1D_new[atype], proc,   'p')
+            leg.AddEntry(data1D_new[atype][akey], 'Data', 'p')
+            leg.AddEntry(mc1D_new[atype][akey], proc,   'p')
             leg.Draw('same')
 
             utils.redraw_border()
@@ -351,14 +361,14 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             else:
                 max1, min1 = max(y.sf)+max(eyu.sf),min(y.sf)-max(eyd.sf)
 
-                nbins = data1D_new[atype].GetN()
-                axor_info = nbins+1, -1, nbins
-                axor_ndiv = 605, 705
-                axor2 = TH2D('axor2'+akey,'axor2'+akey,
-                             axor_info[0], axor_info[1], axor_info[2],
-                             100, min1-0.1*(max1-min1), max1+0.1*(max1-min1))
-                axor2.GetXaxis().SetNdivisions(axor_ndiv[0])
-                axor2.GetYaxis().SetNdivisions(axor_ndiv[1])
+            nbins = data1D_new[atype][akey].GetN()
+            axor_info = nbins+1, -1, nbins
+            axor_ndiv = 605, 705
+            axor2 = TH2D('axor2'+akey,'axor2'+akey,
+                         axor_info[0], axor_info[1], axor_info[2],
+                         100, min1-0.1*(max1-min1), max1+0.1*(max1-min1))
+            axor2.GetXaxis().SetNdivisions(axor_ndiv[0])
+            axor2.GetYaxis().SetNdivisions(axor_ndiv[1])
 
             # Change bin labels
             rounding = lambda x: int(x) if 'pt' in variable else round(x, 2)
@@ -379,21 +389,21 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             axor2.GetXaxis().SetTickLength(0)
             axor2.Draw()
 
-            sf1Dnew[atype] = utils.apply_equal_bin_width(sf1D[atype][akey])
-            sf1Dnew[atype].SetLineColor(ROOT.kRed)
-            sf1Dnew[atype].SetLineWidth(2)
-            sf1Dnew[atype].SetMarkerColor(ROOT.kRed)
-            sf1Dnew[atype].SetMarkerSize(1.3)
-            sf1Dnew[atype].SetMarkerStyle(22)
-            sf1Dnew[atype].GetYaxis().SetLabelSize(0.12)
-            sf1Dnew[atype].GetXaxis().SetLabelSize(0.12)
-            sf1Dnew[atype].GetXaxis().SetTitleSize(0.15)
-            sf1Dnew[atype].GetYaxis().SetTitleSize(0.15)
-            sf1Dnew[atype].GetXaxis().SetTitleOffset(1.)
-            sf1Dnew[atype].GetYaxis().SetTitleOffset(0.45)
-            sf1Dnew[atype].GetYaxis().SetTitle('Data/MC')
-            sf1Dnew[atype].GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
-            sf1Dnew[atype].Draw('same P0')
+            sf1D_new[atype] = utils.apply_equal_bin_width(sf1D[atype][akey])
+            sf1D_new[atype].SetLineColor(ROOT.kRed)
+            sf1D_new[atype].SetLineWidth(2)
+            sf1D_new[atype].SetMarkerColor(ROOT.kRed)
+            sf1D_new[atype].SetMarkerSize(1.3)
+            sf1D_new[atype].SetMarkerStyle(22)
+            sf1D_new[atype].GetYaxis().SetLabelSize(0.12)
+            sf1D_new[atype].GetXaxis().SetLabelSize(0.12)
+            sf1D_new[atype].GetXaxis().SetTitleSize(0.15)
+            sf1D_new[atype].GetYaxis().SetTitleSize(0.15)
+            sf1D_new[atype].GetXaxis().SetTitleOffset(1.)
+            sf1D_new[atype].GetYaxis().SetTitleOffset(0.45)
+            sf1D_new[atype].GetYaxis().SetTitle('Data/MC')
+            sf1D_new[atype].GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
+            sf1D_new[atype].Draw('same P0')
 
             pad2.cd()
             l = TLine()
@@ -411,20 +421,24 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
 
             for aname in save_names_1D[:-1]:
                 _name = utils.rewrite_cut_string(aname, akey, regex=True)
-                _name = atype + '_' + _name
+                _name = _name.replace(args.canvas_prefix, atype + '_' + args.canvas_prefix)
+                print('++++')
+                print(_name)
+                print(atype)
                 canvas[atype].SaveAs( _name )
 
-        _name_base = save_names_1D[-1].replace(args.canvas_prefix, '')
-        _name_base = utils.rewrite_cut_string(_name, akey, regex=True)
-        for atype in ('eff'):
-            _name = atype + '_' + _name_base
+        _name_base = utils.rewrite_cut_string(save_names_1D[-1], akey, regex=True)
+        for atype in ('eff',):
+            _name = _name_base.replace(args.canvas_prefix, atype + '_')
+            print('----')
+            print(_name)
             afile = TFile.Open(_name, 'RECREATE')
             afile.cd()
 
-            data1D_new[atype][akey].SetName(n1dt)
-            data1D_new[atype][akey].Write(n1dt)
-            mc1D_new[atype][akey].SetName(n1mc)
-            mc1D_new[atype][akey].Write(n1mc)
+            data1D[atype][akey].SetName(n1dt)
+            data1D[atype][akey].Write(n1dt)
+            mc1D[atype][akey].SetName(n1mc)
+            mc1D[atype][akey].Write(n1mc)
             sf1D[atype][akey].SetName(n1sf)
             sf1D[atype][akey].Write(n1sf)
 
