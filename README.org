@@ -50,7 +50,7 @@ Run the submission workflow (check the meaning of the arguments by adding ~--hel
 
 #+NAME: running_command
 #+BEGIN_SRC shell
-python3 sf_inclusion/run.py --tag FullWorkflowTest --data MET EGamma --mc_process TT --configuration sel_default
+python3 inclusion/run.py --tag FirstTest --data MET EG Mu --mc_process TT --configuration sel_no_bjets_cut --branch all
 #+END_SRC
 
 where the configuration file must be defined under ~inclusion/config/~.
