@@ -48,6 +48,45 @@ def build_script_path(name):
                         name)
     return path
 
+def check_discr_vars_correctness(dset, channel):
+    """
+    Check if the intersections exist, are complete, and do not have duplicates.
+    Input dictionary should have the following signature:
+    """
+    chn_inters = generate_trigger_combinations(channel, main.triggers)
+    flatten = list(dset.keys())
+
+    # type check
+    for x in flatten:
+        if not isinstance(x, tuple):
+            mes = 'Intersection {} must be defined as a tuple'.format(x)
+            raise TypeError(mes)
+    
+    # existence check
+    for x in flatten:
+        if x not in chn_inters and len(x)!=0:
+            mes = 'Intersection {} is not required by channel {}.'
+            mes = mes.format(f, channel)
+            raise ValueError(mes)
+
+    # completness check
+    diff = set(chn_inters)-set(flatten)
+    if diff:
+        mes = 'Some intersections were not included in the configuration:\n'
+        for elem in diff:
+            mes += ' - ' + utils.join_name_trigger_intersection(elem) + '\n'
+        raise ValueError(mes)
+
+    # duplicate check
+    dup = set([x for x in flatten if flatten.count(x) > 1])
+    if dup:
+        mes = 'Some intersections in the configuration are duplicated:\n'
+        for elem in dup:
+            mes += ' - ' + utils.join_name_trigger_intersection(elem) + '\n'
+        raise ValueError(mes)
+    
+    return
+
 def check_inters_correctness(dchn, dgen, channel):
     """
     Check if the intersections exist, are complete, and do not have duplicates.

@@ -24,10 +24,11 @@ def discriminator(args, chn):
     """
     result = {}
 
+    list_1D = {'etau': discr_vars_1D_etau,
     constant_list = ['dau1_pt', 'dau1_eta', 'dau2_pt', 'dau2_eta']
     for tcomb in utils.generate_trigger_combinations(chn, args.triggers):        
         result[joinNTC(tcomb)] = [ constant_list, #always the same 1D variables
-                                   [], #1D changing variables
+                                   [utils.discr_vars_1D[chn][tcomb]], #1D changing variables
                                    [], #2D pairs of changing variables
                                   ]
 
