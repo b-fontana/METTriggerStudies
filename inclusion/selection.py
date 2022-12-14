@@ -307,9 +307,9 @@ class EventSelection:
             return True
         
         if (tcomb in self.cfg.inters_general['MET'] or
-            tcomb in self.cfg.inters_etau['MET'] or
-            tcomb in self.cfg.inters_mutau['MET'] or
-            tcomb in self.cfg.inters_tautau['MET']):
+            tcomb in self.cfg.inters['etau']['MET'] or
+            tcomb in self.cfg.inters['mutau']['MET'] or
+            tcomb in self.cfg.inters['tautau']['MET']):
             return True
         return False
     
