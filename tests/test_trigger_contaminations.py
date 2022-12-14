@@ -30,24 +30,28 @@ def main(args):
     title_d = {'dau1_pt': '(varying first lepton pT cut, second set to 190 GeV)',
                'dau2_pt': '(varying second lepton pT cut, first set to 190 GeV)',
                'both': '(varying both lepton pT cuts)'}
-    p1 = figure(title='Contaminations in the SingleTau regions '+title_d[args.region_vary],
+    title1 = 'Contaminations in the SingleTau regions '
+    p1 = figure(title=title1+title_d[args.region_vary],
                 tools='save,box_zoom,reset', **p_opt)
     p1.xaxis.axis_label = 'm(HH) [GeV]'
     p1.yaxis.axis_label = 'Contamination [%]'
     p1.x_range = Range1d(0, 14.5)
     p1.y_range = Range1d(-0.5, 20.)
 
-    p2 = figure(title='Statistics in the Single and DiTau regions '+title_d[args.region_vary],
-                tools='save,box_zoom,reset', **p_opt)
+    title2 = 'Statistics in the Single ('+tau+'+'+ditau+') and DiTau ('+ditau+'+MET) regions '
+    p2 = figure(title=title2+title_d[args.region_vary], tools='save,box_zoom,reset', **p_opt)
     p2.xaxis.axis_label = 'm(HH) [GeV]'
     p2.yaxis.axis_label = '#Events'
-    # p2.x_range = Range1d(0, 14.5)
-    # p2.y_range = Range1d(-0.5, 20.)
+
+    title3 = 'Normalized statistics in the Single ('+tau+'+'+ditau+') and DiTau ('+ditau+'+MET) regions '
+    p3 = figure(title=title3+title_d[args.region_vary], tools='save,box_zoom,reset', **p_opt)
+    p3.xaxis.axis_label = 'm(HH) [GeV]'
+    p3.yaxis.axis_label = 'Normalized #Events'
 
     #linearize x axis
     linear_x = [k for k in range(1,len(args.masses)+1)]
     xticks = linear_x[:]
-    for p in (p1,p2):
+    for p in (p1,p2,p3):
         p.toolbar.logo = None
         p.xaxis[0].ticker = xticks
         p.xgrid[0].ticker = xticks
@@ -80,11 +84,16 @@ def main(args):
 
             stats1  = f[label_stats][1]
             estats1 = f[label_stats][2]
+            if icut==0:
+                stats1_norm = stats1
+            stats1_ratio = stats1 / stats1_norm
+            estats1_ratio = estats1 / stats1_norm
 
             source = ColumnDataSource({'x': [x+shifts[icut] for x in linear_x],
                                        'contam1': contam1,
                                        'contam2': contam2,
-                                       'stats1': stats1,})
+                                       'stats1': stats1,
+                                       'stats1_ratio': stats1_ratio,})
             opt = dict(color=colors[icut], source=source)
 
             leg0 = (label[:3] if args.region_vary=='dau1_pt' else label[4:7]) + 'GeV '
@@ -106,7 +115,6 @@ def main(args):
             gb.line_color = 'black'
             p1.xaxis.major_label_overrides = dict(zip(linear_x,x_str))
 
-            # p2.line('x', 'stats1', line_width=1, legend_label=leg0, **opt)
             p2.multi_line([(x+shifts[icut],x+shifts[icut]) for x in linear_x], 
                           [(max(0,x-y/2),x+y/2) for x,y in zip(stats1,estats1)],
                           color=colors[icut], line_width=2, legend_label=leg0)
@@ -115,7 +123,16 @@ def main(args):
             ga.line_color = 'black'
             p2.xaxis.major_label_overrides = dict(zip(linear_x,x_str))
 
-    for p in (p1,p2):
+            p3.multi_line([(x+shifts[icut],x+shifts[icut]) for x in linear_x], 
+                          [(max(0,x-y/2),x+y/2) for x,y in zip(stats1_ratio,estats1_ratio)],
+                          color=colors[icut], line_width=2, legend_label=leg0)
+            ga = p3.circle('x', 'stats1_ratio', size=6, legend_label=leg0, **opt)
+            ga = ga.glyph
+            ga.line_color = 'black'
+            p3.xaxis.major_label_overrides = dict(zip(linear_x,x_str))
+            p3.legend.location = 'bottom_left'
+
+    for p in (p1,p2,p3):
         p.legend.glyph_height = 15
         p.legend.glyph_width = 15
         p.legend.label_height = 9
@@ -124,7 +141,7 @@ def main(args):
         p.legend.click_policy = 'hide'
         p.output_backend = 'svg'
 
-    save(layout([[p1],[p2]]))
+    save(layout([[p1],[p2,p3]]))
 
 
 if __name__ == '__main__':
