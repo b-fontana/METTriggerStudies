@@ -19,7 +19,6 @@ import ROOT
 from array import array
 import ctypes
 
-#pm = ' ' + '\u{00B1}' + ' '
 pm = ' ' + '+-' + ' '
 types = ('Numerator_weighted', 'Denominator_weighted', 'Numerator_w2', 'Denominator_w2')
 around = lambda x : str(round(x,3))
@@ -37,11 +36,11 @@ def add_trigger_counts(args):
     if args.aggr:
         regex = re.compile(args.tprefix + '.+_Sum.*' + args.subtag + '_' + args.channel + '.csv')
         walk_path = args.indir
-
         for root, d, files in os.walk(walk_path, topdown=True):
             if root[len(walk_path):].count(os.sep) < 1:
 
                 for afile in files:
+                    print(regex, afile)
                     if regex.match( os.path.basename(afile) ):
                         afile_full = os.path.join(root, afile)
                         if afile_full in args.infile_counts:
@@ -288,6 +287,7 @@ def add_trigger_counts(args):
                     total_str = around(total[(comb,ref)].GetBinContent(1)) + pm + around(w2_total[(comb,ref)])
                     
                     newline = sep.join((dataset, ref, comb, pass_str, total_str, effval))
+                    print(newline)
                     fcsv2.write(newline + '\n')
                     aggr_w_squash.append(newline)
      

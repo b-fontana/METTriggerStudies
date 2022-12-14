@@ -479,6 +479,18 @@ def apply_equal_bin_width(old, roundx=2, roundy=2):
         raise ValueError(mess)
     return h
 
+def total_cross_section(f, isdata):
+    if isdata:
+        return 1.
+    else:
+        search_str = os.path.join(os.path.dirname(f), '*.root')
+        xsec_norm = 0.
+        for elem in glob.glob(search_str):
+            ftmp = ROOT.TFile(elem)
+            xsec_norm += ftmp.Get('h_eff').GetBinContent(1)
+        return xsec_norm
+    return None
+
 def upify(s):
     """capitalizes the first letter of the passed string"""
     return s[0].upper() + s[1:]

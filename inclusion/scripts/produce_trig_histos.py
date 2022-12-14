@@ -33,6 +33,8 @@ def build_histograms(args):
         mes = '[' + os.path.basename(__file__) + '] {} does not exist.'.format(infile)
         raise ValueError(mes)
 
+    xsec_norm = utils.total_cross_section(args.infile, args.isdata)
+    
     f_in = ROOT.TFile(args.infile)
     t_in = f_in.Get('HTauTauTree')
 
@@ -103,20 +105,14 @@ def build_histograms(args):
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
 
-        sel = selection.EventSelection(entries, isdata=args.isdata,
-                                       configuration=config_module)
+        sel = selection.EventSelection(entries, isdata=args.isdata, configuration=config_module)
         
-        #mcweight   = entries.MC_weight
+        mcweight   = entries.MC_weight
         pureweight = entries.PUReweight
         lumi       = entries.lumi
         idandiso   = entries.IdAndIsoSF_deep_pt
-        
-        #if utils.is_nan(mcweight)  : mcweight=1
-        if utils.is_nan(pureweight) : pureweight=1
-        if utils.is_nan(lumi)       : lumi=1
-        if utils.is_nan(idandiso)   : idandiso=1
-
-        evt_weight = pureweight*lumi*idandiso
+        evt_weight = (events.MC_weight / xsec_norm) * events.lumi
+        evt_weight *= entries.pureweight * entries.idandiso
         if utils.is_nan(evt_weight) or args.isdata:
             evt_weight = 1
 

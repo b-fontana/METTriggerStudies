@@ -31,12 +31,7 @@ def get_trig_counts(args):
         mes = '[' + os.path.basename(__file__) + '] {} does not exist.'.format(args.filename)
         raise ValueError(mes)
 
-    search_str = os.path.join(os.path.dirname(args.filename), '*.root')
-    xsec_norm = 1. if args.isdata else 0
-    if not args.isdata:
-        for elem in glob.glob(search_str):
-            ftmp = ROOT.TFile(elem)
-            xsec_norm += ftmp.Get('h_eff').GetBinContent(1)
+    xsec_norm = utils.total_cross_section(args.filename, args.isdata)
     
     f_in = ROOT.TFile(args.filename)
     t_in = f_in.Get('HTauTauTree')
@@ -75,8 +70,11 @@ def get_trig_counts(args):
 
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-        weight = (entries.MC_weight / xsec_norm) * entries.lumi
-        
+        evt_weight = (entries.MC_weight / xsec_norm) * entries.lumi
+        evt_weight *= entries.pureweight * entries.idandiso
+        if utils.is_nan(evt_weight) or args.isdata:
+            evt_weight = 1.
+
         sel = selection.EventSelection(entries, args.isdata, configuration=config_module)
         
         pass_trigger = {}
@@ -101,13 +99,13 @@ def get_trig_counts(args):
 
                     tstr = joinNTC(tcomb)
                     c_ref[chn][tstr] += 1
-                    w_ref[chn][tstr] += weight
-                    w2_ref[chn][tstr] += weight*weight
+                    w_ref[chn][tstr] += evt_weight
+                    w2_ref[chn][tstr] += evt_weight*evt_weight
 
                     if pass_trigger_intersection:
                         c_inters[chn][tstr] += 1
-                        w_inters[chn][tstr] += weight
-                        w2_inters[chn][tstr] += weight*weight
+                        w_inters[chn][tstr] += evt_weight
+                        w2_inters[chn][tstr] += evt_weight*evt_weight
                                             
     file_id = ''.join( c for c in args.filename[-10:] if c.isdigit() )
 
