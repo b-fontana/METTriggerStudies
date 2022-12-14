@@ -40,7 +40,6 @@ def add_trigger_counts(args):
             if root[len(walk_path):].count(os.sep) < 1:
 
                 for afile in files:
-                    print(regex, afile)
                     if regex.match( os.path.basename(afile) ):
                         afile_full = os.path.join(root, afile)
                         if afile_full in args.infile_counts:
@@ -145,7 +144,7 @@ def add_trigger_counts(args):
         outs = outputs_csv
 
     aggr_c_squash, aggr_w_squash = ([] for _ in range(2))
-    
+
     if args.aggr:
         ########################################################
         ### Unweighted counts ##################################
@@ -234,25 +233,27 @@ def add_trigger_counts(args):
 
         with open(outs_w, 'w') as fcsv2:
             # store
-            for il,l in enumerate(aggr_outs):
+            for il,l in enumerate(aggr_outs): #loop over all subsamples
                 split_line = [x.replace('\n', '') for x in l.split(sep)]
                 if all( not x for x in split_line ):
-                        continue
+                    continue
 
                 # write a new line only once per numerator/denominator pair of lines
                 dataset, atype, comb, ref, c, _ = split_line
-
                 if atype != 'Type':
                     if atype=='Numerator_weighted':
-                        passed[(comb,ref)] = ROOT.TH1F('hw_pass'+str(il), 'hw_pass'+str(il), 1, 0., 1.)
-                        passed[(comb,ref)].AddBinContent(1, float(c))
+                        passed[(dataset,comb)] = ROOT.TH1F('hw_pass'+str(il), 'hw_pass'+str(il), 1, 0., 1.)
+                        passed[(dataset,comb)].AddBinContent(1, float(c))
                     elif atype=='Denominator_weighted':
-                        total[(comb,ref)] = ROOT.TH1F('hw_pass'+str(il), 'hw_pass'+str(il), 1, 0., 1.)
-                        total[(comb,ref)].AddBinContent(1, float(c))
+                        print(atype, float(c))
+                        total[(dataset,comb)] = ROOT.TH1F('hw_tot'+str(il), 'hw_tot'+str(il), 1, 0., 1.)
+                        total[(dataset,comb)].AddBinContent(1, float(c))
                     elif atype=='Numerator_w2':
-                        w2_pass[(comb,ref)] = np.sqrt(float(c))
+                        print(atype, float(c))
+                        w2_pass[(dataset,comb)] = np.sqrt(float(c))
                     elif atype=='Denominator_w2':
-                        w2_total[(comb,ref)] = np.sqrt(float(c))
+                        print(atype, float(c))
+                        w2_total[(dataset,comb)] = np.sqrt(float(c))
                     else:
                         if atype != 'Numerator' and atype != 'Denominator':
                             mes = 'Type {} does not exist.'
@@ -276,18 +277,17 @@ def add_trigger_counts(args):
                 if atype == types[-1]: #"groups" per reference trigger 'ref' and combination intersection 'comb'
                    
                     # only lines with "Denominator_w2" reach the following
-                    if not ROOT.TEfficiency.CheckConsistency(passed[(comb,ref)], total[(comb,ref)]):
+                    if not ROOT.TEfficiency.CheckConsistency(passed[(dataset,comb)], total[(dataset,comb)]):
                         raise ValueError('Bad histogram for TEfficiency')
-                        
-                    eff = ROOT.TEfficiency(passed[(comb,ref)], total[(comb,ref)])
+
+                    eff = ROOT.TEfficiency(passed[(dataset,comb)], total[(dataset,comb)])
                     efflow = around(eff.GetEfficiencyErrorLow(1))
                     effup  = around(eff.GetEfficiencyErrorUp(1))
                     effval = around(eff.GetEfficiency(1)) + ' +' + effup + ' -'  + efflow
-                    pass_str = around(passed[(comb,ref)].GetBinContent(1)) + pm + around(w2_pass[(comb,ref)])
-                    total_str = around(total[(comb,ref)].GetBinContent(1)) + pm + around(w2_total[(comb,ref)])
+                    pass_str = around(passed[(dataset,comb)].GetBinContent(1)) + pm + around(w2_pass[(dataset,comb)])
+                    total_str = around(total[(dataset,comb)].GetBinContent(1)) + pm + around(w2_total[(dataset,comb)])
                     
                     newline = sep.join((dataset, ref, comb, pass_str, total_str, effval))
-                    print(newline)
                     fcsv2.write(newline + '\n')
                     aggr_w_squash.append(newline)
      
@@ -337,6 +337,7 @@ def add_trigger_counts(args):
             w2_ref_combs, w2_ref_vals = ([] for _ in range(2))
             w2_int_combs, w2_int_vals = ([] for _ in range(2))
             c_refs, w_refs, w2_refs = ([] for _ in range(3))
+
             for comb, val in c_inters.items():
                 c_ref_combs.append(comb)
                 c_ref_vals.append(c_ref[comb])
