@@ -4,3 +4,9 @@
 dag.dot
 /jobs/
 *.root
+/.Xauthority
+plots/
+data/
+MET_Histograms*/
+Region*/
+TriggerStudy*/
