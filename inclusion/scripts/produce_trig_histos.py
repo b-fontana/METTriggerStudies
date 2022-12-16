@@ -87,10 +87,12 @@ def build_histograms(args):
                         h2Trig[chn][vname][cstr] = {}
 
     t_in.SetBranchStatus('*', 0)
-    _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
-                'PUReweight', 'lumi', 'IdAndIsoSF_deep_pt',
-                'HHKin_mass', 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
-                'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
+    _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi',
+                'IdAndIsoSF_deep_pt', 'PUReweight', 'HHKin_mass',
+                'isLeptrigger', 'pairType', 'dau1_eleMVAiso',
+                'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
+                'nleps', 'nbjetscand', 'tauH_SVFIT_mass',
+                'bH_mass_raw',)
     _entries += tuple(args.variables)
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
@@ -103,18 +105,14 @@ def build_histograms(args):
              print('{} / {}'.format(ientry, nentries))
 
         # this is slow: do it once only
-        entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-
-        sel = selection.EventSelection(entries, isdata=args.isdata, configuration=config_module)
-        
-        mcweight   = entries.MC_weight
-        pureweight = entries.PUReweight
-        lumi       = entries.lumi
-        idandiso   = entries.IdAndIsoSF_deep_pt
-        evt_weight = (events.MC_weight / xsec_norm) * events.lumi
-        evt_weight *= entries.pureweight * entries.idandiso
+        entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})        
+        evt_weight = (entries.MC_weight / xsec_norm) * entries.lumi
+        evt_weight *= entries.PUReweight * entries.IdAndIsoSF_deep_pt
         if utils.is_nan(evt_weight) or args.isdata:
             evt_weight = 1
+
+        sel = selection.EventSelection(entries, isdata=args.isdata,
+                                       configuration=config_module)
 
         fill_var = {}
         for v in args.variables:

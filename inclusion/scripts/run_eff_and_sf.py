@@ -422,16 +422,11 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             for aname in save_names_1D[:-1]:
                 _name = utils.rewrite_cut_string(aname, akey, regex=True)
                 _name = _name.replace(args.canvas_prefix, atype + '_' + args.canvas_prefix)
-                print('++++')
-                print(_name)
-                print(atype)
                 canvas[atype].SaveAs( _name )
 
         _name_base = utils.rewrite_cut_string(save_names_1D[-1], akey, regex=True)
         for atype in ('eff',):
             _name = _name_base.replace(args.canvas_prefix, atype + '_')
-            print('----')
-            print(_name)
             afile = TFile.Open(_name, 'RECREATE')
             afile.cd()
 

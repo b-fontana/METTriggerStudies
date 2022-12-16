@@ -70,12 +70,16 @@ inters = {
               ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120', 'VBFTauCustom')),
      'Tau' : ()
      }
+}
 for x in inters:
     utils.check_inters_correctness(inters[x], inters_general, channel=x)
 
 discr_vars_1D =  {
     'etau':
-    {('Ele32',)                                              :'dau1_pt',
+    {('IsoTau180',)                                          :'dau1_pt',
+     ('METNoMu120',)                                         :'dau1_pt',
+     ('IsoTau180', 'METNoMu120')                             :'dau1_pt',
+     ('Ele32',)                                              :'dau1_pt',
      ('EleIsoTauCustom',)                                    :'dau1_pt',
      ('Ele32', 'EleIsoTauCustom')                            :'dau1_pt',
      ('Ele32', 'METNoMu120')                                 :'dau1_pt',
@@ -90,7 +94,10 @@ discr_vars_1D =  {
      },
 
     'mutau':
-    {('IsoMu24',)                                                :'dau1_pt',
+    {('IsoTau180',)                                              :'dau1_pt',
+     ('METNoMu120',)                                             :'dau1_pt',
+     ('IsoTau180', 'METNoMu120')                                 :'dau1_pt',
+     ('IsoMu24',)                                                :'dau1_pt',
      ('IsoMuIsoTauCustom',)                                      :'dau1_pt',
      ('IsoMu24', 'IsoMuIsoTauCustom')                            :'dau1_pt',
      ('IsoMu24', 'IsoTau180')                                    :'dau1_pt',
@@ -105,18 +112,21 @@ discr_vars_1D =  {
      },
 
     'tautau':
-    {('IsoDoubleTauCustom',)                                           : 'dau1_pt',
-     ('VBFTauCustom',)                                                 : 'dau1_pt',
-     ('IsoDoubleTauCustom', 'METNoMu120')                              : 'dau1_pt',
-     ('IsoDoubleTauCustom', 'VBFTauCustom')                            : 'dau1_pt',
-     ('METNoMu120', 'VBFTauCustom')                                    : 'dau1_pt',
-     ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom')              : 'dau1_pt',
-     ('IsoTau180', 'VBFTauCustom')                                     : 'dau1_pt',
-     ('IsoDoubleTauCustom', 'IsoTau180')                               : 'dau1_pt',
-     ('IsoDoubleTauCustom', 'IsoTau180', 'VBFTauCustom')               : 'dau1_pt',
-     ('IsoTau180', 'METNoMu120', 'VBFTauCustom')                       : 'dau1_pt',
-     ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120')                 : 'dau1_pt',
-     ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120', 'VBFTauCustom') : 'dau1_pt'
+    {('IsoTau180',)                                                    :'dau1_pt',
+     ('METNoMu120',)                                                   :'dau1_pt',
+     ('IsoTau180', 'METNoMu120')                                       :'dau1_pt',
+     ('IsoDoubleTauCustom',)                                           :'dau1_pt',
+     ('VBFTauCustom',)                                                 :'dau1_pt',
+     ('IsoDoubleTauCustom', 'METNoMu120')                              :'dau1_pt',
+     ('IsoDoubleTauCustom', 'VBFTauCustom')                            :'dau1_pt',
+     ('METNoMu120', 'VBFTauCustom')                                    :'dau1_pt',
+     ('IsoDoubleTauCustom', 'METNoMu120', 'VBFTauCustom')              :'dau1_pt',
+     ('IsoTau180', 'VBFTauCustom')                                     :'dau1_pt',
+     ('IsoDoubleTauCustom', 'IsoTau180')                               :'dau1_pt',
+     ('IsoDoubleTauCustom', 'IsoTau180', 'VBFTauCustom')               :'dau1_pt',
+     ('IsoTau180', 'METNoMu120', 'VBFTauCustom')                       :'dau1_pt',
+     ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120')                 :'dau1_pt',
+     ('IsoDoubleTauCustom', 'IsoTau180', 'METNoMu120', 'VBFTauCustom') :'dau1_pt'
      }
 }
 for x in discr_vars_1D:

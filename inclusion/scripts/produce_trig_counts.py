@@ -57,9 +57,12 @@ def get_trig_counts(args):
             w2_inters[chn][tstr] = 0.
 
     t_in.SetBranchStatus('*', 0)
-    _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi', 'HHKin_mass', 'isLeptrigger',
-                'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
-                'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
+    _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi',
+                'IdAndIsoSF_deep_pt', 'PUReweight', 'HHKin_mass',
+                'isLeptrigger', 'pairType', 'dau1_eleMVAiso',
+                'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
+                'nleps', 'nbjetscand', 'tauH_SVFIT_mass',
+                'bH_mass_raw',)
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
     config_module = importlib.import_module(args.configuration)
@@ -71,7 +74,7 @@ def get_trig_counts(args):
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
         evt_weight = (entries.MC_weight / xsec_norm) * entries.lumi
-        evt_weight *= entries.pureweight * entries.idandiso
+        evt_weight *= entries.PUReweight * entries.IdAndIsoSF_deep_pt
         if utils.is_nan(evt_weight) or args.isdata:
             evt_weight = 1.
 

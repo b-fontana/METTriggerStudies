@@ -15,6 +15,7 @@ import glob
 import re
 import json
 import argparse
+import importlib
 
 # This function is very much prone to change depending on the results obtained
 def discriminator(args, chn):
@@ -23,13 +24,13 @@ def discriminator(args, chn):
     The variables will be used to retrieve the corresponding trigger efficiencies when evaluating the scale factors.
     """
     result = {}
-
-    list_1D = {'etau': discr_vars_1D_etau,
+    cfg = importlib.import_module(args.configuration)
+    
     constant_list = ['dau1_pt', 'dau1_eta', 'dau2_pt', 'dau2_eta']
     for tcomb in utils.generate_trigger_combinations(chn, args.triggers):        
-        result[joinNTC(tcomb)] = [ constant_list, #always the same 1D variables
-                                   [utils.discr_vars_1D[chn][tcomb]], #1D changing variables
-                                   [], #2D pairs of changing variables
+        result[joinNTC(tcomb)] = [constant_list, #always the same 1D variables
+                                  [cfg.discr_vars_1D[chn][tcomb]], #1D changing variables
+                                  [], #2D pairs of changing variables
                                   ]
 
     return result
@@ -65,6 +66,8 @@ parser.add_argument('--variables',   dest='variables', required=True, nargs='+',
                     help='Select the variables over which the workflow will be run.' )
 parser.add_argument('--tag', help='string to differentiate between different workflow runs', required=True)
 parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
+parser.add_argument('--configuration', dest='configuration', required=True,
+                    help='Name of the configuration module to use.')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = utils.parse_args(parser)
 

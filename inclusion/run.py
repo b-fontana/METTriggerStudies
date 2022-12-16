@@ -255,6 +255,7 @@ discriminator_params = {'indir'            : data_storage,
                         'tag'              : FLAGS.tag,
                         'subtag'           : subtag,
                         'intersection_str' : main.inters_str,
+                        'configuration'    : sel_config,
                         'debug'            : FLAGS.debug_workflow,}
 
 #### scripts/calculator

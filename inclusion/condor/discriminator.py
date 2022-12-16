@@ -37,7 +37,8 @@ def discriminator(args):
                 'triggers'  : ' '.join(args.triggers,),
                 'variables' : ' '.join(args.variables,),
                 'tag'       : args.tag,
-                'subtag'    : args.subtag }
+                'subtag'    : args.subtag,
+                'configuration' : args.configuration}
         comm = utils.build_script_command(name=script, sep=' ', **pars)
         if args.debug:
             comm += '--debug '
@@ -73,6 +74,8 @@ if __name__ == '__main__':
                         help='Select the triggers over which the workflow will be run.' )
     parser.add_argument('--variables', dest='variables', required=True, nargs='+', type=str,
                         help='Select the variables over which the workflow will be run.' )
+    parser.add_argument('--configuration', dest='configuration', required=True,
+                        help='Name of the configuration module to use.')
     parser.add_argument('--debug', action='store_true', help='debug verbosity')
     args = parser.parse_args()
 
