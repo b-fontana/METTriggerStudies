@@ -14,12 +14,12 @@ The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KL
 ** Tasks
 
 *** Efficiencies Chain [Main]
-1. Binning (manual or equal width with upper 5% quantile removal)
+1. *Binning* (manual or equal width with upper 5% quantile removal)
    - is the only job which runs locally (/i.e./, not on HTCondor)
 2. *Histos_SKIM_**: filling efficiencies numerator and denominator histograms
 3. *HaddHisto**: add histograms together per data type (Data and all MCs)
 4. *HaddHistoAgg**: add histograms for Data and MC
-5. *EfficienciesAndSF**: calculate efficiencies by dividing the histograms obtained in point #2
+5. *EfficienciesAndSF**: calculate efficiencies by dividing the histograms obtained in point #2; plots MC/Data comparisons for efficiencies and normalized counts histograms
 6. *EffAndAgg*: aggregate efficiencies and scale factors in one file per channel
 7. *Discriminator_**: choose the variables to be used to calculate the final union efficiency
    
@@ -98,8 +98,6 @@ with options:
 - ~-d/--debug~: debug mode, where all commands are printed to the screen and nothing is run
 - ~-f/--full~: full delete, including data produced by the HTCondor jobs (this flag is required to avoid data deletions by mistake)
 - ~-t/--tag~: tag used when producing the files (remove this options to print a message displaying all tags used in the past which were not yet removed)
-
--------------------------------------
 
 ** Run standalone tests
 Studies were performed using "standalone" scripts (not part of the main chain, running locally, but using some definitions of the "core" package).
