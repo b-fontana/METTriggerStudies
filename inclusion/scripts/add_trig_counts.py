@@ -245,14 +245,11 @@ def add_trigger_counts(args):
                         passed[(dataset,comb)] = ROOT.TH1F('hw_pass'+str(il), 'hw_pass'+str(il), 1, 0., 1.)
                         passed[(dataset,comb)].AddBinContent(1, float(c))
                     elif atype=='Denominator_weighted':
-                        print(atype, float(c))
                         total[(dataset,comb)] = ROOT.TH1F('hw_tot'+str(il), 'hw_tot'+str(il), 1, 0., 1.)
                         total[(dataset,comb)].AddBinContent(1, float(c))
                     elif atype=='Numerator_w2':
-                        print(atype, float(c))
                         w2_pass[(dataset,comb)] = np.sqrt(float(c))
                     elif atype=='Denominator_w2':
-                        print(atype, float(c))
                         w2_total[(dataset,comb)] = np.sqrt(float(c))
                     else:
                         if atype != 'Numerator' and atype != 'Denominator':
