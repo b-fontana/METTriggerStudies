@@ -37,6 +37,7 @@ def main(args):
     for md in main_dir:
         d_base = Path(base_dir) / md
         output_file(d_base / 'trigger_gains.html')
+        print('Saving file {}.'.format(d_base / 'trigger_gains.html'))
         yindep[md], yboth[md] = ({} for _ in range(2))
         errindep[md], errboth[md] = ({} for _ in range(2))
         for chn in channels:

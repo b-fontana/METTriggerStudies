@@ -59,11 +59,12 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                    recuts, ptcuts, text, bigtau=False, notau=False, nomet=False):
     base = {'etau': 'e+e'+tau, 'mutau': mu+'+'+mu+tau, 'tautau': ditau}
     output_file(text['out'])
+    print('Saving file {}'.format(text['out']))
 
     topr = 9.9
     shft = 0.1
     start, b1, b2, b3 = 0.0, 2, 2.5, 7.5
-    xgap = b1+shft if ptcuts[0] == '40' and ptcuts[1] == '40' else b2+sft
+    xgap = b1+shft if ptcuts[0] == '40' and ptcuts[1] == '40' else b2+shft
     
     p = figure(title='m(X)={}GeV'.format(text['mass']), width=600, height=400,
                tools='save')
