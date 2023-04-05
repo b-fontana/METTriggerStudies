@@ -639,12 +639,14 @@ if __name__ == '__main__':
                         help='Remove the MET region (default analysis).')
     parser.add_argument('--met_turnon', required=False, type=str,  default='200',
                         help='MET trigger turnon cut [GeV].' )
-    parser.add_argument('--region_cuts', required=False, type=str, nargs=2, default=('200', '200'),
+    parser.add_argument('--tau_turnon', required=False, type=str,  default='190',
                         help='MET trigger turnon cut [GeV].' )
+    parser.add_argument('--region_cuts', required=False, type=str, nargs=2, default=('200', '200'),
+                        help='High/low regions pT1 and pT2 selection cuts [GeV].' )
     args = utils.parse_args(parser)
 
     met_turnon = args.met_turnon
-    tau_turnon = '190'
+    tau_turnon = args.tau_turnon
     regcuts = args.region_cuts
     ptcuts = {'etau':   ('20', '20'),
               'mutau':  ('20', '20'),
