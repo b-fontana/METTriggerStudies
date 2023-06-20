@@ -27,6 +27,18 @@ def ZeroDivError(func):
         res = 0.
     return res
 
+def set_fig(fig, legend=True):
+    fig.output_backend = 'svg'
+    fig.toolbar.logo = None
+    # if legend:
+    #     fig.legend.click_policy='hide'
+    #     fig.legend.location = 'top_left'
+    #     fig.legend.label_text_font_size = '8pt'
+    fig.min_border_bottom = 5
+    fig.xaxis.visible = True
+    fig.title.align = "left"
+    fig.title.text_font_size = "15px"
+
 
 def main(args):
     channels = args.channels
@@ -95,8 +107,8 @@ def main(args):
         p_opt = dict(width=800, height=400, x_axis_label='x', y_axis_label='y')
         p1 = figure(title='Inclusion of MET or Single Tau triggers', **p_opt)
         p2 = figure(title='Acceptance gain of MET + SingleTau triggers', **p_opt)
-        p1.toolbar.logo = None
-        p2.toolbar.logo = None
+        set_fig(p1)
+        set_fig(p2)
         for ichn,chn in enumerate(channels):
             for itd,td in enumerate(('met', 'tau')):
                 p1.circle([x+shift_indep[td][ichn] for x in linear_x],
@@ -149,16 +161,20 @@ def main(args):
 
 if __name__ == '__main__':
     base_dir = '/eos/user/b/bfontana/www/TriggerScaleFactors/'
-    main_dir = ['Region_190_190_PT_40_40_TURNON_200_190_NOTAU',]
+    main_dir = ['Region_190_190_PT_40_40_TURNON_200_190',]
     #'TriggerStudy_MET200_SingleTau190_CUT_entries_ditau_deltaR_GT_0_5',
     #'TriggerStudy_MET200_SingleTau190_CUT_entries_ditau_deltaR_ST_0_5']
     
-
-    parser = argparse.ArgumentParser(description='Produce plots of trigger gain VS resonance mass.')
+    desc = "Produce plots of trigger gain VS resonance mass.\n"
+    desc += "Uses the output of test_trigger_regions.py."
+    desc += "When running on many channels, one should keep in mind each channel has different pT cuts."
+    desc += "This might imply moving sub-folders (produced by the previous script) around."
+    parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('--masses', required=True, nargs='+', type=str,
                         help='Resonance mass')
-    parser.add_argument('--channels', required=True, nargs='+', type=str,  
+    parser.add_argument('--channels', required=True, nargs='+', type=str, 
+                        choices=('etau', 'mutau', 'tautau'),
                         help='Select the channel over which the workflow will be run.' )
     args = utils.parse_args(parser)
     main(args)

@@ -80,7 +80,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                                      else {b1: '40',
                                            b2: ptcuts[0],
                                            b3: regcuts[0]})
-    p.xaxis.axis_label = 'dau1_pT [GeV]'
+    p.xaxis.axis_label = 'pT(1) [GeV]'
      
     p.yaxis.ticker = [b1, b3] if ptcuts[1] == '40' else [b1, b2, b3]
     p.yaxis.major_label_overrides = ({b1: '40',
@@ -88,7 +88,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                                      else {b1: '40',
                                            b2: ptcuts[1], b3:
                                            regcuts[1]})
-    p.yaxis.axis_label = 'dau2_pT [GeV]'
+    p.yaxis.axis_label = 'pT(2) [GeV]'
 
     # add a square renderer with a size, color, and alpha
     polyg_opt = dict(alpha=0.3)
@@ -399,7 +399,7 @@ def test_trigger_regions(indir, sample, channel):
     t_in.SetBranchStatus('*', 0)
     _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
                 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted',
-                'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta', 'PUReweight', 'lumi', 'IdAndIsoSF_deep_pt',
+                'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta', 'PUReweight', 'lumi', 'IdSF_deep_2d',
                 'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
     _entries += tuple(variables)
@@ -421,7 +421,7 @@ def test_trigger_regions(indir, sample, channel):
         # mcweight   = entries.MC_weight
         pureweight = entries.PUReweight
         lumi       = entries.lumi
-        idandiso   = entries.IdAndIsoSF_deep_pt
+        idandiso   = entries.IdSF_deep_2d
         
         #if utils.is_nan(mcweight)  : mcweight=1
         if utils.is_nan(pureweight) : pureweight=1
@@ -617,7 +617,9 @@ if __name__ == '__main__':
     categories = ('baseline',) #('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
     
     # Parse input arguments
-    parser = argparse.ArgumentParser(description='Producer trigger histograms.')
+    desc = 'Producer trigger histograms.\n'
+    desc += "Run example: python tests/test_trigger_regions.py --indir /data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv4_Signal/ --masses 400 500 600 700 800 900 1000 1250 1500 --channels ETau --met_turnon 200 --tau_turnon 190 --region_cuts 40 40 --copy"
+    parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('--indir', required=True, type=str,
                         help='Full path of ROOT input file')
