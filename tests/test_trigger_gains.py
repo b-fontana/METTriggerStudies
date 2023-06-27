@@ -94,7 +94,7 @@ def main(args):
     opt_points = dict(size=8)
     opt_line = dict(width=1.5)
     colors = ('green', 'blue', 'red')
-    styles = ('solid', 'dashed')
+    styles = ('dashed', 'solid')
     legends = {'met': ' (MET)', 'tau': ' (Tau)', 'add_met_tau': ' (MET + Tau)'}
      
     x_str = [str(k) for k in args.masses]
