@@ -146,7 +146,7 @@ def main(args):
             p.ygrid.grid_line_color = 'black'
              
             p.legend.location = 'top_left'
-            p.xaxis.axis_label = 'mHH [GeV]'
+            p.xaxis.axis_label = "m(X) [GeV]"
             p.yaxis.axis_label = 'Trigger acceptance gain (w.r.t. trigger baseline) [%]'
          
             p.xaxis.major_label_overrides = dict(zip(linear_x,x_str))

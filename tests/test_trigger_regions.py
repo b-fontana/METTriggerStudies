@@ -128,7 +128,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                    'gain':  Label(x=b1+0.3, y=b1+0.3, text='Gain: '+gain+'%',
                                   text_color='blue', **label_opt),}
     for key,elem in stats_ditau.items():
-        if nomet and notau and key=='gain':
+        if (nomet and notau and key=='gain') or key=='gain':
             continue
         p.add_layout(elem)
 
@@ -147,8 +147,9 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                                     text_color='black', **label_opt),
                      'contamination': Label(x=b1+0.3, y=0.1, text='Contam.: '+contam_by_tau+'%',
                                             text_color='blue', **label_opt),}
-        for elem in stats_met.values():
-            p.add_layout(elem)
+        for key,elem in stats_met.items():
+            if key != 'contamination':
+                p.add_layout(elem)
 
     if not notau:
         num_ditau = float(c_ditau_trg['tau'])
@@ -182,10 +183,11 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                      'ditau': Label(x=b3+0.2, y=0.9, text=ditau+' && !'+tau+': '+str(c_ditau_trg['tau']),
                                     text_color='black', **label_opt),
                      'contamination_both': Label(x=b3+0.2, y=0.1,
-                                                  text='Contam.: ('+str(contam_both)+pm+str(err_both)+')%',
-                                                  text_color='blue', **label_opt),}
-        for elem in stats_tau.values():
-            p.add_layout(elem)
+                                                 text='Contam.: ('+str(contam_both)+pm+str(err_both)+')%',
+                                                 text_color='blue', **label_opt),}
+        for key,elem in stats_tau.items():
+            if key != 'contamination_both':
+                p.add_layout(elem)
      
     line_opt = dict(color='black', line_dash='dashed', line_width=2)
     p.line(x=[b1,b1], y=[start, topr+shft], **line_opt)
