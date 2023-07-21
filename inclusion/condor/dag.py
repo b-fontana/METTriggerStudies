@@ -151,16 +151,16 @@ class WriteDAGManager:
             p = self.jobs['EffSF']
             c = self.jobs['EffSFAgg']
             self.write_parent_child_hierarchy(parents=p, childs=c)
-            self.new_line()
         
+        if self.branch == 'extra':
+            self.new_line()
+
             # variable discriminator
             p = self.jobs['EffSF']
             c = [x for x in self.jobs['Discr']]
             self.write_parent_child_hierarchy(parents=p, childs=c)
-
-        if self.branch == 'extra':
             self.new_line()
-            
+                
             # union weights calculator
             p = [x for x in self.jobs['Discr']]
             c = [x for x in self.jobs['Union']]

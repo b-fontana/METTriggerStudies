@@ -620,10 +620,10 @@ class Dag(lutils.ForceRun):
                          'HaddHistoData': subm_hadd_hdata,
                          'HaddHistoMC'  : subm_hadd_hmc,
                          'EffSF'        : [subm_eff_sf],
-                         'EffSFAgg'     : [subm_eff_sf_agg],
-                         'Discr'        : subm_disc})
+                         'EffSFAgg'     : [subm_eff_sf_agg]})
         if self.branch == 'extra':
-            jobs.update({'Union'  : subm_union,
+            jobs.update({'Discr'  : subm_disc,
+                         'Union'  : subm_union,
                          'Closure': [subm_closure]})
             
         dag_manager = dag.WriteDAGManager( self.params['localdir'],
