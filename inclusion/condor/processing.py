@@ -91,7 +91,6 @@ def processing(args):
                 'file'          : '${1}',
                 'subtag'        : args.subtag,
                 'channels'      : ' '.join(args.channels),
-                'triggers'      : ' '.join(args.triggers),
                 'tprefix'       : args.tprefix,
                 'configuration' : args.configuration}
         script = ('produce_trig_histos.py' if args.mode == 'histos'
@@ -144,8 +143,6 @@ if __name__ == '__main__':
                         help='list of datasets')
     parser.add_argument('--channels',   dest='channels', required=True, nargs='+', type=str,
                         help='Select the channels over which the workflow will be run.' )
-    parser.add_argument('--triggers', dest='triggers', required=True, nargs='+', type=str,
-                        help='Select the triggers over which the workflow will be run.' )
     parser.add_argument('--variables', dest='variables', required=True, nargs='+', type=str,
                         help='Select the variables over which the workflow will be run.' )
     parser.add_argument('--intersection_str', dest='intersection_str', required=False, default=main.inters_str,

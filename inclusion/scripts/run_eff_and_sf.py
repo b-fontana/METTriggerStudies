@@ -688,7 +688,7 @@ def run_eff_sf_1d_outputs(outdir, data_name, mc_name,
                           tcomb, channels, variables, subtag):
     outputs = [[] for _ in range(len(main.extensions))]
     processes = [mc_name] #CHANGE !!!! IF STUDYING MCs SEPARATELY
-  
+    
     for proc in processes:
         for ch in channels:
             for var in variables:
@@ -758,7 +758,7 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name,
     return outputs
 
 
-def run_eff_sf_1d(indir, outdir, data_name, mc_name,
+def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
                   tcomb, channels, variables, subtag,
                   tprefix, intersection_str, debug):
     
@@ -768,9 +768,11 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
                                                           channels, variables,
                                                           subtag)
 
+    config_module = importlib.import_module(configuration)
+    
     triggercomb = {}
     for chn in channels:
-        triggercomb[chn] = utils.generate_trigger_combinations(chn, main.triggers)
+        triggercomb[chn] = utils.generate_trigger_combinations(chn, config_module.triggers)
 
     dv = len(args.variables)
     dc = len(args.channels) * dv
@@ -778,7 +780,8 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
 
     for ip,proc in enumerate(processes):
         for ic,chn in enumerate(channels):
-            if not utils.is_trigger_comb_in_channel(chn, tcomb):
+            if not utils.is_trigger_comb_in_channel(chn, tcomb, config_module.triggers,
+                                                    config_module.exclusive):
                 continue
             for iv,var in enumerate(variables):
                 index = ip*dc + ic*dv + iv
@@ -810,7 +813,8 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name,
     if run:
         for ip,proc in enumerate(processes):
             for ic,chn in enumerate(channels):
-                if not utils.is_trigger_comb_in_channel(chn, tcomb):
+                if not utils.is_trigger_comb_in_channel(chn, tcomb, config_module.triggers,
+                                                        config_module.exclusive):
                     continue
                 for onetrig in splits:
                     if onetrig in main.pairs2D:
@@ -852,6 +856,8 @@ parser.add_argument('--variables',        dest='variables',        required=True
                     help='Select the variables over which the workflow will be run.' )
 parser.add_argument('--intersection_str', dest='intersection_str', required=False, default=main.inters_str,
                     help='String useyd to represent set intersection between triggers.')
+parser.add_argument('--configuration', dest='configuration', required=True,
+                    help='Name of the configuration module to use.')
 parser.add_argument('--debug', action='store_true', help='debug verbosity')
 args = utils.parse_args(parser)
 
@@ -859,6 +865,7 @@ ROOT.gStyle.SetOptStat(0)
 ROOT.gStyle.SetOptTitle(0)
 run_eff_sf_1d(args.indir, args.outdir,
               args.data_name, args.mc_name,
+              args.configuration,
               args.triggercomb,
               args.channels, args.variables,
               args.subtag,

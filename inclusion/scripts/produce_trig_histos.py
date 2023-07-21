@@ -33,6 +33,8 @@ def build_histograms(args):
         mes = '[' + os.path.basename(__file__) + '] {} does not exist.'.format(infile)
         raise ValueError(mes)
 
+    config_module = importlib.import_module(args.configuration)
+    
     xsec_norm = utils.total_cross_section(args.infile, args.isdata)
     
     f_in = ROOT.TFile(args.infile)
@@ -43,7 +45,7 @@ def build_histograms(args):
 
     triggercomb = {}
     for chn in args.channels:
-        triggercomb[chn] = utils.generate_trigger_combinations(chn, args.triggers)
+        triggercomb[chn] = utils.generate_trigger_combinations(chn, config_module.triggers)
 
     # Define 1D histograms
     #  hRef: pass the reference trigger
@@ -68,7 +70,7 @@ def build_histograms(args):
     
     for chn in args.channels:
         h2Ref[chn], h2Trig[chn] = ({} for _ in range(2))
-        for onetrig in args.triggers:
+        for onetrig in config_module.triggers:
             if onetrig in main.pairs2D.keys():
                 combtrigs = {x for x in triggercomb[chn] if onetrig in x}
                 for combtrig in combtrigs:
@@ -98,7 +100,6 @@ def build_histograms(args):
         t_in.SetBranchStatus(ientry, 1)
     cmet = 0
 
-    config_module = importlib.import_module(args.configuration)
     nentries = t_in.GetEntriesFast()
     for ientry,entry in enumerate(t_in):
         if ientry%10000==0:
@@ -124,9 +125,9 @@ def build_histograms(args):
 
         # whether the event passes cuts (1 and 2-dimensional) and single triggers
         pass_trigger, pcuts1D, pcuts2D = ({} for _ in range(3))
-        for trig in args.triggers:
+        for trig in config_module.triggers:
             pcuts2D[trig] = {}
-        for trig in args.triggers:
+        for trig in config_module.triggers:
             pass_trigger[trig] = sel.trigger_bits(trig)
 
             pcuts1D[trig] = {}
@@ -139,7 +140,7 @@ def build_histograms(args):
                 # pcuts2D[joinNTC(combtrig)] = {}
                 for j in main.pairs2D[trig]:
                     vname = utils.add_vnames(j[0],j[1])
-                    for t in args.triggers:
+                    for t in config_module.triggers:
                         pcuts2D[t][vname] = sel.var_cuts(t, [j[0], j[1]], args.nocut_dummy_str)
 
         #logic AND to intersect all triggers in this combination
@@ -171,7 +172,7 @@ def build_histograms(args):
                             continue
                         if not sel.dataset_cuts(tcomb, chn):
                             continue
-                        if not sel.dataset_triggers(tcomb, chn, args.triggers, args.dataset)[0]:
+                        if not sel.dataset_triggers(tcomb, chn, config_module.triggers, args.dataset)[0]:
                             continue
 
                         hRef[chn][j][cstr].Fill(fill_var[j][chn], evt_weight)
@@ -199,7 +200,7 @@ def build_histograms(args):
                                 hTrig[chn][j][cstr][key].Fill(fill_var[j][chn], evt_weight)
 
                 # fill 2D efficiencies
-                for onetrig in args.triggers:
+                for onetrig in config_module.triggers:
                     if onetrig in main.pairs2D.keys():
                         combtrigs = tuple(x for x in triggercomb[chn] if onetrig in x)
 
@@ -210,7 +211,7 @@ def build_histograms(args):
                                 continue
                             if not sel.dataset_cuts(combtrig, chn):
                                 continue
-                            if not sel.dataset_triggers(combtrig, chn, args.triggers, args.dataset)[0]:
+                            if not sel.dataset_triggers(combtrig, chn, config_module.triggers, args.dataset)[0]:
                                 continue
                             
                             for j in main.pairs2D[onetrig]:

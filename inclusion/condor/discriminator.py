@@ -34,7 +34,6 @@ def discriminator(args):
         pars = {'indir'     : args.indir,
                 'outdir'    : args.outdir,
                 'channel'   : chn,
-                'triggers'  : ' '.join(args.triggers,),
                 'variables' : ' '.join(args.variables,),
                 'tag'       : args.tag,
                 'subtag'    : args.subtag,

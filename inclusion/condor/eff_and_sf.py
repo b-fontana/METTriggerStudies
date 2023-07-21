@@ -7,6 +7,8 @@ import sys
 parent_dir = os.path.abspath(__file__ + 3 * '/..')
 sys.path.insert(0, parent_dir)
 
+import importlib
+
 import inclusion
 from inclusion.config import main
 from inclusion.utils import utils
@@ -60,12 +62,13 @@ def eff_and_sf(args):
                     queue=main.queue,
                     machine='llrt3condor')
 
+    cfg = importlib.import_module(args.configuration)
     qlines = []
     for chn in args.channels:
         if chn == args.channels[0]:
-            triggercomb = utils.generate_trigger_combinations(chn, args.triggers)
+            triggercomb = utils.generate_trigger_combinations(chn, cfg.triggers)
         else:
-            triggercomb += utils.generate_trigger_combinations(chn, args.triggers)
+            triggercomb += utils.generate_trigger_combinations(chn, cfg.triggers)
             
     for tcomb in triggercomb:
         qlines.append('  {}'.format( utils.join_name_trigger_intersection(tcomb)) )

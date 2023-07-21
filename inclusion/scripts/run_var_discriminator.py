@@ -27,7 +27,7 @@ def discriminator(args, chn):
     cfg = importlib.import_module(args.configuration)
     
     constant_list = ['dau1_pt', 'dau1_eta', 'dau2_pt', 'dau2_eta']
-    for tcomb in utils.generate_trigger_combinations(chn, args.triggers):        
+    for tcomb in utils.generate_trigger_combinations(chn, cfg.triggers):
         result[joinNTC(tcomb)] = [constant_list, #always the same 1D variables
                                   [cfg.discr_vars_1D[chn][tcomb]], #1D changing variables
                                   [], #2D pairs of changing variables

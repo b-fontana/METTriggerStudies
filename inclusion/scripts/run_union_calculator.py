@@ -27,7 +27,7 @@ import importlib
 import ROOT
 ROOT.gROOT.SetBatch(True)
 
-def eff_extractor(args, chn, effvars, nbins):
+def eff_extractor(args, triggers, chn, effvars, nbins):
     """
     Extracts the efficiencies for data and MC to be used as scale factors
     Returns a dictionary with al efficiencies.
@@ -35,7 +35,7 @@ def eff_extractor(args, chn, effvars, nbins):
     efficiencies_data, efficiencies_data_ehigh, efficiencies_data_elow = ({} for _ in range(3))
     efficiencies_mc, efficiencies_mc_ehigh, efficiencies_mc_elow = ({} for _ in range(3)) 
         
-    for tcomb in gtc(chn, args.triggers):
+    for tcomb in gtc(chn, triggers):
         tcstr = joinNTC(tcomb)
         comb_vars = effvars[tcstr][0]
 
@@ -180,23 +180,25 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
         with open(json_name, 'r') as f:
             effvars[chn] = json.load(f)
 
+        config_module = importlib.import_module(args.configuration)
+        
         # load efficiencies
-        efficiencies[chn] = eff_extractor(args, chn, effvars[chn], nbins)
+        efficiencies[chn] = eff_extractor(args, config_module.triggers, chn, effvars[chn], nbins)
         
         # initialization
         for var in main.var_unionweights:
             outdata[chn].create_group(var)
             prob_ratios[chn][var] = {}
             ref_prob_ratios[chn][var] = {}
-            for weightvar in effvars[chn][utils.gtc(chn, args.triggers)[0][0]][0]: #any trigger works for the constant list
+            for weightvar in effvars[chn][utils.gtc(chn, config_module.triggers)[0][0]][0]: #any trigger works for the constant list
                 outdata[chn][var].create_group(weightvar)
                 prob_ratios[chn][var][weightvar] = {}
                 ref_prob_ratios[chn][var][weightvar] = {}
-                for trig in args.triggers:
+                for trig in config_module.triggers:
                     outdata[chn][var][weightvar].create_group(trig)
                     prob_ratios[chn][var][weightvar][trig] = {}
                     for ibin in range(nbins[var][chn]):
-                        if trig==args.triggers[0]: #reference
+                        if trig==config_module.triggers[0]: #reference
                             outdata[chn][var][weightvar].create_group(str(ibin))
                         outdata[chn][var][weightvar][trig].create_group(str(ibin))
                         prob_ratios[chn][var][weightvar][trig][str(ibin)] = []
@@ -211,7 +213,6 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
 
-    config_module = importlib.import_module(args.configuration)
     nentries = t_in.GetEntriesFast()
     for ientry,entry in enumerate(t_in):
         if ientry%10000==0:
@@ -246,16 +247,16 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
                     print('WARNING: Appending 0 for channel {}.'.format(chn))
                 else:
                     prob_ratio.append( pd/pm )
-            assert len(effvars[chn][gtc(chn, args.triggers)[0][0]][0]) == len(prob_ratio)
+            assert len(effvars[chn][gtc(chn, config_module.triggers)[0][0]][0]) == len(prob_ratio)
             print('\n')
 
             if single_trigger_closure:
                 for var in main.var_unionweights:
                     val = entries[var]
                     binid = utils.find_bin(binedges[var][chn], val, var)
-                    for iw,weightvar in enumerate(effvars[chn][gtc(chn, args.triggers)[0][0]][0]): #any trigger works for the constant list
+                    for iw,weightvar in enumerate(effvars[chn][gtc(chn, config_module.triggers)[0][0]][0]): #any trigger works for the constant list
                         ref_prob_ratios[chn][var][weightvar][str(binid-1)].append(prob_ratio[iw])
-                        for trig in args.triggers:
+                        for trig in config_module.triggers:
                             ptb = sel.trigger_bits(trig)
                             if ptb:
                                 prob_ratios[chn][var][weightvar][trig][str(binid-1)].append(prob_ratio[iw])
@@ -264,11 +265,11 @@ def run_union_weights_calculator(args, single_trigger_closure=False):
     if single_trigger_closure:
         for chn in args.channels:
             for var in main.var_unionweights:
-                for weightvar in effvars[chn][gtc(chn, args.triggers)[0][0]][0]: #any trigger works for the constant list
-                    for trig in args.triggers:
+                for weightvar in effvars[chn][gtc(chn, config_module.triggers)[0][0]][0]: #any trigger works for the constant list
+                    for trig in config_module.triggers:
                         for ibin in range(nbins[var][chn]):
                             outdata[chn][var][weightvar][trig][str(ibin)]['prob_ratios'] = prob_ratios[chn][var][weightvar][trig][str(ibin)]
-                            if trig==args.triggers[0]:
+                            if trig==config_module.triggers[0]:
                                 outdata[chn][var][weightvar][str(ibin)]['ref_prob_ratios'] = ref_prob_ratios[chn][var][weightvar][str(ibin)]
 
     outdata.attrs['doc'] = ( 'Probability ratios (data/MC) and counts per bin for all'

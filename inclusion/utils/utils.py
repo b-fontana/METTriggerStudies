@@ -48,12 +48,12 @@ def build_script_path(name):
                         name)
     return path
 
-def check_discr_vars_correctness(dset, channel):
+def check_discr_vars_correctness(triggers, dset, channel, exclusive):
     """
     Check if the intersections exist, are complete, and do not have duplicates.
     Input dictionary should have the following signature:
     """
-    chn_inters = generate_trigger_combinations(channel, main.triggers)
+    chn_inters = generate_trigger_combinations(channel, triggers, exclusive)
     flatten = list(dset.keys())
 
     # type check
@@ -87,16 +87,16 @@ def check_discr_vars_correctness(dset, channel):
     
     return
 
-def check_inters_correctness(dchn, dgen, channel):
+def check_inters_correctness(triggers, dchn, dgen, channel, exclusive):
     """
     Check if the intersections exist, are complete, and do not have duplicates.
     Input dictionary should have the following signature:
     d = {'dataset1': (tuple1, tuple2,), 'dataset2': (tuple3, tuple4,), ...}
     """
-    chn_inters = generate_trigger_combinations(channel, main.triggers)
-    flatten =  [ w for x in dchn for w in dchn[x] ]
-    flatten += [ w for x in dgen for w in dgen[x] ]
-
+    chn_inters = generate_trigger_combinations(channel, triggers, exclusive)
+    flatten =  [ tuple(sorted(w)) for x in dchn for w in dchn[x] ]
+    flatten += [ tuple(sorted(w)) for x in dgen for w in dgen[x] ]
+    
     # type check
     for x in flatten:
         if not isinstance(x, tuple):
@@ -128,10 +128,10 @@ def check_inters_correctness(dchn, dgen, channel):
     
     return
 
-def check_triggers_exist(l):
+def check_triggers_exist(l, triggers):
     """Check individual triggers match the ones in the configuration file."""
     for elem in l:
-        if elem not in main.triggers:
+        if elem not in triggers:
             mess = '[utils.check_triggers_exist] '
             mess += 'Trigger {} is not supported'.format(elem)
             raise ValueError(mess)
@@ -204,7 +204,7 @@ def flatten_nested_dict(d):
         vals.extend(v)
     return keys, vals
 
-def generate_trigger_combinations(channel, trigs):
+def generate_trigger_combinations(channel, trigs, exclusive):
     """
     Set all possible trigger intersection combinations, per channel.
     Does not consider intersections between incompatible triggers and channels
@@ -213,12 +213,12 @@ def generate_trigger_combinations(channel, trigs):
     (useful for matching with the KLUB framework).
     """
     # look only at combinations where the channel is imcompatible with the trigger
-    pruntrigs = [ main.exclusive[x] for x in main.exclusive if x not in (channel, 'general') ]
+    pruntrigs = [ exclusive[x] for x in exclusive if x not in (channel, 'general') ]
     pruntrigs = set(it.chain(*pruntrigs))
     pruntrigs = set(trigs) - pruntrigs
 
     length1 = list(it.chain.from_iterable(it.combinations(sorted(pruntrigs), 1)))
-    check_triggers_exist(length1)
+    check_triggers_exist(length1, trigs)
     complete = list( it.chain.from_iterable(it.combinations(sorted(pruntrigs), x)
                                             for x in range(1,len(pruntrigs)+1)) )
     return complete
@@ -360,8 +360,8 @@ def is_channel_consistent(chn, pairtype):
     op, val = main.sel[chn]['pairType']
     return opdict[op](pairtype, val)
 
-def is_trigger_comb_in_channel(chn, tcomb):
-    possible_trigs = generate_trigger_combinations(chn, main.triggers)
+def is_trigger_comb_in_channel(chn, tcomb, triggers, exclusive):
+    possible_trigs = generate_trigger_combinations(chn, triggers, exclusive)
     split = tuple(tcomb.split(main.inters_str))
     return split in possible_trigs
                                

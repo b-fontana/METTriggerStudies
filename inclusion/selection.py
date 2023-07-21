@@ -119,7 +119,7 @@ class EventSelection:
         try:
             res = res[s]
         except KeyError:
-            print('You likely forgot to add your custom trigger to `main.trig_custom`.')
+            print('You likely forgot to add your custom trigger to `self.cfg.trig_custom`.')
             raise
         return res
 
@@ -173,7 +173,7 @@ class EventSelection:
         """
         flag = False
         for trig in trigs:
-            if trig in main.trig_custom:
+            if trig in self.cfg.trig_custom:
                 flag = self.set_custom_trigger_bit(trig)
             else:
                 flag = self.check_bit(self.get_trigger_bit(trig))
@@ -271,7 +271,7 @@ class EventSelection:
         The VBF trigger was updated during data taking, adding HPS
         https://twiki.cern.ch/twiki/bin/viewauth/CMS/TauTrigger
         """
-        if trigger not in main.trig_custom:
+        if trigger not in self.cfg.trig_custom:
             import inspect
             currentFunction = inspect.getframeinfo(frame).function
             raise ValueError('[{}] option not supported.'.format(currentFunction))
@@ -314,7 +314,7 @@ class EventSelection:
         return False
     
     def trigger_bits(self, trig):
-        if trig in main.trig_custom:
+        if trig in self.cfg.trig_custom:
             return self.set_custom_trigger_bit(trig)
         else:
             return self.check_bit(self.get_trigger_bit(trig))
@@ -338,7 +338,7 @@ class EventSelection:
         dflags = defaultdict(lambda: [])
     
         try:
-            trig_cuts = main.cuts[trig]
+            trig_cuts = self.cfg.cuts[trig]
         except KeyError: # the trigger has no cut associated
             if self.debug:
                 print('KeyError')            

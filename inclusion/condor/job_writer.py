@@ -159,14 +159,15 @@ class JobWriter:
 
     def condor_specific_content(self, queue, machine='llrt3condor'):
         assert queue in ('short', 'long')
-        m = self.endl.join(('T3Queue = {}'.format(queue),
-                            'WNTag=el7',
-                            '+SingularityCmd = ""'))
+        m = self.endl + self.endl.join(('T3Queue = {}'.format(queue),
+                                        'WNTag=el7',
+                                        '+SingularityCmd = ""'))
+
         if machine == 'llrt3condor':
-            m += self.endl + 'include : /opt/exp_soft/cms/t3/t3queue |'
+            m += 2*self.endl + 'include : /opt/exp_soft/cms/t3/t3queue |'
                   
         elif machine == 'llrt3condor7':
-            m += self.endl + 'include : /opt/exp_soft/cms/t3_tst/t3queue |'
+            m += 2*self.endl + 'include : /opt/exp_soft/cms/t3_tst/t3queue |'
         else:
             raise ValueError('Machine {} is not supported.'.format(machine))
         m += self.endl

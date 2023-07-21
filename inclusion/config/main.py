@@ -70,27 +70,11 @@ trig_map = {'IsoMu24':    {'mc': 0,  'data': 0},
                                    'EleIsoTauHPS':    {'mc': 10, 'data': 10}},
             'VBFTauCustom':       {'VBFTau':          {'mc': 16, 'data': 12},
                                    'VBFTauHPS':       {'mc': 16, 'data': 13}}}
-triggers = tuple(trig_map.keys())
-trig_custom = {'VBFTauCustom',
-               'IsoDoubleTauCustom',
-               'IsoMuIsoTauCustom',
-               'EleIsoTauCustom'}
-assert all(x in trig_map.keys() for x in trig_custom)
-
-exclusive = {'etau'   : ('Ele32', 'EleIsoTauCustom'),
-             'mutau'  : ('IsoMu24', 'IsoMuIsoTauCustom'),
-             'tautau' : ('IsoDoubleTauCustom', 'VBFTauCustom'),
-             'general': ('METNoMu120', 'IsoTau180')}
-for excl in exclusive.values():
-    assert all(x in trig_map.keys() for x in excl)
     
 lep_triggers = {'Ele32', 'EleIsoTauCustom', 'IsoMu24', 'IsoMuIsoTauCustom',
                 'IsoDoubleTauCustom'}
 assert all(x in trig_map.keys() for x in lep_triggers)
 
-cuts = {#'METNoMu120': {'metnomu_et': ('>', [120,180]), 'mhtnomu_et': ('>', [100,160])},
-         #'IsoTau50':   {'dau1_pt': ('>', [80]), 'dau1_eta': ('<', [2.0]), 'met_et': ('>', [150])},
-         }
 cuts_ignored = {'HT20':       (),
                 'met_et':     ('metnomu_et',),
                 'mht_et':     ('mhtnomu_et',),
@@ -104,14 +88,6 @@ corr = {'etau': {},
         'mutau': {},
         'tautau': {} }
     
-### 2D Plots
-pairs2D = {'METNoMu120': (('metnomu_et', 'mhtnomu_et'),
-                          ('dau1_pt', 'dau1_eta'),)}
-assert( set(pairs2D.keys()).issubset(set(triggers)) )
-for x in pairs2D.values():
-    for pair in x:
-        assert( pair[0] in var_eff and pair[1] in var_eff )
-
 ### Binning
 pog_pt_binedges = (26., 30., 40., 50., 60., 120., 200)
 binedges = {'dau1_pt': {'etau':   pog_pt_binedges,
@@ -153,10 +129,6 @@ mc_processes = {'ggfRadions': (),
 # Sanity checks
 assert len(set(var_unionweights)) == len(var_unionweights)
 assert set(var_unionweights).issubset(set(var_eff))
-assert(trig_custom.issubset(set(triggers)))
-assert(set(cuts.keys()).issubset(set(triggers)) )
-for x in cuts.values():
-    assert( set(x.keys()).issubset(set(var_eff)) )
 
 assert( set(cuts_ignored.keys()).issubset(var_join) )
 for x in cuts_ignored.values():

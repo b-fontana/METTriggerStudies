@@ -11,6 +11,13 @@ This framework calculates and stores "intersection efficiencies" for the applica
 
 The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KLUB]]) Ntuples. The framework is managed by [[https://github.com/spotify/luigi][luigi]] (see ~inclusion/run.py~), which runs local tasks and creates a [[https://htcondor.readthedocs.io/en/latest/index.html][HTCondor]] Direct Acyclic Graph (DAG) (see [[https://htcondor.readthedocs.io/en/latest/users-manual/dagman-workflows.html][DAGMan Workflows]]).
 
+** Installation
+I recommend using [[https://mamba.readthedocs.io/en/latest/index.html][mamba]]:
+#+BEGIN_SRC shell
+mamba create -n InclusionEnv python=3.11
+mamba install uproot pandas h5py luigi
+mamba activate InclusionEnv
+#+END_SRC
 ** Tasks
 
 *** Efficiencies Chain [Main]

@@ -71,9 +71,8 @@ parser.add_argument(
     '--triggers_closure',
     nargs='+', #1 or more arguments
     type=str,
+    default=('METNoMu120',),
     required=False,
-    default=main.triggers,
-    choices=main.triggers,
     help=''.join(('Select the triggers considered for the closure. ',
                   'The default is to consider all of them.\n',
                   'To do a closure for one single trigger efficiency (which ' ,
@@ -140,7 +139,6 @@ parser.add_argument(
     help='Explicitly print the functions being run for each task, for workflow debugging purposes.'
     )
 FLAGS, _ = parser.parse_known_args()
-assert set(FLAGS.triggers_closure).issubset(set(main.triggers))
          
 user_data = {k:v for k,v in main.data.items()
              if k in FLAGS.data}
@@ -194,7 +192,6 @@ histos_params = {'binedges_filename' : binedges_filename,
                  'data_vals'         : data_vals,
                  'mc_keys'           : mc_keys,
                  'mc_vals'           : mc_vals,
-                 'triggers'          : main.triggers,
                  'channels'          : FLAGS.channels,
                  'variables'         : variables_join,
                  'tag'               : FLAGS.tag,
@@ -223,8 +220,8 @@ sf_params = {'data_name'            : data_name,
              'draw_independent_MCs' : False,
              'indir'                : data_storage,
              'outdir'               : out_storage,
+             'configuration'        : sel_config,
              'localdir'             : main.base_folder,
-             'triggers'             : main.triggers,
              'channels'             : FLAGS.channels,
              'variables'            : FLAGS.variables_for_efficiencies,
              'binedges_filename'    : binedges_filename,
@@ -249,7 +246,6 @@ sfagg_params = {'indir'       : out_storage,
 discriminator_params = {'indir'            : data_storage,
                         'outdir'           : data_storage,
                         'localdir'         : main.base_folder,
-                        'triggers'         : main.triggers,
                         'channels'         : FLAGS.channels,
                         'variables'        : FLAGS.variables_for_efficiencies,
                         'tag'              : FLAGS.tag,
@@ -269,7 +265,6 @@ calculator_params = {'binedges_filename'       : binedges_filename,
                      'mc_name'                 : mc_name,
                      'mc_processes'            : mc_vals,
                      'localdir'                : main.base_folder,
-                     'triggers'                : main.triggers,
                      'closure_single_triggers' : FLAGS.triggers_closure,
                      'channels'                : FLAGS.channels,
                      'variables'               : FLAGS.variables_for_efficiencies,
@@ -654,12 +649,7 @@ class SubmitDAG(lutils.ForceRun):
         com = 'condor_submit_dag -no_submit -f'
         com += ' -notification Always'
         com += ' -append "notify_user={}"'.format(main.email)
-        if self.branch == 'counts':
-            bname = 'InclusionSFCounts'
-        elif self.branch == 'all':
-            bname = 'InclusionSF'
-        elif self.brach == 'extra':
-            bname = 'InclusionSFExtra'
+        bname = 'Inclusion_branch' + self.branch.capitalize()
         com += ' -batch_name {}'.format(bname)
         com += ' -outfile_dir {} {}'.format(os.path.dirname(outfile), outfile)
     

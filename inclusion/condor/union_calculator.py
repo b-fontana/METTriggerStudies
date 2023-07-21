@@ -40,7 +40,6 @@ def union_calculator(args):
                 'outprefix'              : args.outprefix,
                 'sample'                 : proc,
                 'channels'               : ' '.join(args.channels,),
-                'triggers'               : ' '.join(args.triggers,),
                 'file_name'              : '${1}',
                 'closure_single_trigger' : '${2}',
                 'variables'              : ' '.join(args.variables,),

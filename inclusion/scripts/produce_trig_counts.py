@@ -26,11 +26,13 @@ def get_trig_counts(args):
     if not os.path.exists( os.path.join(args.outdir, args.sample) ):
         os.makedirs( os.path.join(args.outdir, args.sample) )
     outdir = os.path.join(args.outdir, args.sample)
-
+    
     if not os.path.exists(args.filename):
         mes = '[' + os.path.basename(__file__) + '] {} does not exist.'.format(args.filename)
         raise ValueError(mes)
 
+    config_module = importlib.import_module(args.configuration)
+    
     xsec_norm = utils.total_cross_section(args.filename, args.isdata)
     
     f_in = ROOT.TFile(args.filename)
@@ -38,7 +40,8 @@ def get_trig_counts(args):
 
     triggercomb = {}
     for chn in args.channels:
-        triggercomb[chn] = utils.generate_trigger_combinations(chn, args.triggers)
+        triggercomb[chn] = utils.generate_trigger_combinations(chn, config_module.triggers,
+                                                               config_module.exclusive)
 
     c_ref , c_inters  = ({} for _ in range(2))
     w_ref , w_inters  = ({} for _ in range(2))
@@ -58,14 +61,14 @@ def get_trig_counts(args):
 
     t_in.SetBranchStatus('*', 0)
     _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi',
-                'IdAndIsoSF_deep_pt', 'PUReweight', 'HHKin_mass',
+                'IdSF_deep_pt', 'PUReweight', 'HHKin_mass',
                 'isLeptrigger', 'pairType', 'dau1_eleMVAiso',
                 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass',
                 'bH_mass_raw',)
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
-    config_module = importlib.import_module(args.configuration)
+
     nentries = t_in.GetEntriesFast()
     for ientry,entry in enumerate(t_in):
         if ientry%10000==0:
@@ -74,14 +77,14 @@ def get_trig_counts(args):
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
         evt_weight = (entries.MC_weight / xsec_norm) * entries.lumi
-        evt_weight *= entries.PUReweight * entries.IdAndIsoSF_deep_pt
+        evt_weight *= entries.PUReweight * entries.IdSF_deep_pt
         if utils.is_nan(evt_weight) or args.isdata:
             evt_weight = 1.
 
         sel = selection.EventSelection(entries, args.isdata, configuration=config_module)
         
         pass_trigger = {}
-        for trig in args.triggers:
+        for trig in config_module.triggers:
             pass_trigger[trig] = sel.trigger_bits(trig)
 
         for chn in args.channels:
@@ -97,7 +100,7 @@ def get_trig_counts(args):
                         continue
                     if not sel.dataset_cuts(tcomb, chn):
                         continue
-                    if not sel.dataset_triggers(tcomb, chn, args.triggers, args.dataset)[0]:
+                    if not sel.dataset_triggers(tcomb, chn, config_module.triggers, args.dataset)[0]:
                         continue
 
                     tstr = joinNTC(tcomb)
@@ -124,7 +127,7 @@ def get_trig_counts(args):
         for chn in args.channels:
             for tcomb in triggercomb[chn]:
                 try:
-                    reftrig = sel.dataset_triggers(tcomb, chn, args.triggers, args.dataset)[1]
+                    reftrig = sel.dataset_triggers(tcomb, chn, config_module.triggers, args.dataset)[1]
                 except OverflowError:
                     continue
                 
@@ -162,8 +165,6 @@ parser.add_argument('--subtag',      dest='subtag',      required=True,
 parser.add_argument('--tprefix',     dest='tprefix',     required=True, help='Targets name prefix.')
 parser.add_argument('--channels',    dest='channels',    required=True, nargs='+', type=str,  
                     help='Select the channels over which the workflow will be run.' )
-parser.add_argument('--triggers',    dest='triggers',    required=True, nargs='+', type=str,
-                    help='Select the triggers over which the workflow will be run.' )
 parser.add_argument('--configuration', dest='configuration', required=True,
                     help='Name of the configuration module to use.')
 args = utils.parse_args(parser)
