@@ -89,12 +89,7 @@ def build_histograms(args):
                         h2Trig[chn][vname][cstr] = {}
 
     t_in.SetBranchStatus('*', 0)
-    _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi',
-                'IdAndIsoSF_deep_pt', 'PUReweight', 'HHKin_mass',
-                'isLeptrigger', 'pairType', 'dau1_eleMVAiso',
-                'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
-                'nleps', 'nbjetscand', 'tauH_SVFIT_mass',
-                'bH_mass_raw',)
+    _entries = utils.define_used_tree_variables(config_module.custom_cut)
     _entries += tuple(args.variables)
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)

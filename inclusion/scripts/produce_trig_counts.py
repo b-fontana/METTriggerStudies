@@ -60,12 +60,7 @@ def get_trig_counts(args):
             w2_inters[chn][tstr] = 0.
 
     t_in.SetBranchStatus('*', 0)
-    _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi',
-                'IdSF_deep_pt', 'PUReweight', 'HHKin_mass',
-                'isLeptrigger', 'pairType', 'dau1_eleMVAiso',
-                'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
-                'nleps', 'nbjetscand', 'tauH_SVFIT_mass',
-                'bH_mass_raw',)
+    _entries = utils.define_used_tree_variables(config_module.custom_cut)
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
 

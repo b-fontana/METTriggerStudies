@@ -165,6 +165,20 @@ def debug(message, flag=True):
     if flag:
         print( decorator + message + decorator, flush=True )
 
+def define_used_tree_variables(cut):
+    """
+    Return the list of all required TTree variables.
+    This is the sum of default ones plus the ones contained
+    in the user-provided custom cut.
+    Repeated variables are deleted.
+    """
+    _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi', 'IdSF_deep_pt',
+                'PUReweight', 'HHKin_mass', 'isLeptrigger', 'pairType',
+                'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
+                'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw')
+    _regex = tuple(set(re.findall(r'self\.entries\.(.+?)\s', cut)))
+    return tuple(set(_entries + _regex))
+    
 class dot_dict(dict):
     """dot.notation access to dictionary attributes"""
     __getattr__ = dict.get

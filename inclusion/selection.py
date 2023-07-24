@@ -64,8 +64,8 @@ class EventSelection:
 
         lepton_veto = self.should_apply_lepton_veto(tcomb)
         
-        return self.selection_cuts(lepton_veto=lepton_veto,
-                                   bjets_cut=self.cfg.bjets_cut)
+        return self.selection_cuts(lepton_veto=lepton_veto, bjets_cut=self.cfg.bjets_cut,
+                                   custom_cut=self.cfg.custom_cut)
 
     def dataset_name(self, dataset):
         if dataset not in main.data and dataset not in main.mc_processes:
@@ -215,7 +215,7 @@ class EventSelection:
         return common and specific
 
     def selection_cuts(self, iso_cuts=dict(), lepton_veto=True, bjets_cut=True,
-                       invert_mass_cut=True, standard_mass_cut=False):
+                       invert_mass_cut=True, standard_mass_cut=False, custom_cut=None):
         """
         Applies selection cut to one event.
         Returns `True` only if all selection cuts pass.
@@ -229,6 +229,10 @@ class EventSelection:
         if mhh < 1 and bjets_cut:
             return False
 
+        # custom user-provided cut
+        if custom_cut is not None and eval(custom_cut):
+            return False
+        
         pairtype    = self.entries['pairType']
         dau1_eleiso = self.entries['dau1_eleMVAiso']
         dau1_muiso  = self.entries['dau1_iso']
