@@ -20,18 +20,19 @@ class EventSelection:
         self.run = self.entries['RunNumber']
         self.isdata = isdata
         self.debug = debug
-
+        self.prefix = 'Data_' if self.isdata else 'MC_'
+        
         # dependency injection
         self.cfg = configuration
 
-        self.datasets = ('MET', 'EG', 'Mu', 'Tau')
+        self.datasets, self.dataset_ref_trigs = self._deduce_datasets(self.cfg.inters_general,
+                                                                      self.cfg.inters)
+        
         self.categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
-        self.prefix = 'Data_' if self.isdata else 'MC_'
         
         for d in self.datasets:
             assert d in main.data
 
-        self.ref_trigs = tuple(self.dataset_name(x) for x in self.datasets)
         
     def any_trigger(self, trigs):
         """
@@ -80,22 +81,7 @@ class EventSelection:
         Considers framework triggers for a specific dataset.
         """
         this_processed_dataset = self.dataset_name(dataset)
-        dataset_ref_trigs = {
-            self.dataset_name('MET') : ('METNoMu120',),
-            self.dataset_name('EG')  : ('Ele32',),
-            self.dataset_name('Mu')  : ('IsoMu24',),
-            self.dataset_name('Tau') : ('IsoTau180',),
-            }
-        for k in dataset_ref_trigs:
-            if k not in self.ref_trigs:
-                mes = 'Reference trigger {} is being set but not defined.'
-                raise ValueError(mes.format(k))
-
-        for k in self.ref_trigs:
-            if k not in dataset_ref_trigs:
-                mes = 'Specify the reference trigger {} for dataset {}!'
-                raise ValueError(mes.format(k, this_processed_dataset))
-        for vals in dataset_ref_trigs.values():
+        for vals in self.dataset_ref_trigs.values():
             for v in vals:
                 if v not in trigs:
                     mes = 'Reference trigger {} is not part of triggers {}.'
@@ -105,11 +91,37 @@ class EventSelection:
         if reference is None:
             raise OverflowError('Intersection is too long.')
 
-        in_lep = all(x in main.lep_triggers for x in dataset_ref_trigs[reference])
+        in_lep = all(x in main.lep_triggers for x in self.dataset_ref_trigs[reference])
         lept = self.entries['isLeptrigger'] if in_lep else True
-        pass_trg = lept and self.pass_triggers(dataset_ref_trigs[reference])       
-        return pass_trg, dataset_ref_trigs[reference]
+        pass_trg = lept and self.pass_triggers(self.dataset_ref_trigs[reference])       
+        return pass_trg, self.dataset_ref_trigs[reference]
 
+    def _deduce_datasets(self, int_gen, int_chn):
+        """
+        Deduce the required datasets to be looped over based on the triggers
+        defined in the configuration. Only datasets with at least
+        one trigger are used.
+        Reference triggers for each dataset are also defined.
+        Example: If no trigger is defined on the MET dataset in the
+        cnofiguration file, the MET dataset is ignored.
+        """
+        chns = int_chn.keys()
+        for chn in chns:
+            assert int_gen.keys() == int_chn[chn].keys()
+
+        _ref_trigs = {'MET' : ('METNoMu120',),
+                      'EG'  : ('Ele32',),
+                      'Mu'  : ('IsoMu24',),
+                      'Tau' : ('IsoTau180',)}
+
+        ds = []
+        ds_ref_trigs = {}
+        for key,val in int_gen.items():
+            if len(val) + sum([len(int_chn[chn][key]) for chn in chns]) > 0:
+                ds.append(key)
+                ds_ref_trigs.update({self.dataset_name(key): _ref_trigs[key]})
+        return tuple(ds), ds_ref_trigs
+        
     def get_trigger_bit(self, trigger_name):
         """
         Returns the trigger bit corresponding to 'main.trig_map'
@@ -188,7 +200,8 @@ class EventSelection:
                   (self.entries['bjet1_bID_deepFlavor'] < 0.2783 and self.entries['bjet2_bID_deepFlavor'] > 0.2783))
         btagMM = self.entries['bjet1_bID_deepFlavor'] > 0.2783 and self.entries['bjet2_bID_deepFlavor'] > 0.2783
         
-        common = not (self.entries['isVBF'] == 1 and self.entries['VBFjj_mass'] > 500 and self.entries['VBFjj_deltaEta'] > 3 and (self.entries['bjet1_bID_deepFlavor'] > 0.2783 or self.entries['bjet2_bID_deepFlavor'] > 0.2783))
+        common = not (self.entries['isVBF'] == 1 and self.entries['VBFjj_mass'] > 500 and self.entries['VBFjj_deltaEta'] > 3 and
+                      (self.entries['bjet1_bID_deepFlavor'] > 0.2783 or self.entries['bjet2_bID_deepFlavor'] > 0.2783))
 
         if category == 'baseline':
             specific = True
