@@ -45,7 +45,8 @@ def build_histograms(args):
 
     triggercomb = {}
     for chn in args.channels:
-        triggercomb[chn] = utils.generate_trigger_combinations(chn, config_module.triggers)
+        triggercomb[chn] = utils.generate_trigger_combinations(chn, config_module.triggers,
+                                                               config_module.exclusive)
 
     # Define 1D histograms
     #  hRef: pass the reference trigger
@@ -71,12 +72,12 @@ def build_histograms(args):
     for chn in args.channels:
         h2Ref[chn], h2Trig[chn] = ({} for _ in range(2))
         for onetrig in config_module.triggers:
-            if onetrig in main.pairs2D.keys():
+            if onetrig in config_module.pairs2D.keys():
                 combtrigs = {x for x in triggercomb[chn] if onetrig in x}
                 for combtrig in combtrigs:
                     cstr = joinNTC(combtrig)
                     
-                    for j in main.pairs2D[onetrig]:
+                    for j in config_module.pairs2D[onetrig]:
                         bin2D = ( nbins[j[0]][chn], binedges[j[0]][chn],
                                   nbins[j[1]][chn], binedges[j[1]][chn] )
                         vname = utils.add_vnames(j[0], j[1])
@@ -101,9 +102,17 @@ def build_histograms(args):
              print('{} / {}'.format(ientry, nentries))
 
         # this is slow: do it once only
-        entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})        
-        evt_weight = (entries.MC_weight / xsec_norm) * entries.lumi
-        evt_weight *= entries.PUReweight * entries.IdAndIsoSF_deep_pt
+        entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
+        try:
+            evt_weight = (entries.MC_weight / xsec_norm) * entries.lumi
+            evt_weight *= entries.PUReweight * entries.IdSF_deep_2d
+        except TypeError:
+            print('MC_weight: {}'.format(entries.MC_weight))
+            print('Luminosity: {}'.format(entries.lumi))
+            print('PU reweight: {}'.format(entries.PUReweight))
+            print('Tau ID SF: {}'.format(entries.IdSF_deep_2d))
+            raise
+
         if utils.is_nan(evt_weight) or args.isdata:
             evt_weight = 1
 
@@ -129,11 +138,11 @@ def build_histograms(args):
             for var in args.variables:
                 pcuts1D[trig][var] = sel.var_cuts(trig, [var], args.nocut_dummy_str)
 
-            if trig in main.pairs2D.keys():
+            if trig in config_module.pairs2D.keys():
                 # combtrigs = tuple(x for x in triggercomb if trig in x)
                 # for combtrig in combtrigs:
                 # pcuts2D[joinNTC(combtrig)] = {}
-                for j in main.pairs2D[trig]:
+                for j in config_module.pairs2D[trig]:
                     vname = utils.add_vnames(j[0],j[1])
                     for t in config_module.triggers:
                         pcuts2D[t][vname] = sel.var_cuts(t, [j[0], j[1]], args.nocut_dummy_str)
@@ -196,7 +205,7 @@ def build_histograms(args):
 
                 # fill 2D efficiencies
                 for onetrig in config_module.triggers:
-                    if onetrig in main.pairs2D.keys():
+                    if onetrig in config_module.pairs2D.keys():
                         combtrigs = tuple(x for x in triggercomb[chn] if onetrig in x)
 
                         for combtrig in combtrigs:
@@ -209,7 +218,7 @@ def build_histograms(args):
                             if not sel.dataset_triggers(combtrig, chn, config_module.triggers, args.dataset)[0]:
                                 continue
                             
-                            for j in main.pairs2D[onetrig]:
+                            for j in config_module.pairs2D[onetrig]:
                                 vname = utils.add_vnames(j[0],j[1])
                                 fill_info = ( fill_var[j[0]][chn], fill_var[j[1]][chn],
                                               evt_weight )
@@ -300,8 +309,6 @@ parser.add_argument('--subtag', dest='subtag', required=True,
 parser.add_argument('--tprefix', dest='tprefix', required=True, help='Targets name prefix.')
 parser.add_argument('--channels', dest='channels', required=True, nargs='+', type=str,  
                     help='Select the channels over which the workflow will be run.' )
-parser.add_argument('--triggers', dest='triggers', required=True, nargs='+', type=str,
-                    help='Select the triggers over which the workflow will be run.' )
 parser.add_argument('--variables',   dest='variables', required=True, nargs='+', type=str,
                     help='Select the variables over which the workflow will be run.' )
 parser.add_argument('--intersection_str', dest='intersection_str', required=False, default=main.inters_str,

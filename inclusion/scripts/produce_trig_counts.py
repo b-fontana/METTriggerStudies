@@ -71,8 +71,16 @@ def get_trig_counts(args):
 
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-        evt_weight = (entries.MC_weight / xsec_norm) * entries.lumi
-        evt_weight *= entries.PUReweight * entries.IdSF_deep_pt
+        try:
+            evt_weight = (entries.MC_weight / xsec_norm) * entries.lumi
+            evt_weight *= entries.PUReweight * entries.IdSF_deep_2d
+        except TypeError:
+            print('MC_weight: {}'.format(entries.MC_weight))
+            print('Luminosity: {}'.format(entries.lumi))
+            print('PU reweight: {}'.format(entries.PUReweight))
+            print('Tau ID SF: {}'.format(entries.IdSF_deep_2d))
+            raise
+
         if utils.is_nan(evt_weight) or args.isdata:
             evt_weight = 1.
 

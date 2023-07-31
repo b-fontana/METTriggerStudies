@@ -172,7 +172,7 @@ def define_used_tree_variables(cut):
     in the user-provided custom cut.
     Repeated variables are deleted.
     """
-    _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi', 'IdSF_deep_pt',
+    _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi', 'IdSF_deep_2d',
                 'PUReweight', 'HHKin_mass', 'isLeptrigger', 'pairType',
                 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw')
