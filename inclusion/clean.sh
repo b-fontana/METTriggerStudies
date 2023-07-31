@@ -5,7 +5,7 @@ help_description="prints this help message"
 tag_description="select tags"
 full_description="also removes HTCondor outputs"
 eos_description="/eos/ username (same used in lxplus)"
-debug_description="debug: prints everything, runs nothing"
+dryrun_description="dry-run: prints everything, runs nothing"
 function print_usage_workflowClean {
     usage=" $(basename "$0") [-h] [-t -d]: removes folders
 where:
@@ -13,7 +13,7 @@ where:
     -t / --tag   [ ${tag_description} ]
     -f / --full  [ ${full_description} ]
     --eos  [ ${eos_description} ]
-    -d / --debug [ ${debug_description} ]
+    -n / --dryrun [ ${dryrun_description} ]
 
     Run example: bash $(basename "$0") -t 000 -t 111 -t 222 -t 654 -f -d
 "
@@ -21,7 +21,7 @@ where:
 }
 
 ### Argument parsing
-DEBUG=false
+DRYRUN=false
 FULL=false
 EOS_USER="bfontana"
 declare -a TAGS;
@@ -47,8 +47,8 @@ while [[ $# -gt 0 ]]; do
 	    shift # past argument
 	    shift # past value
 	    ;;
-	-d|--debug)
-	    DEBUG=true
+	-n|--dryrun)
+	    DRYRUN=true
 	    shift # past argument
 	    ;;
 	*)    # unknown option
@@ -97,7 +97,7 @@ done
 ### Argument parsing: information for the user
 echo "### Arguments"
 echo "TAGS  = ${TAGS[*]}"
-echo "DEBUG = ${DEBUG}"
+echo "DRYRUN = ${DRYRUN}"
 echo "FULL  = ${FULL}"
 echo "#############"
 
@@ -122,7 +122,7 @@ for tag in ${TAGS[@]}; do
 done
 
 for comm in "${COMMANDS[@]}"; do
-    if $DEBUG; then
+    if ${DRYRUN}; then
 		echo ${comm};
     else
 		${comm};
@@ -130,8 +130,8 @@ for comm in "${COMMANDS[@]}"; do
 done;
 
 ### final prints
-if ${DEBUG}; then
-    echo "Debug mode: the files were not removed."
+if ${DRYRUN}; then
+    echo "Dry-run mode: the files were not removed."
 else
     echo "Files removed."
 fi
