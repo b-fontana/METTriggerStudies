@@ -18,6 +18,7 @@ mamba create -n InclusionEnv python=3.11
 mamba install uproot pandas h5py luigi
 mamba activate InclusionEnv
 #+END_SRC
+
 ** Configuration
 The configuration is controlled via python files stored under ~config/~. General configurations are available in ~main.py~, while run-specific can be specified in a custom file which is then pointed at with the command-line option =--configuration=. For instance, if using ~config/sel_default.py~, we would run ~python3 inclusion/run.py ... --configuration sel_default~.
 Most parameters are very intuitive. Regarding the triggers, one has to specify the following four parameters:
@@ -105,12 +106,7 @@ In order to avoid cluttering the local area with output files, a =bash= script w
 bash inclusion/clean.sh -t <any_tag> -f -d
 #+END_SRC
 
-with options:
-
-- ~-h/--help~: prints help message
-- ~-d/--debug~: debug mode, where all commands are printed to the screen and nothing is run
-- ~-f/--full~: full delete, including data produced by the HTCondor jobs (this flag is required to avoid data deletions by mistake)
-- ~-t/--tag~: tag used when producing the files (remove this options to print a message displaying all tags used in the past which were not yet removed)
+Use ~-h/--help~ to inspect all options.
 
 ** Run standalone tests
 Studies were performed using "standalone" scripts (not part of the main chain, running locally, but using some definitions of the "core" package).
@@ -135,7 +131,6 @@ python3 tests/test_trigger_gains.py --masses 400 500 600 700 800 900 1000 1250 1
 This runs on the CSV tables (per mass and channel) produced by the ~tests/test_trigger_regions.py~ script. It produces two plots, the first displaying the independent benefit of adding the MET trigger or the SingleTau trigger, and the second showing the added gain of including both.
 
 ** ~luigi~ related
-
 *** Debugging
 
 By passing ~--debug_workflow~, the user can obtain more information regarding the specific order tasks and their functions are run.

@@ -2,8 +2,6 @@
 
 _all_ = [ 'EventSelection' ]
 
-from collections import defaultdict
-
 import os
 import sys
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -12,6 +10,9 @@ sys.path.insert(0, parent_dir)
 import inclusion
 from inclusion import config
 from inclusion.config import main
+
+import functools
+from collections import defaultdict
 
 class EventSelection:
     def __init__(self, entries, isdata, configuration=None, debug=False):

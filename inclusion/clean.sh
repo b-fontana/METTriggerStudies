@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
+### Defaults
+DRYRUN=false
+FULL=false
+EOS_USER="bfontana"
+
 ### Argument parsing help strings
 help_description="prints this help message"
 tag_description="select tags"
 full_description="also removes HTCondor outputs"
-eos_description="/eos/ username (same used in lxplus)"
+eos_description="/eos/ username (same used in lxplus). Defaults to ${EOS_USER}."
 dryrun_description="dry-run: prints everything, runs nothing"
 function print_usage_workflowClean {
     usage=" $(basename "$0") [-h] [-t -d]: removes folders
@@ -21,9 +26,6 @@ where:
 }
 
 ### Argument parsing
-DRYRUN=false
-FULL=false
-EOS_USER="bfontana"
 declare -a TAGS;
 while [[ $# -gt 0 ]]; do
     key="$1"
