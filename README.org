@@ -18,14 +18,14 @@ mamba create -n InclusionEnv python=3.11
 mamba install uproot pandas h5py luigi
 mamba activate InclusionEnv
 #+END_SRC
-** Tasks
-*** Configuration
+** Configuration
 The configuration is controlled via python files stored under ~config/~. General configurations are available in ~main.py~, while run-specific can be specified in a custom file which is then pointed at with the command-line option =--configuration=. For instance, if using ~config/sel_default.py~, we would run ~python3 inclusion/run.py ... --configuration sel_default~.
 Most parameters are very intuitive. Regarding the triggers, one has to specify the following four parameters:
 + ~triggers~: a list of all triggers to be considered.
 + ~exclusive~: dictionary having the supported channels as keys plus a common "general" key, where the value refer to the triggers that are exclusive to that particular channel. For instance, if we want to consider =IsoMu27= only for the =mutau= channel, we would write =exclusive = {..., 'mutau': ('IsoMu27',), ...}=. This option is convenient to avoid considering triggers which are unrelated to the channel under study and thus have little to no effect.
 + ~inters_general~: dictionary having as keys the datasets being considered (MET, SingleMuon, ...) and as values the triggers and their combinations that should be applied when prcessing events from the corresponding dataset. Each trigger and combination is written as an independent =tuple=.
 + ~inters~: same as ~inters_general~ but for specific channels, i.e., when a trigger or a trigger combination should be considered only for a specific channel when processing a specific dataset.
+** Tasks
 *** Efficiencies Chain [Main]
 1. *Binning* (manual or equal width with upper 5% quantile removal)
    - is the only job which runs locally (/i.e./, not on HTCondor)

@@ -38,6 +38,7 @@ def eff_and_sf(args):
             'triggercomb'   : '${1}',
             'channels'      : ' '.join(args.channels),
             'variables'     : ' '.join(args.variables),
+            'configuration' : args.configuration,
             'subtag'        : args.subtag,
             'tprefix'       : args.tprefix,
             'canvas_prefix' : args.canvas_prefix}
@@ -72,7 +73,7 @@ def eff_and_sf(args):
             triggercomb += utils.generate_trigger_combinations(chn, cfg.triggers,
                                                                cfg.exclusive)
             
-    for tcomb in triggercomb:
+    for tcomb in set(triggercomb):
         qlines.append('  {}'.format( utils.join_name_trigger_intersection(tcomb)) )
 
     jw.write_queue( qvars=('triggercomb',),

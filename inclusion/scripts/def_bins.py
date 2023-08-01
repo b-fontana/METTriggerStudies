@@ -12,14 +12,15 @@ import h5py
 import uproot as up
 import pandas as pd
 import argparse
+import importlib
 
 import inclusion
 from inclusion.utils import utils
 from inclusion.config import main
 
-def skip_data_loop(args):
+def skip_data_loop(args, cfg):
     for var in args.variables:
-        if var not in main.binedges.keys():
+        if var not in cfg.binedges.keys():
             return False
     return True
 
@@ -34,7 +35,8 @@ def define_binning(args):
     Determine histogram quantiles
     """
     quant_down, quant_up = 0.00, .95
-
+    cfg = importlib.import_module(args.configuration)
+    
     # Initialization
     nTotEntries = 0
     _maxedge, _minedge = ({} for _ in range(2))
@@ -46,7 +48,7 @@ def define_binning(args):
     ###############################################
     ############## Data Loop: Start ###############
     ###############################################
-    if not skip_data_loop(args):
+    if not skip_data_loop(args, cfg):
         
         # Loop over all data datasets, calculating the quantiles in each dataset per variable
         for sample in args.data_vals:
@@ -84,8 +86,8 @@ def define_binning(args):
 
             for var in args.variables:
                 for chn in args.channels:
-                    if (var not in main.binedges or
-                        chn not in main.binedges[var]):
+                    if (var not in cfg.binedges or
+                        chn not in cfg.binedges[var]):
                         _minedge[var][chn][sample] = treesize*quantiles[chn].loc[quant_down, var]
                         _maxedge[var][chn][sample] = treesize*quantiles[chn].loc[quant_up, var]
 
@@ -94,7 +96,7 @@ def define_binning(args):
         for var in args.variables:
             maxedge[var], minedge[var] = ({} for _ in range(2))
             for chn in args.channels:
-                if var not in main.binedges or chn not in main.binedges[var]:
+                if var not in cfg.binedges or chn not in cfg.binedges[var]:
                     maxedge[var].update({chn: sum(_maxedge[var][chn].values()) / nTotEntries})
                     minedge[var].update({chn: sum(_minedge[var][chn].values()) / nTotEntries})
                     if maxedge[var][chn] <= minedge[var][chn]:
@@ -126,14 +128,14 @@ def define_binning(args):
                 vargroup = group.create_group(v)
                 for chn in args.channels:
                     try:
-                        if chn in main.binedges[v]:
+                        if chn in cfg.binedges[v]:
                             dset = vargroup.create_dataset(chn, dtype=float,
-                                                           shape=(len(main.binedges[v][chn]),))
+                                                           shape=(len(cfg.binedges[v][chn]),))
                             if args.debug:
                                 print( '[' + os.path.basename(__file__) + '] ' +
                                        'Using custom binning for variable {}: {}'
-                                       .format(v, main.binedges[v][chn]) )
-                            dset[:] = main.binedges[v][chn]
+                                       .format(v, cfg.binedges[v][chn]) )
+                            dset[:] = cfg.binedges[v][chn]
                         else:
                             raise KeyError #a "go-to" to the except clause
 
@@ -164,6 +166,8 @@ if __name__ == '__main__':
                         help='Select the variables to calculate the binning' )
     parser.add_argument('-c', '--channels',   dest='channels',         required=True, nargs='+', type=str,
                         help='Select the channels over which the workflow will be run.' )
+    parser.add_argument('--configuration', dest='configuration', required=True,
+                        help='Name of the configuration module to use.')
     parser.add_argument('--debug', action='store_true', help='debug verbosity')
     args = utils.parse_args(parser)
 

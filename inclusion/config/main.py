@@ -88,16 +88,6 @@ corr = {'etau': {},
         'mutau': {},
         'tautau': {} }
     
-### Binning
-pog_pt_binedges = (26., 30., 40., 50., 60., 120., 200)
-binedges = {'dau1_pt': {'etau':   pog_pt_binedges,
-                        'mutau':  pog_pt_binedges,
-                        'tautau': pog_pt_binedges },
-            'dau2_pt': {'etau':   pog_pt_binedges,
-                        'mutau':  pog_pt_binedges,
-                        'tautau': pog_pt_binedges },
-            }
-
 ### Data and MC samples
 #inputs = ( '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220420/', )
 inputs = ( '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5_Data/',
@@ -139,7 +129,3 @@ for k,v in cuts_ignored.items():
                        'the same variable: cuts are never applied to ',
                        'variables being displayed. Remove it.'.format(k)))
         raise ValueError(mes)
-assert( set(binedges.keys()).issubset(var_join) )
-for x in binedges.values():
-    assert( set(x.keys()).issubset(channels) )
-    assert( len(x) == len(list(binedges.values())[0]) )

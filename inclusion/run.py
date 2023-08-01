@@ -176,6 +176,7 @@ bins_params = {'nbins'             : FLAGS.nbins,
                'channels'          : FLAGS.channels,
                'tag'               : FLAGS.tag,
                'subtag'            : subtag,
+               'configuration'     : sel_config,
                'debug'             : FLAGS.debug_workflow}
 
 #### condor/dag

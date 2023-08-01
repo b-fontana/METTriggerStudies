@@ -102,12 +102,12 @@ def check_inters_correctness(triggers, dchn, dgen, channel, exclusive):
         if not isinstance(x, tuple):
             mes = 'Intersection {} must be defined as a tuple'.format(x)
             raise TypeError(mes)
-    
+
     # existence check
-    for f in flatten:
-        if f not in chn_inters and len(f)!=0:
+    for x in flatten:
+        if x not in chn_inters and len(x)!=0:
             mes = 'Intersection {} is not required by channel {}.'
-            mes = mes.format(f, channel)
+            mes = mes.format(x, channel)
             raise ValueError(mes)
 
     # completness check

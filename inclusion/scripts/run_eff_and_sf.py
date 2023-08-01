@@ -15,28 +15,17 @@ import argparse
 import ctypes
 import numpy as np
 from copy import copy
+import importlib
 
 import warnings
 warnings.filterwarnings('error', '.*Number of graph points is different than histogram bin.*')
 
 import ROOT
 ROOT.gROOT.SetBatch(True)
-from ROOT import (
-    TCanvas,
-    TEfficiency,
-    TFile,
-    TGraphAsymmErrors,
-    TH1D,
-    TH2D,
-    TLatex,
-    TLegend,
-    TLine,
-    TPad,
-)
 
 def paint2d(channel, trig):
     lX1, lX2, lY, lYstep = 0.04, 0.7, 0.96, 0.03
-    l = TLatex()
+    l = ROOT.TLatex()
     l.SetNDC()
     l.SetTextFont(72)
     l.SetTextSize(0.03)
@@ -58,10 +47,10 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
     _name = lambda a,b,c,d : a + b + c + d + '.root'
 
     name_data = os.path.join(indir, _name( tprefix, data_name, '_Sum', subtag ) )
-    file_data = TFile.Open(name_data, 'READ')
+    file_data = ROOT.TFile.Open(name_data, 'READ')
 
     name_mc = os.path.join(indir, _name( tprefix, mc_name, '_Sum', subtag ))
-    file_mc   = TFile.Open(name_mc, 'READ')
+    file_mc   = ROOT.TFile.Open(name_mc, 'READ')
 
     if debug:
         print('[=debug=] Open files:')
@@ -141,21 +130,21 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
 
     try:
         for kh, vh in hdata1D['trig'].items():
-            data1D['eff'][kh] = TGraphAsymmErrors(vh, hdata1D['ref'])
+            data1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hdata1D['ref'])
             data1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
             try:
                 data1D['norm'][kh].Scale(1/data1D['norm'][kh].Integral())
             except ZeroDivisionError:
                 data1D['norm'][kh].Scale(1)
-            data1D['norm'][kh] = TGraphAsymmErrors(data1D['norm'][kh])
+            data1D['norm'][kh] = ROOT.TGraphAsymmErrors(data1D['norm'][kh])
         for kh, vh in hmc1D['trig'].items():
-            mc1D['eff'][kh] = TGraphAsymmErrors(vh, hmc1D['ref'])
+            mc1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hmc1D['ref'])
             mc1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
             try:
                 mc1D['norm'][kh].Scale(1/mc1D['norm'][kh].Integral())
             except ZeroDivisionError:
                 mc1D['norm'][kh].Scale(1)
-            mc1D['norm'][kh] = TGraphAsymmErrors(mc1D['norm'][kh])
+            mc1D['norm'][kh] = ROOT.TGraphAsymmErrors(mc1D['norm'][kh])
     except SystemError:
         m = 'There is likely a mismatch in the number of bins.'
         raise RuntimeError(m)
@@ -241,8 +230,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                     print('Y Scale Factors: yp[{}] = {} +{}/-{}'.format(i,y.sf[i],eyu.sf[i],eyd.sf[i]), flush=True)
                     print('', flush=True)
 
-            sf1D[atype][kdata] = TGraphAsymmErrors(nb1D, darr(x.sf), darr(y.sf),
-                                                   darr(exd.sf), darr(exu.sf), darr(eyd.sf), darr(eyu.sf))
+            sf1D[atype][kdata] = ROOT.TGraphAsymmErrors(nb1D, darr(x.sf), darr(y.sf),
+                                                        darr(exd.sf), darr(exu.sf), darr(eyd.sf), darr(eyu.sf))
         
     if debug:
         print('[=debug=] 1D Plotting...', flush=True)
@@ -252,12 +241,12 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
         canvas_name = os.path.basename(save_names_1D[0]).split('.')[0]
         canvas_name = utils.rewrite_cut_string(canvas_name, akey, regex=True)
         canvas = {}
-        canvas['eff'] = TCanvas(canvas_name, 'canvas', 600, 600)
-        canvas['norm'] = TCanvas(canvas_name + '_norm', 'canvas_norm', 600, 600)
+        canvas['eff'] = ROOT.TCanvas(canvas_name, 'canvas', 600, 600)
+        canvas['norm'] = ROOT.TCanvas(canvas_name + '_norm', 'canvas_norm', 600, 600)
 
         for atype in ('eff', 'norm'):
             canvas[atype].cd()
-            pad1 = TPad('pad1', 'pad1', 0, 0.35, 1, 1)
+            pad1 = ROOT.TPad('pad1', 'pad1', 0, 0.35, 1, 1)
             pad1.SetBottomMargin(0.005)
             pad1.SetLeftMargin(0.2)
             pad1.Draw()
@@ -274,9 +263,9 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             nbins = data1D[atype][akey].GetN()
             axor_info = nbins+1, -1, nbins
             axor_ndiv = 605, 705
-            axor = TH2D('axor'+akey,'axor'+akey,
-                        axor_info[0], axor_info[1], axor_info[2],
-                        100, amin-0.1*(amax-amin), amax+0.4*(amax-amin) )
+            axor = ROOT.TH2D('axor'+akey+atype,'axor'+akey+atype,
+                             axor_info[0], axor_info[1], axor_info[2],
+                             100, amin-0.1*(amax-amin), amax+0.4*(amax-amin) )
             axor.GetYaxis().SetTitle('Efficiency' if atype=='eff' else 'Normalized counts')
             axor.GetYaxis().SetNdivisions(axor_ndiv[1])
             axor.GetXaxis().SetLabelOffset(1)
@@ -306,7 +295,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             mc1D_new[atype][akey].Draw('same p0')
 
             pad1.RedrawAxis()
-            l = TLine()
+            l = ROOT.TLine()
             l.SetLineWidth(2)
             padmin = amin-0.1*(amax-amin)
             padmax = amax+0.1*(amax-amin)
@@ -317,7 +306,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                 l.DrawLine(x,padmin-fraction,x,padmin+fraction)
             l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
 
-            leg = TLegend(0.77, 0.77, 0.96, 0.87)
+            leg = ROOT.TLegend(0.74, 0.77, 0.94, 0.87)
             leg.SetFillColor(0)
             leg.SetShadowColor(0)
             leg.SetBorderSize(0)
@@ -326,13 +315,13 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             leg.SetTextFont(42)
 
             leg.AddEntry(data1D_new[atype][akey], 'Data', 'p')
-            leg.AddEntry(mc1D_new[atype][akey], proc,   'p')
+            leg.AddEntry(mc1D_new[atype][akey], proc.replace('_', ' '), 'p')
             leg.Draw('same')
 
             utils.redraw_border()
 
             lX, lY, lYstep = 0.23, 0.84, 0.05
-            l = TLatex()
+            l = ROOT.TLatex()
             l.SetNDC()
             l.SetTextFont(72)
             l.SetTextColor(1)
@@ -348,7 +337,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             l.DrawLatex( lX, lY-lYstep, textrigs)
 
             canvas[atype].cd()
-            pad2 = TPad('pad2','pad2',0,0.0,1,0.35)
+            pad2 = ROOT.TPad('pad2','pad2',0,0.0,1,0.35)
             pad2.SetTopMargin(0.01)
             pad2.SetBottomMargin(0.4)
             pad2.SetLeftMargin(0.2)
@@ -364,9 +353,9 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             nbins = data1D_new[atype][akey].GetN()
             axor_info = nbins+1, -1, nbins
             axor_ndiv = 605, 705
-            axor2 = TH2D('axor2'+akey,'axor2'+akey,
-                         axor_info[0], axor_info[1], axor_info[2],
-                         100, min1-0.1*(max1-min1), max1+0.1*(max1-min1))
+            axor2 = ROOT.TH2D('axor2'+akey+atype, 'axor2'+akey+atype,
+                              axor_info[0], axor_info[1], axor_info[2],
+                              100, min1-0.1*(max1-min1), max1+0.1*(max1-min1))
             axor2.GetXaxis().SetNdivisions(axor_ndiv[0])
             axor2.GetYaxis().SetNdivisions(axor_ndiv[1])
 
@@ -406,7 +395,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             sf1D_new[atype].Draw('same P0')
 
             pad2.cd()
-            l = TLine()
+            l = ROOT.TLine()
             l.SetLineWidth(2)
             padmin = min1-0.1*(max1-min1)
             padmax = max1+0.1*(max1-min1)
@@ -427,7 +416,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
         _name_base = utils.rewrite_cut_string(save_names_1D[-1], akey, regex=True)
         for atype in ('eff',):
             _name = _name_base.replace(args.canvas_prefix, atype + '_')
-            afile = TFile.Open(_name, 'RECREATE')
+            afile = ROOT.TFile.Open(_name, 'RECREATE')
             afile.cd()
 
             data1D[atype][akey].SetName(n1dt)
@@ -441,18 +430,17 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
         print('[=debug=] 2D Plotting...', flush=True)
 
 
-def draw_eff_and_sf_2d(proc, channel, joinvars, trig,
-                       save_names_2D,
+def draw_eff_and_sf_2d(proc, channel, joinvars, trig, save_names_2D,
                        tprefix, indir, subtag, mc_name, data_name,
                        intersection_str, debug):
     _name = lambda a,b,c,d : a + b + c + d + '.root'
 
     name_data = os.path.join(indir, _name( tprefix, data_name, '_Sum', subtag ) )
 
-    file_data = TFile.Open(name_data, 'READ')
+    file_data = ROOT.TFile.Open(name_data, 'READ')
 
     name_mc = os.path.join(indir, _name( tprefix, mc_name, '_Sum', subtag ))
-    file_mc   = TFile.Open(name_mc, 'READ')
+    file_mc   = ROOT.TFile.Open(name_mc, 'READ')
 
     if debug:
         print('[=debug=] Open files:')
@@ -565,7 +553,7 @@ def draw_eff_and_sf_2d(proc, channel, joinvars, trig,
         _name = utils.rewrite_cut_string(base_name, items[0][0], regex=True)
         _name += '.root'
 
-        eff_file_2D = TFile.Open(_name, 'RECREATE')
+        eff_file_2D = ROOT.TFile.Open(_name, 'RECREATE')
         eff_file_2D.cd()
 
         for itype, obj in enumerate(items):
@@ -592,7 +580,7 @@ def draw_eff_and_sf_2d(proc, channel, joinvars, trig,
                     if eff_ed.GetBinContent(abin)==0.:
                         eff_ed.SetBinContent(abin, 1.e-10)
 
-            canvas = TCanvas(cnames[itype]+obj[0], cnames[itype]+obj[0], 600, 600)
+            canvas = ROOT.TCanvas(cnames[itype]+obj[0], cnames[itype]+obj[0], 600, 600)
             canvas.SetLeftMargin(0.10)
             canvas.SetRightMargin(0.15);
             canvas.cd()
@@ -658,7 +646,7 @@ def draw_eff_and_sf_2d(proc, channel, joinvars, trig,
             eff_ed.Draw("same text")
       
             lX, lY, lYstep = 0.8, 0.92, 0.045
-            l = TLatex()
+            l = ROOT.TLatex()
             l.SetNDC()
             l.SetTextFont(72)
             l.SetTextColor(2)
@@ -706,9 +694,8 @@ def run_eff_sf_1d_outputs(outdir, data_name, mc_name,
     #join all outputs in the same list
     return sum(outputs, []), main.extensions, processes
 
-def run_eff_sf_2d_outputs(outdir, proc, data_name,
-                          tcomb, channel, subtag,
-                          intersection_str, debug):
+def run_eff_sf_2d_outputs(outdir, proc, data_name, cfg, tcomb,
+                          channel, subtag, intersection_str, debug):
     """
     This output function is not ready to be used in the luigi framework.
     It returns the outputs corresponding to a single trigger combination.
@@ -717,14 +704,14 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name,
     outputs = {}
     
     # only running when one of the triggers in the intersection
-    # matches one of the triggers specified by the user with `main.pairs2D`
+    # matches one of the triggers specified by the user with `cfg.pairs2D`
     splits = tcomb.split(intersection_str)
-    run = any({x in main.pairs2D.keys() for x in splits})
+    run = any({x in cfg.pairs2D.keys() for x in splits})
 
     if run:
         for onetrig in splits:
-            if onetrig in main.pairs2D:
-                for j in main.pairs2D[onetrig]:
+            if onetrig in cfg.pairs2D:
+                for j in cfg.pairs2D[onetrig]:
                     vname = utils.add_vnames(j[0],j[1])
                     pref2d = args.canvas_prefix.replace('1', '2')
                     cname = _get_canvas_name(pref2d,
@@ -762,11 +749,8 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
                   tcomb, channels, variables, subtag,
                   tprefix, intersection_str, debug):
     
-    outs1D, extensions, processes = run_eff_sf_1d_outputs(outdir,
-                                                          data_name, mc_name,
-                                                          tcomb,
-                                                          channels, variables,
-                                                          subtag)
+    outs1D, extensions, processes = run_eff_sf_1d_outputs(outdir, data_name, mc_name, tcomb,
+                                                          channels, variables, subtag)
 
     config_module = importlib.import_module(configuration)
     
@@ -796,12 +780,8 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
                         m += ', trigger_combination={}\n'.format(tcomb)
                         print(m)
 
-                draw_eff_and_sf_1d(proc, chn, var,
-                                   tcomb,
-                                   names1D,
-                                   tprefix,
-                                   indir, subtag,
-                                   mc_name, data_name,
+                draw_eff_and_sf_1d(proc, chn, var, tcomb, names1D,
+                                   tprefix, indir, subtag, mc_name, data_name,
                                    intersection_str, debug)
 
     splits = tcomb.split(intersection_str)
@@ -810,34 +790,26 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
             mess = 'Trigger {} was not defined in the configuration.'.format(x)
             raise ValueError(mess)
         
-    run = any({x in main.pairs2D for x in splits})
+    run = any({x in config_module.pairs2D for x in splits})
     if run:
         for ip,proc in enumerate(processes):
             for ic,chn in enumerate(channels):
                 if not utils.is_trigger_comb_in_channel(chn, tcomb, config_module.triggers,
                                                         config_module.exclusive):
                     continue
-                for onetrig in splits:
-                    if onetrig in main.pairs2D:
-                        names2D = run_eff_sf_2d_outputs(outdir, proc,
-                                                        data_name,
-                                                        tcomb,
-                                                        chn,
-                                                        subtag,
-                                                        intersection_str,
-                                                        debug)
+                
+                names2D = run_eff_sf_2d_outputs(outdir, proc, data_name, config_module, tcomb, 
+                                                chn, subtag, intersection_str, debug)
 
-                        for j in main.pairs2D[onetrig]:
+                for onetrig in splits:
+                    if onetrig in config_module.pairs2D:
+
+                        for j in config_module.pairs2D[onetrig]:
                             vname = utils.add_vnames(j[0],j[1])
 
-                            draw_eff_and_sf_2d(proc, chn, vname,
-                                               tcomb,
-                                               names2D,
-                                               tprefix,
-                                               indir, subtag,
-                                               mc_name, data_name,
-                                               intersection_str,
-                                               debug)
+                            draw_eff_and_sf_2d(proc, chn, vname, tcomb, names2D,
+                                               tprefix, indir, subtag, mc_name, data_name,
+                                               intersection_str, debug)
 
 parser = argparse.ArgumentParser(description='Draw trigger scale factors')
 parser.add_argument('--indir', help='Inputs directory', required=True)

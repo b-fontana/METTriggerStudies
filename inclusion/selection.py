@@ -230,7 +230,7 @@ class EventSelection:
             return False
 
         # custom user-provided cut
-        if custom_cut is not None and eval(custom_cut):
+        if custom_cut is not None and not eval(custom_cut):
             return False
         
         pairtype    = self.entries['pairType']
