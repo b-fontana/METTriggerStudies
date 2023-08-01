@@ -80,7 +80,7 @@ def define_binning(args):
             nfiles = len(filelist)
             for ib,batch in enumerate(up.iterate(files=filelist, expressions=branches,
                                                  step_size='50 MB', library='ak')):
-                print('{}/{} {} files (only {} will be processed)\r'.format(ib+1, nfiles, sample), percentage*nfiles,
+                print('{}/{} {} files (only {} will be processed)\r'.format(ib+1, nfiles, sample, percentage*nfiles),
                       end='' if ib+1!=nfiles else '\n', flush=True)
 
                 if ib+1 > int(percentage*nfiles) and nfiles > 30: # assume 10% of the files are enough to estimate max and min

@@ -13,6 +13,7 @@ from inclusion.config import main
 
 import functools
 from collections import defaultdict
+import itertools as it
 
 class EventSelection:
     def __init__(self, entries, isdata, configuration=None, debug=False):
