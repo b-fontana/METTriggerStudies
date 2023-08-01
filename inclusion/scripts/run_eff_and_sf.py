@@ -772,7 +772,8 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
     
     triggercomb = {}
     for chn in channels:
-        triggercomb[chn] = utils.generate_trigger_combinations(chn, config_module.triggers)
+        triggercomb[chn] = utils.generate_trigger_combinations(chn, config_module.triggers,
+                                                               config_module.exclusive)
 
     dv = len(args.variables)
     dc = len(args.channels) * dv

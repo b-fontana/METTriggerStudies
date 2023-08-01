@@ -101,8 +101,8 @@ binedges = {'dau1_pt': {'etau':   pog_pt_binedges,
 ### Data and MC samples
 #inputs = ( '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220420/', )
 inputs = ( '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5_Data/',
-           '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5_Background/',
-           '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5_Background_TTSemiLep/' )
+           '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background/',
+           '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background_SemiLep/' )
 
 # names of the subfolders under 'inputs' above:
 # dictionary that maps specific general triggers to datasets 

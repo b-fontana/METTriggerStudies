@@ -66,9 +66,11 @@ def eff_and_sf(args):
     qlines = []
     for chn in args.channels:
         if chn == args.channels[0]:
-            triggercomb = utils.generate_trigger_combinations(chn, cfg.triggers)
+            triggercomb = utils.generate_trigger_combinations(chn, cfg.triggers,
+                                                              cfg.exclusive)
         else:
-            triggercomb += utils.generate_trigger_combinations(chn, cfg.triggers)
+            triggercomb += utils.generate_trigger_combinations(chn, cfg.triggers,
+                                                               cfg.exclusive)
             
     for tcomb in triggercomb:
         qlines.append('  {}'.format( utils.join_name_trigger_intersection(tcomb)) )
