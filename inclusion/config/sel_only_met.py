@@ -83,10 +83,10 @@ for x in discr_vars_1D:
 
 ### 2D Plots
 pairs2D = {'METNoMu120': (('metnomu_et', 'mhtnomu_et'),
-                          # ('metnomu_et', 'dau1_pt'),
-                          # ('mhtnomu_et', 'dau1_pt'),
-                          # ('metnomu_et', 'dau1_eta'),
-                          # ('mhtnomu_et', 'dau1_eta'),
+                          ('metnomu_et', 'dau1_pt'),
+                          ('mhtnomu_et', 'dau1_pt'),
+                          ('metnomu_et', 'dau1_eta'),
+                          ('mhtnomu_et', 'dau1_eta'),
                           ('dau1_pt', 'dau1_eta'),)}
 assert( set(pairs2D.keys()).issubset(set(triggers)) )
 for x in pairs2D.values():
@@ -95,13 +95,17 @@ for x in pairs2D.values():
 
 ### Binning
 pog_pt_binedges = (26., 30., 40., 50., 60., 120., 200)
-binedges = {# 'dau1_pt': {'etau':   pog_pt_binedges,
-            #             'mutau':  pog_pt_binedges,
-            #             'tautau': pog_pt_binedges },
-            # 'dau2_pt': {'etau':   pog_pt_binedges,
-            #             'mutau':  pog_pt_binedges,
-            #             'tautau': pog_pt_binedges },
-            }
+binedges = {
+    # 'dau1_pt': {'etau':   pog_pt_binedges,
+    #             'mutau':  pog_pt_binedges,
+    #             'tautau': pog_pt_binedges },
+    'metnomu_et': {'etau':   (100,260),
+                   'mutau':  (100,260),
+                   'tautau': (100,260) },
+    'mhtnomu_et': {'etau':   (120,360),
+                   'mutau':  (120,360),
+                   'tautau': (120,360) },
+}
 assert( set(binedges.keys()).issubset(main.var_join) )
 for x in binedges.values():
     assert( set(x.keys()).issubset(main.channels) )

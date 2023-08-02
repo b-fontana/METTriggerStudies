@@ -75,16 +75,18 @@ def define_binning(args):
             filelist, _ = utils.get_root_inputs(sample, args.indir, include_tree=True)
 
             treesize = 0
-            percentage = 0.1
+            percentage = 0.10
+            qup, qlo = 0.99, 0.
             branches = args.variables + ('pairType',)
             nfiles = len(filelist)
             for ib,batch in enumerate(up.iterate(files=filelist, expressions=branches,
                                                  step_size='50 MB', library='ak')):
-                print('{}/{} {} files (only {} will be processed)\r'.format(ib+1, nfiles, sample, percentage*nfiles),
+                if ib+1 > int(percentage*nfiles) and nfiles > 30: # assume X% of the files are enough to estimate quantiles
+                    break
+
+                print('{}/{} {} files (only {} will be processed)\r'.format(ib+1, nfiles, sample, int(percentage*nfiles)),
                       end='' if ib+1!=nfiles else '\n', flush=True)
 
-                if ib+1 > int(percentage*nfiles) and nfiles > 30: # assume 10% of the files are enough to estimate max and min
-                    break
                 
                 treesize += len(batch)
                 for chn in args.channels:
@@ -93,9 +95,9 @@ def define_binning(args):
                     else:
                         sel_chn = batch.pairType == main.sel[chn]['pairType'][1]
                     batch_sel = batch[sel_chn]
-                    quant = {v:(np.min(batch_sel[v]),np.max(batch_sel[v])) for v in args.variables}
-                    if quant['met_et'][0] is None:
-                        breakpoint()
+
+                    # trim outliers
+                    quant = {v:np.quantile(batch_sel[v], q=np.array([qlo, qup])) for v in args.variables}
                     set_min_max(min_max[chn], quant)
 
             # for var in args.variables:
@@ -147,10 +149,15 @@ def define_binning(args):
                             dset = vargroup.create_dataset(chn, dtype=float,
                                                            shape=(len(cfg.binedges[v][chn]),))
                             if args.debug:
-                                print( '[' + os.path.basename(__file__) + '] ' +
-                                       'Using custom binning for variable {}: {}'
-                                       .format(v, cfg.binedges[v][chn]) )
-                            dset[:] = cfg.binedges[v][chn]
+                                mes = 'Using custom binning for variable {}: {}'.format(v, cfg.binedges[v][chn])
+                                utils.debug(mes, args.debug, __file__)
+                            if len(cfg.binedges[v][chn]) < 2:
+                                mes = 'The binning of variable {} must have at least two values.'.format(v)
+                                raise ValueError(mes)
+                            elif len(cfg.binedges[v][chn]) == 2:
+                                dset[:] = np.linspace(cfg.binedges[v][chn][0], cfg.binedges[v][chn][1], args.nbins+1)
+                            else:    
+                                dset[:] = cfg.binedges[v][chn]
                         else:
                             raise KeyError #a "go-to" to the except clause
 
@@ -159,8 +166,8 @@ def define_binning(args):
                         _binwidth = (min_max[chn][v][1]-min_max[chn][v][0])/args.nbins
                         _data = [min_max[chn][v][0]+k*_binwidth for k in range(args.nbins+1)]
                         if args.debug:
-                            print( '[' + os.path.basename(__file__) + '] Using regular binning for variable {}: {}'
-                                   .format(v, _data) )
+                            mes = 'Using regular binning for variable {}: {}'.format(v, _data)
+                            utils.debug(mes, args.debug, __file__)
                         dset[:] = _data
                         
 

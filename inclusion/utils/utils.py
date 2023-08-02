@@ -160,10 +160,12 @@ def create_single_file(f):
     with open(f, 'x') as newf:
         newf.write('[utils] Dummy text.')
 
-def debug(message, flag=True):
+def debug(message, flag=True, fname=None):
     decorator = ' ============ '
     if flag:
-        print( decorator + message + decorator, flush=True )
+        mes = '[' + os.path.basename(fname) + '] ' if fname is not None else ''
+        mes += decorator + message + decorator
+        print(mes, flush=True)
 
 def define_used_tree_variables(cut):
     """
