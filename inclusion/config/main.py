@@ -89,10 +89,10 @@ corr = {'etau': {},
         'tautau': {} }
     
 ### Data and MC samples
-#inputs = ( '/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_220420/', )
 inputs = ( '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5_Data/',
            '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background/',
            '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background_SemiLep/' )
+corrupted_files = ('/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background/TTTo2L2Nu/output_9.root',)
 
 # names of the subfolders under 'inputs' above:
 # dictionary that maps specific general triggers to datasets 
