@@ -341,7 +341,8 @@ def get_root_inputs(proc, indir, include_tree=False):
                             raise ValueError(mes)
                         filelist.append(line + ':HTauTauTree')
                     else:
-                        filelist.append(line)
+                        if line[:-1] not in main.corrupted_files:
+                            filelist.append(line)
                         
     return filelist, inputdir
 

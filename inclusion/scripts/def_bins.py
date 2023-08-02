@@ -142,12 +142,10 @@ def define_binning(args):
                 print('The HD5 group already existed. Skipping binning definition...')
                 break
             for v in args.variables:
-                vargroup = group.create_group(v)
+                vgroup = group.create_group(v)
                 for chn in args.channels:
                     try:
                         if chn in cfg.binedges[v]:
-                            dset = vargroup.create_dataset(chn, dtype=float,
-                                                           shape=(len(cfg.binedges[v][chn]),))
                             if args.debug:
                                 mes = 'Using custom binning for variable {}: {}'.format(v, cfg.binedges[v][chn])
                                 utils.debug(mes, args.debug, __file__)
@@ -155,14 +153,17 @@ def define_binning(args):
                                 mes = 'The binning of variable {} must have at least two values.'.format(v)
                                 raise ValueError(mes)
                             elif len(cfg.binedges[v][chn]) == 2:
-                                dset[:] = np.linspace(cfg.binedges[v][chn][0], cfg.binedges[v][chn][1], args.nbins+1)
-                            else:    
+                                dset = vgroup.create_dataset(chn, dtype=float, shape=(2,))
+                                dset[:] = np.linspace(cfg.binedges[v][chn][0], cfg.binedges[v][chn][1], args.nbins+1) 
+                            else:
+                                nedges = len(cfg.binedges[v][chn])
+                                dset = vgroup.create_dataset(chn, dtype=float, shape=(nedges,))
                                 dset[:] = cfg.binedges[v][chn]
                         else:
                             raise KeyError #a "go-to" to the except clause
 
                     except KeyError:
-                        dset = vargroup.create_dataset(chn, dtype=float, shape=(args.nbins+1,))
+                        dset = vgroup.create_dataset(chn, dtype=float, shape=(args.nbins+1,))
                         _binwidth = (min_max[chn][v][1]-min_max[chn][v][0])/args.nbins
                         _data = [min_max[chn][v][0]+k*_binwidth for k in range(args.nbins+1)]
                         if args.debug:

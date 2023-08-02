@@ -46,7 +46,11 @@ def add_trigger_counts(args):
                             inputs_join.append( afile_full )
 
         are_there_files(files, regex)
-        assert set(inputs_join) == set(args.infile_counts)
+        if set(inputs_join) != set(args.infile_counts):
+            msg = "The two sets are different!\n"
+            msg += "  Inputs_Join: {}\n".format(inputs_join)
+            msg += "  Infile_Counts: {}".format(args.infile_counts)
+            raise RuntimeError(msg)
 
     else:
         regex = re.compile( args.tprefix + args.sample + '.*_[0-9]{1,5}' + args.subtag + '.csv' )
