@@ -123,7 +123,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
     
     data1D, mc1D, sf1D = ({} for _ in range(3)) 
     data1D_new, mc1D_new, sf1D_new = ({} for _ in range(3))
-    fit_sigmoid_data, fit_sigmoid_mc = ({} for _ in range(2))
+    fit_sigmoid_data, fit_sigmoid_mc, fit_sigmoid_ratio = ({} for _ in range(3))
     for atype in ('eff', 'norm'):
         data1D[atype], data1D_new[atype] = ({} for _ in range(2))
         mc1D[atype], mc1D_new[atype] = ({} for _ in range(2))
@@ -231,8 +231,31 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                     print('Y Scale Factors: yp[{}] = {} +{}/-{}'.format(i,y.sf[i],eyu.sf[i],eyd.sf[i]), flush=True)
                     print('', flush=True)
 
+            # smoothing fits
             sf1D[atype][kdata] = ROOT.TGraphAsymmErrors(nb1D, darr(x.sf), darr(y.sf),
                                                         darr(exd.sf), darr(exu.sf), darr(eyd.sf), darr(eyu.sf))
+
+            if atype == 'eff' and variable in cfg.fit_vars:
+                fit_data_name = _fit_pp("fit_sigmoid_data_"+kdata)
+                fit_sigmoid_data[kdata] = ROOT.TF1(fit_data_name, "[2]/(1+exp(-[0]*(x-[1])))", 50., 350.)
+                fit_sigmoid_data[kdata].SetLineColor(ROOT.kBlack)
+                fit_sigmoid_data[kdata].SetParameters(1.,175.,1.)
+                data1D[atype][kdata].Fit(fit_data_name)
+
+                fit_mc_name = _fit_pp("fit_sigmoid_mc_"+kdata)
+                fit_sigmoid_mc[kdata] = ROOT.TF1(fit_mc_name, "[2]/(1+exp(-[0]*(x-[1])))", 50., 350.)
+                fit_sigmoid_mc[kdata].SetLineColor(ROOT.kRed)
+                fit_sigmoid_mc[kdata].SetParameters(1.,175.,1.)
+                mc1D[atype][kdata].Fit(fit_mc_name)
+
+                def _ratio_func(x,par):
+                    xx = x[0]
+                    return fit_sigmoid_data[kdata].Eval(xx) / fit_sigmoid_mc[kdata].Eval(xx);
+
+                # fit_sf_div = fit_data_name+" / "+fit_mc_name
+                # fit_sigmoid_ratio[kdata] = ROOT.TF1("fit_ratio_"+kdata, fit_sf_div, 50., 350.)
+                fit_sigmoid_ratio[kdata] = ROOT.TF1("fit_ratio_"+kdata, _ratio_func, 50., 350.)
+                fit_sigmoid_ratio[kdata].SetLineColor(ROOT.kBlue)
         
     if debug:
         print('[=debug=] 1D Plotting...', flush=True)
@@ -262,63 +285,62 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                 amin = 0.
 
             nbins = data1D[atype][akey].GetN()
-            axor_info = nbins+1, -1, nbins
-            axor_ndiv = 605, 705
-            axor = ROOT.TH2D('axor'+akey+atype,'axor'+akey+atype,
-                             axor_info[0], axor_info[1], axor_info[2],
-                             100, amin-0.1*(amax-amin), amax+0.4*(amax-amin) )
-            axor.GetYaxis().SetTitle('Efficiency' if atype=='eff' else 'Normalized counts')
-            axor.GetYaxis().SetNdivisions(axor_ndiv[1])
-            axor.GetXaxis().SetLabelOffset(1)
-            axor.GetXaxis().SetNdivisions(axor_ndiv[0])
-            axor.GetYaxis().SetTitleSize(0.08)
-            axor.GetYaxis().SetTitleOffset(.85)
-            axor.GetXaxis().SetLabelSize(0.07)
-            axor.GetYaxis().SetLabelSize(0.07)
-            axor.GetXaxis().SetTickLength(0)
-            axor.Draw()
-
-            # smoothing fits
-            if atype == 'eff' and variable in cfg.fit_vars:
-                fit_sigmoid_data[akey] = ROOT.TF1("fit_sigmoid_data_"+akey, "[2]/(1+exp(-[0]*(x-[1])))", 50, 350.)
-                fit_sigmoid_data[akey].SetLineColor(ROOT.kBlack)
-                fit_sigmoid_data[akey].SetParameters(1.,175.,1.)
-                data1D[atype][akey].Fit("fit_sigmoid_data_"+akey)
-
-                fit_sigmoid_mc[akey] = ROOT.TF1("fit_sigmoid_mc_"+akey, "[2]/(1+exp(-[0]*(x-[1])))", 50, 350.)
-                fit_sigmoid_mc[akey].SetLineColor(ROOT.kRed)
-                fit_sigmoid_mc[akey].SetParameters(1.,175.,1.)
-                mc1D[atype][akey].Fit("fit_sigmoid_mc_"+akey)
+            #axor_info = nbins+1, -1, nbins
+            # axor_info = nbins+1, data1D[atype][akey].GetPointX(0), data1D[atype][akey].GetPointX(nbins-1)
+            # axor_ndiv = 605, 705
+            # axor = ROOT.TH2D('axor'+akey+atype,'axor'+akey+atype,
+            #                  axor_info[0], axor_info[1], axor_info[2],
+            #                  100, amin-0.1*(amax-amin), amax+0.4*(amax-amin) )
+            # axor.GetYaxis().SetTitle('Efficiency' if atype=='eff' else 'Normalized counts')
+            # axor.GetYaxis().SetNdivisions(axor_ndiv[1])
+            # axor.GetXaxis().SetLabelOffset(1)
+            # axor.GetXaxis().SetNdivisions(axor_ndiv[0])
+            # axor.GetYaxis().SetTitleSize(0.08)
+            # axor.GetYaxis().SetTitleOffset(.85)
+            # axor.GetXaxis().SetLabelSize(0.07)
+            # axor.GetYaxis().SetLabelSize(0.07)
+            # axor.GetXaxis().SetTickLength(0)
+            # axor.Draw()
 
             # display histograms with equal width binning
-            data1D_new[atype][akey] = utils.apply_equal_bin_width(data1D[atype][akey])
-            mc1D_new[atype][akey] = utils.apply_equal_bin_width(mc1D[atype][akey])
-            
-            data1D_new[atype][akey].SetLineColor(1)
-            data1D_new[atype][akey].SetLineWidth(2)
-            data1D_new[atype][akey].SetMarkerColor(1)
-            data1D_new[atype][akey].SetMarkerSize(1.3)
-            data1D_new[atype][akey].SetMarkerStyle(20)
-            data1D_new[atype][akey].Draw("same p0 e")
+            # data1D_new[atype][akey] = utils.apply_equal_bin_width(data1D[atype][akey])
+            # mc1D_new[atype][akey] = utils.apply_equal_bin_width(mc1D[atype][akey])
+            data1D[atype][akey].GetYaxis().SetTitleSize(0.2)
+            data1D[atype][akey].GetYaxis().SetTitleOffset(1.0)
+            data1D[atype][akey].GetYaxis().SetTitle('Efficiency' if atype=='eff' else 'Normalized counts')
 
-            mc1D_new[atype][akey].SetLineColor(ROOT.kRed)
-            mc1D_new[atype][akey].SetLineWidth(2)
-            mc1D_new[atype][akey].SetMarkerColor(ROOT.kRed)
-            mc1D_new[atype][akey].SetMarkerSize(1.3)
-            mc1D_new[atype][akey].SetMarkerStyle(22)
-            mc1D_new[atype][akey].Draw("same p0 e")
+            data1D[atype][akey].SetLineColor(1)
+            data1D[atype][akey].SetLineWidth(2)
+            data1D[atype][akey].SetMarkerColor(1)
+            data1D[atype][akey].SetMarkerSize(1.3)
+            data1D[atype][akey].SetMarkerStyle(20)
+            data1D[atype][akey].GetYaxis().SetLabelSize(0.05)
+            data1D[atype][akey].GetXaxis().SetLabelSize(0.05)
+            data1D[atype][akey].GetXaxis().SetTitleSize(0.05)
+            data1D[atype][akey].GetYaxis().SetTitleSize(0.05)
+            data1D[atype][akey].GetXaxis().SetTitleOffset(1.)
+            if atype == 'eff':
+                data1D[atype][akey].GetYaxis().SetRangeUser(-0.05,1.2)
+            data1D[atype][akey].Draw("AP")
 
-            pad1.RedrawAxis()
-            l = ROOT.TLine()
-            l.SetLineWidth(2)
-            padmin = amin-0.1*(amax-amin)
-            padmax = amax+0.1*(amax-amin)
-            fraction = (padmax-padmin)/45
+            mc1D[atype][akey].SetLineColor(ROOT.kRed)
+            mc1D[atype][akey].SetLineWidth(2)
+            mc1D[atype][akey].SetMarkerColor(ROOT.kRed)
+            mc1D[atype][akey].SetMarkerSize(1.3)
+            mc1D[atype][akey].SetMarkerStyle(22)
+            mc1D[atype][akey].Draw("same P")
 
-            for i in range(nbins):
-                x = axor.GetXaxis().GetBinLowEdge(i) + 1.5;
-                l.DrawLine(x,padmin-fraction,x,padmin+fraction)
-            l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
+            # pad1.RedrawAxis()
+            # l = ROOT.TLine()
+            # l.SetLineWidth(2)
+            # padmin = amin-0.1*(amax-amin)
+            # padmax = amax+0.1*(amax-amin)
+            # fraction = (padmax-padmin)/45
+
+            # for i in range(nbins):
+            #     x = axor.GetXaxis().GetBinLowEdge(i) + 1.5;
+            #     l.DrawLine(x,padmin-fraction,x,padmin+fraction)
+            # l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
 
             leg = ROOT.TLegend(0.74, 0.77, 0.94, 0.87)
             leg.SetFillColor(0)
@@ -328,8 +350,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             leg.SetFillStyle(0)
             leg.SetTextFont(42)
 
-            leg.AddEntry(data1D_new[atype][akey], 'Data', 'p')
-            leg.AddEntry(mc1D_new[atype][akey], proc.replace('_', ' '), 'p')
+            leg.AddEntry(data1D[atype][akey], 'Data', 'p')
+            leg.AddEntry(mc1D[atype][akey], proc.replace('_', ' '), 'p')
             leg.Draw('same')
 
             utils.redraw_border()
@@ -364,61 +386,60 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             else:
                 max1, min1 = max(y.sf)+max(eyu.sf),min(y.sf)-max(eyd.sf)
 
-            nbins = data1D_new[atype][akey].GetN()
-            axor_info = nbins+1, -1, nbins
-            axor_ndiv = 605, 705
-            axor2 = ROOT.TH2D('axor2'+akey+atype, 'axor2'+akey+atype,
-                              axor_info[0], axor_info[1], axor_info[2],
-                              100, min1-0.1*(max1-min1), max1+0.1*(max1-min1))
-            axor2.GetXaxis().SetNdivisions(axor_ndiv[0])
-            axor2.GetYaxis().SetNdivisions(axor_ndiv[1])
+            # axor2 = ROOT.TH2D('axor2'+akey+atype, 'axor2'+akey+atype,
+            #                   axor_info[0], axor_info[1], axor_info[2],
+            #                   100, min1-0.1*(max1-min1), max1+0.1*(max1-min1))
+            # axor2.GetXaxis().SetNdivisions(axor_ndiv[0])
+            # axor2.GetYaxis().SetNdivisions(axor_ndiv[1])
 
-            # Change bin labels
-            rounding = lambda x: int(x) if 'pt' in variable else round(x, 2)
-            for i,elem in enumerate(sf1D[atype][akey].GetX()):
-                axor2.GetXaxis().SetBinLabel(i+1, str(rounding(elem-sf1D[atype][akey].GetErrorXlow(i))))
-            axor2.GetXaxis().SetBinLabel(i+2, str(rounding(elem+sf1D[atype][akey].GetErrorXlow(i))))
+            # # Change bin labels
+            # rounding = lambda x: int(x) if 'pt' in variable else round(x, 2)
+            # for i,elem in enumerate(sf1D[atype][akey].GetX()):
+            #     axor2.GetXaxis().SetBinLabel(i+1, str(rounding(elem-sf1D[atype][akey].GetErrorXlow(i))))
+            # axor2.GetXaxis().SetBinLabel(i+2, str(rounding(elem+sf1D[atype][akey].GetErrorXlow(i))))
 
-            axor2.GetYaxis().SetLabelSize(0.12)
-            axor2.GetXaxis().SetLabelSize(0.18)
-            axor2.GetXaxis().SetLabelOffset(0.015)
-            axor2.SetTitleSize(0.13,'X')
-            axor2.SetTitleSize(0.12,'Y')
-            axor2.GetXaxis().SetTitleOffset(1.)
-            axor2.GetYaxis().SetTitleOffset(0.5)
-            axor2.GetYaxis().SetTitle('Data/MC')
+            # axor2.GetYaxis().SetLabelSize(0.12)
+            # axor2.GetXaxis().SetLabelSize(0.18)
+            # axor2.GetXaxis().SetLabelOffset(0.015)
+            # axor2.SetTitleSize(0.13,'X')
+            # axor2.SetTitleSize(0.12,'Y')
+            # axor2.GetXaxis().SetTitleOffset(1.)
+            # axor2.GetYaxis().SetTitleOffset(0.5)
+            # axor2.GetYaxis().SetTitle('Data/MC')
             
-            axor2.GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
-            axor2.GetXaxis().SetTickLength(0)
-            axor2.Draw()
+            # axor2.GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
+            # axor2.GetXaxis().SetTickLength(0)
+            # axor2.Draw()
 
-            sf1D_new[atype] = utils.apply_equal_bin_width(sf1D[atype][akey])
-            sf1D_new[atype].SetLineColor(ROOT.kRed)
-            sf1D_new[atype].SetLineWidth(2)
-            sf1D_new[atype].SetMarkerColor(ROOT.kRed)
-            sf1D_new[atype].SetMarkerSize(1.3)
-            sf1D_new[atype].SetMarkerStyle(22)
-            sf1D_new[atype].GetYaxis().SetLabelSize(0.12)
-            sf1D_new[atype].GetXaxis().SetLabelSize(0.12)
-            sf1D_new[atype].GetXaxis().SetTitleSize(0.15)
-            sf1D_new[atype].GetYaxis().SetTitleSize(0.15)
-            sf1D_new[atype].GetXaxis().SetTitleOffset(1.)
-            sf1D_new[atype].GetYaxis().SetTitleOffset(0.45)
-            sf1D_new[atype].GetYaxis().SetTitle('Data/MC')
-            sf1D_new[atype].GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
-            sf1D_new[atype].Draw('same P0')
+            # sf1D_new[atype] = utils.apply_equal_bin_width(sf1D[atype][akey])
+            sf1D[atype][akey].SetLineColor(ROOT.kBlue)
+            sf1D[atype][akey].SetLineWidth(2)
+            sf1D[atype][akey].SetMarkerColor(ROOT.kBlue)
+            sf1D[atype][akey].SetMarkerSize(1.3)
+            sf1D[atype][akey].SetMarkerStyle(22)
+            sf1D[atype][akey].GetYaxis().SetLabelSize(0.1)
+            sf1D[atype][akey].GetXaxis().SetLabelSize(0.1)
+            sf1D[atype][akey].GetXaxis().SetTitleSize(0.1)
+            sf1D[atype][akey].GetYaxis().SetTitleSize(0.1)
+            sf1D[atype][akey].GetXaxis().SetTitleOffset(1.)
+            sf1D[atype][akey].GetYaxis().SetTitleOffset(0.45)
+            sf1D[atype][akey].GetYaxis().SetTitle('Data/MC')
+            sf1D[atype][akey].GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
+            sf1D[atype][akey].Draw("AP")
+            if atype == 'eff' and variable in cfg.fit_vars:
+                fit_sigmoid_ratio[akey].Draw("same")
 
             pad2.cd()
             l = ROOT.TLine()
             l.SetLineWidth(2)
-            padmin = min1-0.1*(max1-min1)
-            padmax = max1+0.1*(max1-min1)
-            fraction = (padmax-padmin)/30
+            # padmin = min1-0.1*(max1-min1)
+            # padmax = max1+0.1*(max1-min1)
+            # fraction = (padmax-padmin)/30
 
-            for i in range(nbins):
-                x = axor2.GetXaxis().GetBinLowEdge(i) + 1.5;
-                l.DrawLine(x,padmin-fraction,x,padmin+fraction)
-            l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
+            # for i in range(nbins):
+            #     x = axor2.GetXaxis().GetBinLowEdge(i) + 1.5;
+            #     l.DrawLine(x,padmin-fraction,x,padmin+fraction)
+            # l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
 
             utils.redraw_border()
 
@@ -680,7 +701,10 @@ def draw_eff_and_sf_2d(proc, channel, joinvars, trig, save_names_2D,
                 full = utils.rewrite_cut_string(full, obj[0], regex=True)
                 full = full.replace('Canvas2D_', '')
                 canvas.SaveAs(full)
-        
+
+def _fit_pp(s):
+    return s.replace('>', 'G').replace('<', 'L').replace('=', 'EQ')
+
 def _get_canvas_name(prefix, proc, chn, var, trig, data_name, subtag):
     """
     A 'XXX' placeholder is added for later replacement by all cuts considered for the same channel, variable and trigger combination.
