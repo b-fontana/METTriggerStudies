@@ -75,7 +75,7 @@ def define_binning(args):
             filelist, _ = utils.get_root_inputs(sample, args.indir, include_tree=True)
 
             treesize = 0
-            percentage = 0.10
+            percentage = 0.1
             qup, qlo = 0.99, 0.
             branches = args.variables + ('pairType',)
             nfiles = len(filelist)
@@ -146,18 +146,18 @@ def define_binning(args):
                 for chn in args.channels:
                     try:
                         if chn in cfg.binedges[v]:
+                            dset = vgroup.create_dataset(chn, dtype=float, shape=(args.nbins+1,))
+                            
                             if args.debug:
                                 mes = 'Using custom binning for variable {}: {}'.format(v, cfg.binedges[v][chn])
                                 utils.debug(mes, args.debug, __file__)
+
                             if len(cfg.binedges[v][chn]) < 2:
                                 mes = 'The binning of variable {} must have at least two values.'.format(v)
                                 raise ValueError(mes)
                             elif len(cfg.binedges[v][chn]) == 2:
-                                dset = vgroup.create_dataset(chn, dtype=float, shape=(2,))
-                                dset[:] = np.linspace(cfg.binedges[v][chn][0], cfg.binedges[v][chn][1], args.nbins+1) 
+                                dset[:] = np.linspace(cfg.binedges[v][chn][0], cfg.binedges[v][chn][1], args.nbins+1)
                             else:
-                                nedges = len(cfg.binedges[v][chn])
-                                dset = vgroup.create_dataset(chn, dtype=float, shape=(nedges,))
                                 dset[:] = cfg.binedges[v][chn]
                         else:
                             raise KeyError #a "go-to" to the except clause

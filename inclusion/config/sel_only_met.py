@@ -81,6 +81,9 @@ discr_vars_1D =  {
 for x in discr_vars_1D:
     utils.check_discr_vars_correctness(triggers, discr_vars_1D[x], channel=x, exclusive=exclusive)
 
+### Fit efficiencies for some variables
+fit_vars = ["metnomu_et",]
+
 ### 2D Plots
 pairs2D = {'METNoMu120': (('metnomu_et', 'mhtnomu_et'),
                           ('metnomu_et', 'dau1_pt'),

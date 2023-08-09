@@ -40,7 +40,7 @@ def paint2d(channel, trig):
     l.DrawLatex( lX2, lY, 'Channel: '+latexChannel)
 
 def draw_eff_and_sf_1d(proc, channel, variable, trig,
-                       save_names_1D,
+                       save_names_1D, cfg,
                        tprefix, indir, subtag, mc_name, data_name,
                        intersection_str, debug):
 
@@ -123,6 +123,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
     
     data1D, mc1D, sf1D = ({} for _ in range(3)) 
     data1D_new, mc1D_new, sf1D_new = ({} for _ in range(3))
+    fit_sigmoid_data, fit_sigmoid_mc = ({} for _ in range(2))
     for atype in ('eff', 'norm'):
         data1D[atype], data1D_new[atype] = ({} for _ in range(2))
         mc1D[atype], mc1D_new[atype] = ({} for _ in range(2))
@@ -236,7 +237,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
     if debug:
         print('[=debug=] 1D Plotting...', flush=True)
 
-    n1dt, n1mc, n1sf = 'Data1D', 'MC1D', 'SF1D'
+    n1dt, n1mc, n1sf, n1sigmfunc = 'Data1D', 'MC1D', 'SF1D', 'SigmoidFunc'
     for akey in sf1D['eff']:
         canvas_name = os.path.basename(save_names_1D[0]).split('.')[0]
         canvas_name = utils.rewrite_cut_string(canvas_name, akey, regex=True)
@@ -277,22 +278,35 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             axor.GetXaxis().SetTickLength(0)
             axor.Draw()
 
+            # smoothing fits
+            if atype == 'eff' and variable in cfg.fit_vars:
+                fit_sigmoid_data[akey] = ROOT.TF1("fit_sigmoid_data_"+akey, "[2]/(1+exp(-[0]*(x-[1])))", 50, 350.)
+                fit_sigmoid_data[akey].SetLineColor(ROOT.kBlack)
+                fit_sigmoid_data[akey].SetParameters(1.,175.,1.)
+                data1D[atype][akey].Fit("fit_sigmoid_data_"+akey)
+
+                fit_sigmoid_mc[akey] = ROOT.TF1("fit_sigmoid_mc_"+akey, "[2]/(1+exp(-[0]*(x-[1])))", 50, 350.)
+                fit_sigmoid_mc[akey].SetLineColor(ROOT.kRed)
+                fit_sigmoid_mc[akey].SetParameters(1.,175.,1.)
+                mc1D[atype][akey].Fit("fit_sigmoid_mc_"+akey)
+
+            # display histograms with equal width binning
             data1D_new[atype][akey] = utils.apply_equal_bin_width(data1D[atype][akey])
             mc1D_new[atype][akey] = utils.apply_equal_bin_width(mc1D[atype][akey])
-
+            
             data1D_new[atype][akey].SetLineColor(1)
             data1D_new[atype][akey].SetLineWidth(2)
             data1D_new[atype][akey].SetMarkerColor(1)
             data1D_new[atype][akey].SetMarkerSize(1.3)
             data1D_new[atype][akey].SetMarkerStyle(20)
-            data1D_new[atype][akey].Draw('same p0 e')
+            data1D_new[atype][akey].Draw("same p0 e")
 
             mc1D_new[atype][akey].SetLineColor(ROOT.kRed)
             mc1D_new[atype][akey].SetLineWidth(2)
             mc1D_new[atype][akey].SetMarkerColor(ROOT.kRed)
             mc1D_new[atype][akey].SetMarkerSize(1.3)
             mc1D_new[atype][akey].SetMarkerStyle(22)
-            mc1D_new[atype][akey].Draw('same p0')
+            mc1D_new[atype][akey].Draw("same p0 e")
 
             pad1.RedrawAxis()
             l = ROOT.TLine()
@@ -419,12 +433,17 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             afile = ROOT.TFile.Open(_name, 'RECREATE')
             afile.cd()
 
+            # save the original histograms, not the ones for visualization
             data1D[atype][akey].SetName(n1dt)
             data1D[atype][akey].Write(n1dt)
             mc1D[atype][akey].SetName(n1mc)
             mc1D[atype][akey].Write(n1mc)
             sf1D[atype][akey].SetName(n1sf)
             sf1D[atype][akey].Write(n1sf)
+
+            if variable in cfg.fit_vars:
+                fit_sigmoid_data[akey].Write(n1sigmfunc)
+                fit_sigmoid_mc[akey].Write(n1sigmfunc)
 
     if debug:
         print('[=debug=] 2D Plotting...', flush=True)
@@ -780,7 +799,7 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
                         m += ', trigger_combination={}\n'.format(tcomb)
                         print(m)
 
-                draw_eff_and_sf_1d(proc, chn, var, tcomb, names1D,
+                draw_eff_and_sf_1d(proc, chn, var, tcomb, names1D, config_module,
                                    tprefix, indir, subtag, mc_name, data_name,
                                    intersection_str, debug)
 

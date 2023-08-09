@@ -391,7 +391,7 @@ def join_name_trigger_intersection(tuple_element):
 
 def join_strings(*args, sep=''):
     return sep.join(args)
-    
+
 def load_binning(afile, key, variables, channels):
     """
     Load the Binning stored in a previous task.
@@ -401,12 +401,14 @@ def load_binning(afile, key, variables, channels):
         try:
             group = f[key]
         except KeyError:
-            print('{} does not have key {}.'.format(afile, key))
-            print('Available keys: {}'.format(f.keys()))
-            raise
+          missing_key_print(afile, key)
           
         for var in variables:
-            subgroup = group[var]
+            try:
+                subgroup = group[var]
+            except KeyError:
+                missing_key_print(afile, key)
+                
             binedges[var], nbins[var] = ({} for _ in range(2))
             for chn in channels:
                 binedges[var][chn] = np.array(subgroup[chn][:])
@@ -414,6 +416,11 @@ def load_binning(afile, key, variables, channels):
 
     return binedges, nbins
     
+def missing_key_print(afile, key):
+    print('{} does not have key {}.'.format(afile, key))
+    print('Available keys: {}'.format(f.keys()))
+    raise
+
 def redraw_border():
     """
     this little macro redraws the axis tick marks and the pad border lines.
