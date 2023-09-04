@@ -87,7 +87,7 @@ done
 # print tags that do not exist and take them out of the list of tags to remove
 NREM=${#REMOVED_TAGS[@]}
 if [ ${NREM} -eq 1 ]; then
-	echo "Tag ${REMOVED_TAGS[1]} was ignored since it is not present."
+	echo "Tag ${REMOVED_TAGS[0]} was ignored since it is not present."
 elif [ ${NREM} -ge 1 ]; then
 	list_ignored_tags ${NREM} ${REMOVED_TAGS[@]}
 	list_tags ${OLD_TAGS[@]}

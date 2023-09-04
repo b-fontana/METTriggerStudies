@@ -20,10 +20,9 @@ cuts = {'METNoMu120': {'metnomu_et': ('>', [120,]),
         }
 
 # which triggers are exclusive to a particular channel?
-exclusive = {'etau'   : (),
-             'mutau'  : (),
-             'tautau' : (),
-             'general': ('IsoMu24','METNoMu120'),}
+exclusive = {'mutau'   : (),
+             'mumu'    : (),
+             'general' : ('IsoMu24','METNoMu120'),}
 
 inters_general = {'MET' : (),
                   'EG'  : (),
@@ -33,19 +32,13 @@ inters_general = {'MET' : (),
                            ),
                   'Tau' : ()}
 inters = {
-    'etau':
-    {'MET' : (),
-     'EG'  : (),
-     'Mu'  : (),
-     'Tau' : ()
-     },
     'mutau':
     {'MET' : (),
      'EG'  : (),
      'Mu'  : (),
      'Tau' : ()
      },
-    'tautau':
+    'mumu':
     {'MET' : (),
      'EG'  : (),
      'Mu'  : (),
@@ -56,21 +49,13 @@ for x in inters:
     utils.check_inters_correctness(triggers, inters[x], inters_general, channel=x, exclusive=exclusive)
 
 discr_vars_1D =  {
-    'etau':
-    {
-        ('IsoMu24',)  : 'dau1_pt',
-        ('METNoMu120',) : 'dau1_pt',
-        ('IsoMu24', 'METNoMu120') : 'dau1_pt',
-    },
-
     'mutau':
     {
         ('IsoMu24',)  : 'dau1_pt',
         ('METNoMu120',) : 'dau1_pt',
         ('IsoMu24', 'METNoMu120') : 'dau1_pt',
     },
-
-    'tautau':
+    'mumu':
     {
         ('IsoMu24',)  : 'dau1_pt',
         ('METNoMu120',) : 'dau1_pt',
@@ -97,17 +82,23 @@ for x in pairs2D.values():
         assert( pair[0] in main.var_eff and pair[1] in main.var_eff )
 
 ### Binning
-pog_pt_binedges = (26., 30., 40., 50., 60., 120., 200)
+#pog_pt_binedges = (26., 30., 40., 50., 60., 120., 200)
+metnomu_et_binedges = {
+    'mutau': (100., 110., 120., 130., 140., 145., 150., 155., 160., 165., 170.,
+              175., 180., 185., 190., 195., 200., 210., 220., 230., 240., 250.,
+              260., 270., 280.),
+    'mumu': (100., 110., 120., 130., 140., 145., 150., 155., 160., 165., 170.,
+             175., 180., 185., 190., 195., 200., 210., 220., 230., 240., 250.,
+             260., 270., 280.),
+}
 binedges = {
     # 'dau1_pt': {'etau':   pog_pt_binedges,
     #             'mutau':  pog_pt_binedges,
     #             'tautau': pog_pt_binedges },
-    'metnomu_et': {'etau':   (100,260),
-                   'mutau':  (100,260),
-                   'tautau': (100,260) },
-    'mhtnomu_et': {'etau':   (120,360),
-                   'mutau':  (120,360),
-                   'tautau': (120,360) },
+    'metnomu_et': {'mutau' : metnomu_et_binedges['mutau'],
+                   'mumu'  : metnomu_et_binedges['mumu'] },
+    'mhtnomu_et': {'mutau' : (120,360),
+                   'mumu'  : (120,360) },
 }
 assert( set(binedges.keys()).issubset(main.var_join) )
 for x in binedges.values():

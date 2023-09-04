@@ -31,8 +31,8 @@ pref = {'clos': 'Closure',
 extensions = ('png', 'pdf', 'C', 'root')
 placeholder_cuts = '_XXX'
 
-#_channels = ( 'all', 'etau', 'mutau', 'tautau', 'mumu' )
-channels = ('etau', 'mutau', 'tautau')
+#channels = ( 'all', 'etau', 'mutau', 'tautau', 'mumu' )
+channels = ('etau', 'mutau', 'tautau', 'mumu')
 sel = {'all'    : {'pairType': ('<',  3),},
        'mutau'  : {'pairType': ('==', 0),},
        'etau'   : {'pairType': ('==', 1),},
@@ -86,13 +86,14 @@ cuts_ignored = {'HT20':       (),
 ### Correlation Matrix
 corr = {'etau': {},
         'mutau': {},
-        'tautau': {} }
+        'tautau': {},
+        'mumu': {} }
     
 ### Data and MC samples
-inputs = ( '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5_Data/',
-           '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background/',
-           '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background_SemiLep/' )
-corrupted_files = ('/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background/TTTo2L2Nu/output_9.root',)
+inputs = ( '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_AllChannels_Data/',
+           '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_AllChannels_Background/',
+           '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_AllChannels_Background_SemiLep/' )
+corrupted_files = () #'/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background/TTTo2L2Nu/output_9.root'
 
 # names of the subfolders under 'inputs' above:
 # dictionary that maps specific general triggers to datasets 

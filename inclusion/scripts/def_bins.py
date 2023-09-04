@@ -95,10 +95,14 @@ def define_binning(args):
                     else:
                         sel_chn = batch.pairType == main.sel[chn]['pairType'][1]
                     batch_sel = batch[sel_chn]
-
-                    # trim outliers
-                    quant = {v:np.quantile(batch_sel[v], q=np.array([qlo, qup])) for v in args.variables}
-                    set_min_max(min_max[chn], quant)
+                    if len(batch_sel) != 0:
+                        # trim outliers
+                        quant = {v:np.quantile(batch_sel[v], q=np.array([qlo, qup])) for v in args.variables}
+                        set_min_max(min_max[chn], quant)
+                    else:
+                        mes = ("Channel {} is not present in batch {} of sample {} in folders {}."
+                               .format(chn, ib, sample, args.indir))
+                        raise RuntimeError(mes)
 
             # for var in args.variables:
             #     for chn in args.channels:
@@ -145,9 +149,7 @@ def define_binning(args):
                 vgroup = group.create_group(v)
                 for chn in args.channels:
                     try:
-                        if chn in cfg.binedges[v]:
-                            dset = vgroup.create_dataset(chn, dtype=float, shape=(args.nbins+1,))
-                            
+                        if chn in cfg.binedges[v]:                            
                             if args.debug:
                                 mes = 'Using custom binning for variable {}: {}'.format(v, cfg.binedges[v][chn])
                                 utils.debug(mes, args.debug, __file__)
@@ -156,8 +158,11 @@ def define_binning(args):
                                 mes = 'The binning of variable {} must have at least two values.'.format(v)
                                 raise ValueError(mes)
                             elif len(cfg.binedges[v][chn]) == 2:
+                                dset = vgroup.create_dataset(chn, dtype=float, shape=(args.nbins+1,))
                                 dset[:] = np.linspace(cfg.binedges[v][chn][0], cfg.binedges[v][chn][1], args.nbins+1)
                             else:
+                                nb_tmp = len(cfg.binedges[v][chn])-1
+                                dset = vgroup.create_dataset(chn, dtype=float, shape=(nb_tmp+1,))
                                 dset[:] = cfg.binedges[v][chn]
                         else:
                             raise KeyError #a "go-to" to the except clause
