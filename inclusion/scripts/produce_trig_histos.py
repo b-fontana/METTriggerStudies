@@ -118,7 +118,9 @@ def build_histograms(args):
 
         sel = selection.EventSelection(entries, isdata=args.isdata,
                                        configuration=config_module)
-
+        if not sel.sel_category(config_module.category):
+            continue
+        
         fill_var = {}
         for v in args.variables:
             fill_var[v] = {}

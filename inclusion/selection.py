@@ -269,7 +269,9 @@ class EventSelection:
                                  dau2_tauiso < iso_cuts['dau2_tau'])
         bool2 = pairtype==2 and (dau1_tauiso < iso_cuts['dau1_tau'] or
                                  dau2_tauiso < iso_cuts['dau2_tau'])
-        if bool0 or bool1 or bool2:
+        bool3 = pairtype==3 and (dau1_muiso >= iso_cuts['dau1_mu'] and
+                                 dau1_muiso >= iso_cuts['dau1_mu'])
+        if bool0 or bool1 or bool2 or bool3:
             return False
 
         #((tauH_SVFIT_mass-116.)*(tauH_SVFIT_mass-116.))/(35.*35.) + ((bH_mass_raw-111.)*(bH_mass_raw-111.))/(45.*45.) <  1.0
@@ -325,13 +327,14 @@ class EventSelection:
         if not self.isdata:
             return True
         
-        if (tcomb in self.cfg.inters_general['MET'] or
-            tcomb in self.cfg.inters['etau']['MET'] or
-            tcomb in self.cfg.inters['mutau']['MET'] or
-            tcomb in self.cfg.inters['tautau']['MET']):
-            return True
-        return False
-    
+        # if (tcomb in self.cfg.inters_general['MET'] or
+        #     tcomb in self.cfg.inters['etau']['MET'] or
+        #     tcomb in self.cfg.inters['mutau']['MET'] or
+        #     tcomb in self.cfg.inters['tautau']['MET']):
+        #     return True
+        # return False
+        return True
+        
     def trigger_bits(self, trig):
         if trig in self.cfg.trig_custom:
             return self.set_custom_trigger_bit(trig)

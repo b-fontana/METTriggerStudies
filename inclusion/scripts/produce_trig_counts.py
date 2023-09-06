@@ -85,6 +85,8 @@ def get_trig_counts(args):
             evt_weight = 1.
 
         sel = selection.EventSelection(entries, args.isdata, configuration=config_module)
+        if not sel.sel_category(config_module.category):
+            continue
         
         pass_trigger = {}
         for trig in config_module.triggers:

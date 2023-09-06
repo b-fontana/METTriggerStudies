@@ -177,7 +177,9 @@ def define_used_tree_variables(cut):
     _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi', 'IdSF_deep_2d',
                 'PUReweight', 'HHKin_mass', 'isLeptrigger', 'pairType',
                 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
-                'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw')
+                'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',
+                'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor',
+                'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta')
     _regex = tuple(set(re.findall(r'self\.entries\.(.+?)\s', cut)))
     return tuple(set(_entries + _regex))
     
