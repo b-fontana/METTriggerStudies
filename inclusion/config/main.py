@@ -112,9 +112,9 @@ mc_processes = {'ggfRadions': (),
                        'DYJetsToLL_0J', 'DYJetsToLL_1J', 'DYJetsToLL_2J',
                        'DYJetsToLL_LHEFilterPtZ-0To50', 'DYJetsToLL_LHEFilterPtZ-50To100', 'DYJetsToLL_LHEFilterPtZ-100To250',
                        'DYJetsToLL_LHEFilterPtZ-250To400', 'DYJetsToLL_LHEFilterPtZ-400To650', 'DYJetsToLL_LHEFilterPtZ-650ToInf'),
-                'Wjets': ('WJetsToLNu_HT-70To100',  'WJetsToLNu_HT-100To200', 'WJetsToLNu_HT-200To400',
-                          'WJetsToLNu_HT-400To600', 'WJetsToLNu_HT-600To800', 'WJetsToLNu_HT-800To1200',
-                          'WJetsToLNu_HT-1200To2500', 'WJetsToLNu_HT-2500ToInf'),
+                # 'Wjets': ('WJetsToLNu_HT-70To100',  'WJetsToLNu_HT-100To200', 'WJetsToLNu_HT-200To400',
+                #           'WJetsToLNu_HT-400To600', 'WJetsToLNu_HT-600To800', 'WJetsToLNu_HT-800To1200',
+                #           'WJetsToLNu_HT-1200To2500', 'WJetsToLNu_HT-2500ToInf'),
                 }
 
 
