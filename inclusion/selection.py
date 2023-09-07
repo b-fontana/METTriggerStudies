@@ -238,6 +238,7 @@ class EventSelection:
         pairtype    = self.entries['pairType']
         dau1_eleiso = self.entries['dau1_eleMVAiso']
         dau1_muiso  = self.entries['dau1_iso']
+        dau2_muiso  = self.entries['dau2_iso']
         dau1_tauiso = self.entries['dau1_deepTauVsJet']
         dau2_tauiso = self.entries['dau2_deepTauVsJet']
 
@@ -252,7 +253,7 @@ class EventSelection:
             return False
 
         # Loose / Medium / Tight
-        iso_allowed = { 'dau1_ele': 1., 'dau1_mu': 0.15,
+        iso_allowed = { 'dau1_ele': 1., 'dau1_mu': 0.15, 'dau2_mu': 0.15,
                         'dau1_tau': 5., 'dau2_tau': 5. }
         if any(x not in iso_allowed for x in iso_cuts.keys()):
             mes = 'At least one of the keys is not allowed. '
@@ -270,7 +271,7 @@ class EventSelection:
         bool2 = pairtype==2 and (dau1_tauiso < iso_cuts['dau1_tau'] or
                                  dau2_tauiso < iso_cuts['dau2_tau'])
         bool3 = pairtype==3 and (dau1_muiso >= iso_cuts['dau1_mu'] and
-                                 dau1_muiso >= iso_cuts['dau1_mu'])
+                                 dau2_muiso >= iso_cuts['dau2_mu'])
         if bool0 or bool1 or bool2 or bool3:
             return False
 
