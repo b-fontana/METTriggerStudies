@@ -352,7 +352,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             #     l.DrawLine(x,padmin-fraction,x,padmin+fraction)
             # l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
 
-            leg = ROOT.TLegend(0.74, 0.77, 0.94, 0.87)
+            leg = ROOT.TLegend(0.70, 0.77, 0.90, 0.87)
             leg.SetFillColor(0)
             leg.SetShadowColor(0)
             leg.SetBorderSize(0)
@@ -361,7 +361,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             leg.SetTextFont(42)
 
             leg.AddEntry(data1D[atype][akey], 'Data', 'p')
-            leg.AddEntry(mc1D[atype][akey], proc.replace('MC_', '').replace('_', '+'), 'p')
+            leg.AddEntry(mc1D[atype][akey],
+                         proc.replace('MC_', '').replace('TT', 'TTbar').replace('_', '+'), 'p')
             leg.Draw('same')
 
             utils.redraw_border()
@@ -473,8 +474,9 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             sf1D[atype][akey].Write(n1sf)
 
             if variable in cfg.fit_vars:
-                fit_sigmoid_data[akey].Write(n1sigmfunc)
-                fit_sigmoid_mc[akey].Write(n1sigmfunc)
+                fit_sigmoid_data[akey].Write(n1sigmfunc+"Data")
+                fit_sigmoid_mc[akey].Write(n1sigmfunc+"MC")
+                fit_sigmoid_ratio[akey].Write(n1sigmfunc+"SF")
 
     if debug:
         print('[=debug=] 2D Plotting...', flush=True)
