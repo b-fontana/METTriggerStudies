@@ -139,13 +139,19 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                 data1D['norm'][kh].Scale(1)
             data1D['norm'][kh] = ROOT.TGraphAsymmErrors(data1D['norm'][kh])
         for kh, vh in hmc1D['trig'].items():
+            if hmc1D['ref'].GetBinContent(0) < 0:
+                print("[WARNING] Had to set the overflow to zero: {} ({})".format(kh, hmc1D['ref'].GetBinContent(0)))
+                hmc1D['ref'].SetBinContent(0, 0.)
+            # if kh == 'Trig1D_mutau_met_et_METNoMu120_CUTS_mhtnomu_et_>_100':
+            #     breakpoint()
             mc1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hmc1D['ref'])
             mc1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
             try:
                 mc1D['norm'][kh].Scale(1/mc1D['norm'][kh].Integral())
             except ZeroDivisionError:
                 mc1D['norm'][kh].Scale(1)
-            mc1D['norm'][kh] = ROOT.TGraphAsymmErrors(mc1D['norm'][kh])
+            mc1D['norm'][kh] = ROOT.TGraphAsymmErrors(mc1D['norm'][kh])            
+            
     except SystemError:
         m = 'There is likely a mismatch in the number of bins.'
         raise RuntimeError(m)
@@ -209,6 +215,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                 x.sf[i] = x.mc[i]
                 exu.sf[i] = exu.mc[i]
                 exd.sf[i] = exd.mc[i]
+                if x.dt[i] != x.mc[i]:
+                    breakpoint()
                 assert x.dt[i] == x.mc[i]
                 assert exu.dt[i] == exu.mc[i]
                 assert exd.dt[i] == exd.mc[i]
@@ -250,6 +258,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
 
                 def _ratio_func(x,par):
                     xx = x[0]
+                    if fit_sigmoid_mc[kdata].Eval(xx) == 0.:
+                        return 0.;
                     return fit_sigmoid_data[kdata].Eval(xx) / fit_sigmoid_mc[kdata].Eval(xx);
 
                 # fit_sf_div = fit_data_name+" / "+fit_mc_name
@@ -351,7 +361,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             leg.SetTextFont(42)
 
             leg.AddEntry(data1D[atype][akey], 'Data', 'p')
-            leg.AddEntry(mc1D[atype][akey], proc.replace('_', ' '), 'p')
+            leg.AddEntry(mc1D[atype][akey], proc.replace('MC_', '').replace('_', '+'), 'p')
             leg.Draw('same')
 
             utils.redraw_border()

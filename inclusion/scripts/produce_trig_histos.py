@@ -181,7 +181,11 @@ def build_histograms(args):
                         if not sel.dataset_triggers(tcomb, chn, config_module.triggers, args.dataset)[0]:
                             continue
 
-                        hRef[chn][j][cstr].Fill(fill_var[j][chn], evt_weight)
+                        # avoid underflow bin with negative weights crashing efficiency calculation
+                        if fill_var[j][chn] < binedges[j][chn][0]:
+                            hRef[chn][j][cstr].Fill(fill_var[j][chn], 1)
+                        else:
+                            hRef[chn][j][cstr].Fill(fill_var[j][chn], evt_weight)
                         
                         cuts_combinations = list(it.product( *(pcuts1D[atrig][j].items()
                                                              for atrig in tcomb) ))
@@ -203,7 +207,13 @@ def build_histograms(args):
                                 hTrig[chn][j][cstr][key] = ROOT.TH1D(htrig_name, '', *binning1D)
 
                             if val and pass_trigger_intersection[cstr]:
-                                hTrig[chn][j][cstr][key].Fill(fill_var[j][chn], evt_weight)
+                                # avoid underflow bin with negative weights crashing efficiency calculation
+                                if fill_var[j][chn] < binedges[j][chn][0]:
+                                    hTrig[chn][j][cstr][key].Fill(fill_var[j][chn], 1)
+                                else:
+                                    hTrig[chn][j][cstr][key].Fill(fill_var[j][chn], evt_weight)
+
+
 
                 # fill 2D efficiencies
                 for onetrig in config_module.triggers:
@@ -222,8 +232,13 @@ def build_histograms(args):
                             
                             for j in config_module.pairs2D[onetrig]:
                                 vname = utils.add_vnames(j[0],j[1])
-                                fill_info = ( fill_var[j[0]][chn], fill_var[j[1]][chn],
-                                              evt_weight )
+                                # avoid underflow bin with negative weights crashing efficiency calculation
+                                if (fill_var[j[0]][chn] < binedges[j[0]][chn][0] or
+                                    fill_var[j[1]][chn] < binedges[j[1]][chn][0]):
+                                    fill_info = (fill_var[j[0]][chn], fill_var[j[1]][chn], 1)
+                                else:
+                                    fill_info = (fill_var[j[0]][chn], fill_var[j[1]][chn], evt_weight)
+
                                 try:
                                     cuts_combinations = list(it.product(
                                         *(pcuts2D[atrig][vname].items() for atrig in combtrig) ))
