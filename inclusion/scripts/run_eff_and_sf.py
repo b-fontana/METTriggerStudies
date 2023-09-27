@@ -138,12 +138,15 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             except ZeroDivisionError:
                 data1D['norm'][kh].Scale(1)
             data1D['norm'][kh] = ROOT.TGraphAsymmErrors(data1D['norm'][kh])
+        nb = hmc1D['ref'].GetNbinsX()
         for kh, vh in hmc1D['trig'].items():
-            if hmc1D['ref'].GetBinContent(0) < 0:
-                print("[WARNING] Had to set the overflow to zero: {} ({})".format(kh, hmc1D['ref'].GetBinContent(0)))
-                hmc1D['ref'].SetBinContent(0, 0.)
-            # if kh == 'Trig1D_mutau_met_et_METNoMu120_CUTS_mhtnomu_et_>_100':
-            #     breakpoint()
+
+            # avoid underflow and overflow efficiency division issues
+            hmc1D['ref'].SetBinContent(0, 0.)
+            hmc1D['ref'].SetBinContent(nb+1, 0.)
+            vh.SetBinContent(0, 0.)
+            vh.SetBinContent(nb+1, 0.)
+
             mc1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hmc1D['ref'])
             mc1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
             try:
@@ -170,6 +173,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
     assert len(data1D['eff']) == len(mc1D['eff'])
 
     # 1-dimensional
+    frange = 50, 500
     for atype in ('eff', 'norm'):
         for (kmc,vmc),(kdata,vdata) in zip(mc1D[atype].items(),data1D[atype].items()):
             assert(kmc == kdata)
@@ -215,8 +219,6 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                 x.sf[i] = x.mc[i]
                 exu.sf[i] = exu.mc[i]
                 exd.sf[i] = exd.mc[i]
-                if x.dt[i] != x.mc[i]:
-                    breakpoint()
                 assert x.dt[i] == x.mc[i]
                 assert exu.dt[i] == exu.mc[i]
                 assert exd.dt[i] == exd.mc[i]
@@ -245,27 +247,26 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
 
             if atype == 'eff' and variable in cfg.fit_vars:
                 fit_data_name = _fit_pp("fit_sigmoid_data_"+kdata)
-                fit_sigmoid_data[kdata] = ROOT.TF1(fit_data_name, "[2]/(1+exp(-[0]*(x-[1])))", 50., 350.)
+                fit_sigmoid_data[kdata] = ROOT.TF1(fit_data_name, "[2]/(1+exp(-[0]*(x-[1])))", frange[0], frange[1])
                 fit_sigmoid_data[kdata].SetLineColor(ROOT.kBlack)
                 fit_sigmoid_data[kdata].SetParameters(1.,175.,1.)
-                data1D[atype][kdata].Fit(fit_data_name)
+                fit_data_status = data1D[atype][kdata].Fit(fit_data_name)
 
                 fit_mc_name = _fit_pp("fit_sigmoid_mc_"+kdata)
-                fit_sigmoid_mc[kdata] = ROOT.TF1(fit_mc_name, "[2]/(1+exp(-[0]*(x-[1])))", 50., 350.)
+                fit_sigmoid_mc[kdata] = ROOT.TF1(fit_mc_name, "[2]/(1+exp(-[0]*(x-[1])))", frange[0], frange[1])
                 fit_sigmoid_mc[kdata].SetLineColor(ROOT.kRed)
                 fit_sigmoid_mc[kdata].SetParameters(1.,175.,1.)
-                mc1D[atype][kdata].Fit(fit_mc_name)
+                fit_mc_status = mc1D[atype][kdata].Fit(fit_mc_name)
 
-                def _ratio_func(x,par):
+                def _ratio_func(x, par):
                     xx = x[0]
                     if fit_sigmoid_mc[kdata].Eval(xx) == 0.:
                         return 0.;
                     return fit_sigmoid_data[kdata].Eval(xx) / fit_sigmoid_mc[kdata].Eval(xx);
 
-                # fit_sf_div = fit_data_name+" / "+fit_mc_name
-                # fit_sigmoid_ratio[kdata] = ROOT.TF1("fit_ratio_"+kdata, fit_sf_div, 50., 350.)
-                fit_sigmoid_ratio[kdata] = ROOT.TF1("fit_ratio_"+kdata, _ratio_func, 50., 350.)
-                fit_sigmoid_ratio[kdata].SetLineColor(ROOT.kBlue)
+                if fit_data_status == 0 and fit_mc_status == 0:
+                    fit_sigmoid_ratio[kdata] = ROOT.TF1("fit_ratio_"+kdata, _ratio_func, frange[0], frange[1])
+                    fit_sigmoid_ratio[kdata].SetLineColor(ROOT.kBlue)
         
     if debug:
         print('[=debug=] 1D Plotting...', flush=True)
@@ -340,19 +341,13 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             mc1D[atype][akey].SetMarkerStyle(22)
             mc1D[atype][akey].Draw("same P")
 
-            # pad1.RedrawAxis()
-            # l = ROOT.TLine()
-            # l.SetLineWidth(2)
-            # padmin = amin-0.1*(amax-amin)
-            # padmax = amax+0.1*(amax-amin)
-            # fraction = (padmax-padmin)/45
+            pad1.RedrawAxis()
+            l = ROOT.TLine()
+            l.SetLineWidth(1)
+            l.SetLineStyle(7)
+            l.DrawLine(90,1,298,1)
 
-            # for i in range(nbins):
-            #     x = axor.GetXaxis().GetBinLowEdge(i) + 1.5;
-            #     l.DrawLine(x,padmin-fraction,x,padmin+fraction)
-            # l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
-
-            leg = ROOT.TLegend(0.70, 0.77, 0.90, 0.87)
+            leg = ROOT.TLegend(0.60, 0.77, 0.88, 0.87)
             leg.SetFillColor(0)
             leg.SetShadowColor(0)
             leg.SetBorderSize(0)
@@ -437,12 +432,12 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             sf1D[atype][akey].GetYaxis().SetTitle('Data/MC')
             sf1D[atype][akey].GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
             sf1D[atype][akey].Draw("AP")
-            if atype == 'eff' and variable in cfg.fit_vars:
+            if atype == 'eff' and akey in fit_sigmoid_ratio:
                 fit_sigmoid_ratio[akey].Draw("same")
 
-            pad2.cd()
-            l = ROOT.TLine()
-            l.SetLineWidth(2)
+            # pad2.cd()
+            # l = ROOT.TLine()
+            # l.SetLineWidth(2)
             # padmin = min1-0.1*(max1-min1)
             # padmax = max1+0.1*(max1-min1)
             # fraction = (padmax-padmin)/30
@@ -476,7 +471,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             if variable in cfg.fit_vars:
                 fit_sigmoid_data[akey].Write(n1sigmfunc+"Data")
                 fit_sigmoid_mc[akey].Write(n1sigmfunc+"MC")
-                fit_sigmoid_ratio[akey].Write(n1sigmfunc+"SF")
+                if akey in fit_sigmoid_ratio:
+                    fit_sigmoid_ratio[akey].Write(n1sigmfunc+"SF")
 
     if debug:
         print('[=debug=] 2D Plotting...', flush=True)
