@@ -23,15 +23,13 @@ class EventSelection:
         self.isdata = isdata
         self.debug = debug
         self.prefix = 'Data_' if self.isdata else 'MC_'
+        self.categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
         
         # dependency injection
         self.cfg = configuration
 
         self.datasets, self.dataset_ref_trigs = self._deduce_datasets(self.cfg.inters_general,
                                                                       self.cfg.inters)
-        
-        self.categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
-        
         for d in self.datasets:
             assert d in main.data
 

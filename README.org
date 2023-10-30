@@ -119,7 +119,7 @@ conda install -c bokeh bokeh
 *** Region statistics of trigger overlaps
 Run the script (=-h= for all options):
 #+BEGIN_SRC shell
-for chn in "etau" "mutau" "tautau"; do python3 tests/test_trigger_regions.py --indir /data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_Full_NoMET_NoSingleTau --masses 400 500 600 700 800 900 1000 1250 1500 --channel $chn --region_cuts 190 190; done
+for chn in "etau" "mutau" "tautau"; do python tests/test_trigger_regions.py --indir /data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_Upstream_Sig/ --masses 400 500 600 700 800 900 1000 1250 1500 --channel $chn --region_cuts 190 190 --configuration inclusion.config.sel_default; done
 #+END_SRC
 Add the =--plot= option to reuse the intermediate datasets if you are running over the same data due to cosmetics changes.
 

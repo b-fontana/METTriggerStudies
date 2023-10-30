@@ -71,8 +71,8 @@ def main(args):
   
                     sum_base     = float(ditau_line[1])
                     sum_met      = float(ditau_line[7])
-                    sum_tau      = float(ditau_line[9])
                     sum_only_tau = float(ditau_line[8])
+                    sum_tau      = float(ditau_line[9])
                         
                     frac_indep_met = sum_met / sum_base
                     err_indep_met = ZeroDivError(lambda : np.sqrt(1/sum_base + 1/sum_met))
@@ -110,6 +110,7 @@ def main(args):
         set_fig(p1)
         set_fig(p2)
         for ichn,chn in enumerate(channels):
+
             for itd,td in enumerate(('met', 'tau')):
                 p1.circle([x+shift_indep[td][ichn] for x in linear_x],
                           yindep[md][chn][td], color=colors[ichn], fill_alpha=1.,
@@ -122,6 +123,7 @@ def main(args):
                     [(max(0,x-y/2),min(100,x+y/2))
                      for x,y in zip(yindep[md][chn][td],errindep[md][chn][td])],
                     color=colors[ichn], **opt_line)
+
             for itd,td in enumerate(('met', 'add_met_tau')):
                 p2.circle([x+shift_both[td][ichn] for x in linear_x],
                           yboth[md][chn][td], color=colors[ichn], fill_alpha=1.,
@@ -160,7 +162,7 @@ def main(args):
         save(g, title=md)
 
 if __name__ == '__main__':
-    base_dir = '/eos/user/b/bfontana/www/TriggerScaleFactors/'
+    base_dir = '/eos/home-b/bfontana/www/TriggerScaleFactors/'
     main_dir = ['Region_190_190_PT_40_40_TURNON_200_190',]
     #'TriggerStudy_MET200_SingleTau190_CUT_entries_ditau_deltaR_GT_0_5',
     #'TriggerStudy_MET200_SingleTau190_CUT_entries_ditau_deltaR_ST_0_5']

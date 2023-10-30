@@ -14,6 +14,7 @@ import csv
 import numpy as np
 import h5py
 from collections import defaultdict
+import importlib
 
 import inclusion
 from inclusion import selection
@@ -24,7 +25,6 @@ import ROOT
 
 from bokeh.plotting import figure, output_file, save
 from bokeh.models import Range1d, Label
-import matplotlib.pyplot as plt
 
 tau = '\u03C4'
 mu  = '\u03BC'
@@ -56,7 +56,7 @@ def stats_save(savepath, label, c1, e1, m, mode='w'):
                      'uncertainty']
 
 def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
-                   recuts, ptcuts, text, bigtau=False, notau=False, nomet=False):
+                   ptcuts, text, bigtau=False, notau=False, nomet=False):
     base = {'etau': 'e+e'+tau, 'mutau': mu+'+'+mu+tau, 'tautau': ditau}
     output_file(text['out'])
     print('Saving file {}'.format(text['out']))
@@ -64,7 +64,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
     topr = 9.9
     shft = 0.1
     start, b1, b2, b3 = 0.0, 2, 2.5, 7.5
-    xgap = b1+shft if ptcuts[0] == '40' and ptcuts[1] == '40' else b2+shft
+    xgap = b1+shft# else b2+shft
     
     p = figure(title='m(X)={}GeV'.format(text['mass']), width=600, height=400,
                tools='save')
@@ -74,20 +74,12 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
     p.toolbar.logo = None
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
-    p.xaxis.ticker = [b1,b3] if ptcuts[0] == '40' else [b1, b2, b3]
-    p.xaxis.major_label_overrides = ({b1: '40',
-                                      b3: regcuts[0]} if ptcuts[0] == '40' and ptcuts[1] == '40'
-                                     else {b1: '40',
-                                           b2: ptcuts[0],
-                                           b3: regcuts[0]})
+    p.xaxis.ticker = [b1,b3]#else [b1, b2, b3]
+    p.xaxis.major_label_overrides = ({b1: ptcuts[0], b3: regcuts[0]})# else {b1: '40', b2: ptcuts[0], b3: regcuts[0]}
     p.xaxis.axis_label = 'pT(1) [GeV]'
      
-    p.yaxis.ticker = [b1, b3] if ptcuts[1] == '40' else [b1, b2, b3]
-    p.yaxis.major_label_overrides = ({b1: '40',
-                                      b3: regcuts[1]} if ptcuts[0] == '40' and ptcuts[1] == '40'
-                                     else {b1: '40',
-                                           b2: ptcuts[1], b3:
-                                           regcuts[1]})
+    p.yaxis.ticker = [b1, b3]# else [b1, b2, b3]
+    p.yaxis.major_label_overrides = ({b1: ptcuts[0], b3: ptcuts[1]})
     p.yaxis.axis_label = 'pT(2) [GeV]'
 
     # add a square renderer with a size, color, and alpha
@@ -192,10 +184,10 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
     line_opt = dict(color='black', line_dash='dashed', line_width=2)
     p.line(x=[b1,b1], y=[start, topr+shft], **line_opt)
     p.line(x=[start,topr+shft], y=[b1,b1], **line_opt)
-    if ptcuts[0] != '40':
-        p.line(x=[b2,b2], y=[start,topr+shft], **line_opt)
-    if ptcuts[1] != '40':
-        p.line(x=[start,topr+shft], y=[b2,b2], **line_opt)
+    # if ptcuts[0] != '40':
+    #     p.line(x=[b2,b2], y=[start,topr+shft], **line_opt)
+    # if ptcuts[1] != '40':
+    #     p.line(x=[start,topr+shft], y=[b2,b2], **line_opt)
     p.line(x=[b3,b3], y=[start,topr+shft], **line_opt)
     p.line(x=[start,topr+shft], y=[b3,b3], **line_opt)
      
@@ -343,7 +335,7 @@ def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, r
 def test_trigger_regions(indir, sample, channel):
     outname = get_outname(sample, channel, regcuts, ptcuts[args.channel], met_turnon, tau_turnon,
                           args.bigtau, args.notau, args.nomet)
-
+    config_module = importlib.import_module(args.configuration)
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
     elif channel == 'tautau':
@@ -355,6 +347,8 @@ def test_trigger_regions(indir, sample, channel):
     
     t_in = ROOT.TChain('HTauTauTree')
     glob_files = glob.glob( os.path.join(indir, full_sample, 'output_*.root') )
+    if len(glob_files) < 1:
+        raise RuntimeError("No files!")
     for f in glob_files:
         t_in.Add(f)
 
@@ -411,7 +405,7 @@ def test_trigger_regions(indir, sample, channel):
     for entry in t_in:
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-        sel = selection.EventSelection(entries, isdata=False, configuration=None)
+        sel = selection.EventSelection(entries, isdata=False, configuration=config_module)
 
         #triggers and turnon cuts
         met_turnon_expr = entries.metnomu_et > float(met_turnon)
@@ -647,6 +641,8 @@ if __name__ == '__main__':
                         help='MET trigger turnon cut [GeV].' )
     parser.add_argument('--region_cuts', required=False, type=str, nargs=2, default=('200', '200'),
                         help='High/low regions pT1 and pT2 selection cuts [GeV].' )
+    parser.add_argument('--configuration', dest='configuration', required=True,
+                        help='Name of the configuration module to use.')
     args = utils.parse_args(parser)
 
     met_turnon = args.met_turnon
@@ -655,7 +651,7 @@ if __name__ == '__main__':
     ptcuts = {'etau':   ('20', '20'),
               'mutau':  ('20', '20'),
               'tautau': ('40', '40')}
-    main_dir = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors/',
+    main_dir = os.path.join('/eos/home-b/bfontana/www/TriggerScaleFactors/',
                             '_'.join(('Region', *regcuts, 'PT', *ptcuts[args.channel], 'TURNON',
                                       met_turnon, tau_turnon)))
     if args.bigtau:
@@ -666,8 +662,8 @@ if __name__ == '__main__':
         main_dir += '_NOMET'
 
     regions = ('ditau', 'met', 'tau')
-    met_region = ('(entries.dau2_pt < 40 and entries.dau1_pt < {}) or '.format(regcuts[0]) +
-                  '(entries.dau1_pt < 40 and entries.dau2_pt < {})'.format(regcuts[1]))
+    met_region = ('(entries.dau2_pt < {} and entries.dau1_pt < {}) or '.format(ptcuts[args.channel][1], regcuts[0]) +
+                  '(entries.dau1_pt < {} and entries.dau2_pt < {})'.format(ptcuts[args.channel][0], regcuts[1]))
 
     if args.bigtau:
         tau_region = 'entries.dau1_pt >= {} or entries.dau2_pt >= {}'.format(*regcuts)
@@ -675,8 +671,8 @@ if __name__ == '__main__':
                         'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(*regcuts))
 
     else:
-        tau_region = ('(entries.dau2_pt < 40 and entries.dau1_pt >= {}) or '.format(regcuts[0]) +
-                      '(entries.dau1_pt < 40 and entries.dau2_pt >= {})'.format(regcuts[1])) #this one is never realized due to the 190GeV trigger cut
+        tau_region = ('(entries.dau2_pt < {} and entries.dau1_pt >= {}) or '.format(ptcuts[args.channel][1], regcuts[0]) +
+                      '(entries.dau1_pt < {} and entries.dau2_pt >= {})'.format(ptcuts[args.channel][0], regcuts[1])) #this one is never realized due to the 190GeV trigger cut
         ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(*ptcuts[args.channel])
 
     if args.notau:
@@ -808,7 +804,7 @@ if __name__ == '__main__':
         text = {'mass': sample,
                 'out': os.path.join(out_counts[categories.index(cat)], 'diagram.html')}
         sq_res = square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, args.channel,
-                                regcuts, ptcuts[args.channel], text=text,
+                                ptcuts[args.channel], text=text,
                                 bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
         c1, c2, e1, e2 = sq_res
         contam1.append(c1)
@@ -834,7 +830,7 @@ if __name__ == '__main__':
 
     if args.copy:
         import subprocess
-        to_directory = os.path.join('/eos/user/b/bfontana/www/TriggerScaleFactors', main_dir)
+        to_directory = os.path.join('/eos/home-b/bfontana/www/TriggerScaleFactors', main_dir)
         to_directory = os.path.join(to_directory, args.channel)
      
         for sample in args.masses:
