@@ -359,6 +359,7 @@ def test_trigger_regions(indir, sample, channel):
     hNoBase_Tau, hBase_NoTau, hNoBase_MET_NoTau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # negations
     hBase_MET_Tau = defaultdict(lambda: defaultdict(dict)) # intersection of three triggers
     hBase_NoMET_NoTau = defaultdict(lambda: defaultdict(dict)) # passes only the base
+    hMETKin, hTauKin = (defaultdict(lambda: defaultdict(dict)) for _ in range(2)) # kin regions
     norphans, ntotal = ({k:0 for k in categories} for _ in range(2))
     for reg in regions:
         for v in tuple(variables):
@@ -392,6 +393,9 @@ def test_trigger_regions(indir, sample, channel):
                 hBase_MET_Tau[reg][v][cat] = ROOT.TH2D(suff('hBase_MET_Tau'), *hopt)
                 hBase_NoMET_NoTau[reg][v][cat] = ROOT.TH2D(suff('hBase_NoMET_NoTau'), *hopt)
 
+                hMETKin[reg][v][cat] = ROOT.TH2D(suff('hMETKin'), *hopt)
+                hTauKin[reg][v][cat] = ROOT.TH2D(suff('hTauKin'), *hopt)
+
     t_in.SetBranchStatus('*', 0)
     _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
                 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted',
@@ -405,6 +409,9 @@ def test_trigger_regions(indir, sample, channel):
     for entry in t_in:
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
+        in_met_region = eval(met_region)
+        in_tau_region = eval(tau_region)
+        in_ditau_region = eval(ditau_region)
         sel = selection.EventSelection(entries, isdata=False, configuration=config_module)
 
         #triggers and turnon cuts
@@ -440,11 +447,11 @@ def test_trigger_regions(indir, sample, channel):
                         if v == variables_2D[0]:
                             ntotal[cat] += 1
 
-                        if eval(met_region):
+                        if in_met_region:
                             reg = 'met'
-                        elif eval(tau_region):
+                        elif in_tau_region:
                             reg = 'tau'
-                        elif eval(ditau_region):
+                        elif in_ditau_region:
                             reg = 'ditau'
                         else:
                             continue
@@ -467,11 +474,11 @@ def test_trigger_regions(indir, sample, channel):
                         if v == variables_2D[0]:
                             ntotal[cat] += 1
 
-                        if eval(met_region):
+                        if in_met_region:
                             reg = 'met'
-                        elif eval(tau_region):
+                        elif in_tau_region:
                             reg = 'tau'
-                        elif eval(ditau_region):
+                        elif in_ditau_region:
                             reg = 'ditau'
                         else:
                             if v == variables_2D[0]:
@@ -525,6 +532,18 @@ def test_trigger_regions(indir, sample, channel):
                         if pass_trg and not pass_met and not pass_tau:
                             hBase_NoMET_NoTau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
 
+                        # only passes the base
+                        if pass_met and in_met_region:
+                            hMETKin[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
+                            if pass_trg:
+                                raise RuntimeError("Firing MET and baseline? Check was is going on!")
+
+                        # only passes the base
+                        if pass_tau and in_tau_region:
+                            hTauKin[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
+                            if pass_trg:
+                                raise RuntimeError("Firing Tau and baseline? Check was is going on!")
+
     f_out = ROOT.TFile(outname, 'RECREATE')
     f_out.cd()
     for reg in regions:
@@ -554,6 +573,9 @@ def test_trigger_regions(indir, sample, channel):
 
                 hBase_MET_Tau[reg][v][cat].Write(suff('hBase_MET_Tau'))
                 hBase_NoMET_NoTau[reg][v][cat].Write(suff('hBase_NoMET_NoTau'))
+
+                hMETKin[reg][v][cat].Write(suff('hMETKin'))
+                hTauKin[reg][v][cat].Write(suff('hTauKin'))
                 
     f_out.Close()
     for cat in categories:
@@ -713,7 +735,8 @@ if __name__ == '__main__':
                               '!Base && MET', '!Base && !MET && Tau',
                               '!Base && Tau', '!Base && MET && !Tau',
                               'Base && !MET', 'Base && !Tau',
-                              'Base && MET && Tau']
+                              'Base && MET && Tau',
+                              'MET Kin', 'Tau Kin']
                 reader.writerow(header_row)
 
         # plot histograms and fill CSV with histogram integrals
@@ -748,8 +771,11 @@ if __name__ == '__main__':
                     hBase_NoTau       = f_in.Get(suff('hBase_NoTau'))
                     hNoBase_MET_NoTau = f_in.Get(suff('hNoBase_MET_NoTau'))
  
-                    hBase_MET_Tau = f_in.Get(suff('hBase_MET_Tau'))
+                    hBase_MET_Tau     = f_in.Get(suff('hBase_MET_Tau'))
                     hBase_NoMET_NoTau = f_in.Get(suff('hBase_NoMET_NoTau'))
+
+                    hMETKin = f_in.Get(suff('hMETKin'))
+                    hTauKin = f_in.Get(suff('hTauKin'))
 
                     # plot2D(hBase, v, args.channel, sample, 'Base', cat, from_directory, reg)
                     # plot2D(hBase_NoTau, v, args.channel, sample, 'Base + !Tau', cat, from_directory, reg)
@@ -776,6 +802,10 @@ if __name__ == '__main__':
                 cBase_MET_Tau = round(hBase_MET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 cBase_NoMET_NoTau = round(hBase_NoMET_NoTau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
 
+                cMETKin = round(hMETKin.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cTauKin = round(hTauKin.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+
+                # append to table, one line per region
                 with open(os.path.join(out_counts[categories.index(cat)], 'table.csv'), 'a') as f:
                     reader = csv.writer(f, delimiter=',', quotechar='|')
                     row = [reg, cBase, cMET, cTau,
@@ -783,7 +813,8 @@ if __name__ == '__main__':
                            cNoBase_MET, cNoBase_NoMET_Tau,
                            cNoBase_Tau, cNoBase_MET_NoTau,
                            cBase_NoMET, cBase_NoTau,
-                           cBase_MET_Tau]
+                           cBase_MET_Tau,
+                           cMETKin, cTauKin]
                     reader.writerow(row)
 
                 if reg=='ditau':
