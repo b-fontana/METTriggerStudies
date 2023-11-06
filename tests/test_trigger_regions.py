@@ -13,7 +13,7 @@ import itertools as it
 import csv
 import numpy as np
 import h5py
-from collections import defaultdict
+from collections import defaultdict as dd
 import importlib
 
 import inclusion
@@ -332,7 +332,7 @@ def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, r
                               tstr + '_' + 'reg' + region + '_' + '_VS_'.join(two_vars) + '.' + ext))
     c.Close()
 
-def test_trigger_regions(indir, sample, channel):
+def test_trigger_regions(indir, sample, channel, spin):
     outname = get_outname(sample, channel, regcuts, ptcuts[args.channel], met_turnon, tau_turnon,
                           args.bigtau, args.notau, args.nomet)
     config_module = importlib.import_module(args.configuration)
@@ -343,7 +343,8 @@ def test_trigger_regions(indir, sample, channel):
     binning.update({'HHKin_mass': (20, float(sample)-300, float(sample)+300),
                     'dau1_iso': iso1})
     
-    full_sample = 'GluGluToBulkGravitonToHHTo2B2Tau_M-' + sample + '_'
+    full_sample = {0: 'GluGluToRadionToHHTo2B2Tau_M-' + sample + '_',
+                   2: 'GluGluToBulkGravitonToHHTo2B2Tau_M-' + sample + '_'}[spin]
     
     t_in = ROOT.TChain('HTauTauTree')
     glob_files = glob.glob( os.path.join(indir, full_sample, 'output_*.root') )
@@ -352,14 +353,14 @@ def test_trigger_regions(indir, sample, channel):
     for f in glob_files:
         t_in.Add(f)
 
-    jBase, jNoBase_MET, jNoBase_NoMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # one trigger, 1-dimensional
-    hBase, hMET, hTau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # one trigger
-    hBase_MET, hBase_Tau, hMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # intersection of two triggers
-    hNoBase_MET, hBase_NoMET, hNoBase_NoMET_Tau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # negations
-    hNoBase_Tau, hBase_NoTau, hNoBase_MET_NoTau = (defaultdict(lambda: defaultdict(dict)) for _ in range(3)) # negations
-    hBase_MET_Tau = defaultdict(lambda: defaultdict(dict)) # intersection of three triggers
-    hBase_NoMET_NoTau = defaultdict(lambda: defaultdict(dict)) # passes only the base
-    hMETKin, hTauKin = (defaultdict(lambda: defaultdict(dict)) for _ in range(2)) # kin regions
+    jBase, jNoBase_MET, jNoBase_NoMET_Tau = (dd(lambda: dd(dict)) for _ in range(3)) # one trigger, 1-dimensional
+    hBase, hMET, hTau, hVBF = (dd(lambda: dd(dict)) for _ in range(4)) # one trigger
+    hBase_MET, hBase_Tau, hMET_Tau = (dd(lambda: dd(dict)) for _ in range(3)) # intersection of two triggers
+    hNoBase_MET, hBase_NoMET, hNoBase_NoMET_Tau = (dd(lambda: dd(dict)) for _ in range(3)) # negations
+    hNoBase_Tau, hBase_NoTau, hNoBase_MET_NoTau = (dd(lambda: dd(dict)) for _ in range(3)) # negations
+    hBase_MET_Tau = dd(lambda: dd(dict)) # intersection of three triggers
+    hBase_NoMET_NoTau = dd(lambda: dd(dict)) # passes only the base
+    hMETKin, hTauKin, hVBFKin = (dd(lambda: dd(dict)) for _ in range(3)) # kin regions
     norphans, ntotal = ({k:0 for k in categories} for _ in range(2))
     for reg in regions:
         for v in tuple(variables):
@@ -378,6 +379,7 @@ def test_trigger_regions(indir, sample, channel):
                 hBase[reg][v][cat] = ROOT.TH2D(suff('hBase'), *hopt)
                 hMET[reg][v][cat]  = ROOT.TH2D(suff('hMET'), *hopt)
                 hTau[reg][v][cat]  = ROOT.TH2D(suff('hTau'), *hopt)
+                hVBF[reg][v][cat]  = ROOT.TH2D(suff('hVBF'), *hopt)
                 
                 hBase_MET[reg][v][cat] = ROOT.TH2D(suff('hBase_MET'), *hopt)
                 hBase_Tau[reg][v][cat] = ROOT.TH2D(suff('hBase_Tau'), *hopt)
@@ -395,6 +397,7 @@ def test_trigger_regions(indir, sample, channel):
 
                 hMETKin[reg][v][cat] = ROOT.TH2D(suff('hMETKin'), *hopt)
                 hTauKin[reg][v][cat] = ROOT.TH2D(suff('hTauKin'), *hopt)
+                hVBFKin[reg][v][cat] = ROOT.TH2D(suff('hVBFKin'), *hopt)
 
     t_in.SetBranchStatus('*', 0)
     _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
@@ -417,9 +420,11 @@ def test_trigger_regions(indir, sample, channel):
         #triggers and turnon cuts
         met_turnon_expr = entries.metnomu_et > float(met_turnon)
         tau_turnon_expr = entries.dau1_pt > float(tau_turnon) or entries.dau2_pt > float(tau_turnon)
+        vbf_turnon_expr = entries.dau1_pt > 25 and entries.dau2_pt > 25
         pass_trg = sel.pass_triggers(triggers[channel]) and entries.isLeptrigger
         pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr
         pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr
+        pass_vbf = sel.pass_triggers(('VBFTauCustom',)) and vbf_turnon_expr
         
         # mcweight   = entries.MC_weight
         pureweight = entries.PUReweight
@@ -494,6 +499,9 @@ def test_trigger_regions(indir, sample, channel):
                             
                         if pass_tau:
                             hTau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
+                            
+                        if pass_vbf:
+                            hVBF[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
 
                         # intersections with two triggers
                         if pass_trg and pass_met:
@@ -532,17 +540,23 @@ def test_trigger_regions(indir, sample, channel):
                         if pass_trg and not pass_met and not pass_tau:
                             hBase_NoMET_NoTau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
 
-                        # only passes the base
+                        # MET + MET kin region
                         if pass_met and in_met_region:
                             hMETKin[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
                             if pass_trg:
                                 raise RuntimeError("Firing MET and baseline? Check was is going on!")
 
-                        # only passes the base
+                        # Tau + Tau kin region
                         if pass_tau and in_tau_region:
                             hTauKin[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
                             if pass_trg:
                                 raise RuntimeError("Firing Tau and baseline? Check was is going on!")
+
+                        # VBF + (Tau+MET=VBF kin region)
+                        if pass_vbf and (in_tau_region or in_met_region):
+                            hVBFKin[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
+                            if pass_trg:
+                                raise RuntimeError("Firing VBF and baseline? Check was is going on!")
 
     f_out = ROOT.TFile(outname, 'RECREATE')
     f_out.cd()
@@ -559,6 +573,7 @@ def test_trigger_regions(indir, sample, channel):
                 hBase[reg][v][cat].Write(suff('hBase'))
                 hMET[reg][v][cat].Write(suff('hMET'))
                 hTau[reg][v][cat].Write(suff('hTau'))
+                hVBF[reg][v][cat].Write(suff('hVBF'))
 
                 hBase_MET[reg][v][cat].Write(suff('hBase_MET'))
                 hBase_Tau[reg][v][cat].Write(suff('hBase_Tau'))
@@ -576,6 +591,7 @@ def test_trigger_regions(indir, sample, channel):
 
                 hMETKin[reg][v][cat].Write(suff('hMETKin'))
                 hTauKin[reg][v][cat].Write(suff('hTauKin'))
+                hVBFKin[reg][v][cat].Write(suff('hVBFKin'))
                 
     f_out.Close()
     for cat in categories:
@@ -645,6 +661,8 @@ if __name__ == '__main__':
                         help='Resonance mass')
     parser.add_argument('--channel', required=True, type=str,  
                         help='Select the channel over which the workflow will be run.' )
+    parser.add_argument('--spin', required=True, type=int, choices=(0, 2), 
+                        help='Select the spin hypothesis over which the workflow will be run.' )
     parser.add_argument('--plot', action='store_true',
                         help='Reuse previously produced data for quick plot changes.')
     parser.add_argument('--copy', action='store_true',
@@ -674,7 +692,7 @@ if __name__ == '__main__':
               'mutau':  ('20', '20'),
               'tautau': ('40', '40')}
     main_dir = os.path.join('/eos/home-b/bfontana/www/TriggerScaleFactors/',
-                            '_'.join(('Region', *regcuts, 'PT', *ptcuts[args.channel], 'TURNON',
+                            '_'.join(('Region', 'Spin' + str(args.spin), *regcuts, 'PT', *ptcuts[args.channel], 'TURNON',
                                       met_turnon, tau_turnon)))
     if args.bigtau:
         main_dir += '_BIGTAU'
@@ -706,12 +724,12 @@ if __name__ == '__main__':
     if args.sequential:
         if not args.plot:
             for sample in args.masses:
-                test_trigger_regions(args.indir, sample, args.channel)
+                test_trigger_regions(args.indir, sample, args.channel, args.spin)
     else:
         if not args.plot:
             pool = multiprocessing.Pool(processes=6)
             pool.starmap(test_trigger_regions,
-                         zip(it.repeat(args.indir), args.masses, it.repeat(args.channel)))
+                         zip(it.repeat(args.indir), args.masses, it.repeat(args.channel), it.repeat(args.spin)))
     ###########################
 
     sum_stats, err_sum_stats = ([] for _ in range(2))
@@ -759,6 +777,7 @@ if __name__ == '__main__':
                     hBase = f_in.Get(suff('hBase'))
                     hMET  = f_in.Get(suff('hMET'))
                     hTau  = f_in.Get(suff('hTau'))
+                    hVBF  = f_in.Get(suff('hVBF'))
  
                     hBase_MET = f_in.Get(suff('hBase_MET'))
                     hBase_Tau = f_in.Get(suff('hBase_Tau'))
@@ -776,6 +795,7 @@ if __name__ == '__main__':
 
                     hMETKin = f_in.Get(suff('hMETKin'))
                     hTauKin = f_in.Get(suff('hTauKin'))
+                    hVBFKin  = f_in.Get(suff('hVBFKin'))
 
                     # plot2D(hBase, v, args.channel, sample, 'Base', cat, from_directory, reg)
                     # plot2D(hBase_NoTau, v, args.channel, sample, 'Base + !Tau', cat, from_directory, reg)
@@ -787,6 +807,7 @@ if __name__ == '__main__':
                 cBase = round(hBase.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 cMET  = round(hMET.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 cTau  = round(hTau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cVBF  = round(hVBF.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 
                 cBase_MET = round(hBase_MET.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 cBase_Tau = round(hBase_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
@@ -804,17 +825,18 @@ if __name__ == '__main__':
 
                 cMETKin = round(hMETKin.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
                 cTauKin = round(hTauKin.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
+                cVBFKin = round(hVBFKin.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
 
                 # append to table, one line per region
                 with open(os.path.join(out_counts[categories.index(cat)], 'table.csv'), 'a') as f:
                     reader = csv.writer(f, delimiter=',', quotechar='|')
-                    row = [reg, cBase, cMET, cTau,
+                    row = [reg, cBase, cMET, cTau, cVBF,
                            cBase_MET, cBase_Tau, cMET_Tau,
                            cNoBase_MET, cNoBase_NoMET_Tau,
                            cNoBase_Tau, cNoBase_MET_NoTau,
                            cBase_NoMET, cBase_NoTau,
                            cBase_MET_Tau,
-                           cMETKin, cTauKin]
+                           cMETKin, cTauKin, cVBFKin]
                     reader.writerow(row)
 
                 if reg=='ditau':
