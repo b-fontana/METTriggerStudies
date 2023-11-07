@@ -22,6 +22,8 @@ from inclusion.config import main
 from inclusion.utils import utils
 
 import ROOT
+import hist
+import pickle
 
 from bokeh.plotting import figure, output_file, save
 from bokeh.models import Range1d, Label
@@ -54,6 +56,9 @@ def stats_save(savepath, label, c1, e1, m, mode='w'):
         dset.cols = ['mass [GeV]',
                      'stats',
                      'uncertainty']
+        
+def rec_dd():
+    return dd(rec_dd)
 
 def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                    ptcuts, text, bigtau=False, notau=False, nomet=False):
@@ -207,7 +212,7 @@ def get_outname(sample, channel, regcuts, ptcuts, met_turnon, tau_turnon,
         name += '_NOTAU'
     if nomet:
         name += '_NOMET'
-    name += '.root'
+    name += '.pkl'
 
     s = 'data/regions_{}'.format(name)
     return s
@@ -346,59 +351,23 @@ def test_trigger_regions(indir, sample, channel, spin):
     full_sample = {0: 'GluGluToRadionToHHTo2B2Tau_M-' + sample + '_',
                    2: 'GluGluToBulkGravitonToHHTo2B2Tau_M-' + sample + '_'}[spin]
     
+    norphans, ntotal = ({k:0 for k in categories} for _ in range(2))
+    
+    ahistos = rec_dd()
+    for reg in regions:                
+        for cat in categories:
+            for htype in htypes:
+                ahistos[htype][reg][cat] = hist.Hist(
+                    hist.axis.Regular(*binning["dau1_pt"], name="dau1pt"),
+                    hist.axis.Regular(*binning["dau2_pt"], name="dau2pt"),
+                )
+
     t_in = ROOT.TChain('HTauTauTree')
     glob_files = glob.glob( os.path.join(indir, full_sample, 'output_*.root') )
     if len(glob_files) < 1:
         raise RuntimeError("No files!")
     for f in glob_files:
         t_in.Add(f)
-
-    jBase, jNoBase_MET, jNoBase_NoMET_Tau = (dd(lambda: dd(dict)) for _ in range(3)) # one trigger, 1-dimensional
-    hBase, hMET, hTau, hVBF = (dd(lambda: dd(dict)) for _ in range(4)) # one trigger
-    hBase_MET, hBase_Tau, hMET_Tau = (dd(lambda: dd(dict)) for _ in range(3)) # intersection of two triggers
-    hNoBase_MET, hBase_NoMET, hNoBase_NoMET_Tau = (dd(lambda: dd(dict)) for _ in range(3)) # negations
-    hNoBase_Tau, hBase_NoTau, hNoBase_MET_NoTau = (dd(lambda: dd(dict)) for _ in range(3)) # negations
-    hBase_MET_Tau = dd(lambda: dd(dict)) # intersection of three triggers
-    hBase_NoMET_NoTau = dd(lambda: dd(dict)) # passes only the base
-    hMETKin, hTauKin, hVBFKin = (dd(lambda: dd(dict)) for _ in range(3)) # kin regions
-    norphans, ntotal = ({k:0 for k in categories} for _ in range(2))
-    for reg in regions:
-        for v in tuple(variables):
-            for cat in categories:
-                suff = lambda x : x + '_' + reg + '_' + v + '_' + cat
-                jopt = ('', *binning[v])
-                jBase[reg][v][cat] = ROOT.TH1D(suff('jBase'), *jopt)
-                jNoBase_MET[reg][v][cat] = ROOT.TH1D(suff('jNoBase_MET'), *jopt)
-                jNoBase_NoMET_Tau[reg][v][cat] = ROOT.TH1D(suff('jNoBase_NoMET_Tau'), *jopt)
-                
-        for v in tuple(variables_2D):
-            for cat in categories:
-                suff = lambda x: x + '_' + reg + '_' + v[0] + '_VS_' + v[1] + '_' + cat
-                hopt = ('', *binning[v[0]], *binning[v[1]])
-
-                hBase[reg][v][cat] = ROOT.TH2D(suff('hBase'), *hopt)
-                hMET[reg][v][cat]  = ROOT.TH2D(suff('hMET'), *hopt)
-                hTau[reg][v][cat]  = ROOT.TH2D(suff('hTau'), *hopt)
-                hVBF[reg][v][cat]  = ROOT.TH2D(suff('hVBF'), *hopt)
-                
-                hBase_MET[reg][v][cat] = ROOT.TH2D(suff('hBase_MET'), *hopt)
-                hBase_Tau[reg][v][cat] = ROOT.TH2D(suff('hBase_Tau'), *hopt)
-                hMET_Tau[reg][v][cat]  = ROOT.TH2D(suff('hMET_Tau') , *hopt)
-
-                hNoBase_MET[reg][v][cat]       = ROOT.TH2D(suff('hNoBase_MET'), *hopt)
-                hBase_NoMET[reg][v][cat]       = ROOT.TH2D(suff('hBase_NoMET'), *hopt)
-                hNoBase_NoMET_Tau[reg][v][cat] = ROOT.TH2D(suff('hNoBase_NoMET_Tau'), *hopt)
-                hNoBase_Tau[reg][v][cat]       = ROOT.TH2D(suff('hNoBase_Tau'), *hopt)
-                hBase_NoTau[reg][v][cat]       = ROOT.TH2D(suff('hBase_NoTau'), *hopt)
-                hNoBase_MET_NoTau[reg][v][cat] = ROOT.TH2D(suff('hNoBase_MET_NoTau'), *hopt)
-
-                hBase_MET_Tau[reg][v][cat] = ROOT.TH2D(suff('hBase_MET_Tau'), *hopt)
-                hBase_NoMET_NoTau[reg][v][cat] = ROOT.TH2D(suff('hBase_NoMET_NoTau'), *hopt)
-
-                hMETKin[reg][v][cat] = ROOT.TH2D(suff('hMETKin'), *hopt)
-                hTauKin[reg][v][cat] = ROOT.TH2D(suff('hTauKin'), *hopt)
-                hVBFKin[reg][v][cat] = ROOT.TH2D(suff('hVBFKin'), *hopt)
-
     t_in.SetBranchStatus('*', 0)
     _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
                 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted',
@@ -425,6 +394,28 @@ def test_trigger_regions(indir, sample, channel, spin):
         pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr
         pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr
         pass_vbf = sel.pass_triggers(('VBFTauCustom',)) and vbf_turnon_expr
+
+        cuts = {'Base'           : pass_trg,
+                'MET'            : pass_met,
+                'Tau'            : pass_tau,
+                'VBF'            : pass_vbf,
+                'BaseMET'        : pass_trg and pass_met,
+                'BaseTau'        : pass_trg and pass_tau,
+                'METTau'         : pass_met and pass_tau,
+                'NoBaseMET'      : not pass_trg and pass_met,
+                'BaseNoMET'      : pass_trg and not pass_met,
+                'NoBaseNoMETTau' : not pass_trg and not pass_met,
+                'NoBaseTau'      : not pass_trg and pass_tau,
+                'BaseNoTau'      : pass_trg and not pass_tau,
+                'NoBaseMETNoTau' : not pass_trg and pass_met and not pass_tau,
+                'BaseMETTau'     : pass_trg and pass_met and pass_tau,
+                'BaseNoMETNoTau' : pass_trg and not pass_met and not pass_tau,
+                'METKin'         : pass_met and in_met_region,
+                'TauKin'         : pass_tau and in_tau_region,
+                'VBFKin'         : pass_vbf and (in_tau_region or in_met_region)
+                }
+        assert htypes == list(cuts.keys())
+        
         
         # mcweight   = entries.MC_weight
         pureweight = entries.PUReweight
@@ -445,155 +436,29 @@ def test_trigger_regions(indir, sample, channel, spin):
                                       standard_mass_cut=True, invert_mass_cut=False):
                 continue
 
-            for v in variables:
-                for cat in categories:
-                    if sel.sel_category(cat) and entries.ditau_deltaR > 0.5:
+            for cat in categories:
+                if sel.sel_category(cat) and entries.ditau_deltaR > 0.5:
+                    ntotal[cat] += 1
 
-                        if v == variables_2D[0]:
-                            ntotal[cat] += 1
+                    if in_met_region:
+                        reg = 'met'
+                    elif in_tau_region:
+                        reg = 'tau'
+                    elif in_ditau_region:
+                        reg = 'ditau'
+                    else:
+                        norphans[cat] += 1
+                        continue
+                    assert reg in regions
 
-                        if in_met_region:
-                            reg = 'met'
-                        elif in_tau_region:
-                            reg = 'tau'
-                        elif in_ditau_region:
-                            reg = 'ditau'
-                        else:
-                            continue
-                        assert reg in regions
-                                                    
-                        if pass_trg:
-                            jBase[reg][v][cat].Fill(entries[v], evt_weight)
+                    for key,cut in cuts.items():
+                        if cut:
+                            ahistos[key][reg][cat].fill(dau1pt=entries["dau1_pt"],
+                                                        dau2pt=entries["dau2_pt"], weight=evt_weight)
 
-                        if not pass_trg and pass_met:
-                            jNoBase_MET[reg][v][cat].Fill(entries[v], evt_weight)
-
-                        if not pass_trg and not pass_met and pass_tau:
-                            jNoBase_NoMET_Tau[reg][v][cat].Fill(entries[v], evt_weight)
-
-            for v in variables_2D:
-                vx, vy = v
-                for cat in categories:
-                    if sel.sel_category(cat) and entries.ditau_deltaR > 0.5:
-
-                        if v == variables_2D[0]:
-                            ntotal[cat] += 1
-
-                        if in_met_region:
-                            reg = 'met'
-                        elif in_tau_region:
-                            reg = 'tau'
-                        elif in_ditau_region:
-                            reg = 'ditau'
-                        else:
-                            if v == variables_2D[0]:
-                                norphans[cat] += 1
-                            continue
-                        assert reg in regions
-                                                
-                        if pass_trg:
-                            hBase[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        if pass_met:
-                            hMET[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-                            
-                        if pass_tau:
-                            hTau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-                            
-                        if pass_vbf:
-                            hVBF[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        # intersections with two triggers
-                        if pass_trg and pass_met:
-                            hBase_MET[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        if pass_trg and pass_tau:
-                            hBase_Tau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        if pass_met and pass_tau:
-                            hMET_Tau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        # negations
-                        if not pass_trg and pass_met:
-                            hNoBase_MET[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        if pass_trg and not pass_met:
-                            hBase_NoMET[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        if not pass_trg and not pass_met and pass_tau:
-                            hNoBase_NoMET_Tau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        if not pass_trg and pass_tau:
-                            hNoBase_Tau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        if pass_trg and not pass_tau:
-                            hBase_NoTau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        if not pass_trg and pass_met and not pass_tau:
-                            hNoBase_MET_NoTau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        # intersection with three triggers
-                        if pass_trg and pass_met and pass_tau:
-                            hBase_MET_Tau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        # only passes the base
-                        if pass_trg and not pass_met and not pass_tau:
-                            hBase_NoMET_NoTau[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-
-                        # MET + MET kin region
-                        if pass_met and in_met_region:
-                            hMETKin[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-                            if pass_trg:
-                                raise RuntimeError("Firing MET and baseline? Check what is going on!")
-
-                        # Tau + Tau kin region
-                        if pass_tau and in_tau_region:
-                            hTauKin[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-                            if pass_trg:
-                                raise RuntimeError("Firing Tau and baseline? Check what is going on!")
-
-                        # VBF + (Tau+MET=VBF kin region)
-                        if pass_vbf and (in_tau_region or in_met_region):
-                            hVBFKin[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
-                            if pass_trg:
-                                raise RuntimeError("Firing VBF and baseline? Check what is going on!")
-
-    f_out = ROOT.TFile(outname, 'RECREATE')
-    f_out.cd()
-    for reg in regions:
-        for cat in categories:
-            for v in variables:
-                suff = lambda x : x + '_' + reg + '_' + v + '_' + cat
-                jBase[reg][v][cat].Write(suff('jBase'))
-                jNoBase_MET[reg][v][cat].Write(suff('jNoBase_MET'))
-                jNoBase_NoMET_Tau[reg][v][cat].Write(suff('jNoBase_NoMET_Tau'))
+    with open(outname, "wb") as f:
+        pickle.dump(ahistos, f)
                 
-            for v in variables_2D:
-                suff = lambda x: x + '_' + reg + '_' + v[0] + '_VS_' + v[1] + '_' + cat
-                hBase[reg][v][cat].Write(suff('hBase'))
-                hMET[reg][v][cat].Write(suff('hMET'))
-                hTau[reg][v][cat].Write(suff('hTau'))
-                hVBF[reg][v][cat].Write(suff('hVBF'))
-
-                hBase_MET[reg][v][cat].Write(suff('hBase_MET'))
-                hBase_Tau[reg][v][cat].Write(suff('hBase_Tau'))
-                hMET_Tau[reg][v][cat].Write(suff('hMET_Tau'))
-
-                hNoBase_MET[reg][v][cat].Write(suff('hNoBase_MET'))
-                hBase_NoMET[reg][v][cat].Write(suff('hBase_NoMET'))
-                hNoBase_NoMET_Tau[reg][v][cat].Write(suff('hNoBase_NoMET_Tau'))
-                hNoBase_Tau[reg][v][cat].Write(suff('hNoBase_Tau'))
-                hBase_NoTau[reg][v][cat].Write(suff('hBase_NoTau'))
-                hNoBase_MET_NoTau[reg][v][cat].Write(suff('hNoBase_MET_NoTau'))
-
-                hBase_MET_Tau[reg][v][cat].Write(suff('hBase_MET_Tau'))
-                hBase_NoMET_NoTau[reg][v][cat].Write(suff('hBase_NoMET_NoTau'))
-
-                hMETKin[reg][v][cat].Write(suff('hMETKin'))
-                hTauKin[reg][v][cat].Write(suff('hTauKin'))
-                hVBFKin[reg][v][cat].Write(suff('hVBFKin'))
-                
-    f_out.Close()
     for cat in categories:
         orph_frac = float(norphans[cat])/ntotal[cat]
         if orph_frac > 0.1:
@@ -630,25 +495,12 @@ if __name__ == '__main__':
                'bjet2_eta': (20, -2.5, 2.5),
                }
     variables = tuple(binning.keys()) + ('HHKin_mass', 'dau1_iso')
-    variables_2D = (('dau1_pt',  'dau2_pt'),
-                    # ('dau1_iso', 'dau2_iso'),
-                    # ('dau1_eta', 'dau2_eta'),
-                    # ('dau1_eta', 'dau1_iso'),
-                    # ('dau1_pt',  'dau1_eta'),
-                    # ('dau1_pt',  'dau1_iso'),
-                    # ('dau2_eta', 'dau2_iso'),
-                    # ('dau2_pt',  'dau2_eta'),
-                    # ('dau1_pt',  'dau2_eta'),
-                    # ('dau1_pt',  'dau2_iso'),
-                    # ('dau2_pt',  'dau1_eta'),
-                    # ('dau2_pt',  'dau1_iso'),
-                    # ('dau1_pt',  'metnomu_et'),
-                    # ('dau2_pt',  'metnomu_et'),
-                    # ('dau1_iso',  'metnomu_et'),
-                    # ('dau2_iso',  'metnomu_et'),
-                    )
 
     categories = ('baseline',) #('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
+
+    htypes = ['Base', 'MET', 'Tau', 'VBF', 'BaseMET', 'BaseTau', 'METTau', 'NoBaseMET', 'BaseNoMET',
+              'NoBaseNoMETTau', 'NoBaseTau', 'BaseNoTau', 'NoBaseMETNoTau', 'BaseMETTau', 'BaseNoMETNoTau',
+              'METKin', 'TauKin', 'VBFKin']
     
     # Parse input arguments
     desc = 'Producer trigger histograms.\n'
@@ -721,12 +573,11 @@ if __name__ == '__main__':
         met_region = 'False'
         
     #### run main function ###
-    if args.sequential:
-        if not args.plot:
+    if not args.plot:
+        if args.sequential:
             for sample in args.masses:
                 test_trigger_regions(args.indir, sample, args.channel, args.spin)
-    else:
-        if not args.plot:
+        else:
             pool = multiprocessing.Pool(processes=6)
             pool.starmap(test_trigger_regions,
                          zip(it.repeat(args.indir), args.masses, it.repeat(args.channel), it.repeat(args.spin)))
@@ -738,8 +589,8 @@ if __name__ == '__main__':
     for sample in args.masses:
         outname = get_outname(sample, args.channel, regcuts, ptcuts[args.channel], met_turnon, tau_turnon,
                               args.bigtau, args.notau, args.nomet)
-        f_in = ROOT.TFile(outname, 'READ')
-        f_in.cd()
+        with open(outname, "rb") as f:
+            ahistos = pickle.load(f)
 
         # write csv header, one per category
         out_counts = []
@@ -748,111 +599,37 @@ if __name__ == '__main__':
             utils.create_single_dir(out_counts[-1])
             with open(os.path.join(out_counts[-1], 'table.csv'), 'w') as f:
                 reader = csv.writer(f, delimiter=',', quotechar='|')
-                header_row = ['Region', 'Base', 'MET', 'Tau',
-                              'Base && MET', 'Base && Tau', 'MET && Tau',
-                              '!Base && MET', '!Base && !MET && Tau',
-                              '!Base && Tau', '!Base && MET && !Tau',
-                              'Base && !MET', 'Base && !Tau',
-                              'Base && MET && Tau',
-                              'MET Kin', 'Tau Kin']
+                header_row = ['Region']
+                header_row.extend(htypes)
                 reader.writerow(header_row)
 
         # plot histograms and fill CSV with histogram integrals
         c_ditau_trg, c_met_trg, c_tau_trg = ({} for _ in range(3))
-        
+
+        acounts = rec_dd()
         for reg in regions:
-            for cat in categories:
-                for v in variables:                    
-                    suff = lambda x : x + '_' + reg + '_' + v + '_' + cat
-                    jBase = f_in.Get(suff('jBase'))
-                    jNoBase_MET = f_in.Get(suff('jNoBase_MET'))
-                    jNoBase_NoMET_Tau = f_in.Get(suff('jNoBase_NoMET_Tau'))
+            for key,cut in ahistos.items():
+                acounts[key][reg] = round(ahistos[key][reg]["baseline"].values().sum(), 2)
+            
+            # append to table, one line per region
+            with open(os.path.join(out_counts[categories.index(cat)], 'table.csv'), 'a') as f:
+                reader = csv.writer(f, delimiter=',', quotechar='|')
+                row = [reg]
+                row.extend([acounts[k][reg] for k in acounts.keys()])
+                reader.writerow(row)
 
-                    jopt = (v, args.channel, sample, reg, cat, from_directory)
-                    # plot(jBase, jNoBase_MET, jNoBase_NoMET_Tau, *jopt)
-                    
-                for v in variables_2D:
-                    suff = lambda x : x+'_'+reg+'_'+v[0]+'_VS_'+v[1]+'_'+cat
-                    
-                    hBase = f_in.Get(suff('hBase'))
-                    hMET  = f_in.Get(suff('hMET'))
-                    hTau  = f_in.Get(suff('hTau'))
-                    hVBF  = f_in.Get(suff('hVBF'))
- 
-                    hBase_MET = f_in.Get(suff('hBase_MET'))
-                    hBase_Tau = f_in.Get(suff('hBase_Tau'))
-                    hMET_Tau  = f_in.Get(suff('hMET_Tau'))
-
-                    hNoBase_MET       = f_in.Get(suff('hNoBase_MET'))
-                    hBase_NoMET       = f_in.Get(suff('hBase_NoMET'))
-                    hNoBase_NoMET_Tau = f_in.Get(suff('hNoBase_NoMET_Tau'))
-                    hNoBase_Tau       = f_in.Get(suff('hNoBase_Tau'))
-                    hBase_NoTau       = f_in.Get(suff('hBase_NoTau'))
-                    hNoBase_MET_NoTau = f_in.Get(suff('hNoBase_MET_NoTau'))
- 
-                    hBase_MET_Tau     = f_in.Get(suff('hBase_MET_Tau'))
-                    hBase_NoMET_NoTau = f_in.Get(suff('hBase_NoMET_NoTau'))
-
-                    hMETKin = f_in.Get(suff('hMETKin'))
-                    hTauKin = f_in.Get(suff('hTauKin'))
-                    hVBFKin  = f_in.Get(suff('hVBFKin'))
-
-                    # plot2D(hBase, v, args.channel, sample, 'Base', cat, from_directory, reg)
-                    # plot2D(hBase_NoTau, v, args.channel, sample, 'Base + !Tau', cat, from_directory, reg)
-                    # #plot2D(hMET, v, args.channel, sample, 'MET', cat, from_directory, reg)
-                    # plot2D(hTau, v, args.channel, sample, 'Tau', cat, from_directory, reg)
-
-                # count only for one of the variables, it does not matter which
-                nbinsx, nbinsy = hBase.GetNbinsX(), hBase.GetNbinsY()
-                cBase = round(hBase.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cMET  = round(hMET.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cTau  = round(hTau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cVBF  = round(hVBF.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                
-                cBase_MET = round(hBase_MET.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cBase_Tau = round(hBase_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cMET_Tau  = round(hMET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                
-                cNoBase_MET       = round(hNoBase_MET.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cBase_NoMET       = round(hBase_NoMET.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cNoBase_NoMET_Tau = round(hNoBase_NoMET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cNoBase_Tau       = round(hNoBase_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cBase_NoTau       = round(hBase_NoTau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cNoBase_MET_NoTau = round(hNoBase_MET_NoTau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                
-                cBase_MET_Tau = round(hBase_MET_Tau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cBase_NoMET_NoTau = round(hBase_NoMET_NoTau.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-
-                cMETKin = round(hMETKin.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cTauKin = round(hTauKin.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-                cVBFKin = round(hVBFKin.Integral(0, nbinsx+1, 0, nbinsy+1), 2)
-
-                # append to table, one line per region
-                with open(os.path.join(out_counts[categories.index(cat)], 'table.csv'), 'a') as f:
-                    reader = csv.writer(f, delimiter=',', quotechar='|')
-                    row = [reg, cBase, cMET, cTau, cVBF,
-                           cBase_MET, cBase_Tau, cMET_Tau,
-                           cNoBase_MET, cNoBase_NoMET_Tau,
-                           cNoBase_Tau, cNoBase_MET_NoTau,
-                           cBase_NoMET, cBase_NoTau,
-                           cBase_MET_Tau,
-                           cMETKin, cTauKin, cVBFKin]
-                    reader.writerow(row)
-
-                if reg=='ditau':
-                    c_ditau_trg[reg] = cBase
-                    c_met_trg[reg] = cNoBase_MET
-                    c_tau_trg[reg] = cNoBase_NoMET_Tau
-                elif reg=='met':
-                    c_ditau_trg[reg] = cBase_NoMET
-                    c_met_trg[reg] = cMET
-                    c_tau_trg[reg] = cNoBase_NoMET_Tau
-                elif reg=='tau':
-                    c_ditau_trg[reg] = cBase_NoTau
-                    c_met_trg[reg] = cNoBase_MET_NoTau
-                    c_tau_trg[reg] = cTau
-                        
-        f_in.Close()
+            if reg=='ditau':
+                c_ditau_trg[reg] = acounts["Base"][reg]
+                c_met_trg[reg]   = acounts["NoBaseMET"][reg]
+                c_tau_trg[reg]   = acounts["NoBaseNoMETTau"][reg]
+            elif reg=='met':
+                c_ditau_trg[reg] = acounts["BaseNoMET"][reg]
+                c_met_trg[reg]   = acounts["MET"][reg]
+                c_tau_trg[reg]   = acounts["NoBaseNoMETTau"][reg]
+            elif reg=='tau':
+                c_ditau_trg[reg] = acounts["BaseNoTau"][reg]
+                c_met_trg[reg]   = acounts["NoBaseMETNoTau"][reg]
+                c_tau_trg[reg]   = acounts["Tau"][reg]
 
         text = {'mass': sample,
                 'out': os.path.join(out_counts[categories.index(cat)], 'diagram.html')}
@@ -890,5 +667,3 @@ if __name__ == '__main__':
             sample_from = os.path.join(from_directory, sample)
             print('Copying: {}\t\t--->\t{}'.format(sample_from, to_directory), flush=True)
             subprocess.run(['rsync', '-ah', sample_from, to_directory])
-        
-    print('Done.')

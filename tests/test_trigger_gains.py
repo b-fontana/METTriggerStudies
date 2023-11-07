@@ -13,7 +13,10 @@ import argparse
 from inclusion.utils import utils
 import numpy as np
 from collections import defaultdict as dd
- 
+import hist
+from hist.intervals import clopper_pearson_interval as clop
+import pickle
+
 import bokeh
 from bokeh.plotting import figure, output_file, save
 output_file('plots/trigger_gains.html')
@@ -26,6 +29,23 @@ mu  = '\u03BC'
 pm  = '\u00B1'
 ditau = tau+tau
 
+def get_outname(sample, channel, regcuts, ptcuts, met_turnon, tau_turnon,
+                bigtau, notau, nomet):
+    utils.create_single_dir('data')
+
+    name = sample + '_' + channel + '_'
+    name += '_'.join((*regcuts, 'ptcuts', *ptcuts, 'turnon', met_turnon, tau_turnon))
+    if bigtau:
+        name += '_BIGTAU'
+    if notau:
+        name += '_NOTAU'
+    if nomet:
+        name += '_NOMET'
+    name += '.pkl'
+
+    s = 'data/regions_{}'.format(name)
+    return s
+
 def pp(chn):
     if chn == "tautau":
         return ditau
@@ -33,16 +53,19 @@ def pp(chn):
         return "e" + tau
     elif chn == "mutau":
         return mu + tau
-    
-def ZeroDivError(func):
-    try:
-        res = func()
-    except ZeroDivisionError:
-        res = 0.
-    return res
 
-def error(v1, v2):
-    return ZeroDivError(lambda : np.sqrt(1/v1 + 1/v2))
+def rec_dd():
+    return dd(rec_dd)
+
+# def ZeroDivError(func):
+#     try:
+#         res = func()
+#     except ZeroDivisionError:
+#         res = 0.
+#     return res
+
+# def error(v1, v2):
+#     return ZeroDivError(lambda : np.sqrt(1/v1 + 1/v2))
 
 def set_fig(fig, legend=True):
     fig.output_backend = 'svg'
@@ -60,7 +83,10 @@ def set_fig(fig, legend=True):
 def main(args):
     channels = args.channels
     linear_x = [k for k in range(1,len(args.masses)+1)]
-     
+    ptcuts = {'etau':   ('20', '20'),
+              'mutau':  ('20', '20'),
+              'tautau': ('40', '40')}
+
     yone, yboth, ykin = (dd(lambda: dd(dict)) for _ in range(3))
     eone, eboth, ekin = (dd(lambda: dd(dict)) for _ in range(3))
     for md in main_dir:
@@ -79,70 +105,56 @@ def main(args):
             ekin[md][chn]['two'], ekin[md][chn]['vbf'] = [], []
   
             for mass in args.masses:
-                d = d_base / chn / str(mass)
-                fullpath = Path(d) / 'baseline/counts/table.csv'
-  
-                with open(fullpath) as f:
-                    reader = csv.reader(f, delimiter=',', quotechar='|')
-                    next(reader, None) #ignore header line
+                outname = get_outname(mass, chn, args.region_cuts, ptcuts[chn],
+                                      args.met_turnon, args.tau_turnon,
+                                      args.bigtau, args.notau, args.nomet)
 
-                    line = next(reader, None)
-                    assert line[0] == "ditau"
-                    sum_base     = float(line[1])
-                    sum_vbf      = float(line[4])
-                    sum_met      = float(line[8])
-                    sum_only_tau = float(line[9])
-                    sum_tau      = float(line[10])
+                with open(outname, "rb") as f:
+                    ahistos = pickle.load(f)
 
-                    line = next(reader, None)
-                    assert line[0] == "met"
-                    sum_metkin   = float(line[15])
-                    sum_vbfkin   = float(line[17])
+                    l1 = lambda x : round(x["ditau"]["baseline"].values().sum(), 2)
+                    sum_base     = l1(ahistos["Base"])
+                    sum_vbf      = l1(ahistos["VBF"])
+                    sum_met      = l1(ahistos["NoBaseMET"])
+                    sum_only_tau = l1(ahistos["NoBaseNoMETTau"])
+                    sum_tau      = l1(ahistos["NoBaseTau"])
 
-                    line = next(reader, None)
-                    assert line[0] == "tau"
-                    sum_taukin   = float(line[16])
-                        
-                    frac_one_met = sum_met / sum_base
-                    frac_one_tau = sum_tau / sum_base
-                    frac_both    = (sum_met + sum_only_tau) / sum_base
-                    frac_one_vbf     = sum_vbf / sum_base
+                    l2 = lambda x : round(x["met"]["baseline"].values().sum(), 2)
+                    sum_metkin   = l2(ahistos["METKin"])
+                    sum_vbfkin   = l2(ahistos["VBFKin"])
 
-                    err_one_met = error(sum_base, sum_met)
-                    err_one_tau = error(sum_base, sum_tau)
-                    err_one_vbf = error(sum_base, sum_vbf)
-                    err_both    = error(sum_base, sum_met+sum_only_tau)
-                    err_vbf     = error(sum_base, sum_vbf)
-                    
-                    frac_metkin  = sum_metkin / sum_base
-                    frac_taukin  = sum_taukin / sum_base
-                    frac_bothkin = frac_metkin + frac_taukin
-                    frac_vbfkin  = sum_vbfkin / sum_base
+                    l3 = lambda x : round(x["tau"]["baseline"].values().sum(), 2)
+                    sum_taukin   = l3(ahistos["TauKin"])
 
-                    err_metkin  = error(sum_base, sum_metkin)
-                    err_taukin  = error(sum_base, sum_taukin)
-                    err_bothkin = error(sum_base, sum_metkin+sum_taukin)
-                    err_vbfkin  = error(sum_base, sum_vbfkin)
+                    valerr = lambda num, den : ((num/den)*100., clop(num,den)*100.)
+                    frac_one_met, err_one_met = valerr(sum_met, sum_base)
+                    frac_one_tau, err_one_tau = valerr(sum_tau, sum_base)
+                    frac_both, err_both       = valerr(sum_met + sum_only_tau, sum_base)
+                    frac_one_vbf, err_one_vbf = valerr(sum_vbf, sum_base)
+                    frac_metkin,  err_metkin  = valerr(sum_metkin, sum_base)
+                    frac_taukin,  err_taukin  = valerr(sum_taukin, sum_base)
+                    frac_bothkin, err_bothkin = valerr(sum_metkin + sum_taukin, sum_base)
+                    frac_vbfkin,  err_vbfkin  = valerr(sum_vbfkin, sum_base)
 
-                    yone[md][chn]['met'].append(frac_one_met*100)
-                    yone[md][chn]['tau'].append(frac_one_tau*100)
-                    yone[md][chn]['vbf'].append(frac_one_vbf*100)
-                    yboth[md][chn]['met'].append(frac_one_met*100)
-                    yboth[md][chn]['two'].append(frac_both*100)
-                    ykin[md][chn]['met'].append(frac_metkin*100)
-                    ykin[md][chn]['tau'].append(frac_taukin*100)
-                    ykin[md][chn]['two'].append(frac_bothkin*100)
-                    ykin[md][chn]['vbf'].append(frac_vbfkin*100)
+                    yone[md][chn]['met'].append(frac_one_met)
+                    yone[md][chn]['tau'].append(frac_one_tau)
+                    yone[md][chn]['vbf'].append(frac_one_vbf)
+                    yboth[md][chn]['met'].append(frac_one_met)
+                    yboth[md][chn]['two'].append(frac_both)
+                    ykin[md][chn]['met'].append(frac_metkin)
+                    ykin[md][chn]['tau'].append(frac_taukin)
+                    ykin[md][chn]['two'].append(frac_bothkin)
+                    ykin[md][chn]['vbf'].append(frac_vbfkin)
 
-                    eone[md][chn]['met'].append(err_one_met*100)
-                    eone[md][chn]['tau'].append(err_one_tau*100)
-                    eone[md][chn]['vbf'].append(err_one_vbf*100)
-                    eboth[md][chn]['met'].append(err_one_met*100)
-                    eboth[md][chn]['two'].append(err_both*100)
-                    ekin[md][chn]['met'].append(err_metkin*100)
-                    ekin[md][chn]['tau'].append(err_taukin*100)
-                    ekin[md][chn]['two'].append(err_bothkin*100)
-                    ekin[md][chn]['vbf'].append(err_vbfkin*100)
+                    eone[md][chn]['met'].append(err_one_met)
+                    eone[md][chn]['tau'].append(err_one_tau)
+                    eone[md][chn]['vbf'].append(err_one_vbf)
+                    eboth[md][chn]['met'].append(err_one_met)
+                    eboth[md][chn]['two'].append(err_both)
+                    ekin[md][chn]['met'].append(err_metkin)
+                    ekin[md][chn]['tau'].append(err_taukin)
+                    ekin[md][chn]['two'].append(err_bothkin)
+                    ekin[md][chn]['vbf'].append(err_vbfkin)
 
     opt_points = dict(size=8)
     opt_line = dict(width=1.5)
@@ -168,7 +180,6 @@ def main(args):
         for p in (p1, p2, p3):
             set_fig(p)
         for ichn,chn in enumerate(channels):
-
             for itd,td in enumerate(('met', 'tau', 'vbf')):
                 p1.circle([x+shift_one[td][ichn] for x in linear_x],
                           yone[md][chn][td], color=colors[itd], fill_alpha=1.,
@@ -178,7 +189,7 @@ def main(args):
                         legend_label=pp(chn)+legends[td], **opt_line)
                 p1.multi_line(
                     [(x+shift_one[td][ichn],x+shift_one[td][ichn]) for x in linear_x],
-                    [(max(0,x-y/2),min(100,x+y/2))
+                    [(y[0],y[1])
                      for x,y in zip(yone[md][chn][td],eone[md][chn][td])],
                     color=colors[itd], **opt_line)
 
@@ -191,7 +202,7 @@ def main(args):
                         legend_label=pp(chn)+legends[td], **opt_line)
                 p2.multi_line(
                     [(x+shift_both[td][ichn],x+shift_both[td][ichn]) for x in linear_x], 
-                    [(max(0,x-y/2),min(100,x+y/2))
+                    [(y[0],y[1])
                      for x,y in zip(yboth[md][chn][td],eboth[md][chn][td])],
                     color=colors[itd], **opt_line)
 
@@ -204,7 +215,7 @@ def main(args):
                         legend_label=pp(chn)+legends[td], **opt_line)
                 p3.multi_line(
                     [(x+shift_kin[td][ichn],x+shift_kin[td][ichn]) for x in linear_x], 
-                    [(max(0,x-y/2),min(100,x+y/2))
+                    [(y[0],y[1])
                      for x,y in zip(ykin[md][chn][td],ekin[md][chn][td])],
                     color=colors[itd], **opt_line)
 
@@ -250,5 +261,18 @@ if __name__ == '__main__':
     parser.add_argument('--channels', required=True, nargs='+', type=str, 
                         choices=('etau', 'mutau', 'tautau'),
                         help='Select the channel over which the workflow will be run.' )
+    parser.add_argument('--bigtau', action='store_true',
+                        help='Consider a larger single tau region, reducing the ditau one.')
+    parser.add_argument('--notau', action='store_true',
+                        help='Remove the single tau region (default analysis).')
+    parser.add_argument('--nomet', action='store_true',
+                        help='Remove the MET region (default analysis).')
+    parser.add_argument('--met_turnon', required=False, type=str,  default='200',
+                        help='MET trigger turnon cut [GeV].' )
+    parser.add_argument('--tau_turnon', required=False, type=str,  default='190',
+                        help='MET trigger turnon cut [GeV].' )
+    parser.add_argument('--region_cuts', required=False, type=str, nargs=2, default=('200', '200'),
+                        help='High/low regions pT1 and pT2 selection cuts [GeV].' )
+
     args = utils.parse_args(parser)
     main(args)
