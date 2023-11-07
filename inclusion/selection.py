@@ -16,11 +16,12 @@ from collections import defaultdict
 import itertools as it
 
 class EventSelection:
-    def __init__(self, entries, isdata, configuration=None, debug=False):
+    def __init__(self, entries, isdata, year='2018', configuration=None, debug=False):
         self.entries = entries
         self.bit = self.entries['triggerbit']
         self.run = self.entries['RunNumber']
         self.isdata = isdata
+        self.year = year
         self.debug = debug
         self.prefix = 'Data_' if self.isdata else 'MC_'
         self.categories = ('baseline', 's1b1jresolvedMcut', 's2b0jresolvedMcut', 'sboostedLLMcut')
@@ -195,14 +196,21 @@ class EventSelection:
 
     def sel_category(self, category):
         assert category in self.categories
-        btagLL = self.entries['bjet1_bID_deepFlavor'] > 0.0490 and self.entries['bjet2_bID_deepFlavor'] > 0.0490
-        btagM  = ((self.entries['bjet1_bID_deepFlavor'] > 0.2783 and self.entries['bjet2_bID_deepFlavor'] < 0.2783) or
-                  (self.entries['bjet1_bID_deepFlavor'] < 0.2783 and self.entries['bjet2_bID_deepFlavor'] > 0.2783))
-        btagMM = self.entries['bjet1_bID_deepFlavor'] > 0.2783 and self.entries['bjet2_bID_deepFlavor'] > 0.2783
+        deepJetWP = {'2016'    : (0.048, 0.249),
+                     '2016APV' : (0.051, 0.260),
+                     '2017'    : (0.0532, 0.3040),
+                     '2018'    : (0.0490, 0.2783)}[self.year]
+        btagLL = (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[0] and
+                  self.entries['bjet2_bID_deepFlavor'] > deepJetWP[0])
+        btagM  = ((self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1]
+                   and self.entries['bjet2_bID_deepFlavor'] < deepJetWP[1]) or
+                  (self.entries['bjet1_bID_deepFlavor'] < deepJetWP[1]
+                   and self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1]))
+        btagMM = (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1] and
+                  self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1])
         
-        common = not (self.entries['isVBF'] == 1 and self.entries['VBFjj_mass'] > 500 and self.entries['VBFjj_deltaEta'] > 3 and
-                      (self.entries['bjet1_bID_deepFlavor'] > 0.2783 or self.entries['bjet2_bID_deepFlavor'] > 0.2783))
-
+        common = not (#self.entries['isVBF'] == 1 and self.entries['VBFjj_mass'] > 500 and self.entries['VBFjj_deltaEta'] > 3 and
+            (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1] or self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1]))
         if category == 'baseline':
             specific = True
         elif category == 's1b1jresolvedMcut':

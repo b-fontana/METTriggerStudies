@@ -544,19 +544,19 @@ def test_trigger_regions(indir, sample, channel, spin):
                         if pass_met and in_met_region:
                             hMETKin[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
                             if pass_trg:
-                                raise RuntimeError("Firing MET and baseline? Check was is going on!")
+                                raise RuntimeError("Firing MET and baseline? Check what is going on!")
 
                         # Tau + Tau kin region
                         if pass_tau and in_tau_region:
                             hTauKin[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
                             if pass_trg:
-                                raise RuntimeError("Firing Tau and baseline? Check was is going on!")
+                                raise RuntimeError("Firing Tau and baseline? Check what is going on!")
 
                         # VBF + (Tau+MET=VBF kin region)
                         if pass_vbf and (in_tau_region or in_met_region):
                             hVBFKin[reg][v][cat].Fill(entries[vx], entries[vy], evt_weight)
                             if pass_trg:
-                                raise RuntimeError("Firing VBF and baseline? Check was is going on!")
+                                raise RuntimeError("Firing VBF and baseline? Check what is going on!")
 
     f_out = ROOT.TFile(outname, 'RECREATE')
     f_out.cd()
