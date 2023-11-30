@@ -36,6 +36,13 @@ def set_min_max(acc, obj):
         if obj[k][1] > acc[k][1]:
             acc[k][1] = obj[k][1]
             
+def set_quantiles(acc, obj):
+    if None in acc: # first iteration
+        acc = obj
+    else:
+        asum = len(acc) + len(obj)
+        acc = (acc * len(acc) + obj * len(obj)) / (2*asum)
+            
 @utils.set_pure_input_namespace
 def define_binning(args):
     """
@@ -43,6 +50,12 @@ def define_binning(args):
     """
     quant_down, quant_up = 0., 1.
     cfg = importlib.import_module(args.configuration)
+
+    channel_to_dataset = {'etau'   : 'EGamma',
+                          'mutau'  : 'SingleMuon',
+                          'tautau' : 'Tau',
+                          'mumu'   : 'SingleMuon',
+                          'ee'     : 'EGamma',}
     
     # Initialization
     # nTotEntries = 0
@@ -52,88 +65,60 @@ def define_binning(args):
     #     for chn in args.channels:
     #         _maxedge[var][chn], _minedge[var][chn] = ({} for _ in range(2))
 
-    min_max = {}
+    min_max, quants = {}, {}
     for k in args.channels:
-        min_max[k] = {}
+        min_max[k], quants[k] = {}, {}
         for v in args.variables:
             min_max[k][v] = [1e10, -1e10]
+            quants[k][v] = None
         
     ###############################################
     ############## Data Loop: Start ###############
     ###############################################
     if not skip_data_loop(args, cfg):
 
-        # Loop over all data datasets, calculating the quantiles in each dataset per variable
-        for sample in args.data_vals:
-
-            # to avoid long waiting times, define the binning using the first dataset only
-            # the MET skims are 2GB, the EGamma one 25GB!
-            if sample != args.data_vals[0]:
-                continue
+        for chn in args.channels:
+            sample = channel_to_dataset[chn]
             
             #### Parse input list
             filelist, _ = utils.get_root_inputs(sample, args.indir, include_tree=True)
 
             treesize = 0
             percentage = 0.1
-            qup, qlo = 0.99, 0.
+
+            quantiles = np.linspace(0., 1., num=args.nbins+1)
+            quantiles[-1] = 0.99
+                
             branches = args.variables + ('pairType',)
             nfiles = len(filelist)
             for ib,batch in enumerate(up.iterate(files=filelist, expressions=branches,
-                                                 step_size='50 MB', library='ak')):
-                if ib+1 > int(percentage*nfiles) and nfiles > 30: # assume X% of the files are enough to estimate quantiles
+                                                 step_size='500 MB', library='ak')):
+                treesize += len(batch)
+
+                # assume X% of the files are enough to estimate quantiles
+                if ib+1 > int(percentage*nfiles) and nfiles > 30:
                     break
 
-                print('{}/{} {} files (only {} will be processed)\r'.format(ib+1, nfiles, sample, int(percentage*nfiles)),
+                print('{}/{} {} files (only {} will be processed)\r'.format(ib+1, nfiles, sample,
+                                                                            int(percentage*nfiles)),
                       end='' if ib+1!=nfiles else '\n', flush=True)
-
                 
-                treesize += len(batch)
-                for chn in args.channels:
-                    if chn == 'all':
-                        sel_chn = batch.pairType < main.sel[chn]['pairType'][1]
-                    else:
-                        sel_chn = batch.pairType == main.sel[chn]['pairType'][1]
-                    batch_sel = batch[sel_chn]
-                    if len(batch_sel) != 0:
-                        # trim outliers
-                        quant = {v:np.quantile(batch_sel[v], q=np.array([qlo, qup])) for v in args.variables}
-                        set_min_max(min_max[chn], quant)
-                    else:
-                        mes = ("Channel {} is not present in batch {} of sample {} in folders {}."
-                               .format(chn, ib, sample, args.indir))
-                        raise RuntimeError(mes)
-
-            # for var in args.variables:
-            #     for chn in args.channels:
-            #         if (var not in cfg.binedges or chn not in cfg.binedges[var]):
-            #             _minedge[var][chn][sample] = treesize*quantiles[chn].loc[quant_down, var]
-            #             _maxedge[var][chn][sample] = treesize*quantiles[chn].loc[quant_up, var]
-
-            # nTotEntries += treesize
-            
-        # Do weighted average based on the number of events in each dataset
-        # maxedge, minedge = ({} for _ in range(2))
-        # for var in args.variables:
-        #     maxedge[var], minedge[var] = ({} for _ in range(2))
-        #     for chn in args.channels:
-        #         if var not in cfg.binedges or chn not in cfg.binedges[var]:
-        #             maxedge[var].update({chn: sum(_maxedge[var][chn].values()) / nTotEntries})
-        #             minedge[var].update({chn: sum(_minedge[var][chn].values()) / nTotEntries})
-        #             if maxedge[var][chn] <= minedge[var][chn]:
-        #                 print('MaxEdge: {}, MinEdge: {}'.format(maxedge[var][chn], minedge[var][chn]))
-        #                 print('Channel: {}, Var: {}'.format(chn, var))
-        #                 raise ValueError('Wrong binning!')
-        #             if args.debug:
-        #                 print( '{} quantiles in channel {}:  Q({})={}, Q({})={}'
-        #                        .format(var, chn,
-        #                                quant_down, minedge[var][chn],
-        #                                quant_up,   maxedge[var][chn]) )
-        #         else:
-        #             if args.debug:
-        #                 print('Quantiles were not calculated. '
-        #                       'Custom bins for variable {} and channel {} were instead used.'.format(var, chn))
-
+                if chn == 'all':
+                    sel_chn = batch.pairType < main.sel[chn]['pairType'][1]
+                else:
+                    sel_chn = batch.pairType == main.sel[chn]['pairType'][1]
+                batch_sel = batch[sel_chn]
+                if len(batch_sel) != 0:
+                    # trim outliers
+                    quant1 = {v:np.quantile(batch_sel[v], q=np.array(quantiles)) for v in args.variables}
+                    set_quantiles(quants[chn], quant1)
+                    import pdb; pdb.set_trace()
+                    quant2 = {v:np.quantile(batch_sel[v], q=np.array([0., 0.99])) for v in args.variables}
+                    set_min_max(min_max[chn], quant2)
+                else:
+                    mes = ("Channel {} is not present in batch {} of sample {} in folders {}."
+                           .format(chn, ib, sample, args.indir))
+                    raise RuntimeError(mes)
 
     ###############################################
     ############## Data Loop: End #################

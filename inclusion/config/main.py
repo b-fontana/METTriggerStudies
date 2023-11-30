@@ -90,8 +90,8 @@ corr = {'etau': {},
         'mumu': {} }
     
 ### Data and MC samples
-inputs = ('/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_Sep16_Data/',
-          '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_Sep16_Background/',)
+inputs = ('/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_Upstream_Data/',
+          '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_Upstream/',)
 corrupted_files = () #'/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background/TTTo2L2Nu/output_9.root'
 
 # names of the subfolders under 'inputs' above:

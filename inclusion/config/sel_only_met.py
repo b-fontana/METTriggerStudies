@@ -96,8 +96,10 @@ binedges = {
     # 'dau1_pt': {'etau':   pog_pt_binedges,
     #             'mutau':  pog_pt_binedges,
     #             'tautau': pog_pt_binedges },
-    'metnomu_et': {'mutau' : metnomu_et_binedges['mutau'],
+    'metnomu_et': {'mutau' : "quantiles",
                    'mumu'  : metnomu_et_binedges['mumu'] },
+    # 'metnomu_et': {'mutau' : metnomu_et_binedges['mutau'],
+    #                'mumu'  : metnomu_et_binedges['mumu'] },
     'mhtnomu_et': {'mutau' : (120,360),
                    'mumu'  : (120,360) },
 }
