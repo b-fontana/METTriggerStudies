@@ -18,6 +18,9 @@ import inclusion
 from inclusion.utils import utils
 from inclusion.config import main
 
+def key_exists(d, k1, k2):
+    return k1 in d and k2 in d[k1]
+
 def skip_data_loop(args, cfg):
     for var in args.variables:
         if var not in cfg.binedges.keys():
@@ -36,12 +39,19 @@ def set_min_max(acc, obj):
         if obj[k][1] > acc[k][1]:
             acc[k][1] = obj[k][1]
             
-def set_quantiles(acc, obj):
-    if None in acc: # first iteration
-        acc = obj
-    else:
-        asum = len(acc) + len(obj)
-        acc = (acc * len(acc) + obj * len(obj)) / (2*asum)
+def set_quantiles(acc, quant, ntotal, nbatch):
+    """
+    Accumulates the weighted average of quantiles.
+    - 'acc': accumulator
+    - 'quant': new quantile being averaged
+    """
+    for k in acc:
+        if acc[k] is None: # first iteration
+            acc[k] = quant[k]
+        else:
+            frac_old = (ntotal-nbatch) / ntotal
+            frac_new = nbatch / ntotal
+            acc[k] = acc[k]*frac_old + quant[k]*frac_new
             
 @utils.set_pure_input_namespace
 def define_binning(args):
@@ -108,11 +118,15 @@ def define_binning(args):
                 else:
                     sel_chn = batch.pairType == main.sel[chn]['pairType'][1]
                 batch_sel = batch[sel_chn]
+                if key_exists(cfg.binedges, v, chn) and cfg.binedges[v][chn][0] == "quantiles":
+                    for v in args.variables:
+                        batch_sel[v] = batch_sel[v][batch_sel[v] > cfg.binedges[v][chn][1] &
+                                                    batch_sel[v] < cfg.binedges[v][chn][2]]
+                
                 if len(batch_sel) != 0:
                     # trim outliers
                     quant1 = {v:np.quantile(batch_sel[v], q=np.array(quantiles)) for v in args.variables}
-                    set_quantiles(quants[chn], quant1)
-                    import pdb; pdb.set_trace()
+                    set_quantiles(quants[chn], quant1, ntotal=treesize, nbatch=len(batch))
                     quant2 = {v:np.quantile(batch_sel[v], q=np.array([0., 0.99])) for v in args.variables}
                     set_min_max(min_max[chn], quant2)
                 else:
@@ -134,7 +148,7 @@ def define_binning(args):
                 vgroup = group.create_group(v)
                 for chn in args.channels:
                     try:
-                        if chn in cfg.binedges[v]:                            
+                        if chn in cfg.binedges[v]:
                             if args.debug:
                                 mes = 'Using custom binning for variable {}: {}'.format(v, cfg.binedges[v][chn])
                                 utils.debug(mes, args.debug, __file__)
@@ -145,20 +159,25 @@ def define_binning(args):
                             elif len(cfg.binedges[v][chn]) == 2:
                                 dset = vgroup.create_dataset(chn, dtype=float, shape=(args.nbins+1,))
                                 dset[:] = np.linspace(cfg.binedges[v][chn][0], cfg.binedges[v][chn][1], args.nbins+1)
+                            elif key_exists(cfg.binedges, v, chn) and cfg.binedges[v][chn][0] == "quantiles":
+                                dset = vgroup.create_dataset(chn, dtype=float, shape=(args.nbins+1,))
+                                dset[:] = quants[chn][v]
                             else:
                                 nb_tmp = len(cfg.binedges[v][chn])-1
                                 dset = vgroup.create_dataset(chn, dtype=float, shape=(nb_tmp+1,))
                                 dset[:] = cfg.binedges[v][chn]
-                        else:
+                        else: # if the user did not specify the binning, equally spaced bins are used
                             raise KeyError #a "go-to" to the except clause
 
                     except KeyError:
                         dset = vgroup.create_dataset(chn, dtype=float, shape=(args.nbins+1,))
                         _binwidth = (min_max[chn][v][1]-min_max[chn][v][0])/args.nbins
                         _data = [min_max[chn][v][0]+k*_binwidth for k in range(args.nbins+1)]
+
                         if args.debug:
                             mes = 'Using regular binning for variable {}: {}'.format(v, _data)
                             utils.debug(mes, args.debug, __file__)
+
                         dset[:] = _data
                         
 
