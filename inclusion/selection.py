@@ -209,8 +209,8 @@ class EventSelection:
         btagMM = (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1] and
                   self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1])
         
-        common = not (#self.entries['isVBF'] == 1 and self.entries['VBFjj_mass'] > 500 and self.entries['VBFjj_deltaEta'] > 3 and
-            (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1] or self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1]))
+        common = not (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1] or
+                      self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1])
         if category == 'baseline':
             specific = True
         elif category == 's1b1jresolvedMcut':
