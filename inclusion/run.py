@@ -123,7 +123,7 @@ parser.add_argument(
 parser.add_argument(
     '--branch',
     type=str,
-    choices=['all', 'counts', 'extra'],
+    choices=['all', 'counts', 'nocounts', 'extra'],
     default='all',
     help='Which section of the DAG to run.'
     )
@@ -606,10 +606,12 @@ class Dag(lutils.ForceRun):
         # subm_union = union_calculator.union_calculator_outputs(self.p_calc)[1]
         # subm_closure = closure.closure_outputs(self.p_closure)
 
-        jobs = {'CountsData'    : subm_cdata,
-                'CountsMC'      : subm_cmc,                
-                'HaddCountsData': subm_hadd_cdata,
-                'HaddCountsMC'  : subm_hadd_cmc}
+        jobs = {}
+        if self.branch != 'nocounts':
+            jobs.update({'CountsData'    : subm_cdata,
+                         'CountsMC'      : subm_cmc,                
+                         'HaddCountsData': subm_hadd_cdata,
+                         'HaddCountsMC'  : subm_hadd_cmc})
         if self.branch != 'counts':
             jobs.update({'HistosData'   : subm_hdata,
                          'HistosMC'     : subm_hmc,

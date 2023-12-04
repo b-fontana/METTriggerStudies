@@ -23,7 +23,7 @@ def dag_outputs(args):
 
 class WriteDAGManager:
     def __init__(self, localdir, tag, jobs, branch='all'):
-        if branch not in ('all', 'counts', 'extra'):
+        if branch not in ('all', 'counts', 'nocounts', 'extra'):
             raise ValueError('Branch {} is not supported.'.format(branch))
         self.branch = branch
         
@@ -98,28 +98,29 @@ class WriteDAGManager:
 
     def write_all(self):
         # counts to add for data
-        p = [x for x in self.jobs['CountsData']]
-        c = [self.jobs['HaddCountsData'][0]]
-        self.write_parent_child_hierarchy(parents=p, childs=c)
+        if self.branch != 'nocounts':
+            p = [x for x in self.jobs['CountsData']]
+            c = [self.jobs['HaddCountsData'][0]]
+            self.write_parent_child_hierarchy(parents=p, childs=c)
+     
+            # counts to add for MC
+            p = [x for x in self.jobs['CountsMC']]
+            c = [self.jobs['HaddCountsMC'][0]]
+            self.write_parent_child_hierarchy(parents=p, childs=c)
+            self.new_line()
+     
+            # counts add aggregation for Data
+            p = [self.jobs['HaddCountsData'][0]]
+            c = [self.jobs['HaddCountsData'][1]]
+            self.write_parent_child_hierarchy(parents=p, childs=c)
+     
+            # counts add aggregation for MC
+            p = [self.jobs['HaddCountsMC'][0]]
+            c = [self.jobs['HaddCountsMC'][1]]
+            self.write_parent_child_hierarchy(parents=p, childs=c)
+            self.new_line()
 
-        # counts to add for MC
-        p = [x for x in self.jobs['CountsMC']]
-        c = [self.jobs['HaddCountsMC'][0]]
-        self.write_parent_child_hierarchy(parents=p, childs=c)
-        self.new_line()
-
-        # counts add aggregation for Data
-        p = [self.jobs['HaddCountsData'][0]]
-        c = [self.jobs['HaddCountsData'][1]]
-        self.write_parent_child_hierarchy(parents=p, childs=c)
-
-        # counts add aggregation for MC
-        p = [self.jobs['HaddCountsMC'][0]]
-        c = [self.jobs['HaddCountsMC'][1]]
-        self.write_parent_child_hierarchy(parents=p, childs=c)
-        self.new_line()
-
-        if self.branch == 'all':
+        if self.branch != 'counts':
             # histos to hadd for dat
             p = [x for x in self.jobs['HistosData']]
             c = [self.jobs['HaddHistoData'][0]]
