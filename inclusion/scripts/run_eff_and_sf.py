@@ -391,7 +391,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             pad2.SetLeftMargin(0.15)
             pad2.Draw()
             pad2.cd()
-            #pad2.SetGridy()
+            pad2.SetGridy()
 
             if max(y.sf) == min(y.sf):
                 max1, min1 = 1.1, -0.1
@@ -425,7 +425,6 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
 
             # sf1D_new[atype] = utils.apply_equal_bin_width(sf1D[atype][akey])
             canvas[atype].Update()
-            sf1D[atype][akey].GetXaxis().SetRangeUser(x1_pad,x2_pad)
             #sf1D[atype][akey].GetYaxis().SetNdivisions(-10)
             sf1D[atype][akey].SetLineColor(ROOT.kBlue)
             sf1D[atype][akey].SetLineWidth(2)
@@ -440,6 +439,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             sf1D[atype][akey].GetYaxis().SetTitleOffset(0.45)
             sf1D[atype][akey].GetYaxis().SetTitle('Data/MC')
             sf1D[atype][akey].GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
+            sf1D[atype][akey].GetXaxis().SetTickLength(0.07)
             sf1D[atype][akey].Draw("AP")
             if atype == 'eff' and akey in fit_sigmoid_ratio:
                 fit_sigmoid_ratio[akey].Draw("same")
