@@ -548,11 +548,13 @@ def total_cross_section(f, isdata):
     if isdata:
         return 1.
     else:
-        search_str = os.path.join(os.path.dirname(f), '*.root')
+        search_str = os.path.join(os.path.dirname(f), 'goodfiles.txt')
         xsec_norm = 0.
-        for elem in glob.glob(search_str):
-            ftmp = ROOT.TFile(elem)
-            xsec_norm += ftmp.Get('h_eff').GetBinContent(1)
+        with open(search_str, 'r') as afile:
+            for elem in afile:
+                ftmp = ROOT.TFile(elem.replace('\n', ''), "READ")
+                xsec_norm += ftmp.Get('h_eff').GetBinContent(1)
+                
         return xsec_norm
     return None
 

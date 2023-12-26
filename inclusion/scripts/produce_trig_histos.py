@@ -36,7 +36,7 @@ def build_histograms(args):
     config_module = importlib.import_module(args.configuration)
     
     xsec_norm = utils.total_cross_section(args.infile, args.isdata)
-    
+
     f_in = ROOT.TFile(args.infile)
     t_in = f_in.Get('HTauTauTree')
 
