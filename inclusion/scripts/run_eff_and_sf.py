@@ -161,13 +161,6 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
 
     tmpkey = list(hmc1D['trig'].keys())[0] #they all have the same binning
     nb1D = mc1D['eff'][tmpkey].GetN() 
-
-    up_xedge  = lambda obj,i: obj.GetXaxis().GetBinUpEdge(i)
-    low_xedge = lambda obj,i: obj.GetXaxis().GetBinLowEdge(i)
-    up_yedge  = lambda obj,i: obj.GetYaxis().GetBinUpEdge(i)
-    low_yedge = lambda obj,i: obj.GetYaxis().GetBinLowEdge(i)
-    ctr_xedge = lambda obj,i: obj.GetXaxis().GetBinCenter(i)
-    ctr_yedge = lambda obj,i: obj.GetYaxis().GetBinCenter(i)
         
     darr = lambda x : np.array(x).astype(dtype=np.double)
     assert len(data1D['eff']) == len(mc1D['eff'])
@@ -190,8 +183,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                 x.mc[i] = x.mc[i].value
                 y.mc[i] = y.mc[i].value
                 
-                exu.mc[i] = up_xedge(vmc,i)  - ctr_xedge(vmc,i)
-                exd.mc[i] = ctr_xedge(vmc,i) - low_xedge(vmc,i)
+                exu.mc[i] = vmc.GetErrorXhigh(i)
+                exd.mc[i] = vmc.GetErrorXlow(i)
                 eyu.mc[i] = vmc.GetErrorYhigh(i)
                 eyd.mc[i] = vmc.GetErrorYlow(i)
                 
@@ -201,11 +194,11 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                 x.dt[i] = x.dt[i].value
                 y.dt[i] = y.dt[i].value
 
-                exu.dt[i] = up_xedge(vdata,i)  - ctr_xedge(vdata,i)
-                exd.dt[i] = ctr_xedge(vdata,i) - low_xedge(vdata,i)
+                exu.dt[i] = vdata.GetErrorXhigh(i)
+                exd.dt[i] = vdata.GetErrorXlow(i)
                 eyu.dt[i] = vdata.GetErrorYhigh(i)
                 eyd.dt[i] = vdata.GetErrorYlow(i)
-
+                
                 if debug:
                     print('X MC: xp[{}] = {} +{}/-{} '
                           .format(i,x.mc[i],exu.mc[i],exd.mc[i]), flush=True)
@@ -237,24 +230,27 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                     eyd.sf[i] = np.sqrt( eyd.mc[i]**2 + eyd.dt[i]**2 )
    
                 if debug:
-                    print('X Scale Factors: xp[{}] = {}'.format(i,x.sf[i]), flush=True)
+                    print('X Scale Factors: xp[{}] = {} +{}/-{}'.format(i,x.sf[i],exu.sf[i],exd.sf[i]), flush=True)
                     print('Y Scale Factors: yp[{}] = {} +{}/-{}'.format(i,y.sf[i],eyu.sf[i],eyd.sf[i]), flush=True)
                     print('', flush=True)
 
             # smoothing fits
             sf1D[atype][kdata] = ROOT.TGraphAsymmErrors(nb1D, darr(x.sf), darr(y.sf),
                                                         darr(exd.sf), darr(exu.sf), darr(eyd.sf), darr(eyu.sf))
-
+            # if variable == "metnomu_et":
+            #     breakpoint()
             if atype == 'eff' and variable in cfg.fit_vars:
                 fit_data_name = _fit_pp("fit_sigmoid_data_"+kdata)
                 fit_sigmoid_data[kdata] = ROOT.TF1(fit_data_name, "[2]/(1+exp(-[0]*(x-[1])))", frange[0], frange[1])
                 fit_sigmoid_data[kdata].SetLineColor(ROOT.kBlack)
+                fit_sigmoid_data[kdata].SetLineStyle(2)
                 fit_sigmoid_data[kdata].SetParameters(1.,175.,1.)
                 fit_data_status = data1D[atype][kdata].Fit(fit_data_name)
 
                 fit_mc_name = _fit_pp("fit_sigmoid_mc_"+kdata)
                 fit_sigmoid_mc[kdata] = ROOT.TF1(fit_mc_name, "[2]/(1+exp(-[0]*(x-[1])))", frange[0], frange[1])
                 fit_sigmoid_mc[kdata].SetLineColor(ROOT.kRed)
+                fit_sigmoid_mc[kdata].SetLineStyle(2)
                 fit_sigmoid_mc[kdata].SetParameters(1.,175.,1.)
                 fit_mc_status = mc1D[atype][kdata].Fit(fit_mc_name)
 
@@ -281,9 +277,9 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
 
         for atype in ('eff', 'norm'):
             canvas[atype].cd()
-            pad1 = ROOT.TPad('pad1', 'pad1', 0, 0.35, 1, 1)
+            pad1 = ROOT.TPad('pad1', 'pad1', 0, 0.3, 1, 1)
             pad1.SetBottomMargin(0.005)
-            pad1.SetLeftMargin(0.2)
+            pad1.SetLeftMargin(0.15)
             pad1.Draw()
             pad1.cd()
 
@@ -296,7 +292,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                 amin = 0.
 
             nbins = data1D[atype][akey].GetN()
-            #axor_info = nbins+1, -1, nbins
+            # axor_info = nbins+1, -1, nbins
             # axor_info = nbins+1, data1D[atype][akey].GetPointX(0), data1D[atype][akey].GetPointX(nbins-1)
             # axor_ndiv = 605, 705
             # axor = ROOT.TH2D('axor'+akey+atype,'axor'+akey+atype,
@@ -330,8 +326,6 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             data1D[atype][akey].GetXaxis().SetTitleSize(0.05)
             data1D[atype][akey].GetYaxis().SetTitleSize(0.05)
             data1D[atype][akey].GetXaxis().SetTitleOffset(1.)
-            if atype == 'eff':
-                data1D[atype][akey].GetYaxis().SetRangeUser(-0.05,1.2)
             data1D[atype][akey].Draw("AP")
 
             mc1D[atype][akey].SetLineColor(ROOT.kRed)
@@ -342,10 +336,20 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             mc1D[atype][akey].Draw("same P")
 
             pad1.RedrawAxis()
+            pad1.Draw("same P")
+            
+            x1_pad = pad1.GetUxmin()
+            x2_pad = pad1.GetUxmax()
+            if atype == 'eff':
+                data1D[atype][akey].GetYaxis().SetRangeUser(-0.05,1.2)
+                data1D[atype][akey].GetXaxis().SetRangeUser(x1_pad,x2_pad)
+                mc1D[atype][akey].GetYaxis().SetRangeUser(-0.05,1.2)
+                mc1D[atype][akey].GetXaxis().SetRangeUser(x1_pad,x2_pad)
+
             l = ROOT.TLine()
             l.SetLineWidth(1)
             l.SetLineStyle(7)
-            l.DrawLine(90,1,298,1)
+            l.DrawLine(x1_pad,1.,x2_pad,1.)
 
             leg = ROOT.TLegend(0.60, 0.77, 0.88, 0.87)
             leg.SetFillColor(0)
@@ -361,8 +365,10 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             leg.Draw('same')
 
             utils.redraw_border()
-
-            lX, lY, lYstep = 0.23, 0.84, 0.05
+            pad1.RedrawAxis()
+            pad1.Draw("same P")
+            
+            lX, lY, lYstep = 0.18, 0.84, 0.05
             l = ROOT.TLatex()
             l.SetNDC()
             l.SetTextFont(72)
@@ -373,19 +379,19 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             latexChannel.replace('tau','#tau_{h}')
             latexChannel.replace('Tau','#tau_{h}')
 
-            l.DrawLatex( lX, lY, 'Channel: '+latexChannel)
+            l.DrawLatex(lX, lY, 'Channel: '+latexChannel)
             textrigs = utils.write_trigger_string(trig, intersection_str,
                                                   items_per_line=2)
             l.DrawLatex( lX, lY-lYstep, textrigs)
 
             canvas[atype].cd()
-            pad2 = ROOT.TPad('pad2','pad2',0,0.0,1,0.35)
+            pad2 = ROOT.TPad('pad2','pad2',0.,0.,1.,0.3)
             pad2.SetTopMargin(0.01)
-            pad2.SetBottomMargin(0.4)
-            pad2.SetLeftMargin(0.2)
+            pad2.SetBottomMargin(0.3)
+            pad2.SetLeftMargin(0.15)
             pad2.Draw()
             pad2.cd()
-            pad2.SetGridy()
+            #pad2.SetGridy()
 
             if max(y.sf) == min(y.sf):
                 max1, min1 = 1.1, -0.1
@@ -418,6 +424,9 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             # axor2.Draw()
 
             # sf1D_new[atype] = utils.apply_equal_bin_width(sf1D[atype][akey])
+            canvas[atype].Update()
+            sf1D[atype][akey].GetXaxis().SetRangeUser(x1_pad,x2_pad)
+            #sf1D[atype][akey].GetYaxis().SetNdivisions(-10)
             sf1D[atype][akey].SetLineColor(ROOT.kBlue)
             sf1D[atype][akey].SetLineWidth(2)
             sf1D[atype][akey].SetMarkerColor(ROOT.kBlue)
@@ -435,6 +444,11 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             if atype == 'eff' and akey in fit_sigmoid_ratio:
                 fit_sigmoid_ratio[akey].Draw("same")
 
+            pad2.Update()
+            utils.redraw_border()
+            pad2.RedrawAxis()
+            pad2.Draw("same P")
+        
             # pad2.cd()
             # l = ROOT.TLine()
             # l.SetLineWidth(2)
@@ -446,8 +460,6 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             #     x = axor2.GetXaxis().GetBinLowEdge(i) + 1.5;
             #     l.DrawLine(x,padmin-fraction,x,padmin+fraction)
             # l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
-
-            utils.redraw_border()
 
             for aname in save_names_1D[:-1]:
                 _name = utils.rewrite_cut_string(aname, akey, regex=True)
@@ -488,7 +500,7 @@ def draw_eff_and_sf_2d(proc, channel, joinvars, trig, save_names_2D,
     file_data = ROOT.TFile.Open(name_data, 'READ')
 
     name_mc = os.path.join(indir, _name( tprefix, mc_name, '_Sum', subtag ))
-    file_mc   = ROOT.TFile.Open(name_mc, 'READ')
+    file_mc = ROOT.TFile.Open(name_mc, 'READ')
 
     if debug:
         print('[=debug=] Open files:')
