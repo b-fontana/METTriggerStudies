@@ -67,14 +67,6 @@ def define_binning(args):
                           'mumu'   : 'SingleMuon',
                           'ee'     : 'EGamma',}
     
-    # Initialization
-    # nTotEntries = 0
-    # _maxedge, _minedge = ({} for _ in range(2))
-    # for var in args.variables:
-    #     _maxedge[var], _minedge[var] = ({} for _ in range(2))
-    #     for chn in args.channels:
-    #         _maxedge[var][chn], _minedge[var][chn] = ({} for _ in range(2))
-
     min_max, quants = {}, {}
     for k in args.channels:
         min_max[k], quants[k] = {}, {}
@@ -94,7 +86,7 @@ def define_binning(args):
             filelist, _ = utils.get_root_inputs(sample, args.indir, include_tree=True)
 
             treesize = 0
-            percentage = 0.1
+            percentage = 0.05
 
             quantiles = np.linspace(0., 1., num=args.nbins+1)
             quantiles[-1] = 0.99
@@ -109,20 +101,21 @@ def define_binning(args):
                 if ib+1 > int(percentage*nfiles) and nfiles > 30:
                     break
 
-                print('{}/{} {} files (only {} will be processed)\r'.format(ib+1, nfiles, sample,
-                                                                            int(percentage*nfiles)),
+                print('{}/{} {} files for channel {} (only {} will be processed)\r'
+                      .format(ib+1, nfiles, sample, chn, int(percentage*nfiles)),
                       end='' if ib+1!=nfiles else '\n', flush=True)
                 
                 if chn == 'all':
                     sel_chn = batch.pairType < main.sel[chn]['pairType'][1]
                 else:
                     sel_chn = batch.pairType == main.sel[chn]['pairType'][1]
-                batch_sel = batch[sel_chn]
-                if key_exists(cfg.binedges, v, chn) and cfg.binedges[v][chn][0] == "quantiles":
-                    for v in args.variables:
-                        batch_sel[v] = batch_sel[v][batch_sel[v] > cfg.binedges[v][chn][1] &
-                                                    batch_sel[v] < cfg.binedges[v][chn][2]]
-                
+                batch_chn, batch_sel = batch[sel_chn], {}
+                for v in args.variables:
+                    if key_exists(cfg.binedges, v, chn) and cfg.binedges[v][chn][0] == "quantiles":
+                        batch_sel[v] = batch_chn[v][(batch_chn[v] > cfg.binedges[v][chn][1]) & (batch_chn[v] < cfg.binedges[v][chn][2])]
+                    else:
+                        batch_sel[v] = batch_chn[v]
+
                 if len(batch_sel) != 0:
                     # trim outliers
                     quant1 = {v:np.quantile(batch_sel[v], q=np.array(quantiles)) for v in args.variables}
@@ -137,6 +130,7 @@ def define_binning(args):
     ###############################################
     ############## Data Loop: End #################
     ###############################################
+    breakpoint()
     for _ in (True,): #breakable scope (otherwise 'break' cannot be used)
         with h5py.File( define_binning_outputs(args), 'a') as f:
             try:
