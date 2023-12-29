@@ -10,10 +10,9 @@ from inclusion.config import main
 from inclusion.utils import utils
 
 bjets_cut = True
+mass_cut = None #standard, inverted
+custom_cut = None
 category = 'baseline'
-
-custom_cut = ('(self.entries.dau1_pt < 25. and self.entries.dau2_pt < 25.) or ' +
-              '(self.entries.dau1_pt < 20. and self.entries.dau2_pt > 25.)')
 
 triggers = ('METNoMu120', 'IsoMu24')
 trig_custom = set()
@@ -86,21 +85,16 @@ for x in pairs2D.values():
 ### Binning
 #pog_pt_binedges = (26., 30., 40., 50., 60., 120., 200)
 metnomu_et_binedges = {
-    'mutau': (100., 110., 120., 130., 140., 145., 150., 155., 160., 165., 170.,
-              175., 180., 185., 190., 195., 200., 210., 220., 230., 240., 250.,
-              260., 270., 280.),
-    'mumu': (100., 110., 120., 130., 140., 145., 150., 155., 160., 165., 170.,
-             175., 180., 185., 190., 195., 200., 210., 220., 230., 240., 250.,
-             260., 270., 280.),
+    'mutau': (100., 110., 120., 130., 140., 150., 160., 170., 180., 190., 200., 210., 220., 230., 240., 250., 260., 270., 280., 295.),
+    'mumu': (100., 110., 120., 130., 140., 150., 160., 170., 180., 190., 200., 210., 220., 230., 240., 250., 260., 270., 280., 295.),
 }
 binedges = {
     # 'dau1_pt': {'etau':   pog_pt_binedges,
     #             'mutau':  pog_pt_binedges,
     #             'tautau': pog_pt_binedges },
-    'metnomu_et': {'mutau' : ("quantiles", 100, 300),
-                   'mumu'  : ("quantiles", 100, 300) },
-    # 'metnomu_et': {'mutau' : metnomu_et_binedges['mutau'],
-    #                'mumu'  : metnomu_et_binedges['mumu'] },
+    #("quantiles", 100, 300),
+    'metnomu_et': {'mutau' : metnomu_et_binedges['mutau'],
+                   'mumu'  : metnomu_et_binedges['mumu'] },
     'mhtnomu_et': {'mutau' : (120,360),
                    'mumu'  : (120,360) },
 }

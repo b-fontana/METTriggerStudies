@@ -10,6 +10,7 @@ from inclusion.config import main
 from inclusion.utils import utils
 
 bjets_cut = True
+mass_cut = None #standard, inverted
 category = 'baseline'
 custom_cut = ('(self.entries.dau2_pt < 40 and self.entries.dau1_pt < 190) or ' +
               '(self.entries.dau1_pt < 40 and self.entries.dau2_pt < 190)')

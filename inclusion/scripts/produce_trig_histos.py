@@ -42,7 +42,6 @@ def build_histograms(args):
 
     binedges, nbins = utils.load_binning(afile=args.binedges_fname, key=args.subtag,
                                          variables=args.variables, channels=args.channels)
-
     triggercomb = {}
     for chn in args.channels:
         triggercomb[chn] = utils.generate_trigger_combinations(chn, config_module.triggers,
@@ -159,7 +158,7 @@ def build_histograms(args):
 
         for chn in args.channels:
             if utils.is_channel_consistent(chn, entries.pairType):
-                
+
                 # fill histograms for 1D efficiencies
                 for j in args.variables:
                     binning1D = (nbins[j][chn], binedges[j][chn])
@@ -178,7 +177,8 @@ def build_histograms(args):
                             continue
                         if not sel.dataset_cuts(tcomb, chn):
                             continue
-                        if not sel.dataset_triggers(tcomb, chn, config_module.triggers, args.dataset)[0]:
+                        if not sel.dataset_triggers(tcomb, chn, config_module.triggers,
+                                                    args.dataset)[0]:
                             continue
 
                         # avoid underflow bin with negative weights crashing efficiency calculation
@@ -212,8 +212,6 @@ def build_histograms(args):
                                     hTrig[chn][j][cstr][key].Fill(fill_var[j][chn], 1)
                                 else:
                                     hTrig[chn][j][cstr][key].Fill(fill_var[j][chn], evt_weight)
-
-
 
                 # fill 2D efficiencies
                 for onetrig in config_module.triggers:

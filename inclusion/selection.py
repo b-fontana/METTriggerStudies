@@ -64,8 +64,10 @@ class EventSelection:
             raise ValueError(m)
 
         lepton_veto = self.should_apply_lepton_veto(tcomb)
-        
-        return self.selection_cuts(lepton_veto=lepton_veto, bjets_cut=self.cfg.bjets_cut,
+
+        return self.selection_cuts(lepton_veto=lepton_veto,
+                                   bjets_cut=self.cfg.bjets_cut,
+                                   mass_cut=self.cfg.mass_cut,
                                    custom_cut=self.cfg.custom_cut)
 
     def dataset_name(self, dataset):
@@ -223,12 +225,11 @@ class EventSelection:
         return common and specific
 
     def selection_cuts(self, iso_cuts=dict(), lepton_veto=True, bjets_cut=True,
-                       invert_mass_cut=True, standard_mass_cut=False, custom_cut=None):
+                       mass_cut='inverted', custom_cut=None):
         """
         Applies selection cut to one event.
         Returns `True` only if all selection cuts pass.
         """
-        assert invert_mass_cut is not standard_mass_cut
         
         # When one only has 0 or 1 bjet th HH mass is not well defined,
         # and a value of -1 is assigned. One thus has to remove the cut below
@@ -287,11 +288,15 @@ class EventSelection:
 
         mpoint = ((svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
                   (bh_mass-169.)*(bh_mass-169.) / (145.*145.))
-        if mpoint < 1.0 and invert_mass_cut: # inverted elliptical mass cut
+        opt = ('standard', 'inverted')
+        if mass_cut == opt[0] and mpoint < 1.0:
             return False
-        if mpoint > 1.0 and standard_mass_cut: # standard elliptical mass cut
+        elif mass_cut == opt[1] and mpoint > 1.0:
             return False
-
+        elif mass_cut not in opt and mass_cut is not None:
+            mes = 'Mass cut option {} is not supported!'.format(mass_cut)
+            raise ValueError(mes)
+        
         return True
 
     def set_custom_trigger_bit(self, trigger):

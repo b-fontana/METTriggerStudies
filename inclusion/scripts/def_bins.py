@@ -130,7 +130,6 @@ def define_binning(args):
     ###############################################
     ############## Data Loop: End #################
     ###############################################
-    breakpoint()
     for _ in (True,): #breakable scope (otherwise 'break' cannot be used)
         with h5py.File( define_binning_outputs(args), 'a') as f:
             try:

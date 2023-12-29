@@ -10,6 +10,7 @@ from inclusion.config import main
 from inclusion.utils import utils
 
 bjets_cut = True
+mass_cut = None #standard, inverted
 cuts_custom = None
 
 triggers = tuple(main.trig_map.keys())

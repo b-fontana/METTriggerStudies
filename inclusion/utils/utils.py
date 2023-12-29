@@ -180,7 +180,10 @@ def define_used_tree_variables(cut):
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',
                 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor',
                 'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta')
-    _regex = tuple(set(re.findall(r'self\.entries\.(.+?)\s', cut)))
+    if cut is not None:
+        _regex = tuple(set(re.findall(r'self\.entries\.(.+?)\s', cut)))
+    else:
+        _regex = ()
     return tuple(set(_entries + _regex))
     
 class dot_dict(dict):

@@ -134,9 +134,9 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             data1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hdata1D['ref'])
             data1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
             try:
-                data1D['norm'][kh].Scale(1/data1D['norm'][kh].Integral())
+                data1D['norm'][kh].Scale(1./data1D['norm'][kh].Integral())
             except ZeroDivisionError:
-                data1D['norm'][kh].Scale(1)
+                data1D['norm'][kh].Scale(1.)
             data1D['norm'][kh] = ROOT.TGraphAsymmErrors(data1D['norm'][kh])
         nb = hmc1D['ref'].GetNbinsX()
         for kh, vh in hmc1D['trig'].items():
@@ -171,10 +171,11 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
         for (kmc,vmc),(kdata,vdata) in zip(mc1D[atype].items(),data1D[atype].items()):
             assert(kmc == kdata)
 
-            x, y, exu, exd, eyu, eyd = (utils.dot_dict({'dt': [[] for _ in range(nb1D)],    # data 
-                                                        'mc': [[] for _ in range(nb1D)],    # MC
-                                                        'sf': [[] for _ in range(nb1D)] })  # scale factor
-                                        for _ in range(6))
+            x, y, exu, exd, eyu, eyd = (
+                utils.dot_dict({'dt': [[] for _ in range(nb1D)],    # data 
+                                'mc': [[] for _ in range(nb1D)],    # MC
+                                'sf': [[] for _ in range(nb1D)] })  # scale factor
+                for _ in range(6))
 
             for i in range(nb1D):
                 x.mc[i] = ctypes.c_double(0.)
@@ -230,25 +231,28 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                     eyd.sf[i] = np.sqrt( eyd.mc[i]**2 + eyd.dt[i]**2 )
    
                 if debug:
-                    print('X Scale Factors: xp[{}] = {} +{}/-{}'.format(i,x.sf[i],exu.sf[i],exd.sf[i]), flush=True)
-                    print('Y Scale Factors: yp[{}] = {} +{}/-{}'.format(i,y.sf[i],eyu.sf[i],eyd.sf[i]), flush=True)
+                    print('X Scale Factors: xp[{}] = {} +{}/-{}'
+                          .format(i,x.sf[i],exu.sf[i],exd.sf[i]), flush=True)
+                    print('Y Scale Factors: yp[{}] = {} +{}/-{}'
+                          .format(i,y.sf[i],eyu.sf[i],eyd.sf[i]), flush=True)
                     print('', flush=True)
 
             # smoothing fits
-            sf1D[atype][kdata] = ROOT.TGraphAsymmErrors(nb1D, darr(x.sf), darr(y.sf),
-                                                        darr(exd.sf), darr(exu.sf), darr(eyd.sf), darr(eyu.sf))
-            # if variable == "metnomu_et":
-            #     breakpoint()
+            sf1D[atype][kdata] = ROOT.TGraphAsymmErrors(
+                nb1D, darr(x.sf), darr(y.sf),
+                darr(exd.sf), darr(exu.sf), darr(eyd.sf), darr(eyu.sf))
             if atype == 'eff' and variable in cfg.fit_vars:
                 fit_data_name = _fit_pp("fit_sigmoid_data_"+kdata)
-                fit_sigmoid_data[kdata] = ROOT.TF1(fit_data_name, "[2]/(1+exp(-[0]*(x-[1])))", frange[0], frange[1])
+                fit_sigmoid_data[kdata] = ROOT.TF1(
+                    fit_data_name, "[2]/(1+exp(-[0]*(x-[1])))", frange[0], frange[1])
                 fit_sigmoid_data[kdata].SetLineColor(ROOT.kBlack)
                 fit_sigmoid_data[kdata].SetLineStyle(2)
                 fit_sigmoid_data[kdata].SetParameters(1.,175.,1.)
                 fit_data_status = data1D[atype][kdata].Fit(fit_data_name)
 
                 fit_mc_name = _fit_pp("fit_sigmoid_mc_"+kdata)
-                fit_sigmoid_mc[kdata] = ROOT.TF1(fit_mc_name, "[2]/(1+exp(-[0]*(x-[1])))", frange[0], frange[1])
+                fit_sigmoid_mc[kdata] = ROOT.TF1(
+                    fit_mc_name, "[2]/(1+exp(-[0]*(x-[1])))", frange[0], frange[1])
                 fit_sigmoid_mc[kdata].SetLineColor(ROOT.kRed)
                 fit_sigmoid_mc[kdata].SetLineStyle(2)
                 fit_sigmoid_mc[kdata].SetParameters(1.,175.,1.)
@@ -287,6 +291,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             max2, min2 = utils.get_obj_max_min(mc1D[atype][akey], is_histo=False)
             amax = max([max1, max2])
             amin = min([min1, min2])
+            intervals = 0.1, 0.4
             if amax == amin:
                 amax = 1.
                 amin = 0.
@@ -297,7 +302,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             # axor_ndiv = 605, 705
             # axor = ROOT.TH2D('axor'+akey+atype,'axor'+akey+atype,
             #                  axor_info[0], axor_info[1], axor_info[2],
-            #                  100, amin-0.1*(amax-amin), amax+0.4*(amax-amin) )
+            #                  100, amin-intervals[0]*(amax-amin), amax+intervals[1]*(amax-amin) )
             # axor.GetYaxis().SetTitle('Efficiency' if atype=='eff' else 'Normalized counts')
             # axor.GetYaxis().SetNdivisions(axor_ndiv[1])
             # axor.GetXaxis().SetLabelOffset(1)
@@ -345,6 +350,11 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                 data1D[atype][akey].GetXaxis().SetRangeUser(x1_pad,x2_pad)
                 mc1D[atype][akey].GetYaxis().SetRangeUser(-0.05,1.2)
                 mc1D[atype][akey].GetXaxis().SetRangeUser(x1_pad,x2_pad)
+            else:
+                norm_min = amin-intervals[0]*(amax-amin)
+                norm_max = amax+intervals[1]*(amax-amin)
+                data1D[atype][akey].GetYaxis().SetRangeUser(norm_min,norm_max)
+                mc1D[atype][akey].GetYaxis().SetRangeUser(norm_min,norm_max)
 
             l = ROOT.TLine()
             l.SetLineWidth(1)
