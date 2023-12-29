@@ -166,7 +166,13 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
     assert len(data1D['eff']) == len(mc1D['eff'])
 
     # 1-dimensional
-    frange = 50, 500
+    if utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] != "quantiles":
+        frange = cfg.binedges[variable][channel][0], cfg.binedges[variable][channel][-1]
+    elif utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] == "quantiles":
+        frange = cfg.binedges[variable][channel][1], cfg.binedges[variable][channel][2]
+    else:
+        frange = 50, 500
+        
     for atype in ('eff', 'norm'):
         for (kmc,vmc),(kdata,vdata) in zip(mc1D[atype].items(),data1D[atype].items()):
             assert(kmc == kdata)

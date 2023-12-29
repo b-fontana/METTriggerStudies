@@ -397,6 +397,9 @@ def join_name_trigger_intersection(tuple_element):
 def join_strings(*args, sep=''):
     return sep.join(args)
 
+def key_exists(d, k1, k2):
+    return k1 in d and k2 in d[k1]
+
 def load_binning(afile, key, variables, channels):
     """
     Load the Binning stored in a previous task.

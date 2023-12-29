@@ -18,9 +18,6 @@ import inclusion
 from inclusion.utils import utils
 from inclusion.config import main
 
-def key_exists(d, k1, k2):
-    return k1 in d and k2 in d[k1]
-
 def skip_data_loop(args, cfg):
     for var in args.variables:
         if var not in cfg.binedges.keys():
@@ -111,7 +108,7 @@ def define_binning(args):
                     sel_chn = batch.pairType == main.sel[chn]['pairType'][1]
                 batch_chn, batch_sel = batch[sel_chn], {}
                 for v in args.variables:
-                    if key_exists(cfg.binedges, v, chn) and cfg.binedges[v][chn][0] == "quantiles":
+                    if utils.key_exists(cfg.binedges, v, chn) and cfg.binedges[v][chn][0] == "quantiles":
                         batch_sel[v] = batch_chn[v][(batch_chn[v] > cfg.binedges[v][chn][1]) & (batch_chn[v] < cfg.binedges[v][chn][2])]
                     else:
                         batch_sel[v] = batch_chn[v]
@@ -152,7 +149,7 @@ def define_binning(args):
                             elif len(cfg.binedges[v][chn]) == 2:
                                 dset = vgroup.create_dataset(chn, dtype=float, shape=(args.nbins+1,))
                                 dset[:] = np.linspace(cfg.binedges[v][chn][0], cfg.binedges[v][chn][1], args.nbins+1)
-                            elif key_exists(cfg.binedges, v, chn) and cfg.binedges[v][chn][0] == "quantiles":
+                            elif utils.key_exists(cfg.binedges, v, chn) and cfg.binedges[v][chn][0] == "quantiles":
                                 dset = vgroup.create_dataset(chn, dtype=float, shape=(args.nbins+1,))
                                 dset[:] = quants[chn][v]
                             else:
