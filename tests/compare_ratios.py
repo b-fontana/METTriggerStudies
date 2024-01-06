@@ -15,8 +15,8 @@ plt.style.use(hep.style.ROOT)
 
 def build_path(base, channel, variable):
     path = os.path.join(base, channel, variable)
-    #return os.path.join(path, "eff_Data_Mu_MC_DY_TT_WJets_" + channel + "_" + variable + "_TRG_METNoMu120_CUTS_*.root")
-    return os.path.join(path, "eff_Data_Mu_MC_TT_DY_" + channel + "_" + variable + "_TRG_METNoMu120_CUTS_*.root")
+    return os.path.join(path, "eff_Data_Mu_MC_DY_TT_WJets_" + channel + "_" + variable + "_TRG_METNoMu120_CUTS_*.root")
+    #return os.path.join(path, "eff_Data_Mu_MC_TT_DY_" + channel + "_" + variable + "_TRG_METNoMu120_CUTS_*.root")
 
 def sigmoid(x, params):
     """
@@ -96,11 +96,12 @@ def compare_ratios(tag, channels, variable, var_units):
 
     ax1.axvline(x=met_cut, color="grey", linestyle="--")
     ax1.axhline(y=1., color="grey", linestyle="--")
-    ax1.set_ylabel("Efficiency Ratio", fontsize=20)
-    ax1.legend(loc="best")
+    ax1.set_ylabel("Data / MC", fontsize=20)
+    ax1.legend(loc="lower right")
 
     ax2.axvline(x=met_cut, color="grey", linestyle="--")
-    ax2.axhline(y=1., color="grey", linestyle="--")
+    for yval in (.95, 1., 1.05):
+        ax2.axhline(y=yval, color="grey", linestyle="--")
     ax2.set_ylim(0.905, 1.095)
     ax2.plot(fit1_data_xvals, ratio1 / ratio2, '--', color="green")
     ax2.set_ylabel("{} / {}".format(dd[channels[0]], dd[channels[1]]), fontsize=20)
@@ -111,7 +112,7 @@ def compare_ratios(tag, channels, variable, var_units):
 
     output = __file__[:-3] + '.png'
     fig.savefig(output)
-    print('Plot save under {}.'.format(output))
+    print('Plot save under {}'.format(output))
 
     
 if __name__ == "__main__":
