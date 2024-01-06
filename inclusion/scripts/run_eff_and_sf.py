@@ -167,12 +167,13 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
 
     # 1-dimensional
     if utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] != "quantiles":
-        frange = cfg.binedges[variable][channel][0], cfg.binedges[variable][channel][-1]
+        # frange = cfg.binedges[variable][channel][0], cfg.binedges[variable][channel][-1]
+        frange = 180., cfg.binedges[variable][channel][-1]
     elif utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] == "quantiles":
         frange = cfg.binedges[variable][channel][1], cfg.binedges[variable][channel][2]
     else:
         frange = 50, 500
-        
+
     for atype in ('eff', 'norm'):
         for (kmc,vmc),(kdata,vdata) in zip(mc1D[atype].items(),data1D[atype].items()):
             assert(kmc == kdata)
@@ -249,20 +250,22 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                 darr(exd.sf), darr(exu.sf), darr(eyd.sf), darr(eyu.sf))
             if atype == 'eff' and variable in cfg.fit_vars:
                 fit_data_name = _fit_pp("fit_sigmoid_data_"+kdata)
-                fit_sigmoid_data[kdata] = ROOT.TF1(
-                    fit_data_name, "[2]/(1+exp(-[0]*(x-[1])))", frange[0], frange[1])
+                fit_sigmoid_data[kdata] = ROOT.TF1(fit_data_name, "[2]/(1+exp(-[0]*(x-[1])))",
+                                                   frange[0], frange[1])
                 fit_sigmoid_data[kdata].SetLineColor(ROOT.kBlack)
                 fit_sigmoid_data[kdata].SetLineStyle(2)
-                fit_sigmoid_data[kdata].SetParameters(1.,175.,1.)
-                fit_data_status = data1D[atype][kdata].Fit(fit_data_name)
+                fit_sigmoid_data[kdata].SetParameters(0.05,175.,0.95)
+                fit_data_status = data1D[atype][kdata].Fit(fit_data_name, "EM", "",
+                                                           frange[0], frange[1])
 
                 fit_mc_name = _fit_pp("fit_sigmoid_mc_"+kdata)
-                fit_sigmoid_mc[kdata] = ROOT.TF1(
-                    fit_mc_name, "[2]/(1+exp(-[0]*(x-[1])))", frange[0], frange[1])
+                fit_sigmoid_mc[kdata] = ROOT.TF1(fit_mc_name, "[2]/(1+exp(-[0]*(x-[1])))",
+                                                 frange[0], frange[1])
                 fit_sigmoid_mc[kdata].SetLineColor(ROOT.kRed)
                 fit_sigmoid_mc[kdata].SetLineStyle(2)
-                fit_sigmoid_mc[kdata].SetParameters(1.,175.,1.)
-                fit_mc_status = mc1D[atype][kdata].Fit(fit_mc_name)
+                fit_sigmoid_mc[kdata].SetParameters(0.05,175.,0.95)
+                fit_mc_status = mc1D[atype][kdata].Fit(fit_mc_name, "EM", "",
+                                                       frange[0], frange[1])
 
                 def _ratio_func(x, par):
                     xx = x[0]
@@ -271,8 +274,10 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                     return fit_sigmoid_data[kdata].Eval(xx) / fit_sigmoid_mc[kdata].Eval(xx);
 
                 if fit_data_status == 0 and fit_mc_status == 0:
-                    fit_sigmoid_ratio[kdata] = ROOT.TF1("fit_ratio_"+kdata, _ratio_func, frange[0], frange[1])
+                    fit_sigmoid_ratio[kdata] = ROOT.TF1("fit_ratio_"+kdata, _ratio_func,
+                                                        frange[0], frange[1])
                     fit_sigmoid_ratio[kdata].SetLineColor(ROOT.kBlue)
+                    fit_sigmoid_ratio[kdata].SetLineStyle(2)
         
     if debug:
         print('[=debug=] 1D Plotting...', flush=True)
@@ -367,11 +372,11 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             l.SetLineStyle(7)
             l.DrawLine(x1_pad,1.,x2_pad,1.)
 
-            leg = ROOT.TLegend(0.60, 0.77, 0.88, 0.87)
+            leg = ROOT.TLegend(0.68, 0.80, 0.89, 0.89)
             leg.SetFillColor(0)
             leg.SetShadowColor(0)
             leg.SetBorderSize(0)
-            leg.SetTextSize(0.05)
+            leg.SetTextSize(0.03)
             leg.SetFillStyle(0)
             leg.SetTextFont(42)
 
@@ -384,11 +389,12 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             pad1.RedrawAxis()
             pad1.Draw("same P")
             
-            lX, lY, lYstep = 0.18, 0.84, 0.05
+            lX, lY, lYstep = 0.18, 0.85, 0.04
             l = ROOT.TLatex()
             l.SetNDC()
-            l.SetTextFont(72)
+            l.SetTextFont(42) #72 bold italic
             l.SetTextColor(1)
+            l.SetTextSize(0.03)
 
             latexChannel = copy(channel)
             latexChannel.replace('mu','#mu')
@@ -398,7 +404,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             l.DrawLatex(lX, lY, 'Channel: '+latexChannel)
             textrigs = utils.write_trigger_string(trig, intersection_str,
                                                   items_per_line=2)
-            l.DrawLatex( lX, lY-lYstep, textrigs)
+            l.DrawLatex(lX, lY-lYstep, textrigs)
 
             canvas[atype].cd()
             pad2 = ROOT.TPad('pad2','pad2',0.,0.,1.,0.3)
