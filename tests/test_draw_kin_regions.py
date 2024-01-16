@@ -12,8 +12,47 @@ import matplotlib; import matplotlib.pyplot as plt
 import mplhep as hep
 plt.style.use(hep.style.ROOT)
 
-def createHisto(x, y, inputs, avars=None):
-    avars = (x, y) if avars is None else (x, y, *avars)
+def sel_category(batch):
+    """Applies analysis category cuts to an awkward batch."""
+    pass
+
+def sel_cuts(batch, channel):
+    """Applies analysis selection cuts to an awkward batch."""
+    chn_map = {"etau": 1, "mutau": 0, "tautau": 2, "mumu": 3}
+    batch = batch[batch.pairType == chn_map[channel]]
+    
+    # When one only has 0 or 1 bjet th HH mass is not well defined,
+    # and a value of -1 is assigned. One thus has to remove the cut below
+    # when considering events with less than 2 b-jets.
+    batch = batch[batch.HHKin_mass > 1]
+
+    # third lepton veto
+    batch = batch[batch.nleps == 0]
+
+    # require at least two b jet candidates
+    batch = batch[batch.nbjetscand > 1]
+
+    # opposite sign leptons
+    batch = batch[batch.isOS == 1]
+
+    # Loose / Medium / Tight
+    iso_allowed = { 'dau1_ele': 1., 'dau1_mu': 0.15, 'dau2_mu': 0.15,
+                    'dau1_tau': 5., 'dau2_tau': 5. }
+
+    # lepton id and isolation
+    if channel == "etau":
+        batch = batch[(batch.dau1_eleMVAiso == 1.) & (batch.dau2_deepTauVsJet >= 5.)]
+    elif channel == "mutau":
+        batch = batch[(batch.dau1_iso < 0.15) & (batch.dau2_deepTauVsJet >= 5.)]
+    elif channel == "tautau":
+        batch = batch[(batch.dau1_deepTauVsJet >= 5.) & (batch.dau2_deepTauVsJet >= 5.)]
+    elif channel = "mumu":
+        batch = batch[(batch.dau1_iso < 0.15) & (batch.dau2_iso < 0.15)]
+
+    return batch
+    
+def createHisto(x, y, inputs, channel, other_vars=None):
+    avars = (x, y) if other_vars is None else (x, y, *other_vars)
     for inp in inputs:
         assert inp[-5:] == ".root"
 
@@ -27,13 +66,19 @@ def createHisto(x, y, inputs, avars=None):
     for ibatch, batch in enumerate(up.iterate(inputs, step_size="200MB", library='ak',
                                               filter_name=avars)):
         print("Batch {}".format(ibatch))
+        batch = sel_cuts(batch, channel)
+        batch = sel_category(batch)
         histogram.fill(batch.dau1_pt, batch.dau2_pt)
 
     return histogram
 
-def drawCuts(inputs, dtype, sample):
+def drawCuts(inputs, dtype, sample, channel):
     xvar, yvar = "dau1_pt", "dau2_pt"
-    histogram = createHisto(x=xvar, y=yvar, inputs=inputs)
+    other_vars = ('HHKin_mass', 'pairType', 'isOS', 'dau1_eleMVAiso', 'dau1_iso', 'dau2_iso',
+                  'dau1_deepTauVsJet', 'dau2_deepTauVsJet', 'nleps', 'nbjetscand')
+
+    histogram = createHisto(x=xvar, y=yvar, channel=channel,
+                            other_vars=other_vars, inputs=inputs)
 
     wsize, hsize = 16, 16
     
@@ -80,6 +125,8 @@ if __name__ == '__main__':
                         type=str, help='Signal particle type')
     parser.add_argument('--mass', default='1000',
                         type=str, help='Signal particle type')
+    parser.add_argument('--channel', required=True, choices=("etau", "mutau", "tautau", "mumu"),
+                        type=str, help='Signal particle type')
     FLAGS = parser.parse_args()
 
     path = {'signal': "/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_validateMETNoSF_Sig_V2/",
@@ -88,5 +135,5 @@ if __name__ == '__main__':
     
     infiles = glob.glob(os.path.join(path[FLAGS.dtype], name, "output_*.root"))
 
-    drawCuts(infiles, dtype=FLAGS.dtype,
+    drawCuts(infiles, dtype=FLAGS.dtype, channel=FLAGS.channel,
              sample=FLAGS.signal + " " + FLAGS.mass + " GeV")
