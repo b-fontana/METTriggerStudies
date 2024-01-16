@@ -115,7 +115,7 @@ def build_histograms(args):
         if utils.is_nan(evt_weight) or args.isdata:
             evt_weight = 1
 
-        sel = selection.EventSelection(entries, isdata=args.isdata,
+        sel = selection.EventSelection(entries, isdata=args.isdata, year="2018",
                                        configuration=config_module)
         if not sel.sel_category(config_module.category):
             continue

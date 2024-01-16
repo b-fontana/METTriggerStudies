@@ -175,7 +175,7 @@ def define_used_tree_variables(cut):
     Repeated variables are deleted.
     """
     _entries = ('triggerbit', 'RunNumber', 'MC_weight', 'lumi', 'IdSF_deep_2d',
-                'PUReweight', 'HHKin_mass', 'isLeptrigger', 'pairType',
+                'PUReweight', 'HHKin_mass', 'isLeptrigger', 'pairType', 'isOS',
                 'dau1_eleMVAiso', 'dau1_iso', 'dau2_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',
                 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor',

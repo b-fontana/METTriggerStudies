@@ -243,6 +243,7 @@ class EventSelection:
             return False
         
         pairtype    = self.entries['pairType']
+        isOS        = self.entries['isOS']
         dau1_eleiso = self.entries['dau1_eleMVAiso']
         dau1_muiso  = self.entries['dau1_iso']
         dau2_muiso  = self.entries['dau2_iso']
@@ -267,6 +268,9 @@ class EventSelection:
             mes += 'Keys introduced: {}.'.format(iso_cuts.keys())
             raise ValueError(mes)
 
+        if not isOS:
+            return False
+        
         # setting to the defaults in case the user did not specify the values
         for k, v in iso_allowed.items():
             if k not in iso_cuts: iso_cuts[k] = v
@@ -352,7 +356,6 @@ class EventSelection:
             return self.set_custom_trigger_bit(trig)
         else:
             return self.check_bit(self.get_trigger_bit(trig))
-
 
     def var_cuts(self, trig, variables, nocut_dummy_str):
         """
