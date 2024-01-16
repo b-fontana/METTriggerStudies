@@ -12,9 +12,25 @@ import matplotlib; import matplotlib.pyplot as plt
 import mplhep as hep
 plt.style.use(hep.style.ROOT)
 
-def sel_category(batch):
+def sel_category(batch, category, year):
     """Applies analysis category cuts to an awkward batch."""
-    pass
+    deepJetWP = {'2016'    : (0.048, 0.249),
+                 '2016APV' : (0.051, 0.260),
+                 '2017'    : (0.0532, 0.3040),
+                 '2018'    : (0.0490, 0.2783)}[year]
+
+    if category == "sboosted":
+        batch = batch[(batch.isBoosted == 1) &
+                      (batch.bjet1_bID_deepFlavor > deepJetWP[0]) & (batch.bjet2_bID_deepFlavor > deepJetWP[0])]
+    elif category == "s1b1jresolved":
+        batch = batch[(batch.isBoosted != 1) &
+                      (((batch.bjet1_bID_deepFlavor > deepJetWP[1]) & (batch.bjet2_bID_deepFlavor < deepJetWP[1])) |
+                       ((batch.bjet1_bID_deepFlavor < deepJetWP[1]) & (batch.bjet2_bID_deepFlavor > deepJetWP[1])))]
+    elif category == "s2b0jresolved":
+        batch = batch[(batch.isBoosted != 1) &
+                      (batch.bjet1_bID_deepFlavor > deepJetWP[1]) & (batch.bjet2_bID_deepFlavor > deepJetWP[1])]
+        
+    return batch
 
 def sel_cuts(batch, channel):
     """Applies analysis selection cuts to an awkward batch."""
@@ -46,20 +62,20 @@ def sel_cuts(batch, channel):
         batch = batch[(batch.dau1_iso < 0.15) & (batch.dau2_deepTauVsJet >= 5.)]
     elif channel == "tautau":
         batch = batch[(batch.dau1_deepTauVsJet >= 5.) & (batch.dau2_deepTauVsJet >= 5.)]
-    elif channel = "mumu":
+    elif channel == "mumu":
         batch = batch[(batch.dau1_iso < 0.15) & (batch.dau2_iso < 0.15)]
 
     return batch
     
-def createHisto(x, y, inputs, channel, other_vars=None):
+def createHisto(x, y, inputs, channel, category, year, other_vars=None):
     avars = (x, y) if other_vars is None else (x, y, *other_vars)
     for inp in inputs:
         assert inp[-5:] == ".root"
 
     xmax, ymax = 240, 240
     histogram = hist.Hist(
-        hist.axis.Regular(50, 15, xmax, name=x),
-        hist.axis.Regular(50, 15, ymax, name=y),
+        hist.axis.Regular(40, 15, xmax, name=x),
+        hist.axis.Regular(40, 15, ymax, name=y),
         storage=hist.storage.Double()
     )
 
@@ -67,17 +83,18 @@ def createHisto(x, y, inputs, channel, other_vars=None):
                                               filter_name=avars)):
         print("Batch {}".format(ibatch))
         batch = sel_cuts(batch, channel)
-        batch = sel_category(batch)
+        batch = sel_category(batch, category, year)
         histogram.fill(batch.dau1_pt, batch.dau2_pt)
 
     return histogram
 
-def drawCuts(inputs, dtype, sample, channel):
+def drawCuts(inputs, dtype, sample, channel, category, year):
     xvar, yvar = "dau1_pt", "dau2_pt"
     other_vars = ('HHKin_mass', 'pairType', 'isOS', 'dau1_eleMVAiso', 'dau1_iso', 'dau2_iso',
-                  'dau1_deepTauVsJet', 'dau2_deepTauVsJet', 'nleps', 'nbjetscand')
+                  'dau1_deepTauVsJet', 'dau2_deepTauVsJet', 'nleps', 'nbjetscand',
+                  'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted')
 
-    histogram = createHisto(x=xvar, y=yvar, channel=channel,
+    histogram = createHisto(x=xvar, y=yvar, channel=channel, category=category, year=year,
                             other_vars=other_vars, inputs=inputs)
 
     wsize, hsize = 16, 16
@@ -94,7 +111,12 @@ def drawCuts(inputs, dtype, sample, channel):
     cbar.cbar.ax.set_ylabel("No. Events", rotation=90, labelpad=0.5, loc='top')
 
     hep.cms.text('Preliminary', fontsize=wsize*2.5)
-    hep.cms.lumitext(sample, fontsize=wsize*1.5) # r"138 $fb^{-1}$ (13 TeV)"
+
+    chn_unicodes = {"etau":   r'$e\tau$',
+                    "mutau":  r'$\mu\tau$',
+                    "tautau": r'$\tau\tau$'}
+    hep.cms.lumitext(chn_unicodes[channel] + " (" + category + " selection) | " + sample,
+                     fontsize=wsize*1.5) # r"138 $fb^{-1}$ (13 TeV)"
 
     # lines
     xmin, xmax = histogram.axes[0].edges[0], histogram.axes[0].edges[-1]
@@ -106,11 +128,14 @@ def drawCuts(inputs, dtype, sample, channel):
 
     rect1 = matplotlib.patches.Rectangle((188,211), 49, 26, color='white')
     ax.add_patch(rect1)
-    
+
+    # t = plt.text(0.6, 0.9, channel + "\n" + category, transform=ax.transAxes, fontsize=25)
+    # t.set_bbox(dict(facecolor='white', alpha=1., edgecolor='black'))
+
     plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1)
     
     for ext in ('.pdf',):
-        savename = "plot"
+        savename = '_'.join(("drawCuts", sample.replace(' ', '-'), channel, category, year))
         plt.savefig(savename + ext, dpi=600)
         print('Stored in {}'.format(savename + ext))
     plt.close()
@@ -127,6 +152,11 @@ if __name__ == '__main__':
                         type=str, help='Signal particle type')
     parser.add_argument('--channel', required=True, choices=("etau", "mutau", "tautau", "mumu"),
                         type=str, help='Signal particle type')
+    parser.add_argument('--category', default="baseline",
+                        choices=("baseline", "sboosted", "s1b1jresolved", "s2b0jresolved"),
+                        type=str, help='Analysis category')
+    parser.add_argument('--year', required=True, choices=("2016", "2016APV", "2017", "2018"),
+                        type=str, help='Signal particle type')
     FLAGS = parser.parse_args()
 
     path = {'signal': "/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_validateMETNoSF_Sig_V2/",
@@ -135,5 +165,5 @@ if __name__ == '__main__':
     
     infiles = glob.glob(os.path.join(path[FLAGS.dtype], name, "output_*.root"))
 
-    drawCuts(infiles, dtype=FLAGS.dtype, channel=FLAGS.channel,
+    drawCuts(infiles, dtype=FLAGS.dtype, channel=FLAGS.channel, year=FLAGS.year, category=FLAGS.category,
              sample=FLAGS.signal + " " + FLAGS.mass + " GeV")
