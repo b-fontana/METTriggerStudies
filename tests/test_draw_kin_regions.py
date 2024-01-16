@@ -72,10 +72,19 @@ def createHisto(x, y, inputs, channel, category, year, other_vars=None):
     for inp in inputs:
         assert inp[-5:] == ".root"
 
-    xmax, ymax = 240, 240
+    if channel == "etau":
+        xmax, ymax = 135, 135
+        bins = (40, 15, xmax)
+    elif channel == "mutau":
+        xmax, ymax = 135, 135
+        bins = (40, 15, xmax)
+    if channel == "tautau":
+        xmax, ymax = 240, 240
+        bins = (40, 15, xmax)
+    
     histogram = hist.Hist(
-        hist.axis.Regular(40, 15, xmax, name=x),
-        hist.axis.Regular(40, 15, ymax, name=y),
+        hist.axis.Regular(*bins, name=x),
+        hist.axis.Regular(*bins, name=y),
         storage=hist.storage.Double()
     )
 
@@ -103,8 +112,8 @@ def drawCuts(inputs, dtype, sample, channel, category, year):
     ax = plt.subplot(111)
     ax.title.set_size(100)
 
-    ax.set_xlabel(r"$p^1_T$ [GeV]")
-    ax.set_ylabel(r"$p^2_T$ [GeV]")
+    ax.set_xlabel(r"$p_T(1)$ [GeV]")
+    ax.set_ylabel(r"$p_T(2)$ [GeV]")
     
     cbar = hep.hist2dplot(histogram.values(), histogram.axes[0].edges, histogram.axes[1].edges,
                           flow=None)
@@ -115,24 +124,59 @@ def drawCuts(inputs, dtype, sample, channel, category, year):
     chn_unicodes = {"etau":   r'$e\tau$',
                     "mutau":  r'$\mu\tau$',
                     "tautau": r'$\tau\tau$'}
-    hep.cms.lumitext(chn_unicodes[channel] + " (" + category + " selection) | " + sample,
+    cat_map = {'baseline': "baseline", 'sboosted': "boosted",
+               's1b1jresolved': "res 1b", 's2b0jresolved': "res 2b"}
+    hep.cms.lumitext(chn_unicodes[channel] + " (" + cat_map[category] + ") | " + sample + " (" + year + ")",
                      fontsize=wsize*1.5) # r"138 $fb^{-1}$ (13 TeV)"
 
     # lines
     xmin, xmax = histogram.axes[0].edges[0], histogram.axes[0].edges[-1]
     ymin, ymax = histogram.axes[1].edges[0], histogram.axes[1].edges[-1]
-    plt.plot([42., 42., xmax], [ymax, 42., 42.], c='lightgreen', linewidth=10, label="DiTau")
-    plt.plot([xmin, 39., 39.], [191., 191., ymax], c='red', linewidth=10, label="SingleTau")
-    plt.plot([xmax, 191., 191.], [39., 39., ymin], c='red', linewidth=10)
-    plt.plot([189., 189., 39., 39., xmin], [ymin, 39., 39., 189., 189.], c='blue', linewidth=10, label="MET")
 
-    rect1 = matplotlib.patches.Rectangle((188,211), 49, 26, color='white')
-    ax.add_patch(rect1)
+    if channel == "etau":
+        if year == "2016":
+            plt.plot([26., 26.], [ymin, ymax],
+                     c='lightgreen', linewidth=10, label=r"single-e + e$\tau$")
+            plt.plot([24., 24.], [ymin, ymax],
+                     c='blue', linewidth=10, label=r"MET")
+        elif year == "2017" or year == "2018":
+            plt.plot([26., 26., 34., 34.], [ymax, 26., 26., ymin],
+                     c='lightgreen', linewidth=10, label=r"single-e + e$\tau$")
+            plt.plot([24., 24., 32., 32.], [ymax, 24., 24., ymin],
+                     c='blue', linewidth=10, label=r"MET")
+        
+    elif channel == "mutau":
+        if year == "2016":
+            plt.plot([21., 21., 26., 26.], [ymax, 26., 26., ymin],
+                     c='lightgreen', linewidth=10, label=r"single-$\mu$ + $\mu\tau$")
+            plt.plot([19., 19., 24., 24.], [ymax, 24., 24., ymin],
+                     c='blue', linewidth=10, label=r"MET")
+        elif year == "2017":
+            plt.plot([22., 22., 29., 29.], [ymax, 33., 33., ymin],
+                     c='lightgreen', linewidth=10, label=r"single-$\mu$ + $\mu\tau$")
+            plt.plot([20., 20., 27., 27.], [ymax, 31., 31., ymin],
+                     c='blue', linewidth=10, label=r"MET")
+        elif year == "2018":
+            plt.plot([22., 22., 26., 26.], [ymax, 33., 33., ymin],
+                     c='lightgreen', linewidth=10, label=r"single-$\mu$ + $\mu\tau$")
+            plt.plot([20., 20., 24., 24.], [ymax, 31., 31., ymin],
+                     c='blue', linewidth=10, label=r"MET")
 
-    # t = plt.text(0.6, 0.9, channel + "\n" + category, transform=ax.transAxes, fontsize=25)
-    # t.set_bbox(dict(facecolor='white', alpha=1., edgecolor='black'))
+    elif channel == "tautau":
+        plt.plot([42., 42., xmax], [ymax, 42., 42.], c='lightgreen', linewidth=10, label=r"$\tau\tau$")
+        plt.plot([xmin, 39., 39.], [191., 191., ymax], c='red', linewidth=10, label=r"single-$\tau$")
+        plt.plot([xmax, 191., 191.], [39., 39., ymin], c='red', linewidth=10)
+        plt.plot([189., 189., 39., 39., xmin], [ymin, 39., 39., 189., 189.], c='blue', linewidth=10, label="MET")
 
-    plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1)
+    if channel == "etau":
+        rect = matplotlib.patches.Rectangle((103,119), 30, 14, color='white')
+    elif channel == "mutau":
+        rect = matplotlib.patches.Rectangle((103,119), 30, 14, color='white')
+    elif channel == "tautau":
+        rect = matplotlib.patches.Rectangle((194,203), 42, 34, color='white')
+    ax.add_patch(rect)
+
+    plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1, title="Triggers")
     
     for ext in ('.pdf',):
         savename = '_'.join(("drawCuts", sample.replace(' ', '-'), channel, category, year))
