@@ -7,6 +7,7 @@ import argparse
 import glob
 import uproot as up
 import hist
+import pickle
 
 import matplotlib; import matplotlib.pyplot as plt
 import mplhep as hep
@@ -67,11 +68,17 @@ def sel_cuts(batch, channel):
 
     return batch
     
-def createHisto(x, y, inputs, channel, category, year, other_vars=None):
+def createHisto(x, y, inputs, channel, category, year, other_vars=None, save=False):
     avars = (x, y) if other_vars is None else (x, y, *other_vars)
     for inp in inputs:
         assert inp[-5:] == ".root"
 
+    filename = "histos.pkl"
+    if not save:
+        with open(filename, 'rb') as f:
+            histogram = pickle.load(f)
+        return histogram
+        
     if channel == "etau":
         xmax, ymax = 135, 135
         bins = (40, 15, xmax)
@@ -95,19 +102,21 @@ def createHisto(x, y, inputs, channel, category, year, other_vars=None):
         batch = sel_category(batch, category, year)
         histogram.fill(batch.dau1_pt, batch.dau2_pt)
 
+    with open(filename, 'wb') as f:
+        pickle.dump(histogram, f)
+        
     return histogram
 
-def drawCuts(inputs, dtype, sample, channel, category, year):
+def drawCuts(inputs, sample, channel, category, year, save):
     xvar, yvar = "dau1_pt", "dau2_pt"
     other_vars = ('HHKin_mass', 'pairType', 'isOS', 'dau1_eleMVAiso', 'dau1_iso', 'dau2_iso',
                   'dau1_deepTauVsJet', 'dau2_deepTauVsJet', 'nleps', 'nbjetscand',
                   'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted')
 
     histogram = createHisto(x=xvar, y=yvar, channel=channel, category=category, year=year,
-                            other_vars=other_vars, inputs=inputs)
+                            other_vars=other_vars, inputs=inputs, save=save)
 
     wsize, hsize = 16, 16
-    
     fig = plt.figure(figsize=(wsize, hsize),)
     ax = plt.subplot(111)
     ax.title.set_size(100)
@@ -179,7 +188,7 @@ def drawCuts(inputs, dtype, sample, channel, category, year):
     plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1, title="Triggers")
     
     for ext in ('.pdf',):
-        savename = '_'.join(("drawCuts", sample.replace(' ', '-'), channel, category, year))
+        savename = '_'.join(("drawCuts", sample.replace(' ', '-').replace('+', '-'), channel, category, year))
         plt.savefig(savename + ext, dpi=600)
         print('Stored in {}'.format(savename + ext))
     plt.close()
@@ -201,13 +210,25 @@ if __name__ == '__main__':
                         type=str, help='Analysis category')
     parser.add_argument('--year', required=True, choices=("2016", "2016APV", "2017", "2018"),
                         type=str, help='Signal particle type')
+    parser.add_argument('--save', action="store_false",
+                        help='Wether to save the histograms or to use the ones produced.')
     FLAGS = parser.parse_args()
 
-    path = {'signal': "/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_validateMETNoSF_Sig_V2/",
-            'mc'    : "/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_validateMETNoSF_MC_V2/"}
-    name = "GluGluTo{}ToHHTo2B2Tau_M-{}_".format(FLAGS.signal, FLAGS.mass)
-    
-    infiles = glob.glob(os.path.join(path[FLAGS.dtype], name, "output_*.root"))
+    base = "/data_CMS/cms/alves/HHresonant_SKIMS/"
+    if FLAGS.dtype == "signal":
+        base = os.path.join(base, "SKIMS_UL18_validateMETNoSF_Sig_V2/")
+        name = os.path.join(base, "GluGluTo{}ToHHTo2B2Tau_M-{}_".format(FLAGS.signal, FLAGS.mass))
+        infiles = glob.glob(os.path.join(name, "output_*.root"))
+    elif FLAGS.dtype == "mc":
+        base = os.path.join(base, "SKIMS_UL18_validateMETNoSF_MC_V2/")
+        names = ["DYJetsToLL_M-50_TuneCP5_13TeV-amc",
+                 "TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic",
+                 ]
+        infiles = [os.path.join(base, name, "hadded.root") for name in names]
 
-    drawCuts(infiles, dtype=FLAGS.dtype, channel=FLAGS.channel, year=FLAGS.year, category=FLAGS.category,
-             sample=FLAGS.signal + " " + FLAGS.mass + " GeV")
+    if FLAGS.dtype == "signal":
+        sample = FLAGS.signal + " " + FLAGS.mass + " GeV"
+    elif FLAGS.dtype == "mc":
+        sample = "TT+DY GeV"
+    drawCuts(infiles, channel=FLAGS.channel, year=FLAGS.year, category=FLAGS.category,
+             sample=sample, save=FLAGS.save)
