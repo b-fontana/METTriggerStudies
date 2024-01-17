@@ -69,7 +69,8 @@ def sel_cuts(batch, channel):
 
     return batch
     
-def getHisto(x, y, inputs, channel, category, year, dtype, savename, save=False, other_vars=None):
+def getHisto(x, y, inputs, xbins, ybins,
+             channel, category, year, dtype, savename, save=False, other_vars=None):
     avars = (x, y) if other_vars is None else (x, y, *other_vars)
     for inp in inputs:
         assert inp[-5:] == ".root"
@@ -79,20 +80,9 @@ def getHisto(x, y, inputs, channel, category, year, dtype, savename, save=False,
             histogram = pickle.load(f)
         return histogram
 
-    nbins = 25 if dtype == "signal" else 40
-    if channel == "etau":
-        xmax, ymax = 125, 125
-        bins = (nbins, 15, xmax)
-    elif channel == "mutau":
-        xmax, ymax = 125, 125
-        bins = (nbins, 15, xmax)
-    if channel == "tautau":
-        xmax, ymax = 240, 240
-        bins = (nbins, 15, xmax)
-    
     histogram = hist.Hist(
-        hist.axis.Regular(*bins, name=x),
-        hist.axis.Regular(*bins, name=y),
+        hist.axis.Regular(*xbins, name=x),
+        hist.axis.Regular(*ybins, name=y),
         storage=hist.storage.Double()
     )
 
@@ -101,102 +91,202 @@ def getHisto(x, y, inputs, channel, category, year, dtype, savename, save=False,
         print("Batch {}".format(ibatch))
         batch = sel_cuts(batch, channel)
         batch = sel_category(batch, category, year)
-        histogram.fill(batch.dau1_pt, batch.dau2_pt)
+        histogram.fill(getattr(batch, x), getattr(batch, y))
 
     with open(savename, 'wb') as f:
         pickle.dump(histogram, f)
         
     return histogram
 
-def drawCuts(inputs, sample, channel, category, year, dtype, save):
-    xvar, yvar = "dau1_pt", "dau2_pt"
-    other_vars = ('HHKin_mass', 'pairType', 'isOS', 'dau1_eleMVAiso', 'dau1_iso', 'dau2_iso',
-                  'dau1_deepTauVsJet', 'dau2_deepTauVsJet', 'nleps', 'nbjetscand',
-                  'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted')
+class DrawCuts():
+    def __init__(self, inputs, sample, channel, category, year, dtype, save):
+        self.inputs = inputs
+        self.sample = sample
+        self.channel = channel
+        self.category = category
+        self.year = year
+        self.dtype = dtype
+        self.save = save
 
-    histogram = getHisto(x=xvar, y=yvar, channel=channel, category=category, year=year,
-                         other_vars=other_vars, inputs=inputs, dtype=dtype,
-                         savename='_'.join(("histos", sample, channel, category, year)) + ".pkl",
-                         save=save)
+        self.other_vars = ('HHKin_mass', 'pairType', 'isOS', 'dau1_eleMVAiso', 'dau1_iso', 'dau2_iso',
+                           'dau1_deepTauVsJet', 'dau2_deepTauVsJet', 'nleps', 'nbjetscand',
+                           'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted')
 
-    wsize, hsize = 16, 16
-    fig = plt.figure(figsize=(wsize, hsize),)
-    ax = plt.subplot(111)
-    ax.title.set_size(100)
-
-    if channel == "etau":
-        xlabel = r"$p_T(e)$ [GeV]"
-        ylabel = r"$p_T(\tau)$ [GeV]"
-    elif channel == "mutau":
-        xlabel = r"$p_T(\mu)$ [GeV]"
-        ylabel = r"$p_T(\tau)$ [GeV]"
-    elif channel == "tautau":
-        xlabel = r"$p_T(\tau_1)$ [GeV]"
-        ylabel = r"$p_T(\tau_2)$ [GeV]"
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-
-    values = histogram.values()
-    cbar = hep.hist2dplot(values, histogram.axes[0].edges, histogram.axes[1].edges,
-                          flow=None, norm=colors.LogNorm(vmin=1, vmax=values.max()))
-    cbar.cbar.ax.set_ylabel("No. Events", rotation=90, labelpad=0.5, loc='top')
-
-    hep.cms.text('Preliminary', fontsize=wsize*2.5)
-
-    chn_unicodes = {"etau":   r'$bb\: e\tau$',
-                    "mutau":  r'$bb\: \mu\tau$',
-                    "tautau": r'$bb\: \tau\tau$'}
-    cat_map = {'baseline': "baseline", 'sboosted': "boosted",
-               's1b1jresolved': "res 1b", 's2b0jresolved': "res 2b"}
-    hep.cms.lumitext(chn_unicodes[channel] + " (" + cat_map[category] + ") | " + sample + " (" + year + ")",
-                     fontsize=wsize*1.5) # r"138 $fb^{-1}$ (13 TeV)"
-
-    # lines
-    xmin, xmax = histogram.axes[0].edges[0], histogram.axes[0].edges[-1]
-    ymin, ymax = histogram.axes[1].edges[0], histogram.axes[1].edges[-1]
-
-    if channel == "etau":
-        if year == "2016":
-            plt.plot([25., 25.], [ymin, ymax],
-                     c='red', linewidth=10, label=r"separation btw. 'single-e + e$\tau$' and MET")
-        elif year == "2017" or year == "2018":
-            plt.plot([25., 25., 33., 33.], [ymax, 35., 35., ymin],
-                     c='red', linewidth=10,
-                     label=r"separation btw. 'single-e + e$\tau$' and MET")
+    def triggers(self):
+        fig, ax = self.set_figure(16, 16)
         
-    elif channel == "mutau":
-        if year == "2016":
-            plt.plot([20., 20., 25., 25.], [ymax, 25., 25., ymin],
-                     c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
-        elif year == "2017":
-            plt.plot([21., 21., 28., 28.], [ymax, 32., 32., ymin],
-                     c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
-        elif year == "2018":
-            plt.plot([21., 21., 25., 25.], [ymax, 32., 32., ymin],
-                     c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
+        savename = '_'.join(("trigger", self.sample, self.channel, self.category, self.year)) + ".pkl"
 
-    elif channel == "tautau":
-        plt.plot([42., 42., xmax], [ymax, 42., 42.], c='black', linewidth=10, label=r"$\tau\tau$")
-        plt.plot([xmin, 39., 39.], [191., 191., ymax], c='red', linewidth=10, label=r"single-$\tau$")
-        plt.plot([xmax, 191., 191.], [39., 39., ymin], c='red', linewidth=10)
-        plt.plot([189., 189., 39., 39., xmin], [ymin, 39., 39., 189., 189.], c='deepskyblue', linewidth=10, label="MET")
+        bins = self.get_bins(mode="trigger", dtype=self.dtype)
+        histogram = getHisto(x="dau1_pt", y="dau2_pt", xbins=bins[0], ybins=bins[1],
+                             channel=self.channel, category=self.category, year=self.year,
+                             other_vars=self.other_vars, inputs=self.inputs, dtype=self.dtype,
+                             savename=savename, save=self.save)
 
-    if channel == "etau":
-        rect = matplotlib.patches.Rectangle((62,114), 61, 10, color='white')
-    elif channel == "mutau":
-        rect = matplotlib.patches.Rectangle((62,114), 61, 10, color='white')
-    elif channel == "tautau":
-        rect = matplotlib.patches.Rectangle((194,203), 42, 34, color='white')
-    ax.add_patch(rect)
+        xlabel, ylabel = self.set_axis_labels(mode="trigger", channel=self.channel)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
 
-    plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1, title="Triggers")
+        values = histogram.values()
+        cbar = hep.hist2dplot(values, histogram.axes[0].edges, histogram.axes[1].edges,
+                              flow=None, norm=colors.LogNorm(vmin=1, vmax=values.max()))
+        cbar.cbar.ax.set_ylabel("No. Events", rotation=90, labelpad=0.5, loc='top')
     
-    for ext in ('.pdf',):
-        savename = '_'.join(("drawCuts", sample.replace(' ', '-').replace('+', '-'), channel, category, year))
-        plt.savefig(savename + ext, dpi=600)
-        print('Stored in {}'.format(savename + ext))
-    plt.close()
+        self.set_hep_labels(self.channel)
+        
+        self.set_lines(histogram, mode="trigger")
+
+        if self.channel == "etau":
+            rect = matplotlib.patches.Rectangle((62,114), 61, 10, color='white')
+        elif self.channel == "mutau":
+            rect = matplotlib.patches.Rectangle((62,114), 61, 10, color='white')
+        elif self.channel == "tautau":
+            rect = matplotlib.patches.Rectangle((194,203), 42, 34, color='white')
+        ax.add_patch(rect)
+
+        plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1, title="Triggers")
+        
+        for ext in ('.pdf',):
+            savename = '_'.join(("draw_trigger", self.sample.replace(' ', '-').replace('+', '-'),
+                                 self.channel, self.category, self.year))
+            plt.savefig(savename + ext, dpi=600)
+            print('Stored in {}'.format(savename + ext))
+
+        plt.close('all')
+
+    def mass(self):
+        fig, ax = self.set_figure(16, 16)
+        
+        savename = '_'.join(("mass", self.sample, self.channel, self.category, self.year)) + ".pkl"
+
+        bins = self.get_bins(mode="mass", dtype=self.dtype)
+        histogram = getHisto(x="tauH_mass", y="bH_mass", xbins=bins[0], ybins=bins[1],
+                             channel=self.channel, category=self.category, year=self.year,
+                             other_vars=self.other_vars, inputs=self.inputs, dtype=self.dtype,
+                             savename=savename, save=self.save)
+
+        xlabel, ylabel = self.set_axis_labels(mode="mass", channel=self.channel)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+
+        values = histogram.values()
+        cbar = hep.hist2dplot(values, histogram.axes[0].edges, histogram.axes[1].edges,
+                              flow=None, norm=colors.LogNorm(vmin=1, vmax=values.max()))
+        cbar.cbar.ax.set_ylabel("No. Events", rotation=90, labelpad=0.5, loc='top')
     
+        self.set_hep_labels(self.channel)
+     
+        self.set_lines(histogram, mode="mass")
+
+        plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1)
+        
+        for ext in ('.pdf',):
+            savename = '_'.join(("draw_mass", self.sample.replace(' ', '-').replace('+', '-'),
+                                 self.channel, self.category, self.year))
+            plt.savefig(savename + ext, dpi=600)
+            print('Stored in {}'.format(savename + ext))
+
+        plt.close('all')
+
+    def get_bins(self, mode, dtype):
+        if mode == "trigger":
+            nbinsx = 25 if dtype == "signal" else 40
+            nbinsy = 25 if dtype == "signal" else 40
+            if channel == "etau":
+                xbins = (nbinsx, 15, 125)
+                ybins = (nbinsy, 15, 125)
+            elif channel == "mutau":
+                xbins = (nbinsx, 15, 125)
+                ybins = (nbinsy, 15, 125)
+            elif channel == "tautau":
+                xbins = (nbinsx, 15, 240)
+                ybins = (nbinsy, 15, 240)
+
+        elif mode == "mass":
+            nbinsx = 40 if dtype == "signal" else 40
+            nbinsy = 40 if dtype == "signal" else 40
+            if self.channel == "etau":
+                xbins = (nbinsx, 15, 300)
+                ybins = (nbinsy, 15, 400)
+            elif self.channel == "mutau":
+                xbins = (nbinsx, 15, 300)
+                ybins = (nbinsy, 15, 400)
+            elif self.channel == "tautau":
+                xbins = (nbinsx, 15, 300)
+                ybins = (nbinsy, 15, 400)
+
+        return xbins, ybins
+
+    def set_figure(self, wsize, hsize):
+        fig = plt.figure(figsize=(wsize, hsize),)
+        ax = plt.subplot(111)
+        ax.title.set_size(100)
+        return fig, ax
+
+    def set_axis_labels(self, mode, channel):
+        """Set X and Y label."""
+        if mode == "trigger":
+            if channel == "etau":
+                xlabel = r"$p_T(e)$ [GeV]"
+                ylabel = r"$p_T(\tau)$ [GeV]"
+            elif channel == "mutau":
+                xlabel = r"$p_T(\mu)$ [GeV]"
+                ylabel = r"$p_T(\tau)$ [GeV]"
+            elif channel == "tautau":
+                xlabel = r"$p_T(\tau_1)$ [GeV]"
+                ylabel = r"$p_T(\tau_2)$ [GeV]"
+        elif mode == "mass":
+            xlabel = r"$m_{{\tau\tau}}^{{vis}}$  [GeV]"
+            ylabel = r"$m_{{bb}}^{{vis}}$  [GeV]"
+        return xlabel, ylabel
+
+    def set_hep_labels(self, channel):
+        hep.cms.text('Preliminary', fontsize=40)
+        chn_unicodes = {"etau":   r'$bb\: e\tau$',
+                        "mutau":  r'$bb\: \mu\tau$',
+                        "tautau": r'$bb\: \tau\tau$'}
+        cat_map = {'baseline': "baseline", 'sboosted': "boosted",
+                   's1b1jresolved': "res 1b", 's2b0jresolved': "res 2b"}
+        hep.cms.lumitext((chn_unicodes[self.channel] + " (" + cat_map[self.category] + ") | " +
+                          self.sample + " (" + self.year + ")"),
+                         fontsize=24) # r"138 $fb^{-1}$ (13 TeV)"
+
+    def set_lines(self, h, mode):
+        xmin, xmax = h.axes[0].edges[0], h.axes[0].edges[-1]
+        ymin, ymax = h.axes[1].edges[0], h.axes[1].edges[-1]
+
+        if mode == "trigger":
+            if self.channel == "etau":
+                if year == "2016":
+                    plt.plot([25., 25.], [ymin, ymax],
+                             c='red', linewidth=10, label=r"separation btw. 'single-e + e$\tau$' and MET")
+                elif year == "2017" or year == "2018":
+                    plt.plot([25., 25., 33., 33.], [ymax, 35., 35., ymin],
+                             c='red', linewidth=10,
+                             label=r"separation btw. 'single-e + e$\tau$' and MET")
+                
+            elif self.channel == "mutau":
+                if year == "2016":
+                    plt.plot([20., 20., 25., 25.], [ymax, 25., 25., ymin],
+                             c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
+                elif year == "2017":
+                    plt.plot([21., 21., 28., 28.], [ymax, 32., 32., ymin],
+                             c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
+                elif year == "2018":
+                    plt.plot([21., 21., 25., 25.], [ymax, 32., 32., ymin],
+                             c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
+         
+            elif self.channel == "tautau":
+                plt.plot([42., 42., xmax], [ymax, 42., 42.], c='black', linewidth=10, label=r"$\tau\tau$")
+                plt.plot([xmin, 39., 39.], [191., 191., ymax], c='red', linewidth=10, label=r"single-$\tau$")
+                plt.plot([xmax, 191., 191.], [39., 39., ymin], c='red', linewidth=10)
+                plt.plot([189., 189., 39., 39., xmin], [ymin, 39., 39., 189., 189.], c='deepskyblue', linewidth=10, label="MET")
+         
+        elif mode == "mass":
+            plt.plot([20., 280., 280., 20., 20.], [50., 50., 350., 350., 50.],
+                     c='red', linewidth=10, label=r"Window mass cut")
+            
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="draw cuts on top of signal or MC distributions",
                                      formatter_class=argparse.RawTextHelpFormatter)
@@ -213,6 +303,8 @@ if __name__ == '__main__':
                         choices=("baseline", "sboosted", "s1b1jresolved", "s2b0jresolved"),
                         type=str, help='Analysis category')
     parser.add_argument('--year', required=True, choices=("2016", "2016APV", "2017", "2018"),
+                        type=str, help='Signal particle type')
+    parser.add_argument('--mode', default="trigger", choices=("trigger", "mass"),
                         type=str, help='Signal particle type')
     parser.add_argument('--save', action="store_false",
                         help='Wether to save the histograms or to use the ones produced.')
@@ -234,5 +326,10 @@ if __name__ == '__main__':
         sample = FLAGS.signal + " " + FLAGS.mass + " GeV"
     elif FLAGS.dtype == "mc":
         sample = "TT+DY"
-    drawCuts(infiles, channel=FLAGS.channel, year=FLAGS.year, category=FLAGS.category,
-             sample=sample, dtype=FLAGS.dtype, save=FLAGS.save)
+
+    draw = DrawCuts(infiles, channel=FLAGS.channel, year=FLAGS.year, category=FLAGS.category,
+                    sample=sample, dtype=FLAGS.dtype, save=FLAGS.save)
+    if FLAGS.mode == "trigger":
+        draw.triggers()
+    elif FLAGS.mode == "mass":
+        draw.mass()
