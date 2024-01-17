@@ -39,10 +39,10 @@ def sel_cuts(batch, channel):
     chn_map = {"etau": 1, "mutau": 0, "tautau": 2, "mumu": 3}
     batch = batch[batch.pairType == chn_map[channel]]
     
-    # When one only has 0 or 1 bjet th HH mass is not well defined,
+    # When one only has 0 or 1 bjets the HH mass is not well defined,
     # and a value of -1 is assigned. One thus has to remove the cut below
     # when considering events with less than 2 b-jets.
-    batch = batch[batch.HHKin_mass > 1]
+    # batch = batch[batch.HHKin_mass > 1]
 
     # third lepton veto
     batch = batch[batch.nleps == 0]
@@ -113,17 +113,19 @@ class DrawCuts():
                            'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted')
 
     def triggers(self):
+        mode = "trigger"
+        
         fig, ax = self.set_figure(16, 16)
         
-        savename = '_'.join(("trigger", self.sample, self.channel, self.category, self.year)) + ".pkl"
+        savename = '_'.join((mode, self.sample, self.channel, self.category, self.year)) + ".pkl"
 
-        bins = self.get_bins(mode="trigger", dtype=self.dtype)
+        bins = self.get_bins(mode=mode, dtype=self.dtype)
         histogram = getHisto(x="dau1_pt", y="dau2_pt", xbins=bins[0], ybins=bins[1],
                              channel=self.channel, category=self.category, year=self.year,
                              other_vars=self.other_vars, inputs=self.inputs, dtype=self.dtype,
                              savename=savename, save=self.save)
 
-        xlabel, ylabel = self.set_axis_labels(mode="trigger", channel=self.channel)
+        xlabel, ylabel = self.set_axis_labels(mode=mode, channel=self.channel)
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
 
@@ -134,7 +136,7 @@ class DrawCuts():
     
         self.set_hep_labels(self.channel)
         
-        self.set_lines(histogram, mode="trigger")
+        self.set_lines(histogram, mode=mode)
 
         if self.channel == "etau":
             rect = matplotlib.patches.Rectangle((62,114), 61, 10, color='white')
@@ -145,27 +147,22 @@ class DrawCuts():
         ax.add_patch(rect)
 
         plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1, title="Triggers")
-        
-        for ext in ('.pdf',):
-            savename = '_'.join(("draw_trigger", self.sample.replace(' ', '-').replace('+', '-'),
-                                 self.channel, self.category, self.year))
-            plt.savefig(savename + ext, dpi=600)
-            print('Stored in {}'.format(savename + ext))
-
-        plt.close('all')
+        self.savefig(mode=mode)
 
     def mass(self):
+        mode = "mass"
+        
         fig, ax = self.set_figure(16, 16)
         
-        savename = '_'.join(("mass", self.sample, self.channel, self.category, self.year)) + ".pkl"
+        savename = '_'.join((mode, self.sample, self.channel, self.category, self.year)) + ".pkl"
 
-        bins = self.get_bins(mode="mass", dtype=self.dtype)
+        bins = self.get_bins(mode=mode, dtype=self.dtype)
         histogram = getHisto(x="tauH_mass", y="bH_mass", xbins=bins[0], ybins=bins[1],
                              channel=self.channel, category=self.category, year=self.year,
                              other_vars=self.other_vars, inputs=self.inputs, dtype=self.dtype,
                              savename=savename, save=self.save)
 
-        xlabel, ylabel = self.set_axis_labels(mode="mass", channel=self.channel)
+        xlabel, ylabel = self.set_axis_labels(mode=mode, channel=self.channel)
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
 
@@ -176,46 +173,53 @@ class DrawCuts():
     
         self.set_hep_labels(self.channel)
      
-        self.set_lines(histogram, mode="mass")
+        self.set_lines(histogram, mode=mode)
+
+        rect = matplotlib.patches.Rectangle((245,473), 100, 20, color='white')
+        ax.add_patch(rect)
 
         plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1)
+        self.savefig(mode)
         
-        for ext in ('.pdf',):
-            savename = '_'.join(("draw_mass", self.sample.replace(' ', '-').replace('+', '-'),
-                                 self.channel, self.category, self.year))
-            plt.savefig(savename + ext, dpi=600)
-            print('Stored in {}'.format(savename + ext))
-
-        plt.close('all')
-
     def get_bins(self, mode, dtype):
         if mode == "trigger":
             nbinsx = 25 if dtype == "signal" else 40
             nbinsy = 25 if dtype == "signal" else 40
-            if channel == "etau":
+            if self.channel == "etau":
                 xbins = (nbinsx, 15, 125)
                 ybins = (nbinsy, 15, 125)
-            elif channel == "mutau":
+            elif self.channel == "mutau":
                 xbins = (nbinsx, 15, 125)
                 ybins = (nbinsy, 15, 125)
-            elif channel == "tautau":
+            elif self.channel == "tautau":
                 xbins = (nbinsx, 15, 240)
                 ybins = (nbinsy, 15, 240)
 
         elif mode == "mass":
-            nbinsx = 40 if dtype == "signal" else 40
-            nbinsy = 40 if dtype == "signal" else 40
+            nbinsx = 40 if dtype == "signal" else 100
+            nbinsy = 40 if dtype == "signal" else 100
             if self.channel == "etau":
-                xbins = (nbinsx, 15, 300)
-                ybins = (nbinsy, 15, 400)
+                xbins = (nbinsx, 15, 350)
+                ybins = (nbinsy, 15, 500)
             elif self.channel == "mutau":
-                xbins = (nbinsx, 15, 300)
-                ybins = (nbinsy, 15, 400)
+                xbins = (nbinsx, 15, 350)
+                ybins = (nbinsy, 15, 500)
             elif self.channel == "tautau":
-                xbins = (nbinsx, 15, 300)
-                ybins = (nbinsy, 15, 400)
+                xbins = (nbinsx, 15, 350)
+                ybins = (nbinsy, 15, 500)
 
         return xbins, ybins
+
+    def savefig(self, mode):
+        for ext in ('.png', '.pdf',):
+            smpl = self.sample.replace(' ', '-').replace('+', '-')
+            savename = os.path.join("/eos/home-b/bfontana/www/DrawCuts/", mode)
+            savename = os.path.join(savename,
+                                    '_'.join(("draw_" + mode, smpl,
+                                              self.channel, self.category, self.year)))
+            plt.savefig(savename + ext, dpi=600)
+            print('Stored in {}'.format(savename + ext))
+        plt.close('all')
 
     def set_figure(self, wsize, hsize):
         fig = plt.figure(figsize=(wsize, hsize),)
@@ -257,22 +261,22 @@ class DrawCuts():
 
         if mode == "trigger":
             if self.channel == "etau":
-                if year == "2016":
+                if self.year == "2016":
                     plt.plot([25., 25.], [ymin, ymax],
                              c='red', linewidth=10, label=r"separation btw. 'single-e + e$\tau$' and MET")
-                elif year == "2017" or year == "2018":
+                elif self.year == "2017" or self.year == "2018":
                     plt.plot([25., 25., 33., 33.], [ymax, 35., 35., ymin],
                              c='red', linewidth=10,
                              label=r"separation btw. 'single-e + e$\tau$' and MET")
                 
             elif self.channel == "mutau":
-                if year == "2016":
+                if self.year == "2016":
                     plt.plot([20., 20., 25., 25.], [ymax, 25., 25., ymin],
                              c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
-                elif year == "2017":
+                elif self.year == "2017":
                     plt.plot([21., 21., 28., 28.], [ymax, 32., 32., ymin],
                              c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
-                elif year == "2018":
+                elif self.year == "2018":
                     plt.plot([21., 21., 25., 25.], [ymax, 32., 32., ymin],
                              c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
          
@@ -284,7 +288,7 @@ class DrawCuts():
          
         elif mode == "mass":
             plt.plot([20., 280., 280., 20., 20.], [50., 50., 350., 350., 50.],
-                     c='red', linewidth=10, label=r"Window mass cut")
+                     c='red', linewidth=10, label=r"Mass window cut")
             
 
 if __name__ == '__main__':

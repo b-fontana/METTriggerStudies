@@ -130,6 +130,11 @@ python3 tests/test_trigger_gains.py --masses 400 500 600 700 800 900 1000 1250 1
 #+END_SRC
 This runs on the CSV tables (per mass and channel) produced by the ~tests/test_trigger_regions.py~ script. It produces two plots, the first displaying the independent benefit of adding the MET trigger or the SingleTau trigger, and the second showing the added gain of including both.
 
+*** Draw trigger and mass cuts
+For instance (input paths defined at the end of the script):
+#+BEGIN_SRC shell
+for chn in "etau" "mutau" "tautau"; do python tests/test_draw_kin_regions.py --channel $chn --year 2018 --category baseline --dtype signal --mass 700 --mode mass --save; done
+#+END_SRC
 ** ~luigi~ related
 *** Debugging
 
