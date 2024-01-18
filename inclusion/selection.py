@@ -211,8 +211,8 @@ class EventSelection:
         btagMM = (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1] and
                   self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1])
         
-        common = not (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1] or
-                      self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1])
+        # common = not (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1] or
+        #               self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1])
         if category == 'baseline':
             specific = True
         elif category == 's1b1jresolvedMcut':
@@ -222,7 +222,8 @@ class EventSelection:
         elif category == 'sboostedLLMcut':
             specific = self.isBoosted == 1 and btagLL
 
-        return common and specific
+        #return common and specific
+        return specific
 
     def selection_cuts(self, iso_cuts=dict(), lepton_veto=True, bjets_cut=True,
                        mass_cut='inverted', custom_cut=None):
@@ -234,9 +235,9 @@ class EventSelection:
         # When one only has 0 or 1 bjets the HH mass is not well defined,
         # and a value of -1 is assigned. One thus has to remove the cut below
         # when considering events with less than 2 b-jets.
-        mhh = self.entries['HHKin_mass']
-        if mhh < 1 and bjets_cut:
-            return False
+        # mhh = self.entries['HHKin_mass']
+        # if mhh < 1 and bjets_cut:
+        #     return False
 
         # custom user-provided cut
         if custom_cut is not None and not eval(custom_cut):
