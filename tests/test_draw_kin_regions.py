@@ -117,7 +117,8 @@ class DrawCuts():
         
         fig, ax = self.set_figure(16, 16)
         
-        savename = '_'.join((mode, self.sample, self.channel, self.category, self.year)) + ".pkl"
+        savename = os.path.join('pickles',
+                                '_'.join((mode, self.sample, self.channel, self.category, self.year)) + ".pkl")
 
         bins = self.get_bins(mode=mode, dtype=self.dtype)
         histogram = getHisto(x="dau1_pt", y="dau2_pt", xbins=bins[0], ybins=bins[1],
@@ -154,7 +155,8 @@ class DrawCuts():
         
         fig, ax = self.set_figure(16, 16)
         
-        savename = '_'.join((mode, self.sample, self.channel, self.category, self.year)) + ".pkl"
+        savename = os.path.join("pickles",
+                                '_'.join((mode, self.sample, self.channel, self.category, self.year)) + ".pkl")
 
         bins = self.get_bins(mode=mode, dtype=self.dtype)
         histogram = getHisto(x="tauH_mass", y="bH_mass", xbins=bins[0], ybins=bins[1],
@@ -196,17 +198,17 @@ class DrawCuts():
                 ybins = (nbinsy, 15, 240)
 
         elif mode == "mass":
-            nbinsx = 40 if dtype == "signal" else 100
-            nbinsy = 40 if dtype == "signal" else 100
+            nbinsx = 50 if dtype == "signal" else 100
+            nbinsy = 50 if dtype == "signal" else 100
             if self.channel == "etau":
-                xbins = (nbinsx, 15, 350)
-                ybins = (nbinsy, 15, 500)
+                xbins = (nbinsx, 15, 200)
+                ybins = (nbinsy, 15, 350)
             elif self.channel == "mutau":
-                xbins = (nbinsx, 15, 350)
-                ybins = (nbinsy, 15, 500)
+                xbins = (nbinsx, 15, 200)
+                ybins = (nbinsy, 15, 350)
             elif self.channel == "tautau":
-                xbins = (nbinsx, 15, 350)
-                ybins = (nbinsy, 15, 500)
+                xbins = (nbinsx, 15, 200)
+                ybins = (nbinsy, 15, 350)
 
         return xbins, ybins
 
@@ -287,7 +289,7 @@ class DrawCuts():
                 plt.plot([189., 189., 39., 39., xmin], [ymin, 39., 39., 189., 189.], c='deepskyblue', linewidth=10, label="MET")
          
         elif mode == "mass":
-            plt.plot([20., 280., 280., 20., 20.], [50., 50., 350., 350., 50.],
+            plt.plot([20., 130., 130., 20., 20.], [50., 50., 270., 270., 50.],
                      c='red', linewidth=10, label=r"Mass window cut")
             
 
