@@ -78,6 +78,8 @@ def set_fig(fig, legend=True):
     fig.xaxis.visible = True
     fig.title.align = "left"
     fig.title.text_font_size = "15px"
+    fig.xaxis.axis_label_text_font_style = "bold"
+    fig.yaxis.axis_label_text_font_style = "bold"
 
 
 def main(args):
@@ -160,8 +162,8 @@ def main(args):
     opt_line = dict(width=1.5)
     colors = ('green', 'blue', 'red', 'brown')
     styles = ('solid', 'dashed', 'dotdash')
-    legends = {'met': ' (MET)', 'tau': ' (Tau)',
-               'two': ' (MET + Tau)', 'vbf': ' (VBF)'}
+    legends = {'met': 'MET', 'tau': 'Single Tau',
+               'two': 'MET + Tau', 'vbf': 'VBF'}
      
     x_str = [str(k) for k in args.masses]
     xticks = linear_x[:]
@@ -176,7 +178,8 @@ def main(args):
         p_opt = dict(width=800, height=400, x_axis_label='x', y_axis_label='y')
         p1 = figure(title='Inclusion', **p_opt)
         p2 = figure(title='Acceptance gain', **p_opt)
-        p3 = figure(title='Acceptance gain in bb' + tau + tau + ' kin region', **p_opt)
+        #p3 = figure(title='Acceptance gain in bb' + tau + tau + ' kinematic regions', **p_opt)
+        p3 = figure(**p_opt)
         for p in (p1, p2, p3):
             set_fig(p)
         for ichn,chn in enumerate(channels):
@@ -186,7 +189,7 @@ def main(args):
                           **opt_points)
                 p1.line([x+shift_one[td][ichn] for x in linear_x],
                         yone[md][chn][td], color=colors[itd], line_dash=styles[ichn],
-                        legend_label=pp(chn)+legends[td], **opt_line)
+                        legend_label=legends[td]+(' ('+pp(chn)+')' if len(channels)>1 else ''), **opt_line)
                 p1.multi_line(
                     [(x+shift_one[td][ichn],x+shift_one[td][ichn]) for x in linear_x],
                     [(y[0],y[1])
@@ -199,7 +202,7 @@ def main(args):
                           **opt_points)
                 p2.line([x+shift_both[td][ichn] for x in linear_x],
                         yboth[md][chn][td], color=colors[itd], line_dash=styles[ichn],
-                        legend_label=pp(chn)+legends[td], **opt_line)
+                        legend_label=legends[td]+(' ('+pp(chn)+')' if len(channels)>1 else ''), **opt_line)
                 p2.multi_line(
                     [(x+shift_both[td][ichn],x+shift_both[td][ichn]) for x in linear_x], 
                     [(y[0],y[1])
@@ -212,7 +215,7 @@ def main(args):
                           **opt_points)
                 p3.line([x+shift_kin[td][ichn] for x in linear_x],
                         ykin[md][chn][td], color=colors[itd], line_dash=styles[ichn],
-                        legend_label=pp(chn)+legends[td], **opt_line)
+                        legend_label=legends[td]+(' ('+pp(chn)+')' if len(channels)>1 else ''), **opt_line)
                 p3.multi_line(
                     [(x+shift_kin[td][ichn],x+shift_kin[td][ichn]) for x in linear_x], 
                     [(y[0],y[1])

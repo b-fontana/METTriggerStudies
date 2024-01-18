@@ -369,11 +369,7 @@ def test_trigger_regions(indir, sample, channel, spin):
     for f in glob_files:
         t_in.Add(f)
     t_in.SetBranchStatus('*', 0)
-    _entries = ('triggerbit', 'RunNumber', 'isLeptrigger',
-                'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted',
-                'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta', 'PUReweight', 'lumi', 'IdSF_deep_2d',
-                'pairType', 'dau1_eleMVAiso', 'dau1_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
-                'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',)
+    _entries = utils.define_used_tree_variables(cut=config_module.cuts_custom)
     _entries += tuple(variables)
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
@@ -433,7 +429,7 @@ def test_trigger_regions(indir, sample, channel, spin):
   
         if utils.is_channel_consistent(channel, entries.pairType):
             if not sel.selection_cuts(lepton_veto=True, bjets_cut=True,
-                                      standard_mass_cut=True, invert_mass_cut=False):
+                                      mass_cut=config_module.mass_cut):
                 continue
 
             for cat in categories:
