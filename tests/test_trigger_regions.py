@@ -60,7 +60,7 @@ def stats_save(savepath, label, c1, e1, m, mode='w'):
 def rec_dd():
     return dd(rec_dd)
 
-def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
+def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
                    ptcuts, text, bigtau=False, notau=False, nomet=False):
     base = {'etau': 'e+e'+tau, 'mutau': mu+'+'+mu+tau, 'tautau': ditau}
     output_file(text['out'])
@@ -113,14 +113,14 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
      
     label_opt = dict(x_units='data', y_units='data', text_font_size='10pt')
 
-    gain = (100*float(c_met_trg['ditau']+c_tau_trg['ditau']) /
-            (c_ditau_trg['ditau']+c_met_trg['ditau']+c_tau_trg['ditau']))
+    gain = (100*float(c_met_trg['legacy']+c_tau_trg['legacy']) /
+            (c_legacy_trg['legacy']+c_met_trg['legacy']+c_tau_trg['legacy']))
     gain = str(round(gain,2))
-    stats_ditau = {'ditau': Label(x=b1+0.3, y=b1+1.5, text=ditau+': '+str(c_ditau_trg['ditau']),
+    stats_ditau = {'legacy': Label(x=b1+0.3, y=b1+1.5, text=ditau+': '+str(c_legacy_trg['legacy']),
                                   text_color='black', **label_opt),
-                   'met':   Label(x=b1+0.3, y=b1+1.1, text='met && !'+ditau+': '+str(c_met_trg['ditau']),
+                   'met':   Label(x=b1+0.3, y=b1+1.1, text='met && !'+ditau+': '+str(c_met_trg['legacy']),
                                   text_color='black', **label_opt),
-                   'tau':   Label(x=b1+0.3, y=b1+0.7, text=tau+' && !met && !'+ditau+': '+str(c_tau_trg['ditau']),
+                   'tau':   Label(x=b1+0.3, y=b1+0.7, text=tau+' && !met && !'+ditau+': '+str(c_tau_trg['legacy']),
                                   text_color='black', **label_opt),
                    'gain':  Label(x=b1+0.3, y=b1+0.3, text='Gain: '+gain+'%',
                                   text_color='blue', **label_opt),}
@@ -140,7 +140,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                                     text_color='black', **label_opt),
                      'tau':   Label(x=b1+0.3, y=0.5, text=tau+' && !'+ditau+' && !met: '+str(c_tau_trg['met']),
                                     text_color='black', **label_opt),
-                     'ditau': Label(x=b1+0.3, y=0.9, text=ditau+' && !met: '+str(c_ditau_trg['met']),
+                     'legacy': Label(x=b1+0.3, y=0.9, text=ditau+' && !met: '+str(c_ditau_trg['met']),
                                     text_color='black', **label_opt),
                      'contamination': Label(x=b1+0.3, y=0.1, text='Contam.: '+contam_by_tau+'%',
                                             text_color='blue', **label_opt),}
@@ -177,7 +177,7 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
                                     text_color='black', **label_opt),
                      'met':   Label(x=b3+0.2, y=0.5, text='met && !'+ditau+' && !'+tau+': '+str(c_met_trg['tau']),
                                     text_color='black', **label_opt),
-                     'ditau': Label(x=b3+0.2, y=0.9, text=ditau+' && !'+tau+': '+str(c_ditau_trg['tau']),
+                     'legacy': Label(x=b3+0.2, y=0.9, text=ditau+' && !'+tau+': '+str(c_ditau_trg['tau']),
                                     text_color='black', **label_opt),
                      'contamination_both': Label(x=b3+0.2, y=0.1,
                                                  text='Contam.: ('+str(contam_both)+pm+str(err_both)+')%',
@@ -189,10 +189,6 @@ def square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, channel,
     line_opt = dict(color='black', line_dash='dashed', line_width=2)
     p.line(x=[b1,b1], y=[start, topr+shft], **line_opt)
     p.line(x=[start,topr+shft], y=[b1,b1], **line_opt)
-    # if ptcuts[0] != '40':
-    #     p.line(x=[b2,b2], y=[start,topr+shft], **line_opt)
-    # if ptcuts[1] != '40':
-    #     p.line(x=[start,topr+shft], y=[b2,b2], **line_opt)
     p.line(x=[b3,b3], y=[start,topr+shft], **line_opt)
     p.line(x=[start,topr+shft], y=[b3,b3], **line_opt)
      
@@ -279,9 +275,9 @@ def plot(hbase, hmet, htau, var, channel, sample, region, category, directory):
     leg2.SetBorderSize(0)
     leg2.SetTextFont(43)
     leg2.SetTextSize(10)
-    leg2.AddEntry(hbase2, 'ditau')
-    leg2.AddEntry(hmet2, '!ditau && MET')
-    leg2.AddEntry(htau2, '!ditau && !MET && tau')
+    leg2.AddEntry(hbase2, 'legacy')
+    leg2.AddEntry(hmet2, '!legacy && MET')
+    leg2.AddEntry(htau2, '!legacy && !MET && tau')
 
     leg2.Draw('same')
     
@@ -338,7 +334,7 @@ def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, r
     c.Close()
 
 def test_trigger_regions(indir, sample, channel, spin):
-    outname = get_outname(sample, channel, regcuts, ptcuts[args.channel], met_turnon, tau_turnon,
+    outname = get_outname(sample, channel, regcuts, ptcuts, met_turnon, tau_turnon,
                           args.bigtau, args.notau, args.nomet)
     config_module = importlib.import_module(args.configuration)
     if channel == 'etau' or channel == 'mutau':
@@ -379,7 +375,7 @@ def test_trigger_regions(indir, sample, channel, spin):
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
         in_met_region = eval(met_region)
         in_tau_region = eval(tau_region)
-        in_ditau_region = eval(ditau_region)
+        in_legacy_region = eval(legacy_region)
         sel = selection.EventSelection(entries, isdata=False, configuration=config_module)
 
         #triggers and turnon cuts
@@ -440,8 +436,8 @@ def test_trigger_regions(indir, sample, channel, spin):
                         reg = 'met'
                     elif in_tau_region:
                         reg = 'tau'
-                    elif in_ditau_region:
-                        reg = 'ditau'
+                    elif in_legacy_region:
+                        reg = 'legacy'
                     else:
                         norphans[cat] += 1
                         continue
@@ -461,7 +457,7 @@ def test_trigger_regions(indir, sample, channel, spin):
             print('{}% orphans ({}/{}). This is unusual.'.format(orph_frac, norphans[cat], ntotal[cat]))
             print(met_region)
             print(tau_region)
-            print(ditau_region)
+            print(legacy_region)
         print('Category {} (m(X)={}GeV) had {} orphans ({}%)'.format(cat, sample, norphans[cat], orph_frac))
     print('Raw histograms saved in {}.'.format(outname), flush=True)
 
@@ -509,6 +505,8 @@ if __name__ == '__main__':
                         help='Resonance mass')
     parser.add_argument('--channel', required=True, type=str,  
                         help='Select the channel over which the workflow will be run.' )
+    parser.add_argument('--year', required=True, type=str, choices=('2016', '2017', '2018'),
+                        help='Select the year over which the workflow will be run.' )
     parser.add_argument('--spin', required=True, type=int, choices=(0, 2), 
                         help='Select the spin hypothesis over which the workflow will be run.' )
     parser.add_argument('--plot', action='store_true',
@@ -527,7 +525,7 @@ if __name__ == '__main__':
                         help='MET trigger turnon cut [GeV].' )
     parser.add_argument('--tau_turnon', required=False, type=str,  default='190',
                         help='MET trigger turnon cut [GeV].' )
-    parser.add_argument('--region_cuts', required=False, type=str, nargs=2, default=('200', '200'),
+    parser.add_argument('--region_cuts', required=False, type=str, nargs=2, default=('190', '190'),
                         help='High/low regions pT1 and pT2 selection cuts [GeV].' )
     parser.add_argument('--configuration', dest='configuration', required=True,
                         help='Name of the configuration module to use.')
@@ -536,11 +534,27 @@ if __name__ == '__main__':
     met_turnon = args.met_turnon
     tau_turnon = args.tau_turnon
     regcuts = args.region_cuts
-    ptcuts = {'etau':   ('20', '20'),
-              'mutau':  ('20', '20'),
-              'tautau': ('40', '40')}
+
+    # order: single lepton, cross lepton leg, cross tau leg
+    if args.channel == "etau":
+        if args.year == "2016":
+            ptcuts == ('26',)
+        elif args.year == "2017" or args.year == "2018":
+            args.ptcuts == ('33', '25', '35')
+
+    elif args.channel == "mutau":
+        if args.year == "2016":
+            ptcuts = ('25', '20', '25')
+        elif args.year == "2017":
+            ptcuts = ('28', '21', '32')
+        elif args.year == "2018":
+            ptcuts = ('25', '21', '32')
+
+    elif args.channel == "tautau":
+        ptcuts = ('40', '40')
+        
     main_dir = os.path.join('/eos/home-b/bfontana/www/TriggerScaleFactors/',
-                            '_'.join(('Region', 'Spin' + str(args.spin), *regcuts, 'PT', *ptcuts[args.channel], 'TURNON',
+                            '_'.join(('Region', 'Spin' + str(args.spin), *regcuts, 'PT', *ptcuts, 'TURNON',
                                       met_turnon, tau_turnon)))
     if args.bigtau:
         main_dir += '_BIGTAU'
@@ -549,20 +563,34 @@ if __name__ == '__main__':
     if args.nomet:
         main_dir += '_NOMET'
 
-    regions = ('ditau', 'met', 'tau')
-    met_region = ('(entries.dau2_pt < {} and entries.dau1_pt < {}) or '.format(ptcuts[args.channel][1], regcuts[0]) +
-                  '(entries.dau1_pt < {} and entries.dau2_pt < {})'.format(ptcuts[args.channel][0], regcuts[1]))
+    regions = ('legacy', 'met', 'tau')
 
     if args.bigtau:
+        legacy_region = ('entries.dau1_pt > {} and entries.dau2_pt > {} and '.format(*ptcuts) +
+                         'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(*regcuts))
+        met_region = ('(entries.dau2_pt < {} and entries.dau1_pt < {}) or '.format(ptcuts[1], regcuts[0]) +
+                      '(entries.dau1_pt < {} and entries.dau2_pt < {})'.format(ptcuts[0], regcuts[1]))
         tau_region = 'entries.dau1_pt >= {} or entries.dau2_pt >= {}'.format(*regcuts)
-        ditau_region = ('entries.dau1_pt > {} and entries.dau2_pt > {} and '.format(*ptcuts[args.channel]) +
-                        'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(*regcuts))
+
 
     else:
-        tau_region = ('(entries.dau2_pt < {} and entries.dau1_pt >= {}) or '.format(ptcuts[args.channel][1], regcuts[0]) +
-                      '(entries.dau1_pt < {} and entries.dau2_pt >= {})'.format(ptcuts[args.channel][0], regcuts[1])) #this one is never realized due to the 190GeV trigger cut
-        ditau_region = 'entries.dau1_pt > {} and entries.dau2_pt > {}'.format(*ptcuts[args.channel])
+        if args.channel == "tautau":
+            legacy_region = 'entries.dau1_pt >= {} and entries.dau2_pt >= {}'.format(*ptcuts)
+            met_region = ('(entries.dau2_pt < {} and entries.dau1_pt < {}) or '.format(ptcuts[1], regcuts[0]) +
+                          '(entries.dau1_pt < {} and entries.dau2_pt < {})'.format(ptcuts[0], regcuts[1]))
+            tau_region = ('(entries.dau2_pt < {} and entries.dau1_pt >= {}) or '.format(ptcuts[1], regcuts[0]) +
+                          '(entries.dau1_pt < {} and entries.dau2_pt >= {})'.format(ptcuts[0], regcuts[1]))
 
+        elif args.channel == "etau" and args.year == "2016":
+            legacy_region = 'entries.dau1_pt >= {}'.format(ptcuts[0])
+            met_region = 'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(ptcuts[0], regcuts[1])
+            tau_region = 'entries.dau1_pt < {} and entries.dau2_pt >= {}'.format(ptcuts[0], regcuts[1])
+
+        else: #mutau or etau non-2016
+            legacy_region = 'entries.dau1_pt >= {} or (entries.dau1_pt >= {} and entries.dau2_pt >= {})) '.format(*ptcuts)
+            met_region = '(entries.dau1_pt < {} and entries.dau2_pt < {}) or (entries.dau1_pt < {} and entries.dau2_pt < {})'.format(ptcuts[0], ptcuts[2], ptcuts[1], regcuts[1])
+            tau_region = 'entries.dau1_pt < {} and entries.dau2_pt >= {}'.format(ptcuts[1], regcuts[1])
+            
     if args.notau:
         tau_region = 'False'
     if args.nomet:
@@ -572,18 +600,18 @@ if __name__ == '__main__':
     if not args.plot:
         if args.sequential:
             for sample in args.masses:
-                test_trigger_regions(args.indir, sample, args.channel, args.spin)
+                test_trigger_regions(args.indir, sample, args.channel, args.year, args.spin)
         else:
             pool = multiprocessing.Pool(processes=6)
             pool.starmap(test_trigger_regions,
-                         zip(it.repeat(args.indir), args.masses, it.repeat(args.channel), it.repeat(args.spin)))
+                         zip(it.repeat(args.indir), args.masses, it.repeat(args.channel), it.repeat(args.year), it.repeat(args.spin)))
     ###########################
 
     sum_stats, err_sum_stats = ([] for _ in range(2))
     contam1, contam2, contam1_errors, contam2_errors = ([] for _ in range(4))
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.masses:
-        outname = get_outname(sample, args.channel, regcuts, ptcuts[args.channel], met_turnon, tau_turnon,
+        outname = get_outname(sample, args.channel, regcuts, ptcuts, met_turnon, tau_turnon,
                               args.bigtau, args.notau, args.nomet)
         with open(outname, "rb") as f:
             ahistos = pickle.load(f)
@@ -600,7 +628,7 @@ if __name__ == '__main__':
                 reader.writerow(header_row)
 
         # plot histograms and fill CSV with histogram integrals
-        c_ditau_trg, c_met_trg, c_tau_trg = ({} for _ in range(3))
+        c_legacy_trg, c_met_trg, c_tau_trg = ({} for _ in range(3))
 
         acounts = rec_dd()
         for reg in regions:
@@ -614,23 +642,23 @@ if __name__ == '__main__':
                 row.extend([acounts[k][reg] for k in acounts.keys()])
                 reader.writerow(row)
 
-            if reg=='ditau':
-                c_ditau_trg[reg] = acounts["Base"][reg]
-                c_met_trg[reg]   = acounts["NoBaseMET"][reg]
-                c_tau_trg[reg]   = acounts["NoBaseNoMETTau"][reg]
+            if reg=='legacy':
+                c_legacy_trg[reg] = acounts["Base"][reg]
+                c_met_trg[reg]    = acounts["NoBaseMET"][reg]
+                c_tau_trg[reg]    = acounts["NoBaseNoMETTau"][reg]
             elif reg=='met':
-                c_ditau_trg[reg] = acounts["BaseNoMET"][reg]
-                c_met_trg[reg]   = acounts["MET"][reg]
-                c_tau_trg[reg]   = acounts["NoBaseNoMETTau"][reg]
+                c_legacy_trg[reg] = acounts["BaseNoMET"][reg]
+                c_met_trg[reg]    = acounts["MET"][reg]
+                c_tau_trg[reg]    = acounts["NoBaseNoMETTau"][reg]
             elif reg=='tau':
-                c_ditau_trg[reg] = acounts["BaseNoTau"][reg]
-                c_met_trg[reg]   = acounts["NoBaseMETNoTau"][reg]
-                c_tau_trg[reg]   = acounts["Tau"][reg]
+                c_legacy_trg[reg] = acounts["BaseNoTau"][reg]
+                c_met_trg[reg]    = acounts["NoBaseMETNoTau"][reg]
+                c_tau_trg[reg]    = acounts["Tau"][reg]
 
         text = {'mass': sample,
                 'out': os.path.join(out_counts[categories.index(cat)], 'diagram.html')}
-        sq_res = square_diagram(c_ditau_trg, c_met_trg, c_tau_trg, args.channel,
-                                ptcuts[args.channel], text=text,
+        sq_res = square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, args.channel,
+                                ptcuts, text=text,
                                 bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
         c1, c2, e1, e2 = sq_res
         contam1.append(c1)
@@ -638,7 +666,7 @@ if __name__ == '__main__':
         contam1_errors.append(e1)
         contam2_errors.append(e2)
 
-        stats_l = [c_ditau_trg['ditau'],c_met_trg['ditau'],c_tau_trg['tau'],c_ditau_trg['tau']]
+        stats_l = [c_legacy_trg['legacy'],c_met_trg['legacy'],c_tau_trg['tau'],c_legacy_trg['tau']]
         stats = sum(stats_l)
         estats = sum(np.sqrt(stats_l))
         sum_stats.append(stats)

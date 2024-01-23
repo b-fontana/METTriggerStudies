@@ -19,7 +19,6 @@ import pickle
 
 import bokeh
 from bokeh.plotting import figure, output_file, save
-output_file('plots/trigger_gains.html')
 from bokeh.models import Whisker
 from bokeh.layouts import gridplot
 #from bokeh.io import export_svg
@@ -80,6 +79,8 @@ def set_fig(fig, legend=True):
     fig.title.text_font_size = "15px"
     fig.xaxis.axis_label_text_font_style = "bold"
     fig.yaxis.axis_label_text_font_style = "bold"
+    fig.xaxis.axis_label_text_font_size = "13px"
+    fig.yaxis.axis_label_text_font_size = "13px"
 
 
 def main(args):
@@ -93,8 +94,12 @@ def main(args):
     eone, eboth, ekin = (dd(lambda: dd(dict)) for _ in range(3))
     for md in main_dir:
         d_base = Path(base_dir) / md
-        output_file(d_base / 'trigger_gains.html')
-        print('Saving file {}.'.format(d_base / 'trigger_gains.html'))
+        if len(args.channels) == 1:
+            output_name = (d_base / 'trigger_gains_{}.html'.format(args.channels[0]))
+        else:
+            output_name = (d_base / 'trigger_gains_all.html')
+        output_file(output_name)
+        print('Saving file {}.'.format(output_name))
         for chn in channels:
             yone[md][chn]['met'],  yone[md][chn]['tau'], yone[md][chn]['vbf'] = [], [], []
             yboth[md][chn]['met'], yboth[md][chn]['two'] = [], []
@@ -163,7 +168,7 @@ def main(args):
     colors = ('green', 'blue', 'red', 'brown')
     styles = ('solid', 'dashed', 'dotdash')
     legends = {'met': 'MET', 'tau': 'Single Tau',
-               'two': 'MET + Tau', 'vbf': 'VBF'}
+               'two': 'MET + Single Tau', 'vbf': 'VBF'}
      
     x_str = [str(k) for k in args.masses]
     xticks = linear_x[:]
@@ -277,5 +282,5 @@ if __name__ == '__main__':
     parser.add_argument('--region_cuts', required=False, type=str, nargs=2, default=('200', '200'),
                         help='High/low regions pT1 and pT2 selection cuts [GeV].' )
 
-    args = utils.parse_args(parser)
+    args = utils.parse_args(parser)        
     main(args)
