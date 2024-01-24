@@ -7,7 +7,6 @@ import sys
 parent_dir = os.path.abspath(__file__ + 2 * '/..')
 sys.path.insert(0, parent_dir)
 
-from pathlib import Path
 import csv
 import argparse
 from inclusion.utils import utils
@@ -82,34 +81,36 @@ def set_fig(fig, legend=True):
     fig.xaxis.axis_label_text_font_size = "13px"
     fig.yaxis.axis_label_text_font_size = "13px"
 
-
 def main(args):
     channels = args.channels
     linear_x = [k for k in range(1,len(args.masses)+1)]
-    ptcuts = {'etau':   ('20', '20'),
-              'mutau':  ('20', '20'),
-              'tautau': ('40', '40')}
-
+    ptcuts = {chn: utils.get_ptcuts(chn, args.year) for chn in args.channels}
+    
     yone, yboth, ykin = (dd(lambda: dd(dict)) for _ in range(3))
     eone, eboth, ekin = (dd(lambda: dd(dict)) for _ in range(3))
-    for md in main_dir:
-        d_base = Path(base_dir) / md
+    for adir in main_dir:
         if len(args.channels) == 1:
-            output_name = (d_base / 'trigger_gains_{}.html'.format(args.channels[0]))
-        else:
-            output_name = (d_base / 'trigger_gains_all.html')
+            output_name = os.path.join(base_dir, 'trigger_gains_{}_{}.html'.format(args.channels[0], args.year))
+        elif len(args.channels) == 2:
+            output_name = os.path.join(base_dir, 'trigger_gains_{}_{}_{}.html'.format(*args.channels[:2], args.year))
+        elif len(args.channels) == 3:
+            output_name = os.path.join(base_dir, 'trigger_gains_all_{}.html'.format(args.year))
         output_file(output_name)
         print('Saving file {}.'.format(output_name))
+
         for chn in channels:
+            md = adir[chn]
+            in_base = os.path.join(base_dir, md)
+
             yone[md][chn]['met'],  yone[md][chn]['tau'], yone[md][chn]['vbf'] = [], [], []
             yboth[md][chn]['met'], yboth[md][chn]['two'] = [], []
-            ykin[md][chn]['met'],  ykin[md][chn]['tau'] = [], []
-            ykin[md][chn]['two'], ykin[md][chn]['vbf'] = [], []
+            ykin[md][chn]['met'],  ykin[md][chn]['tau']  = [], []
+            ykin[md][chn]['two'],  ykin[md][chn]['vbf']  = [], []
             
             eone[md][chn]['met'],  eone[md][chn]['tau'], eone[md][chn]['vbf']  = [], [], []
             eboth[md][chn]['met'], eboth[md][chn]['two'] = [], []
-            ekin[md][chn]['met'], ekin[md][chn]['tau'] = [], []
-            ekin[md][chn]['two'], ekin[md][chn]['vbf'] = [], []
+            ekin[md][chn]['met'],  ekin[md][chn]['tau']  = [], []
+            ekin[md][chn]['two'],  ekin[md][chn]['vbf']  = [], []
   
             for mass in args.masses:
                 outname = get_outname(mass, chn, args.region_cuts, ptcuts[chn],
@@ -119,17 +120,20 @@ def main(args):
                 with open(outname, "rb") as f:
                     ahistos = pickle.load(f)
 
-                    l1 = lambda x : round(x["ditau"]["baseline"].values().sum(), 2)
+                    # legacy region
+                    l1 = lambda x : round(x["legacy"]["baseline"].values().sum(), 2)
                     sum_base     = l1(ahistos["Base"])
                     sum_vbf      = l1(ahistos["VBF"])
                     sum_met      = l1(ahistos["NoBaseMET"])
                     sum_only_tau = l1(ahistos["NoBaseNoMETTau"])
                     sum_tau      = l1(ahistos["NoBaseTau"])
 
+                    # MET region
                     l2 = lambda x : round(x["met"]["baseline"].values().sum(), 2)
                     sum_metkin   = l2(ahistos["METKin"])
                     sum_vbfkin   = l2(ahistos["VBFKin"])
 
+                    # Single Tau region
                     l3 = lambda x : round(x["tau"]["baseline"].values().sum(), 2)
                     sum_taukin   = l3(ahistos["TauKin"])
 
@@ -172,22 +176,27 @@ def main(args):
      
     x_str = [str(k) for k in args.masses]
     xticks = linear_x[:]
-    yticks = [x for x in range(0,110,10)]
+    yticks = [x for x in range(0,110,5)]
     shift_one = {'met': [-0.15, 0., 0.15],  'tau': [-0.20, -0.05, 0.1],
                  'vbf': [-0.10, 0.05, 0.20]}
     shift_both = {'met': [-0.15, 0., 0.15], 'two': [-0.20, -0.05, 0.1]}
-    shift_kin = {'met': [-0.15, 0., 0.15],  'tau': [-0.20, -0.05, 0.1],
-                 'two': [-0.10, 0.05, 0.20], 'vbf': [-0.05, 0.1, 0.25]}
+    shift_kin = {'met': [-0.09, 0., 0.15],  'tau': [0.03, -0.05, 0.1],
+                 'two': [-0.03, 0.05, 0.20], 'vbf': [0.09, 0.1, 0.25]}
      
-    for md in main_dir:
+    for adir in main_dir:
         p_opt = dict(width=800, height=400, x_axis_label='x', y_axis_label='y')
         p1 = figure(title='Inclusion', **p_opt)
         p2 = figure(title='Acceptance gain', **p_opt)
         #p3 = figure(title='Acceptance gain in bb' + tau + tau + ' kinematic regions', **p_opt)
-        p3 = figure(**p_opt)
+        if len(channels) == 1:
+            p3 = figure(title=pp(channels[0]), **p_opt)
+        else:
+            p3 = figure(**p_opt)
         for p in (p1, p2, p3):
             set_fig(p)
         for ichn,chn in enumerate(channels):
+            md = adir[chn]
+            
             for itd,td in enumerate(('met', 'tau', 'vbf')):
                 p1.circle([x+shift_one[td][ichn] for x in linear_x],
                           yone[md][chn][td], color=colors[itd], fill_alpha=1.,
@@ -232,8 +241,8 @@ def main(args):
             p.xgrid[0].ticker = xticks
             p.xgrid.grid_line_alpha = 0.2
             p.xgrid.grid_line_color = 'black'
-            p.yaxis[0].ticker = yticks
-            p.ygrid[0].ticker = yticks
+            # p.yaxis[0].ticker = yticks
+            # p.ygrid[0].ticker = yticks
             p.ygrid.grid_line_alpha = 0.2
             p.ygrid.grid_line_color = 'black'
              
@@ -253,10 +262,10 @@ def main(args):
 
 if __name__ == '__main__':
     base_dir = '/eos/home-b/bfontana/www/TriggerScaleFactors/'
-    main_dir = ['Region_Spin0_190_190_PT_40_40_TURNON_200_190',]
-        #'Region_1000_1000_PT_40_40_TURNON_200_190',]
-    #'TriggerStudy_MET200_SingleTau190_CUT_entries_ditau_deltaR_GT_0_5',
-    #'TriggerStudy_MET200_SingleTau190_CUT_entries_ditau_deltaR_ST_0_5']
+    main_dir = [{"etau":   "Region_Spin0_190_190_PT_33_25_35_TURNON_200_190",
+                 "mutau":  "Region_Spin0_190_190_PT_25_21_32_TURNON_200_190",
+                 "tautau": "Region_Spin0_190_190_PT_40_40_TURNON_200_190"},
+                ]
     
     desc = "Produce plots of trigger gain VS resonance mass.\n"
     desc += "Uses the output of test_trigger_regions.py."
@@ -269,13 +278,15 @@ if __name__ == '__main__':
     parser.add_argument('--channels', required=True, nargs='+', type=str, 
                         choices=('etau', 'mutau', 'tautau'),
                         help='Select the channel over which the workflow will be run.' )
+    parser.add_argument('--year', required=True, type=str, choices=('2016', '2017', '2018'),
+                        help='Select the year over which the workflow will be run.' )
     parser.add_argument('--bigtau', action='store_true',
                         help='Consider a larger single tau region, reducing the ditau one.')
     parser.add_argument('--notau', action='store_true',
                         help='Remove the single tau region (default analysis).')
     parser.add_argument('--nomet', action='store_true',
                         help='Remove the MET region (default analysis).')
-    parser.add_argument('--met_turnon', required=False, type=str,  default='200',
+    parser.add_argument('--met_turnon', required=False, type=str,  default='180',
                         help='MET trigger turnon cut [GeV].' )
     parser.add_argument('--tau_turnon', required=False, type=str,  default='190',
                         help='MET trigger turnon cut [GeV].' )

@@ -84,7 +84,10 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
     p.xaxis.axis_label = 'pT(1) [GeV]'
      
     p.yaxis.ticker = [b1, b3]# else [b1, b2, b3]
-    p.yaxis.major_label_overrides = ({b1: ptcuts[0], b3: ptcuts[1]})
+    if len(ptcuts) > 1:
+        p.yaxis.major_label_overrides = ({b1: ptcuts[0], b3: ptcuts[1]})
+    else:
+        p.yaxis.major_label_overrides = ({b1: ptcuts[0]})
     p.yaxis.axis_label = 'pT(2) [GeV]'
 
     # add a square renderer with a size, color, and alpha
@@ -131,8 +134,8 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
 
     if not nomet:
         try:
-            contam_by_tau = (100*(float(c_tau_trg['met'])+c_ditau_trg['met']) /
-                             (c_met_trg['met']+c_tau_trg['met']+c_ditau_trg['met']))
+            contam_by_tau = (100*(float(c_tau_trg['met'])+c_legacy_trg['met']) /
+                             (c_met_trg['met']+c_tau_trg['met']+c_legacy_trg['met']))
             contam_by_tau = str(round(contam_by_tau,2))
         except ZeroDivisionError:
             contam_by_tau = '0'
@@ -140,7 +143,7 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
                                     text_color='black', **label_opt),
                      'tau':   Label(x=b1+0.3, y=0.5, text=tau+' && !'+ditau+' && !met: '+str(c_tau_trg['met']),
                                     text_color='black', **label_opt),
-                     'legacy': Label(x=b1+0.3, y=0.9, text=ditau+' && !met: '+str(c_ditau_trg['met']),
+                     'legacy': Label(x=b1+0.3, y=0.9, text=ditau+' && !met: '+str(c_legacy_trg['met']),
                                     text_color='black', **label_opt),
                      'contamination': Label(x=b1+0.3, y=0.1, text='Contam.: '+contam_by_tau+'%',
                                             text_color='blue', **label_opt),}
@@ -149,9 +152,9 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
                 p.add_layout(elem)
 
     if not notau:
-        num_ditau = float(c_ditau_trg['tau'])
+        num_ditau = float(c_legacy_trg['tau'])
         num_both = num_ditau + float(c_met_trg['tau'])
-        den = float(c_met_trg['tau']+c_tau_trg['tau']+c_ditau_trg['tau'])
+        den = float(c_met_trg['tau']+c_tau_trg['tau']+c_legacy_trg['tau'])
         if num_ditau == 0 or num_both == 0:
             contam_ditau = '0'
             contam_both = '0'
@@ -161,9 +164,9 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
             contam_ditau = 100*num_ditau/den
             contam_both = 100*num_both/den
 
-            enum_ditau = np.sqrt(c_ditau_trg['tau'])
+            enum_ditau = np.sqrt(c_legacy_trg['tau'])
             eden_ditau = enum_ditau + np.sqrt(c_met_trg['tau']) + np.sqrt(c_tau_trg['tau'])
-            enum_both  = np.sqrt(c_met_trg['tau']) + np.sqrt(c_ditau_trg['tau'])
+            enum_both  = np.sqrt(c_met_trg['tau']) + np.sqrt(c_legacy_trg['tau'])
             eden_both  = enum_both + np.sqrt(c_tau_trg['tau'])
             err_ditau = contam_ditau * np.sqrt(enum_ditau**2/num_ditau**2 + eden_ditau**2/den**2)
             err_both  = contam_both * np.sqrt(enum_both**2/num_both**2 + eden_both**2/den**2)
@@ -177,7 +180,7 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
                                     text_color='black', **label_opt),
                      'met':   Label(x=b3+0.2, y=0.5, text='met && !'+ditau+' && !'+tau+': '+str(c_met_trg['tau']),
                                     text_color='black', **label_opt),
-                     'legacy': Label(x=b3+0.2, y=0.9, text=ditau+' && !'+tau+': '+str(c_ditau_trg['tau']),
+                     'legacy': Label(x=b3+0.2, y=0.9, text=ditau+' && !'+tau+': '+str(c_legacy_trg['tau']),
                                     text_color='black', **label_opt),
                      'contamination_both': Label(x=b3+0.2, y=0.1,
                                                  text='Contam.: ('+str(contam_both)+pm+str(err_both)+')%',
@@ -422,7 +425,7 @@ def test_trigger_regions(indir, sample, channel, spin):
         evt_weight = pureweight*lumi*idandiso
         if utils.is_nan(evt_weight):
             evt_weight = 1
-  
+
         if utils.is_channel_consistent(channel, entries.pairType):
             if not sel.selection_cuts(lepton_veto=True, bjets_cut=True,
                                       mass_cut=config_module.mass_cut):
@@ -521,7 +524,7 @@ if __name__ == '__main__':
                         help='Remove the single tau region (default analysis).')
     parser.add_argument('--nomet', action='store_true',
                         help='Remove the MET region (default analysis).')
-    parser.add_argument('--met_turnon', required=False, type=str,  default='200',
+    parser.add_argument('--met_turnon', required=False, type=str,  default='180',
                         help='MET trigger turnon cut [GeV].' )
     parser.add_argument('--tau_turnon', required=False, type=str,  default='190',
                         help='MET trigger turnon cut [GeV].' )
@@ -534,27 +537,10 @@ if __name__ == '__main__':
     met_turnon = args.met_turnon
     tau_turnon = args.tau_turnon
     regcuts = args.region_cuts
-
-    # order: single lepton, cross lepton leg, cross tau leg
-    if args.channel == "etau":
-        if args.year == "2016":
-            ptcuts == ('26',)
-        elif args.year == "2017" or args.year == "2018":
-            args.ptcuts == ('33', '25', '35')
-
-    elif args.channel == "mutau":
-        if args.year == "2016":
-            ptcuts = ('25', '20', '25')
-        elif args.year == "2017":
-            ptcuts = ('28', '21', '32')
-        elif args.year == "2018":
-            ptcuts = ('25', '21', '32')
-
-    elif args.channel == "tautau":
-        ptcuts = ('40', '40')
+    ptcuts = utils.get_ptcuts(args.channel, args.year)
         
     main_dir = os.path.join('/eos/home-b/bfontana/www/TriggerScaleFactors/',
-                            '_'.join(('Region', 'Spin' + str(args.spin), *regcuts, 'PT', *ptcuts, 'TURNON',
+                            '_'.join(('Spin' + str(args.spin), args.channel, *regcuts, 'PT', *ptcuts, 'TURNON',
                                       met_turnon, tau_turnon)))
     if args.bigtau:
         main_dir += '_BIGTAU'
@@ -587,8 +573,10 @@ if __name__ == '__main__':
             tau_region = 'entries.dau1_pt < {} and entries.dau2_pt >= {}'.format(ptcuts[0], regcuts[1])
 
         else: #mutau or etau non-2016
-            legacy_region = 'entries.dau1_pt >= {} or (entries.dau1_pt >= {} and entries.dau2_pt >= {})) '.format(*ptcuts)
-            met_region = '(entries.dau1_pt < {} and entries.dau2_pt < {}) or (entries.dau1_pt < {} and entries.dau2_pt < {})'.format(ptcuts[0], ptcuts[2], ptcuts[1], regcuts[1])
+            legacy_region = 'entries.dau1_pt >= {} or (entries.dau1_pt >= {} and entries.dau2_pt >= {})'.format(*ptcuts)
+            met_region = ('(entries.dau1_pt < {} and entries.dau2_pt < {}) or ' + 
+                          '(entries.dau1_pt < {} and entries.dau2_pt < {})').format(ptcuts[0], ptcuts[2],
+                                                                                    ptcuts[1], regcuts[1])
             tau_region = 'entries.dau1_pt < {} and entries.dau2_pt >= {}'.format(ptcuts[1], regcuts[1])
             
     if args.notau:
@@ -600,11 +588,12 @@ if __name__ == '__main__':
     if not args.plot:
         if args.sequential:
             for sample in args.masses:
-                test_trigger_regions(args.indir, sample, args.channel, args.year, args.spin)
+                test_trigger_regions(args.indir, sample, args.channel, args.spin)
         else:
             pool = multiprocessing.Pool(processes=6)
             pool.starmap(test_trigger_regions,
-                         zip(it.repeat(args.indir), args.masses, it.repeat(args.channel), it.repeat(args.year), it.repeat(args.spin)))
+                         zip(it.repeat(args.indir), args.masses,
+                             it.repeat(args.channel), it.repeat(args.spin)))
     ###########################
 
     sum_stats, err_sum_stats = ([] for _ in range(2))

@@ -478,7 +478,12 @@ def split_vnames(joinvars):
 
 def stoi(s):
     return int(float(s))
-    
+
+def parse_args(parser):
+    args = parser.parse_args()
+    print_configuration(args)
+    return args
+
 def print_configuration(parse_args):
     filename = inspect.stack()[1].filename 
     
@@ -494,10 +499,29 @@ def print_configuration(parse_args):
         print('{0:>{d1}}   {1}'.format(k, v, d1=maxlkey+3), flush=True)
     print('----------------------------------------', flush=True)
 
-def parse_args(parser):
-    args = parser.parse_args()
-    print_configuration(args)
-    return args
+def get_ptcuts(channel, year):
+    """
+    Trigger pT cuts.
+    Order: single lepton, cross lepton leg, cross tau leg.
+    """
+    if channel == "etau":
+        if year == "2016":
+            ptcuts = ('26',)
+        elif year == "2017" or year == "2018":
+            ptcuts = ('33', '25', '35')
+
+    elif channel == "mutau":
+        if year == "2016":
+            ptcuts = ('25', '20', '25')
+        elif year == "2017":
+            ptcuts = ('28', '21', '32')
+        elif year == "2018":
+            ptcuts = ('25', '21', '32')
+
+    elif channel == "tautau":
+        ptcuts = ('40', '40')
+
+    return ptcuts
     
 def slash_to_underscore_and_keep(s, n=4):
     """Replaces slashes by underscores, keeping only the last 'n' slash-separated strings"""
