@@ -55,16 +55,6 @@ def pp(chn):
 def rec_dd():
     return dd(rec_dd)
 
-# def ZeroDivError(func):
-#     try:
-#         res = func()
-#     except ZeroDivisionError:
-#         res = 0.
-#     return res
-
-# def error(v1, v2):
-#     return ZeroDivError(lambda : np.sqrt(1/v1 + 1/v2))
-
 def set_fig(fig, legend=True):
     fig.output_backend = 'svg'
     fig.toolbar.logo = None
@@ -89,12 +79,18 @@ def main(args):
     yone, yboth, ykin = (dd(lambda: dd(dict)) for _ in range(3))
     eone, eboth, ekin = (dd(lambda: dd(dict)) for _ in range(3))
     for adir in main_dir:
+        dRstr = str(args.deltaR).replace('.', 'p')
         if len(args.channels) == 1:
-            output_name = os.path.join(base_dir, 'trigger_gains_{}_{}.html'.format(args.channels[0], args.year))
+            output_name = os.path.join(base_dir, 'trigger_gains_{}_{}_DR{}'.format(args.channels[0],
+                                                                                        args.year, dRstr))
         elif len(args.channels) == 2:
-            output_name = os.path.join(base_dir, 'trigger_gains_{}_{}_{}.html'.format(*args.channels[:2], args.year))
+            output_name = os.path.join(base_dir, 'trigger_gains_{}_{}_{}_DR{}'.format(*args.channels[:2],
+                                                                                           args.year, dRstr))
         elif len(args.channels) == 3:
-            output_name = os.path.join(base_dir, 'trigger_gains_all_{}.html'.format(args.year))
+            output_name = os.path.join(base_dir, 'trigger_gains_all_{}_DR{}'.format(args.year, dRstr))
+        if args.bigtau:
+            output_name += "_BIGTAU"
+        output_name += ".html"
         output_file(output_name)
         print('Saving file {}.'.format(output_name))
 
@@ -261,12 +257,6 @@ def main(args):
         save(g, title=md)
 
 if __name__ == '__main__':
-    base_dir = '/eos/home-b/bfontana/www/TriggerScaleFactors/'
-    main_dir = [{"etau":   "Region_Spin0_190_190_PT_33_25_35_TURNON_200_190",
-                 "mutau":  "Region_Spin0_190_190_PT_25_21_32_TURNON_200_190",
-                 "tautau": "Region_Spin0_190_190_PT_40_40_TURNON_200_190"},
-                ]
-    
     desc = "Produce plots of trigger gain VS resonance mass.\n"
     desc += "Uses the output of test_trigger_regions.py."
     desc += "When running on many channels, one should keep in mind each channel has different pT cuts."
@@ -280,6 +270,7 @@ if __name__ == '__main__':
                         help='Select the channel over which the workflow will be run.' )
     parser.add_argument('--year', required=True, type=str, choices=('2016', '2017', '2018'),
                         help='Select the year over which the workflow will be run.' )
+    parser.add_argument('--deltaR', type=float, default=0.5, help='DeltaR between the two leptons.')
     parser.add_argument('--bigtau', action='store_true',
                         help='Consider a larger single tau region, reducing the ditau one.')
     parser.add_argument('--notau', action='store_true',
@@ -293,5 +284,12 @@ if __name__ == '__main__':
     parser.add_argument('--region_cuts', required=False, type=str, nargs=2, default=('200', '200'),
                         help='High/low regions pT1 and pT2 selection cuts [GeV].' )
 
-    args = utils.parse_args(parser)        
+    args = utils.parse_args(parser)
+
+    base_dir = '/eos/home-b/bfontana/www/TriggerScaleFactors/'
+    main_dir = [{"etau":   "Region_Spin0_190_190_PT_33_25_35_DR_{}_TURNON_200_190".format(args.deltaR),
+                 "mutau":  "Region_Spin0_190_190_PT_25_21_32_DR_{}_TURNON_200_190".format(args.deltaR),
+                 "tautau": "Region_Spin0_190_190_PT_40_40_DR_{}_TURNON_200_190".format(args.deltaR)},
+                ]
+    
     main(args)

@@ -336,7 +336,7 @@ def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, r
                               tstr + '_' + 'reg' + region + '_' + '_VS_'.join(two_vars) + '.' + ext))
     c.Close()
 
-def test_trigger_regions(indir, sample, channel, spin):
+def test_trigger_regions(indir, sample, channel, spin, deltaR):
     outname = get_outname(sample, channel, regcuts, ptcuts, met_turnon, tau_turnon,
                           args.bigtau, args.notau, args.nomet)
     config_module = importlib.import_module(args.configuration)
@@ -432,7 +432,7 @@ def test_trigger_regions(indir, sample, channel, spin):
                 continue
 
             for cat in categories:
-                if sel.sel_category(cat) and entries.ditau_deltaR > 0.5:
+                if sel.sel_category(cat) and entries.ditau_deltaR > deltaR:
                     ntotal[cat] += 1
 
                     if in_met_region:
@@ -512,6 +512,7 @@ if __name__ == '__main__':
                         help='Select the year over which the workflow will be run.' )
     parser.add_argument('--spin', required=True, type=int, choices=(0, 2), 
                         help='Select the spin hypothesis over which the workflow will be run.' )
+    parser.add_argument('--deltaR', type=float, default=0.5, help='DeltaR between the two leptons.' )
     parser.add_argument('--plot', action='store_true',
                         help='Reuse previously produced data for quick plot changes.')
     parser.add_argument('--copy', action='store_true',
@@ -540,7 +541,8 @@ if __name__ == '__main__':
     ptcuts = utils.get_ptcuts(args.channel, args.year)
         
     main_dir = os.path.join('/eos/home-b/bfontana/www/TriggerScaleFactors/',
-                            '_'.join(('Spin' + str(args.spin), args.channel, *regcuts, 'PT', *ptcuts, 'TURNON',
+                            '_'.join(('Spin' + str(args.spin), args.channel, *regcuts,
+                                      'DR', str(args.deltaR), 'PT', *ptcuts, 'TURNON',
                                       met_turnon, tau_turnon)))
     if args.bigtau:
         main_dir += '_BIGTAU'
@@ -552,12 +554,24 @@ if __name__ == '__main__':
     regions = ('legacy', 'met', 'tau')
 
     if args.bigtau:
-        legacy_region = ('entries.dau1_pt > {} and entries.dau2_pt > {} and '.format(*ptcuts) +
-                         'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(*regcuts))
-        met_region = ('(entries.dau2_pt < {} and entries.dau1_pt < {}) or '.format(ptcuts[1], regcuts[0]) +
-                      '(entries.dau1_pt < {} and entries.dau2_pt < {})'.format(ptcuts[0], regcuts[1]))
-        tau_region = 'entries.dau1_pt >= {} or entries.dau2_pt >= {}'.format(*regcuts)
+        if args.channel == "tautau":
+            legacy_region = ('entries.dau1_pt >= {} and entries.dau2_pt >= {} and '.format(*ptcuts) +
+                             'entries.dau1_pt < {}  and entries.dau2_pt < {} and '.format(*regcuts))
+            met_region = ('(entries.dau2_pt < {} and entries.dau1_pt < {}) or '.format(ptcuts[1], regcuts[0]) +
+                          '(entries.dau1_pt < {} and entries.dau2_pt < {})'.format(ptcuts[0], regcuts[1]))
+            tau_region = 'entries.dau1_pt >= {} or entries.dau2_pt >= {}'.format(*regcuts)
 
+        elif args.channel == "etau" and args.year == "2016":
+            legacy_region = 'entries.dau1_pt >= {} and entries.dau2_pt < {}'.format(regcuts[1])
+            met_region = 'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(ptcuts[0], regcuts[1])
+            tau_region = 'entries.dau2_pt >= {}'.format(regcuts[1])
+
+        else: #mutau or etau non-2016
+            legacy_region = ('(entries.dau1_pt >= {} or (entries.dau1_pt >= {} and entries.dau2_pt >= {})) and '.format(*ptcuts) +
+                             'entries.dau2_pt < {}'.format(regcuts[1]))
+            met_region = ('(entries.dau1_pt < {} and entries.dau2_pt < {}) or ' + 
+                          '(entries.dau1_pt < {} and entries.dau2_pt < {})').format(ptcuts[0], ptcuts[2], ptcuts[1], regcuts[1])
+            tau_region = 'entries.dau2_pt >= {}'.format(regcuts[1])
 
     else:
         if args.channel == "tautau":
@@ -588,12 +602,12 @@ if __name__ == '__main__':
     if not args.plot:
         if args.sequential:
             for sample in args.masses:
-                test_trigger_regions(args.indir, sample, args.channel, args.spin)
+                test_trigger_regions(args.indir, sample, args.channel, args.spin, args.deltaR)
         else:
             pool = multiprocessing.Pool(processes=6)
             pool.starmap(test_trigger_regions,
                          zip(it.repeat(args.indir), args.masses,
-                             it.repeat(args.channel), it.repeat(args.spin)))
+                             it.repeat(args.channel), it.repeat(args.spin), it.repeat(args.deltaR)))
     ###########################
 
     sum_stats, err_sum_stats = ([] for _ in range(2))

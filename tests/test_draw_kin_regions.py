@@ -140,9 +140,9 @@ class DrawCuts():
         self.set_lines(histogram, mode=mode)
 
         if self.channel == "etau":
-            rect = matplotlib.patches.Rectangle((62,114), 61, 10, color='white')
+            rect = matplotlib.patches.Rectangle((79,202), 21, 35, color='white')
         elif self.channel == "mutau":
-            rect = matplotlib.patches.Rectangle((62,114), 61, 10, color='white')
+            rect = matplotlib.patches.Rectangle((79,202), 21, 35, color='white')
         elif self.channel == "tautau":
             rect = matplotlib.patches.Rectangle((194,203), 42, 34, color='white')
         ax.add_patch(rect)
@@ -185,15 +185,19 @@ class DrawCuts():
         
     def get_bins(self, mode, dtype):
         if mode == "trigger":
-            nbinsx = 25 if dtype == "signal" else 40
-            nbinsy = 25 if dtype == "signal" else 40
             if self.channel == "etau":
-                xbins = (nbinsx, 15, 125)
-                ybins = (nbinsy, 15, 125)
+                nbinsx = 25 if dtype == "signal" else 35
+                nbinsy = 25 if dtype == "signal" else 35
+                xbins = (nbinsx, 15, 101)
+                ybins = (nbinsy, 15, 240)
             elif self.channel == "mutau":
-                xbins = (nbinsx, 15, 125)
-                ybins = (nbinsy, 15, 125)
+                nbinsx = 25 if dtype == "signal" else 35
+                nbinsy = 25 if dtype == "signal" else 35
+                xbins = (nbinsx, 15, 101)
+                ybins = (nbinsy, 15, 240)
             elif self.channel == "tautau":
+                nbinsx = 25 if dtype == "signal" else 40
+                nbinsy = 25 if dtype == "signal" else 40
                 xbins = (nbinsx, 15, 240)
                 ybins = (nbinsy, 15, 240)
 
@@ -264,23 +268,42 @@ class DrawCuts():
         if mode == "trigger":
             if self.channel == "etau":
                 if self.year == "2016":
-                    plt.plot([25., 25.], [ymin, ymax],
-                             c='red', linewidth=10, label=r"separation btw. 'single-e + e$\tau$' and MET")
+                    plt.plot([26.5, 26.5], [ymin, ymax],
+                             c='black', linewidth=10, label=r"single-e + e$\tau$")
+                    plt.plot([xmin, 25.5, 25.5], [191., 191., ymax],
+                             c='black', linewidth=10, label=r"single-$\tau$")
+                    plt.plot([xmin, 25.5, 25.5], [189., 189., ymin],
+                             c='black', linewidth=10, label=r"MET")
                 elif self.year == "2017" or self.year == "2018":
-                    plt.plot([25., 25., 33., 33.], [ymax, 35., 35., ymin],
-                             c='red', linewidth=10,
-                             label=r"separation btw. 'single-e + e$\tau$' and MET")
+                    plt.plot([24.5, 24.5, 32.5, 32.5], [ymax, 36., 36., ymin],
+                             c='black', linewidth=10, label=r"single-e + e$\tau$")
+                    plt.plot([xmin, 23.5, 23.5], [191., 191., ymax],
+                             c='red', linewidth=10, label=r"single-$\tau$")
+                    plt.plot([xmin, 23.5, 23.5, 31.5, 31.5], [189., 189., 34., 34., ymin],
+                             c='deepskyblue', linewidth=10, label="MET")
                 
             elif self.channel == "mutau":
                 if self.year == "2016":
-                    plt.plot([20., 20., 25., 25.], [ymax, 25., 25., ymin],
-                             c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
+                    plt.plot([19.5, 19.5, 24.5, 24.5], [ymax, 24.5, 24.5, ymin],
+                             c='black', linewidth=10, label=r"single-$\mu$ + $\mu\tau$")
+                    plt.plot([xmin, 18.5, 18.5], [191., 191., ymax],
+                             c='red', linewidth=10, label=r"single-$\tau$")
+                    plt.plot([xmin, 18.5, 18.5, 23.5, 23.5], [189., 189., 31., 31., ymin],
+                             c='deepskyblue', linewidth=10, label="MET")
                 elif self.year == "2017":
-                    plt.plot([21., 21., 28., 28.], [ymax, 32., 32., ymin],
-                             c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
+                    plt.plot([20.5, 20.5, 27.5, 27.5], [ymax, 33., 33., ymin],
+                             c='black', linewidth=10, label=r"single-$\mu$ + $\mu\tau$")
+                    plt.plot([xmin, 19.5, 19.5], [191., 191., ymax],
+                             c='red', linewidth=10, label=r"single-$\tau$")
+                    plt.plot([xmin, 19.5, 19.5, 26.5, 26.5], [189., 189., 31., 31., ymin],
+                             c='deepskyblue', linewidth=10, label="MET")
                 elif self.year == "2018":
-                    plt.plot([21., 21., 25., 25.], [ymax, 32., 32., ymin],
-                             c='red', linewidth=10, label=r"separation btw. 'single-$\mu$ + $\mu\tau$' and MET")
+                    plt.plot([20.5, 20.5, 24.5, 24.5], [ymax, 33., 33., ymin],
+                             c='black', linewidth=10, label=r"single-$\mu$ + $\mu\tau$")
+                    plt.plot([xmin, 19.5, 19.5], [191., 191., ymax],
+                             c='red', linewidth=10, label=r"single-$\tau$")
+                    plt.plot([xmin, 19.5, 19.5, 23.5, 23.5], [189., 189., 31., 31., ymin],
+                             c='deepskyblue', linewidth=10, label="MET")
          
             elif self.channel == "tautau":
                 plt.plot([42., 42., xmax], [ymax, 42., 42.], c='black', linewidth=10, label=r"$\tau\tau$")

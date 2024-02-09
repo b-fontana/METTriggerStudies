@@ -215,11 +215,11 @@ class EventSelection:
         #               self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1])
         if category == 'baseline':
             specific = True
-        elif category == 's1b1jresolvedMcut':
+        elif category == 'res1b':
             specific = self.isBoosted != 1 and btagM
-        elif category == 's2b0jresolvedMcut':
+        elif category == 'res2b':
             specific = self.isBoosted != 1 and btagMM
-        elif category == 'sboostedLLMcut':
+        elif category == 'boosted':
             specific = self.isBoosted == 1 and btagLL
 
         #return common and specific
