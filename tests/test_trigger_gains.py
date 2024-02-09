@@ -74,8 +74,10 @@ def set_fig(fig, legend=True):
 def main(args):
     channels = args.channels
     linear_x = [k for k in range(1,len(args.masses)+1)]
+    edges_x  = [k-0.5 for k in range(1,len(args.masses)+1)] + [len(args.masses)+0.5]
     ptcuts = {chn: utils.get_ptcuts(chn, args.year) for chn in args.channels}
-    
+
+    nevents = dd(lambda: dd(dict))
     yone, yboth, ykin = (dd(lambda: dd(dict)) for _ in range(3))
     eone, eboth, ekin = (dd(lambda: dd(dict)) for _ in range(3))
     for adir in main_dir:
@@ -98,6 +100,8 @@ def main(args):
             md = adir[chn]
             in_base = os.path.join(base_dir, md)
 
+            nevents[md][chn]['base'], nevents[md][chn]['met'],  nevents[md][chn]['tau'] = [], [], []
+            
             yone[md][chn]['met'],  yone[md][chn]['tau'], yone[md][chn]['vbf'] = [], [], []
             yboth[md][chn]['met'], yboth[md][chn]['two'] = [], []
             ykin[md][chn]['met'],  ykin[md][chn]['tau']  = [], []
@@ -123,15 +127,18 @@ def main(args):
                     sum_met      = l1(ahistos["NoBaseMET"])
                     sum_only_tau = l1(ahistos["NoBaseNoMETTau"])
                     sum_tau      = l1(ahistos["NoBaseTau"])
+                    sum_basekin  = l1(ahistos["LegacyKin"])
 
                     # MET region
                     l2 = lambda x : round(x["met"]["baseline"].values().sum(), 2)
                     sum_metkin   = l2(ahistos["METKin"])
-                    sum_vbfkin   = l2(ahistos["VBFKin"])
 
                     # Single Tau region
                     l3 = lambda x : round(x["tau"]["baseline"].values().sum(), 2)
                     sum_taukin   = l3(ahistos["TauKin"])
+
+                    # hypothetical VBF region
+                    sum_vbfkin   = l2(ahistos["VBFKin"]) + l3(ahistos["VBFKin"])
 
                     valerr = lambda num, den : ((num/den)*100., clop(num,den)*100.)
                     frac_one_met, err_one_met = valerr(sum_met, sum_base)
@@ -143,6 +150,10 @@ def main(args):
                     frac_bothkin, err_bothkin = valerr(sum_metkin + sum_taukin, sum_base)
                     frac_vbfkin,  err_vbfkin  = valerr(sum_vbfkin, sum_base)
 
+                    nevents[md][chn]['base'].append(sum_basekin)
+                    nevents[md][chn]['met'].append(sum_basekin + sum_metkin)
+                    nevents[md][chn]['tau'].append(sum_basekin + sum_metkin + sum_taukin)
+                    
                     yone[md][chn]['met'].append(frac_one_met)
                     yone[md][chn]['tau'].append(frac_one_tau)
                     yone[md][chn]['vbf'].append(frac_one_vbf)
@@ -167,7 +178,8 @@ def main(args):
     opt_line = dict(width=1.5)
     colors = ('green', 'blue', 'red', 'brown')
     styles = ('solid', 'dashed', 'dotdash')
-    legends = {'met': 'MET', 'tau': 'Single Tau',
+    legends = {'base': 'Legacy',
+               'met': 'MET', 'tau': 'Single Tau',
                'two': 'MET + Single Tau', 'vbf': 'VBF'}
      
     x_str = [str(k) for k in args.masses]
@@ -181,58 +193,49 @@ def main(args):
      
     for adir in main_dir:
         p_opt = dict(width=800, height=400, x_axis_label='x', y_axis_label='y')
-        p1 = figure(title='Inclusion', **p_opt)
-        p2 = figure(title='Acceptance gain', **p_opt)
-        #p3 = figure(title='Acceptance gain in bb' + tau + tau + ' kinematic regions', **p_opt)
-        if len(channels) == 1:
-            p3 = figure(title=pp(channels[0]), **p_opt)
-        else:
-            p3 = figure(**p_opt)
-        for p in (p1, p2, p3):
+        p1 = figure(title='Event number (' + pp(channels[0]) + ')', y_axis_type="linear", **p_opt)
+        p2 = figure(title='Acceptance Gain (' + pp(channels[0]) + ')', **p_opt) if len(channels)==1 else figure(**p_opt)
+        p1.yaxis.axis_label = 'Weighted number of events'
+        p2.yaxis.axis_label = 'Trigger acceptance gain (w.r.t. trigger baseline) [%]'
+        pics = (p1, p2)
+        for p in pics:
             set_fig(p)
+
         for ichn,chn in enumerate(channels):
             md = adir[chn]
             
-            for itd,td in enumerate(('met', 'tau', 'vbf')):
-                p1.circle([x+shift_one[td][ichn] for x in linear_x],
-                          yone[md][chn][td], color=colors[itd], fill_alpha=1.,
-                          **opt_points)
-                p1.line([x+shift_one[td][ichn] for x in linear_x],
-                        yone[md][chn][td], color=colors[itd], line_dash=styles[ichn],
-                        legend_label=legends[td]+(' ('+pp(chn)+')' if len(channels)>1 else ''), **opt_line)
-                p1.multi_line(
-                    [(x+shift_one[td][ichn],x+shift_one[td][ichn]) for x in linear_x],
-                    [(y[0],y[1])
-                     for x,y in zip(yone[md][chn][td],eone[md][chn][td])],
-                    color=colors[itd], **opt_line)
+            p1.quad(top=nevents[md][chn]["base"], bottom=0,
+                    left=edges_x[:-1], right=edges_x[1:],
+                    legend_label=legends["base"]+(' ('+pp(chn)+')' if len(channels)>1 else ''),
+                    fill_color="dodgerblue", line_color="black")
+            p1.quad(top=nevents[md][chn]["met"], bottom=nevents[md][chn]["base"],
+                    left=edges_x[:-1], right=edges_x[1:],
+                    legend_label=legends["met"]+(' ('+pp(chn)+')' if len(channels)>1 else ''),
+                    fill_color="green", line_color="black")
+            p1.quad(top=nevents[md][chn]["tau"], bottom=nevents[md][chn]["met"],
+                    left=edges_x[:-1], right=edges_x[1:],
+                    legend_label=legends["tau"]+(' ('+pp(chn)+')' if len(channels)>1 else ''),
+                    fill_color="red", line_color="black")
+            # p1.multi_line([(x,x) for x in linear_x],
+            #               [(-0.1,0.1) for x in linear_x],
+            #               color=colors[itd], **opt_line)
 
-            for itd,td in enumerate(('met', 'two')):
-                p2.circle([x+shift_both[td][ichn] for x in linear_x],
-                          yboth[md][chn][td], color=colors[itd], fill_alpha=1.,
-                          **opt_points)
-                p2.line([x+shift_both[td][ichn] for x in linear_x],
-                        yboth[md][chn][td], color=colors[itd], line_dash=styles[ichn],
-                        legend_label=legends[td]+(' ('+pp(chn)+')' if len(channels)>1 else ''), **opt_line)
-                p2.multi_line(
-                    [(x+shift_both[td][ichn],x+shift_both[td][ichn]) for x in linear_x], 
-                    [(y[0],y[1])
-                     for x,y in zip(yboth[md][chn][td],eboth[md][chn][td])],
-                    color=colors[itd], **opt_line)
-
-            for itd,td in enumerate(('met', 'tau', 'two', 'vbf')):
-                p3.circle([x+shift_kin[td][ichn] for x in linear_x],
+            for itd,td in enumerate(('met', 'tau', 'two')):
+                p2.circle([x+shift_kin[td][ichn] for x in linear_x],
                           ykin[md][chn][td], color=colors[itd], fill_alpha=1.,
                           **opt_points)
-                p3.line([x+shift_kin[td][ichn] for x in linear_x],
+                p2.line([x+shift_kin[td][ichn] for x in linear_x],
                         ykin[md][chn][td], color=colors[itd], line_dash=styles[ichn],
                         legend_label=legends[td]+(' ('+pp(chn)+')' if len(channels)>1 else ''), **opt_line)
-                p3.multi_line(
+                p2.multi_line(
                     [(x+shift_kin[td][ichn],x+shift_kin[td][ichn]) for x in linear_x], 
                     [(y[0],y[1])
                      for x,y in zip(ykin[md][chn][td],ekin[md][chn][td])],
                     color=colors[itd], **opt_line)
 
-        for p in (p1, p2, p3):
+        p1.legend.location = 'top_right'
+        p2.legend.location = 'top_left'                
+        for p in pics:
             p.xaxis[0].ticker = xticks
             p.xgrid[0].ticker = xticks
             p.xgrid.grid_line_alpha = 0.2
@@ -242,9 +245,7 @@ def main(args):
             p.ygrid.grid_line_alpha = 0.2
             p.ygrid.grid_line_color = 'black'
              
-            p.legend.location = 'top_left'
             p.xaxis.axis_label = "m(X) [GeV]"
-            p.yaxis.axis_label = 'Trigger acceptance gain (w.r.t. trigger baseline) [%]'
          
             p.xaxis.major_label_overrides = dict(zip(linear_x,x_str))
      
@@ -253,7 +254,7 @@ def main(args):
             p.output_backend = 'svg'
             #export_svg(p, filename='line_graph.svg')
          
-        g = gridplot([[p1], [p2], [p3]])
+        g = gridplot([[p] for p in pics])
         save(g, title=md)
 
 if __name__ == '__main__':

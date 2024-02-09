@@ -405,24 +405,30 @@ def test_trigger_regions(indir, sample, channel, spin, deltaR):
                 'NoBaseMETNoTau' : not pass_trg and pass_met and not pass_tau,
                 'BaseMETTau'     : pass_trg and pass_met and pass_tau,
                 'BaseNoMETNoTau' : pass_trg and not pass_met and not pass_tau,
+                'LegacyKin'      : pass_trg and in_legacy_region,
                 'METKin'         : pass_met and in_met_region,
                 'TauKin'         : pass_tau and in_tau_region,
                 'VBFKin'         : pass_vbf and (in_tau_region or in_met_region)
                 }
         assert htypes == list(cuts.keys())
         
+        w_mc     = entries.MC_weight
+        w_pure   = entries.PUReweight
+        w_l1pref = entries.L1pref_weight
+        w_trig   = entries.trigSF
+        w_idiso  = entries.IdSF_deep_2d
+        w_jetpu  = entries.PUjetID_SF
+        w_btag   = entries.bTagweightReshape
         
-        # mcweight   = entries.MC_weight
-        pureweight = entries.PUReweight
-        lumi       = entries.lumi
-        idandiso   = entries.IdSF_deep_2d
-        
-        #if utils.is_nan(mcweight)  : mcweight=1
-        if utils.is_nan(pureweight) : pureweight=1
-        if utils.is_nan(lumi)       : lumi=1
-        if utils.is_nan(idandiso)   : idandiso=1
+        if utils.is_nan(w_mc)     : w_mc=1
+        if utils.is_nan(w_pure)   : w_pure=1
+        if utils.is_nan(w_l1pref) : w_l1pref=1
+        if utils.is_nan(w_trig)   : w_trig=1
+        if utils.is_nan(w_idiso)  : w_idiso=1
+        if utils.is_nan(w_jetpu)  : w_jetpu=1
+        if utils.is_nan(w_btag)   : w_btag=1
   
-        evt_weight = pureweight*lumi*idandiso
+        evt_weight = w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu * w_btag
         if utils.is_nan(evt_weight):
             evt_weight = 1
 
@@ -495,7 +501,7 @@ if __name__ == '__main__':
 
     htypes = ['Base', 'MET', 'Tau', 'VBF', 'BaseMET', 'BaseTau', 'METTau', 'NoBaseMET', 'BaseNoMET',
               'NoBaseNoMETTau', 'NoBaseTau', 'BaseNoTau', 'NoBaseMETNoTau', 'BaseMETTau', 'BaseNoMETNoTau',
-              'METKin', 'TauKin', 'VBFKin']
+              'LegacyKin', 'METKin', 'TauKin', 'VBFKin']
     
     # Parse input arguments
     desc = 'Producer trigger histograms.\n'
@@ -556,7 +562,7 @@ if __name__ == '__main__':
     if args.bigtau:
         if args.channel == "tautau":
             legacy_region = ('entries.dau1_pt >= {} and entries.dau2_pt >= {} and '.format(*ptcuts) +
-                             'entries.dau1_pt < {}  and entries.dau2_pt < {} and '.format(*regcuts))
+                             'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(*regcuts))
             met_region = ('(entries.dau2_pt < {} and entries.dau1_pt < {}) or '.format(ptcuts[1], regcuts[0]) +
                           '(entries.dau1_pt < {} and entries.dau2_pt < {})'.format(ptcuts[0], regcuts[1]))
             tau_region = 'entries.dau1_pt >= {} or entries.dau2_pt >= {}'.format(*regcuts)
