@@ -37,12 +37,20 @@ def paint2d(channel, trig):
     latexChannel.replace('mu','#mu')
     latexChannel.replace('tau','#tau_{h}')
     latexChannel.replace('Tau','#tau_{h}')
-    l.DrawLatex( lX2, lY, 'Channel: '+latexChannel)
+    l.DrawLatex(lX2, lY, 'Channel: '+latexChannel)
 
-def draw_eff_and_sf_1d(proc, channel, variable, trig,
+def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
                        save_names_1D, cfg,
                        tprefix, indir, subtag, mc_name, data_name,
                        intersection_str, debug):
+    CMS_text_font = 62
+    extra_text_font = 52
+    standard_text_font = 42
+    lumi_text_size = 0.6
+    lumi_text_offset = 0.2
+    cms_text_size = 0.75
+    cms_text_offset	= 0.2
+    extra_over_CMS_text_size = 0.76
 
     _name = lambda a,b,c,d : a + b + c + d + '.root'
 
@@ -167,8 +175,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
 
     # 1-dimensional
     if utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] != "quantiles":
-        # frange = cfg.binedges[variable][channel][0], cfg.binedges[variable][channel][-1]
-        frange = 160., cfg.binedges[variable][channel][-1]
+        frange = cfg.binedges[variable][channel][0], cfg.binedges[variable][channel][-1]
+        #frange = 180., cfg.binedges[variable][channel][-1]
     elif utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] == "quantiles":
         frange = cfg.binedges[variable][channel][1], cfg.binedges[variable][channel][2]
     else:
@@ -294,7 +302,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             pad1.SetLeftMargin(0.15)
             pad1.Draw()
             pad1.cd()
-
+                
             max1, min1 = utils.get_obj_max_min(data1D[atype][akey], is_histo=False)
             max2, min2 = utils.get_obj_max_min(mc1D[atype][akey], is_histo=False)
             amax = max([max1, max2])
@@ -353,6 +361,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             
             x1_pad = pad1.GetUxmin()
             x2_pad = pad1.GetUxmax()
+            y1_pad = pad1.GetUymin()
+            y2_pad = pad1.GetUymax()
             if atype == 'eff':
                 data1D[atype][akey].GetYaxis().SetRangeUser(-0.05,1.2)
                 data1D[atype][akey].GetXaxis().SetRangeUser(x1_pad,x2_pad)
@@ -365,17 +375,22 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
                 mc1D[atype][akey].GetYaxis().SetRangeUser(norm_min,norm_max)
 
             l = ROOT.TLine()
-            l.SetLineWidth(1)
+            l.SetLineWidth(2)
             l.SetLineStyle(7)
             l.DrawLine(x1_pad,1.,x2_pad,1.)
 
-            leg = ROOT.TLegend(0.68, 0.80, 0.89, 0.89)
+            # l = ROOT.TLine()
+            # l.SetLineWidth(2)
+            # l.SetLineStyle(7)
+            # l.DrawLine(180.,y1_pad,180.,y2_pad)
+
+            leg = ROOT.TLegend(0.61, 0.79, 0.89, 0.89)
             leg.SetFillColor(0)
             leg.SetShadowColor(0)
             leg.SetBorderSize(0)
-            leg.SetTextSize(0.03)
+            leg.SetTextSize(0.04)
             leg.SetFillStyle(0)
-            leg.SetTextFont(42)
+            leg.SetTextFont(standard_text_font)
 
             leg.AddEntry(data1D[atype][akey], 'Data', 'p')
             leg.AddEntry(mc1D[atype][akey],
@@ -386,22 +401,52 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             pad1.RedrawAxis()
             pad1.Draw("same P")
             
-            lX, lY, lYstep = 0.18, 0.86, 0.04
+            lX, lY, lXstep, lYstep = 0.18, 0.85, 0.02, 0.05
             l = ROOT.TLatex()
             l.SetNDC()
-            l.SetTextFont(42) #72 bold italic
+            l.SetTextFont(standard_text_font) #72 bold italic
             l.SetTextColor(1)
-            l.SetTextSize(0.03)
+            l.SetTextSize(0.04)
 
             latexChannel = copy(channel)
-            latexChannel.replace('mu','#mu')
-            latexChannel.replace('tau','#tau_{h}')
-            latexChannel.replace('Tau','#tau_{h}')
+            latexChannel = latexChannel.replace('mu','#mu')
+            latexChannel = latexChannel.replace('tau','#tau_{h}')
+            latexChannel = latexChannel.replace('Tau','#tau_{h}')
 
             l.DrawLatex(lX, lY, 'Channel: '+latexChannel)
-            textrigs = utils.write_trigger_string(trig, intersection_str,
-                                                  items_per_line=2)
+            textrigs = utils.write_trigger_string(trig, intersection_str, items_per_line=2)
             l.DrawLatex(lX, lY-lYstep, textrigs)
+
+            pad_left = pad1.GetLeftMargin()
+            pad_top  = pad1.GetTopMargin()
+
+            latex_CMS = ROOT.TLatex()
+            latex_CMS.SetTextSize(cms_text_size*pad_top)
+            latex_CMS.SetNDC()
+            latex_CMS.SetTextAngle(0)
+            latex_CMS.SetTextColor(ROOT.kBlack)
+            latex_CMS.SetTextFont(CMS_text_font);
+            latex_CMS.SetBit(ROOT.kCanDelete)
+            latex_CMS.DrawLatex(lX-1.5*lXstep, lY+1.3*lYstep, "CMS")
+
+            latex_Prelim = ROOT.TLatex()
+            latex_Prelim.SetTextSize(lumi_text_size*pad_top)
+            latex_Prelim.SetNDC()
+            latex_Prelim.SetTextAngle(0)
+            latex_Prelim.SetTextColor(ROOT.kBlack)
+            latex_Prelim.SetTextFont(extra_text_font)
+            latex_Prelim.SetBit(ROOT.kCanDelete)
+            latex_Prelim.DrawLatex(lX+4*lXstep, lY+1.3*lYstep, "Preliminary")
+
+            lumi_d = {"2016preVFP": "19.5", "2016postVFP": "16.8", "2017": "41.5", "2018": "59.7"}
+            latex_lumi = ROOT.TLatex()
+            latex_lumi.SetTextSize(lumi_text_size*pad_top)
+            latex_lumi.SetNDC()
+            latex_lumi.SetTextAngle(0)
+            latex_lumi.SetTextColor(ROOT.kBlack)
+            latex_lumi.SetTextFont(standard_text_font)
+            latex_lumi.SetBit(ROOT.kCanDelete)
+            latex_lumi.DrawLatex(lX+22*lXstep, lY+1.3*lYstep, lumi_d[args.period] + " fb^{-1} (13 TeV)")
 
             canvas[atype].cd()
             pad2 = ROOT.TPad('pad2','pad2',0.,0.,1.,0.3)
@@ -457,7 +502,10 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             sf1D[atype][akey].GetXaxis().SetTitleOffset(1.)
             sf1D[atype][akey].GetYaxis().SetTitleOffset(0.45)
             sf1D[atype][akey].GetYaxis().SetTitle('Data/MC')
-            sf1D[atype][akey].GetXaxis().SetTitle( utils.get_display_variable_name(channel, variable) )
+            xlabel = utils.get_display_variable_name(channel, variable)
+            if "met" in variable:
+                xlabel += " [GeV]"
+            sf1D[atype][akey].GetXaxis().SetTitle(xlabel)
             sf1D[atype][akey].GetXaxis().SetTickLength(0.07)
             sf1D[atype][akey].Draw("AP")
             if atype == 'eff' and akey in fit_sigmoid_ratio:
@@ -468,18 +516,6 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
             pad2.RedrawAxis()
             pad2.Draw("same P")
         
-            # pad2.cd()
-            # l = ROOT.TLine()
-            # l.SetLineWidth(2)
-            # padmin = min1-0.1*(max1-min1)
-            # padmax = max1+0.1*(max1-min1)
-            # fraction = (padmax-padmin)/30
-
-            # for i in range(nbins):
-            #     x = axor2.GetXaxis().GetBinLowEdge(i) + 1.5;
-            #     l.DrawLine(x,padmin-fraction,x,padmin+fraction)
-            # l.DrawLine(x+1,padmin-fraction,x+1,padmin+fraction)
-
             for aname in save_names_1D[:-1]:
                 _name = utils.rewrite_cut_string(aname, akey, regex=True)
                 _name = _name.replace(args.canvas_prefix, atype + '_' + args.canvas_prefix)
@@ -509,7 +545,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig,
         print('[=debug=] 2D Plotting...', flush=True)
 
 
-def draw_eff_and_sf_2d(proc, channel, joinvars, trig, save_names_2D,
+def draw_eff_and_sf_2d(proc, channel, joinvars, trig, period, save_names_2D,
                        tprefix, indir, subtag, mc_name, data_name,
                        intersection_str, debug):
     _name = lambda a,b,c,d : a + b + c + d + '.root'
@@ -828,7 +864,7 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name, cfg, tcomb,
 
 
 def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
-                  tcomb, channels, variables, subtag,
+                  tcomb, period, channels, variables, subtag,
                   tprefix, intersection_str, debug):
     
     outs1D, extensions, processes = run_eff_sf_1d_outputs(outdir, data_name, mc_name, tcomb,
@@ -862,7 +898,7 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
                         m += ', trigger_combination={}\n'.format(tcomb)
                         print(m)
 
-                draw_eff_and_sf_1d(proc, chn, var, tcomb, names1D, config_module,
+                draw_eff_and_sf_1d(proc, chn, var, tcomb, period, names1D, config_module,
                                    tprefix, indir, subtag, mc_name, data_name,
                                    intersection_str, debug)
 
@@ -889,7 +925,7 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
                         for j in config_module.pairs2D[onetrig]:
                             vname = utils.add_vnames(j[0],j[1])
 
-                            draw_eff_and_sf_2d(proc, chn, vname, tcomb, names2D,
+                            draw_eff_and_sf_2d(proc, chn, vname, tcomb, period, names2D,
                                                tprefix, indir, subtag, mc_name, data_name,
                                                intersection_str, debug)
 
@@ -907,6 +943,8 @@ parser.add_argument('--triggercomb', dest='triggercomb', required=True,
                     help='Trigger intersection combination.')
 parser.add_argument('--channels',   dest='channels',         required=True, nargs='+', type=str,
                     help='Select the channels over which the workflow will be run.' )
+parser.add_argument('--period', dest='period', default="2018", type=str,
+                    choices=("2016preVFP", "201postVFP", "2017", "2018"), help='Period/era.' )
 parser.add_argument('--variables',        dest='variables',        required=True, nargs='+', type=str,
                     help='Select the variables over which the workflow will be run.' )
 parser.add_argument('--intersection_str', dest='intersection_str', required=False, default=main.inters_str,
@@ -922,6 +960,7 @@ run_eff_sf_1d(args.indir, args.outdir,
               args.data_name, args.mc_name,
               args.configuration,
               args.triggercomb,
+              args.period,
               args.channels, args.variables,
               args.subtag,
               args.tprefix,
