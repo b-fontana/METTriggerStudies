@@ -112,6 +112,9 @@ class DrawCuts():
                            'dau1_deepTauVsJet', 'dau2_deepTauVsJet', 'nleps', 'nbjetscand',
                            'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted')
 
+        self.rect_opt = dict(facecolor='white', edgecolor="black", linewidth=2)
+        self.leg_opt = dict(loc="upper right", facecolor="white", edgecolor="white", framealpha=1)
+
     def triggers(self):
         mode = "trigger"
         
@@ -139,16 +142,15 @@ class DrawCuts():
         
         self.set_lines(histogram, mode=mode)
 
-        rect_opt = dict(facecolor='white', edgecolor="black", linewidth=2)
         if self.channel == "etau":
-            rect = matplotlib.patches.Rectangle((76,202), 24, 35, **rect_opt)
+            rect = matplotlib.patches.Rectangle((76,202), 24, 35, **self.rect_opt)
         elif self.channel == "mutau":
-            rect = matplotlib.patches.Rectangle((76,202), 24, 35, **rect_opt)
+            rect = matplotlib.patches.Rectangle((76,202), 24, 35, **self.rect_opt)
         elif self.channel == "tautau":
-            rect = matplotlib.patches.Rectangle((194,203), 42, 34, **rect_opt)
+            rect = matplotlib.patches.Rectangle((194,203), 42, 34, **self.rect_opt)
         ax.add_patch(rect)
 
-        plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1, title="Triggers")
+        plt.legend(title="Triggers", **self.leg_opt)
         self.savefig(mode=mode)
 
     def mass(self):
@@ -178,7 +180,7 @@ class DrawCuts():
      
         self.set_lines(histogram, mode=mode)
 
-        rect = matplotlib.patches.Rectangle((245,473), 100, 20, color='white')
+        rect = matplotlib.patches.Rectangle((140,332), 57, 13, **self.rect_opt)
         ax.add_patch(rect)
 
         plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1)
@@ -256,8 +258,8 @@ class DrawCuts():
         chn_unicodes = {"etau":   r'$bb\: e\tau$',
                         "mutau":  r'$bb\: \mu\tau$',
                         "tautau": r'$bb\: \tau\tau$'}
-        cat_map = {'baseline': "baseline", 'sboosted': "boosted",
-                   's1b1jresolved': "res 1b", 's2b0jresolved': "res 2b"}
+        cat_map = {'baseline': "baseline", 'baseline_boosted': "baseline boosted",
+                   'boostedL_pnet': "boosted", 'res1b': "res 1b", 'res2b': "res 2b"}
         hep.cms.lumitext((chn_unicodes[self.channel] + " (" + cat_map[self.category] + ") | " +
                           self.sample + " (" + self.year + ")"),
                          fontsize=24) # r"138 $fb^{-1}$ (13 TeV)"
@@ -331,7 +333,7 @@ if __name__ == '__main__':
     parser.add_argument('--channel', required=True, choices=("etau", "mutau", "tautau", "mumu"),
                         type=str, help='Signal particle type')
     parser.add_argument('--category', default="baseline",
-                        choices=("baseline", "sboosted", "s1b1jresolved", "s2b0jresolved"),
+                        choices=("baseline", "baseline_boosted", "boostedL_pnet", "res1b", "res2b"),
                         type=str, help='Analysis category')
     parser.add_argument('--year', required=True, choices=("2016", "2016APV", "2017", "2018"),
                         type=str, help='Signal particle type')
