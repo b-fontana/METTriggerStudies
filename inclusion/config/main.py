@@ -90,8 +90,8 @@ corr = {'etau': {},
         'mumu': {} }
     
 ### Data and MC samples
-inputs = ('/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_validateMETNoSF_Data_V2/',
-          '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_validateMETNoSF_MC_V2/',
+inputs = ('/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_Data/',
+          '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_MC/',
           )
 corrupted_files = () #'/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background/TTTo2L2Nu/output_9.root'
 
