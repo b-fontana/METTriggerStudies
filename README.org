@@ -133,8 +133,10 @@ This runs on the CSV tables (per mass and channel) produced by the ~tests/test_t
 *** Draw trigger and mass cuts
 For instance (input paths defined at the end of the script):
 #+BEGIN_SRC shell
-for chn in "etau" "mutau" "tautau"; do python tests/test_draw_kin_regions.py --channel $chn --year 2018 --category baseline --dtype signal --mass 700 --mode mass --save; done
+for mmm in "400" "600" "800" "1000" "2000"; do for chn in "etau" "mutau" "tautau"; do python tests/test_draw_kin_regions.py --channel $chn --year 2018 --category baseline --dtype signal --mass $mmm --mode trigger --skim_tag OpenCADI --save; done; done
 #+END_SRC
+You can remove =--save= to speed-up the plotting in case the data has already been saved in a previous run.
+
 ** ~luigi~ related
 *** Debugging
 

@@ -139,12 +139,13 @@ class DrawCuts():
         
         self.set_lines(histogram, mode=mode)
 
+        rect_opt = dict(facecolor='white', edgecolor="black", linewidth=2)
         if self.channel == "etau":
-            rect = matplotlib.patches.Rectangle((79,202), 21, 35, color='white')
+            rect = matplotlib.patches.Rectangle((76,202), 24, 35, **rect_opt)
         elif self.channel == "mutau":
-            rect = matplotlib.patches.Rectangle((79,202), 21, 35, color='white')
+            rect = matplotlib.patches.Rectangle((76,202), 24, 35, **rect_opt)
         elif self.channel == "tautau":
-            rect = matplotlib.patches.Rectangle((194,203), 42, 34, color='white')
+            rect = matplotlib.patches.Rectangle((194,203), 42, 34, **rect_opt)
         ax.add_patch(rect)
 
         plt.legend(loc="upper right", facecolor="white", edgecolor="white", framealpha=1, title="Triggers")
@@ -188,28 +189,28 @@ class DrawCuts():
             if self.channel == "etau":
                 nbinsx = 25 if dtype == "signal" else 35
                 nbinsy = 25 if dtype == "signal" else 35
-                xbins = (nbinsx, 15, 101)
-                ybins = (nbinsy, 15, 240)
+                xbins = (nbinsx, 5, 101)
+                ybins = (nbinsy, 5, 240)
             elif self.channel == "mutau":
                 nbinsx = 25 if dtype == "signal" else 35
                 nbinsy = 25 if dtype == "signal" else 35
-                xbins = (nbinsx, 15, 101)
-                ybins = (nbinsy, 15, 240)
+                xbins = (nbinsx, 10, 101)
+                ybins = (nbinsy, 10, 240)
             elif self.channel == "tautau":
                 nbinsx = 25 if dtype == "signal" else 40
                 nbinsy = 25 if dtype == "signal" else 40
-                xbins = (nbinsx, 15, 240)
-                ybins = (nbinsy, 15, 240)
+                xbins = (nbinsx, 12, 240)
+                ybins = (nbinsy, 12, 240)
 
         elif mode == "mass":
             nbinsx = 50 if dtype == "signal" else 100
             nbinsy = 50 if dtype == "signal" else 100
             if self.channel == "etau":
-                xbins = (nbinsx, 15, 200)
-                ybins = (nbinsy, 15, 350)
+                xbins = (nbinsx, 5, 200)
+                ybins = (nbinsy, 5, 350)
             elif self.channel == "mutau":
-                xbins = (nbinsx, 15, 200)
-                ybins = (nbinsy, 15, 350)
+                xbins = (nbinsx, 10, 200)
+                ybins = (nbinsy, 10, 350)
             elif self.channel == "tautau":
                 xbins = (nbinsx, 15, 200)
                 ybins = (nbinsy, 15, 350)
@@ -322,6 +323,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--dtype', choices=('signal', 'mc'), default='signal',
                         type=str, help='Data type')
+    parser.add_argument('--skim_tag', required=True, type=str, help='Tag of input skims.')
     parser.add_argument('--signal', choices=('Radion', 'BulkGraviton'), default='Radion',
                         type=str, help='Signal particle type')
     parser.add_argument('--mass', default='1000',
@@ -341,14 +343,13 @@ if __name__ == '__main__':
 
     base = "/data_CMS/cms/alves/HHresonant_SKIMS/"
     if FLAGS.dtype == "signal":
-        base = os.path.join(base, "SKIMS_UL18_validateMETNoSF_Sig_V2/")
+        base = os.path.join(base, "SKIMS_UL18_{}_Sig/".format(FLAGS.skim_tag))
         name = os.path.join(base, "GluGluTo{}ToHHTo2B2Tau_M-{}_".format(FLAGS.signal, FLAGS.mass))
         infiles = glob.glob(os.path.join(name, "output_*.root"))
     elif FLAGS.dtype == "mc":
-        base = os.path.join(base, "SKIMS_UL18_validateMETNoSF_MC_V2/")
+        base = os.path.join(base, "SKIMS_UL18_{}_MC/".format(FLAGS.skim_tag))
         names = ["DYJetsToLL_M-50_TuneCP5_13TeV-amc",
-                 "TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic",
-                 ]
+                 "TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic"]
         infiles = [os.path.join(base, name, "hadded.root") for name in names]
 
     if FLAGS.dtype == "signal":
