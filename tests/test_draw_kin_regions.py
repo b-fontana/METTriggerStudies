@@ -365,7 +365,7 @@ class DrawCuts():
                     plt.arrow(dy_l/2, tt_u, 0, arrow_length_v, **arrow_v)
                     plt.arrow(dy_l, (ymax-tt_u)/2. + tt_u, -arrow_length_h, 0, **arrow_h)
 
-                    # top right corner
+                    # top right cornerd
                     plt.arrow(dy_r, (ymax-tt_u)/2. + tt_u, arrow_length_h, 0, **arrow_h)
                     plt.arrow((xmax-dy_r)/2.+dy_r, tt_u, 0, arrow_length_v, **arrow_v)
 
@@ -378,10 +378,15 @@ class DrawCuts():
                     plt.arrow((xmax-dy_r)/2. + dy_r, tt_d, 0, -arrow_length_v, **arrow_v)
 
                 elif self.dtype == "dy":
+                    arrow_opt = dict(color='red', width=2, head_width=8, head_length=4, shape="full")
                     plt.plot([86., 86.], [ymin, ymax], label=r"Mass window cut", **line_d)
                     plt.plot([95., 95.], [ymin, ymax], **line_d)
-                    plt.arrow(86., (ymax-ymin)/2, -10, 0, **arrow_opt)
-                    plt.arrow(95., (ymax-ymin)/2, 10, 0, **arrow_opt)
+
+                    plt.arrow(86., (ymax-ymin)/5., 2, 0, **arrow_opt)
+                    plt.arrow(95., 2*(ymax-ymin)/5., -2, 0, **arrow_opt)
+                    plt.arrow(86., 3*(ymax-ymin)/5., 2, 0, **arrow_opt)
+                    plt.arrow(95., 4*(ymax-ymin)/5., -2, 0, **arrow_opt)
+                    
                 elif self.dtype == "tt":
                     dy_l, dy_r = 86., 95.  # DY left and right cuts
                     tt_d, tt_u = 50., 150. # ttbar down and up cuts
