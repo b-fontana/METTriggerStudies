@@ -345,12 +345,38 @@ class DrawCuts():
             line_d = dict(c='red', linewidth=10)
             if self.channel == "mumu":
                 if self.dtype == "mc":
-                    plt.plot([20., 130., 130., 20., 20.], [50., 50., 270., 270., 50.],
-                             label=r"Mass window cut", **line_d)
-                    plt.arrow(20., (ymax-ymin)/2, -4, 0, **arrow_h)
-                    plt.arrow(130., (ymax-ymin)/2, 10, 0, **arrow_h)
-                    plt.arrow(75., 50, 0, -12, **arrow_v)
-                    plt.arrow(75., 270, 0, 12, **arrow_v)
+                    # plt.plot([20., 130., 130., 20., 20.], [50., 50., 270., 270., 50.],
+                    #          label=r"Mass window cut", **line_d)
+                    # plt.arrow(20., (ymax-ymin)/2, -4, 0, **arrow_h)
+                    # plt.arrow(130., (ymax-ymin)/2, 10, 0, **arrow_h)
+                    # plt.arrow(75., 50, 0, -12, **arrow_v)
+                    # plt.arrow(75., 270, 0, 12, **arrow_v)
+
+                    dy_l, dy_r = 86., 95.  # DY left and right cuts
+                    tt_d, tt_u = 50., 150. # ttbar down and up cuts
+                    
+                    plt.plot([xmin, dy_l, dy_l], [tt_u, tt_u, ymax], **line_d, label=r"Mass window cut")
+                    plt.plot([dy_r, dy_r, xmax], [ymax, tt_u, tt_u], **line_d)
+                    plt.plot([xmin, dy_l, dy_l], [tt_d, tt_d, ymin], **line_d)
+                    plt.plot([dy_r, dy_r, xmax], [ymin, tt_d, tt_d], **line_d)
+
+                    arrow_length_h, arrow_length_v = 8, 10
+                    # top left corner
+                    plt.arrow(dy_l/2, tt_u, 0, arrow_length_v, **arrow_v)
+                    plt.arrow(dy_l, (ymax-tt_u)/2. + tt_u, -arrow_length_h, 0, **arrow_h)
+
+                    # top right corner
+                    plt.arrow(dy_r, (ymax-tt_u)/2. + tt_u, arrow_length_h, 0, **arrow_h)
+                    plt.arrow((xmax-dy_r)/2.+dy_r, tt_u, 0, arrow_length_v, **arrow_v)
+
+                    # bottom left corner
+                    plt.arrow(dy_l, tt_d/2, -arrow_length_h, 0, **arrow_h)
+                    plt.arrow(dy_l/2., tt_d, 0, -arrow_length_v, **arrow_v)
+
+                    # bottom right corner
+                    plt.arrow(dy_r, tt_d/2, arrow_length_h, 0, **arrow_h)
+                    plt.arrow((xmax-dy_r)/2. + dy_r, tt_d, 0, -arrow_length_v, **arrow_v)
+
                 elif self.dtype == "dy":
                     plt.plot([86., 86.], [ymin, ymax], label=r"Mass window cut", **line_d)
                     plt.plot([95., 95.], [ymin, ymax], **line_d)
@@ -365,25 +391,23 @@ class DrawCuts():
                     plt.plot([xmin, dy_l, dy_l], [tt_d, tt_d, ymin], **line_d)
                     plt.plot([dy_r, dy_r, xmax], [ymin, tt_d, tt_d], **line_d)
 
+                    arrow_length_h, arrow_length_v = 8, 10
                     # top left corner
-                    plt.arrow(dy_l/2, tt_u, 0, 6, **arrow_h)
-                    plt.arrow(dy_l, (ymax-tt_u)/2. + tt_u, -6, 0, **arrow_v)
+                    plt.arrow(dy_l/2, tt_u, 0, arrow_length_v, **arrow_v)
+                    plt.arrow(dy_l, (ymax-tt_u)/2. + tt_u, -arrow_length_h, 0, **arrow_h)
 
                     # top right corner
-                    plt.arrow((xmax-dy_r)/2.+dy_r, tt_u, 0, 6, **arrow_h)
-                    plt.arrow(dy_r, (ymax-tt_u)/2. + tt_u, 6, 0, **arrow_v)
+                    plt.arrow(dy_r, (ymax-tt_u)/2. + tt_u, arrow_length_h, 0, **arrow_h)
+                    plt.arrow((xmax-dy_r)/2.+dy_r, tt_u, 0, arrow_length_v, **arrow_v)
 
                     # bottom left corner
-                    plt.arrow(dy_l/2., tt_d, 0, -6, **arrow_h)
-                    plt.arrow(dy_l, tt_d/2, -6, 0, **arrow_v)
+                    plt.arrow(dy_l, tt_d/2, -arrow_length_h, 0, **arrow_h)
+                    plt.arrow(dy_l/2., tt_d, 0, -arrow_length_v, **arrow_v)
 
                     # bottom right corner
-                    plt.arrow((xmax-dy_r)/2. + dy_r, tt_d, 0, -6, **arrow_h)
-                    plt.arrow(dy_r, tt_d/2, 6, 0, **arrow_v)
-
-
-                    
-                    
+                    plt.arrow(dy_r, tt_d/2, arrow_length_h, 0, **arrow_h)
+                    plt.arrow((xmax-dy_r)/2. + dy_r, tt_d, 0, -arrow_length_v, **arrow_v)
+   
             else:
                 plt.plot([20., 130., 130., 20., 20.], [50., 50., 270., 270., 50.],
                          label=r"Mass window cut", **line_d)
