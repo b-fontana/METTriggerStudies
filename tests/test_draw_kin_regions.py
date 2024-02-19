@@ -112,22 +112,23 @@ class DrawCuts():
                            'dau1_deepTauVsJet', 'dau2_deepTauVsJet', 'nleps', 'nbjetscand',
                            'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor', 'isBoosted')
 
+        self.outname = lambda mode: os.path.join('pickles',
+                                                 '_'.join((mode, sample, channel, dtype, category, year)) + ".pkl")
+
         self.rect_opt = dict(facecolor='white', edgecolor="black", linewidth=2)
-        self.leg_opt = dict(loc="upper right", facecolor="white", edgecolor="white", framealpha=1)
+        self.leg_opt = dict(loc="upper right" if channel!="mumu" else "upper center",
+                            facecolor="white", edgecolor="white", framealpha=1)
 
     def triggers(self):
         mode = "trigger"
         
         fig, ax = self.set_figure(16, 16)
         
-        savename = os.path.join('pickles',
-                                '_'.join((mode, self.sample, self.channel, self.category, self.year)) + ".pkl")
-
         bins = self.get_bins(mode=mode, dtype=self.dtype)
         histogram = getHisto(x="dau1_pt", y="dau2_pt", xbins=bins[0], ybins=bins[1],
                              channel=self.channel, category=self.category, year=self.year,
                              other_vars=self.other_vars, inputs=self.inputs, dtype=self.dtype,
-                             savename=savename, save=self.save)
+                             savename=self.outname(mode), save=self.save)
 
         xlabel, ylabel = self.set_axis_labels(mode=mode, channel=self.channel)
         ax.set_xlabel(xlabel)
@@ -148,6 +149,9 @@ class DrawCuts():
             rect = matplotlib.patches.Rectangle((76,202), 24, 35, **self.rect_opt)
         elif self.channel == "tautau":
             rect = matplotlib.patches.Rectangle((194,203), 42, 34, **self.rect_opt)
+        elif self.channel == "mumu":
+            rect = matplotlib.patches.Rectangle((76,202), 24, 35, **self.rect_opt)
+
         ax.add_patch(rect)
 
         plt.legend(title="Triggers", **self.leg_opt)
@@ -158,14 +162,11 @@ class DrawCuts():
         
         fig, ax = self.set_figure(16, 16)
         
-        savename = os.path.join("pickles",
-                                '_'.join((mode, self.sample, self.channel, self.category, self.year)) + ".pkl")
-
         bins = self.get_bins(mode=mode, dtype=self.dtype)
         histogram = getHisto(x="tauH_mass", y="bH_mass", xbins=bins[0], ybins=bins[1],
                              channel=self.channel, category=self.category, year=self.year,
                              other_vars=self.other_vars, inputs=self.inputs, dtype=self.dtype,
-                             savename=savename, save=self.save)
+                             savename=self.outname(mode), save=self.save)
 
         xlabel, ylabel = self.set_axis_labels(mode=mode, channel=self.channel)
         ax.set_xlabel(xlabel)
@@ -203,6 +204,11 @@ class DrawCuts():
                 nbinsy = 25 if dtype == "signal" else 40
                 xbins = (nbinsx, 12, 240)
                 ybins = (nbinsy, 12, 240)
+            elif self.channel == "mumu":
+                nbinsx = 25 if dtype == "signal" else 35
+                nbinsy = 25 if dtype == "signal" else 35
+                xbins = (nbinsx, 10, 170)
+                ybins = (nbinsy, 10, 130)
 
         elif mode == "mass":
             nbinsx = 50 if dtype == "signal" else 100
@@ -216,6 +222,9 @@ class DrawCuts():
             elif self.channel == "tautau":
                 xbins = (nbinsx, 15, 200)
                 ybins = (nbinsy, 15, 350)
+            elif self.channel == "mumu":
+                xbins = (nbinsx, 10, 200)
+                ybins = (nbinsy, 10, 350)
 
         return xbins, ybins
 
@@ -248,6 +257,9 @@ class DrawCuts():
             elif channel == "tautau":
                 xlabel = r"$p_T(\tau_1)$ [GeV]"
                 ylabel = r"$p_T(\tau_2)$ [GeV]"
+            elif channel == "mumu":
+                xlabel = r"$p_T(\mu)$ [GeV]"
+                ylabel = r"$p_T(\mu)$ [GeV]"
         elif mode == "mass":
             xlabel = r"$m_{{\tau\tau}}^{{vis}}$  [GeV]"
             ylabel = r"$m_{{bb}}^{{vis}}$  [GeV]"
@@ -257,11 +269,13 @@ class DrawCuts():
         hep.cms.text('Preliminary', fontsize=40)
         chn_unicodes = {"etau":   r'$bb\: e\tau$',
                         "mutau":  r'$bb\: \mu\tau$',
-                        "tautau": r'$bb\: \tau\tau$'}
+                        "tautau": r'$bb\: \tau\tau$',
+                        "mumu": r'$bb\: \mu\mu$'}
         cat_map = {'baseline': "baseline", 'baseline_boosted': "baseline boosted",
                    'boostedL_pnet': "boosted", 'res1b': "res 1b", 'res2b': "res 2b"}
+        sample_header = self.sample.replace('TT', r"$t\bar{t}$")
         hep.cms.lumitext((chn_unicodes[self.channel] + " (" + cat_map[self.category] + ") | " +
-                          self.sample + " (" + self.year + ")"),
+                          sample_header + " (" + self.year + ")"),
                          fontsize=24) # r"138 $fb^{-1}$ (13 TeV)"
 
     def set_lines(self, h, mode):
@@ -313,17 +327,73 @@ class DrawCuts():
                 plt.plot([xmin, 39., 39.], [191., 191., ymax], c='red', linewidth=10, label=r"single-$\tau$")
                 plt.plot([xmax, 191., 191.], [39., 39., ymin], c='red', linewidth=10)
                 plt.plot([189., 189., 39., 39., xmin], [ymin, 39., 39., 189., 189.], c='deepskyblue', linewidth=10, label="MET")
-         
+                
+            elif self.channel == "mumu":
+                if self.year == "2016":
+                    plt.plot([24.5, 24.5], [ymax, ymin],
+                             c='black', linewidth=10, label=r"single-$\mu$")
+                elif self.year == "2017":
+                    plt.plot([27.5, 27.5], [ymax, ymin],
+                             c='black', linewidth=10, label=r"single-$\mu$")
+                elif self.year == "2018":
+                    plt.plot([24.5, 24.5], [ymax, ymin],
+                             c='black', linewidth=10, label=r"single-$\mu$")
+
         elif mode == "mass":
-            plt.plot([20., 130., 130., 20., 20.], [50., 50., 270., 270., 50.],
-                     c='red', linewidth=10, label=r"Mass window cut")
+            arrow_h = dict(color='red', width=3, head_width=10, head_length=5, shape="full")
+            arrow_v = dict(color='red', width=2.6, head_width=7, head_length=6, shape="full")
+            line_d = dict(c='red', linewidth=10)
+            if self.channel == "mumu":
+                if self.dtype == "mc":
+                    plt.plot([20., 130., 130., 20., 20.], [50., 50., 270., 270., 50.],
+                             label=r"Mass window cut", **line_d)
+                    plt.arrow(20., (ymax-ymin)/2, -4, 0, **arrow_h)
+                    plt.arrow(130., (ymax-ymin)/2, 10, 0, **arrow_h)
+                    plt.arrow(75., 50, 0, -12, **arrow_v)
+                    plt.arrow(75., 270, 0, 12, **arrow_v)
+                elif self.dtype == "dy":
+                    plt.plot([86., 86.], [ymin, ymax], label=r"Mass window cut", **line_d)
+                    plt.plot([95., 95.], [ymin, ymax], **line_d)
+                    plt.arrow(86., (ymax-ymin)/2, -10, 0, **arrow_opt)
+                    plt.arrow(95., (ymax-ymin)/2, 10, 0, **arrow_opt)
+                elif self.dtype == "tt":
+                    dy_l, dy_r = 86., 95.  # DY left and right cuts
+                    tt_d, tt_u = 50., 150. # ttbar down and up cuts
+                    
+                    plt.plot([xmin, dy_l, dy_l], [tt_u, tt_u, ymax], **line_d, label=r"Mass window cut")
+                    plt.plot([dy_r, dy_r, xmax], [ymax, tt_u, tt_u], **line_d)
+                    plt.plot([xmin, dy_l, dy_l], [tt_d, tt_d, ymin], **line_d)
+                    plt.plot([dy_r, dy_r, xmax], [ymin, tt_d, tt_d], **line_d)
+
+                    # top left corner
+                    plt.arrow(dy_l/2, tt_u, 0, 6, **arrow_h)
+                    plt.arrow(dy_l, (ymax-tt_u)/2. + tt_u, -6, 0, **arrow_v)
+
+                    # top right corner
+                    plt.arrow((xmax-dy_r)/2.+dy_r, tt_u, 0, 6, **arrow_h)
+                    plt.arrow(dy_r, (ymax-tt_u)/2. + tt_u, 6, 0, **arrow_v)
+
+                    # bottom left corner
+                    plt.arrow(dy_l/2., tt_d, 0, -6, **arrow_h)
+                    plt.arrow(dy_l, tt_d/2, -6, 0, **arrow_v)
+
+                    # bottom right corner
+                    plt.arrow((xmax-dy_r)/2. + dy_r, tt_d, 0, -6, **arrow_h)
+                    plt.arrow(dy_r, tt_d/2, 6, 0, **arrow_v)
+
+
+                    
+                    
+            else:
+                plt.plot([20., 130., 130., 20., 20.], [50., 50., 270., 270., 50.],
+                         label=r"Mass window cut", **line_d)
             
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="draw cuts on top of signal or MC distributions",
                                      formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('--dtype', choices=('signal', 'mc'), default='signal',
+    parser.add_argument('--dtype', choices=('signal', 'mc', 'dy', 'tt'), default='signal',
                         type=str, help='Data type')
     parser.add_argument('--skim_tag', required=True, type=str, help='Tag of input skims.')
     parser.add_argument('--signal', choices=('Radion', 'BulkGraviton'), default='Radion',
@@ -348,6 +418,14 @@ if __name__ == '__main__':
         base = os.path.join(base, "SKIMS_UL18_{}_Sig/".format(FLAGS.skim_tag))
         name = os.path.join(base, "GluGluTo{}ToHHTo2B2Tau_M-{}_".format(FLAGS.signal, FLAGS.mass))
         infiles = glob.glob(os.path.join(name, "output_*.root"))
+    elif FLAGS.dtype == "dy":
+        base = os.path.join(base, "SKIMS_UL18_{}_MC/".format(FLAGS.skim_tag))
+        names = ["DYJetsToLL_M-50_TuneCP5_13TeV-amc"]
+        infiles = [os.path.join(base, name, "hadded.root") for name in names]
+    elif FLAGS.dtype == "tt":
+        base = os.path.join(base, "SKIMS_UL18_{}_MC/".format(FLAGS.skim_tag))
+        names = ["TTTo2L2Nu", "TTToHadronic", "TTToSemiLeptonic"]
+        infiles = [os.path.join(base, name, "hadded.root") for name in names]
     elif FLAGS.dtype == "mc":
         base = os.path.join(base, "SKIMS_UL18_{}_MC/".format(FLAGS.skim_tag))
         names = ["DYJetsToLL_M-50_TuneCP5_13TeV-amc",
@@ -356,6 +434,10 @@ if __name__ == '__main__':
 
     if FLAGS.dtype == "signal":
         sample = FLAGS.signal + " " + FLAGS.mass + " GeV"
+    elif FLAGS.dtype == "dy":
+        sample = "DY"
+    elif FLAGS.dtype == "tt":
+        sample = "TT"
     elif FLAGS.dtype == "mc":
         sample = "TT+DY"
 
