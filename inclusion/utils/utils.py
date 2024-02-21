@@ -577,7 +577,7 @@ def apply_equal_bin_width(old, roundx=2, roundy=2):
         raise ValueError(mess)
     return h
 
-def total_cross_section(f, isdata):
+def total_sum_weights(f, isdata):
     if isdata:
         return 1.
     else:
@@ -586,8 +586,7 @@ def total_cross_section(f, isdata):
         with open(search_str, 'r') as afile:
             for elem in afile:
                 ftmp = ROOT.TFile(elem.replace('\n', ''), "READ")
-                xsec_norm += ftmp.Get('h_eff').GetBinContent(1)
-                
+                xsec_norm += ftmp.Get('h_eff').GetBinContent(1)     
         return xsec_norm
     return None
 

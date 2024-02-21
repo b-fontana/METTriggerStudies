@@ -139,7 +139,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
 
     try:
         for kh, vh in hdata1D['trig'].items():
-            data1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hdata1D['ref'])
+            data1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hdata1D['ref'], "cp")
             data1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
             try:
                 data1D['norm'][kh].Scale(1./data1D['norm'][kh].Integral())
@@ -155,7 +155,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
             vh.SetBinContent(0, 0.)
             vh.SetBinContent(nb+1, 0.)
 
-            mc1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hmc1D['ref'])
+            mc1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hmc1D['ref'], "cp")
             mc1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
             try:
                 mc1D['norm'][kh].Scale(1/mc1D['norm'][kh].Integral())
@@ -175,8 +175,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
 
     # 1-dimensional
     if utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] != "quantiles":
-        frange = cfg.binedges[variable][channel][0], cfg.binedges[variable][channel][-1]
-        #frange = 180., cfg.binedges[variable][channel][-1]
+        #frange = cfg.binedges[variable][channel][0], cfg.binedges[variable][channel][-1]
+        frange = 150., cfg.binedges[variable][channel][-1]
     elif utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] == "quantiles":
         frange = cfg.binedges[variable][channel][1], cfg.binedges[variable][channel][2]
     else:
@@ -379,10 +379,10 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
             l.SetLineStyle(7)
             l.DrawLine(x1_pad,1.,x2_pad,1.)
 
-            # l = ROOT.TLine()
-            # l.SetLineWidth(2)
-            # l.SetLineStyle(7)
-            # l.DrawLine(180.,y1_pad,180.,y2_pad)
+            l = ROOT.TLine()
+            l.SetLineWidth(2)
+            l.SetLineStyle(7)
+            l.DrawLine(180.,y1_pad,180.,y2_pad)
 
             leg = ROOT.TLegend(0.61, 0.79, 0.89, 0.89)
             leg.SetFillColor(0)
@@ -490,6 +490,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
             # sf1D_new[atype] = utils.apply_equal_bin_width(sf1D[atype][akey])
             canvas[atype].Update()
             #sf1D[atype][akey].GetYaxis().SetNdivisions(-10)
+            sf1D[atype][akey].GetYaxis().SetRangeUser(0.61,1.04)
             sf1D[atype][akey].SetLineColor(ROOT.kBlue)
             sf1D[atype][akey].SetLineWidth(2)
             sf1D[atype][akey].SetMarkerColor(ROOT.kBlue)

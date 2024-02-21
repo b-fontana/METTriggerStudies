@@ -34,8 +34,6 @@ def build_histograms(args):
         raise ValueError(mes)
 
     config_module = importlib.import_module(args.configuration)
-    
-    xsec_norm = utils.total_cross_section(args.infile, args.isdata)
 
     f_in = ROOT.TFile(args.infile)
     t_in = f_in.Get('HTauTauTree')
@@ -102,21 +100,32 @@ def build_histograms(args):
 
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-        try:
-            evt_weight = (entries.MC_weight / xsec_norm) * entries.lumi
-            evt_weight *= entries.PUReweight * entries.IdSF_deep_2d
-        except TypeError:
-            print('MC_weight: {}'.format(entries.MC_weight))
-            print('Luminosity: {}'.format(entries.lumi))
-            print('PU reweight: {}'.format(entries.PUReweight))
-            print('Tau ID SF: {}'.format(entries.IdSF_deep_2d))
-            raise
-
-        if utils.is_nan(evt_weight) or args.isdata:
-            evt_weight = 1
 
         sel = selection.EventSelection(entries, isdata=args.isdata, year="2018",
                                        configuration=config_module)
+
+        w_mc     = entries.MC_weight
+        w_pure   = entries.PUReweight
+        w_l1pref = entries.L1pref_weight
+        w_trig   = entries.trigSF
+        w_idiso  = entries.IdSF_deep_2d
+        w_jetpu  = entries.PUjetID_SF
+        w_btag   = entries.bTagweightReshape
+        
+        if utils.is_nan(w_mc)     : w_mc=1
+        if utils.is_nan(w_pure)   : w_pure=1
+        if utils.is_nan(w_l1pref) : w_l1pref=1
+        if utils.is_nan(w_trig)   : w_trig=1
+        if utils.is_nan(w_idiso)  : w_idiso=1
+        if utils.is_nan(w_jetpu)  : w_jetpu=1
+        if utils.is_nan(w_btag)   : w_btag=1
+
+        # to get the number of events ths number has to be multiplied by the lumi and divided by the gen sum of weights
+        # the latter is obtained with utils.total_sum_weights()
+        # for efficiencies those get cancelled in the ratio, so we can ignore them
+        # so all counts are wrong for the moment (but efficiencies are correct)!!!!
+        evt_weight = w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu * w_btag
+
         if not sel.sel_category(config_module.category):
             continue
         
