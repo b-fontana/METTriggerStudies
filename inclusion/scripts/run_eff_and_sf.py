@@ -175,8 +175,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
 
     # 1-dimensional
     if utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] != "quantiles":
-        #frange = cfg.binedges[variable][channel][0], cfg.binedges[variable][channel][-1]
-        frange = 150., cfg.binedges[variable][channel][-1]
+        frange = cfg.binedges[variable][channel][0], cfg.binedges[variable][channel][-1]
+        #frange = 150., cfg.binedges[variable][channel][-1]
     elif utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] == "quantiles":
         frange = cfg.binedges[variable][channel][1], cfg.binedges[variable][channel][2]
     else:
@@ -379,10 +379,10 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
             l.SetLineStyle(7)
             l.DrawLine(x1_pad,1.,x2_pad,1.)
 
-            l = ROOT.TLine()
-            l.SetLineWidth(2)
-            l.SetLineStyle(7)
-            l.DrawLine(180.,y1_pad,180.,y2_pad)
+            # l = ROOT.TLine()
+            # l.SetLineWidth(2)
+            # l.SetLineStyle(7)
+            # l.DrawLine(180.,y1_pad,180.,y2_pad)
 
             leg = ROOT.TLegend(0.61, 0.79, 0.89, 0.89)
             leg.SetFillColor(0)
