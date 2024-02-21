@@ -61,7 +61,7 @@ def rec_dd():
     return dd(rec_dd)
 
 def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
-                   ptcuts, text, bigtau=False, notau=False, nomet=False):
+                   ptcuts, text, notext=False, bigtau=False, notau=False, nomet=False):
     base = {'etau': 'e+e'+tau, 'mutau': mu+'+'+mu+tau, 'tautau': ditau}
     output_file(text['out'])
     print('Saving file {}'.format(text['out']))
@@ -80,15 +80,22 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
     p.xaxis.ticker = [b1,b3]#else [b1, b2, b3]
-    p.xaxis.major_label_overrides = ({b1: ptcuts[0], b3: regcuts[0]})# else {b1: '40', b2: ptcuts[0], b3: regcuts[0]}
-    p.xaxis.axis_label = 'pT(1) [GeV]'
-     
+    p.xaxis.major_label_overrides = ({b1: ptcuts[0], b3: regcuts[0]})
+
+    for aaxis in (p.xaxis, p.yaxis):
+        aaxis.axis_label_text_font_size = "12pt"
+        aaxis.axis_label_text_font_style = "normal"
+        aaxis.major_label_text_font_size = "11pt"
+
+    p.yaxis.axis_label_standoff = 0
     p.yaxis.ticker = [b1, b3]# else [b1, b2, b3]
     if len(ptcuts) > 1:
-        p.yaxis.major_label_overrides = ({b1: ptcuts[0], b3: ptcuts[1]})
+        p.yaxis.major_label_overrides = ({b1: ptcuts[0], b3: regcuts[1]})
     else:
         p.yaxis.major_label_overrides = ({b1: ptcuts[0]})
-    p.yaxis.axis_label = 'pT(2) [GeV]'
+
+    p.xaxis.axis_label = r'\(p_T(\tau_1)  [GeV]\)'
+    p.yaxis.axis_label = r'\(p_T(\tau_2)  [GeV]\)'
 
     # add a square renderer with a size, color, and alpha
     polyg_opt = dict(alpha=0.3)
@@ -119,19 +126,20 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
     gain = (100*float(c_met_trg['legacy']+c_tau_trg['legacy']) /
             (c_legacy_trg['legacy']+c_met_trg['legacy']+c_tau_trg['legacy']))
     gain = str(round(gain,2))
-    stats_ditau = {'legacy': Label(x=b1+0.3, y=b1+1.5, text=ditau+': '+str(c_legacy_trg['legacy']),
-                                  text_color='black', **label_opt),
-                   'met':   Label(x=b1+0.3, y=b1+1.1, text='met && !'+ditau+': '+str(c_met_trg['legacy']),
-                                  text_color='black', **label_opt),
-                   'tau':   Label(x=b1+0.3, y=b1+0.7, text=tau+' && !met && !'+ditau+': '+str(c_tau_trg['legacy']),
-                                  text_color='black', **label_opt),
-                   'gain':  Label(x=b1+0.3, y=b1+0.3, text='Gain: '+gain+'%',
-                                  text_color='blue', **label_opt),}
-    for key,elem in stats_ditau.items():
-        if (nomet and notau and key=='gain') or key=='gain':
-            continue
-        p.add_layout(elem)
-
+    if not notext:
+        stats_ditau = {'legacy': Label(x=b1+0.3, y=b1+1.5, text=ditau+': '+str(c_legacy_trg['legacy']),
+                                       text_color='black', **label_opt),
+                       'met':   Label(x=b1+0.3, y=b1+1.1, text='met && !'+ditau+': '+str(c_met_trg['legacy']),
+                                      text_color='black', **label_opt),
+                       'tau':   Label(x=b1+0.3, y=b1+0.7, text=tau+' && !met && !'+ditau+': '+str(c_tau_trg['legacy']),
+                                      text_color='black', **label_opt),
+                       'gain':  Label(x=b1+0.3, y=b1+0.3, text='Gain: '+gain+'%',
+                                      text_color='blue', **label_opt),}
+        for key,elem in stats_ditau.items():
+            if (nomet and notau and key=='gain') or key=='gain':
+                continue
+            p.add_layout(elem)
+ 
     if not nomet:
         try:
             contam_by_tau = (100*(float(c_tau_trg['met'])+c_legacy_trg['met']) /
@@ -139,18 +147,19 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
             contam_by_tau = str(round(contam_by_tau,2))
         except ZeroDivisionError:
             contam_by_tau = '0'
-        stats_met = {'met':   Label(x=b1+0.3, y=1.3, text='met: '+str(c_met_trg['met']),
-                                    text_color='black', **label_opt),
-                     'tau':   Label(x=b1+0.3, y=0.5, text=tau+' && !'+ditau+' && !met: '+str(c_tau_trg['met']),
-                                    text_color='black', **label_opt),
-                     'legacy': Label(x=b1+0.3, y=0.9, text=ditau+' && !met: '+str(c_legacy_trg['met']),
-                                    text_color='black', **label_opt),
-                     'contamination': Label(x=b1+0.3, y=0.1, text='Contam.: '+contam_by_tau+'%',
-                                            text_color='blue', **label_opt),}
-        for key,elem in stats_met.items():
-            if key != 'contamination':
-                p.add_layout(elem)
-
+        if not notext:
+            stats_met = {'met':   Label(x=b1+0.3, y=1.3, text='met: '+str(c_met_trg['met']),
+                                        text_color='black', **label_opt),
+                         'tau':   Label(x=b1+0.3, y=0.5, text=tau+' && !'+ditau+' && !met: '+str(c_tau_trg['met']),
+                                        text_color='black', **label_opt),
+                         'legacy': Label(x=b1+0.3, y=0.9, text=ditau+' && !met: '+str(c_legacy_trg['met']),
+                                         text_color='black', **label_opt),
+                         'contamination': Label(x=b1+0.3, y=0.1, text='Contam.: '+contam_by_tau+'%',
+                                                text_color='blue', **label_opt),}
+            for key,elem in stats_met.items():
+                if key != 'contamination':
+                    p.add_layout(elem)
+ 
     if not notau:
         num_ditau = float(c_legacy_trg['tau'])
         num_both = num_ditau + float(c_met_trg['tau'])
@@ -163,7 +172,7 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
         else:
             contam_ditau = 100*num_ditau/den
             contam_both = 100*num_both/den
-
+ 
             enum_ditau = np.sqrt(c_legacy_trg['tau'])
             eden_ditau = enum_ditau + np.sqrt(c_met_trg['tau']) + np.sqrt(c_tau_trg['tau'])
             enum_both  = np.sqrt(c_met_trg['tau']) + np.sqrt(c_legacy_trg['tau'])
@@ -176,19 +185,20 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
             err_ditau    = str(round(err_ditau,2))
             err_both     = str(round(err_both,2))
 
-        stats_tau = {'tau':   Label(x=b3+0.2, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
-                                    text_color='black', **label_opt),
-                     'met':   Label(x=b3+0.2, y=0.5, text='met && !'+ditau+' && !'+tau+': '+str(c_met_trg['tau']),
-                                    text_color='black', **label_opt),
-                     'legacy': Label(x=b3+0.2, y=0.9, text=ditau+' && !'+tau+': '+str(c_legacy_trg['tau']),
-                                    text_color='black', **label_opt),
-                     'contamination_both': Label(x=b3+0.2, y=0.1,
-                                                 text='Contam.: ('+str(contam_both)+pm+str(err_both)+')%',
-                                                 text_color='blue', **label_opt),}
-        for key,elem in stats_tau.items():
-            if key != 'contamination_both':
-                p.add_layout(elem)
-     
+        if not notext:
+            stats_tau = {'tau':   Label(x=b3+0.2, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
+                                        text_color='black', **label_opt),
+                         'met':   Label(x=b3+0.2, y=0.5, text='met && !'+ditau+' && !'+tau+': '+str(c_met_trg['tau']),
+                                        text_color='black', **label_opt),
+                         'legacy': Label(x=b3+0.2, y=0.9, text=ditau+' && !'+tau+': '+str(c_legacy_trg['tau']),
+                                         text_color='black', **label_opt),
+                         'contamination_both': Label(x=b3+0.2, y=0.1,
+                                                     text='Contam.: ('+str(contam_both)+pm+str(err_both)+')%',
+                                                     text_color='blue', **label_opt),}
+            for key,elem in stats_tau.items():
+                if key != 'contamination_both':
+                    p.add_layout(elem)
+ 
     line_opt = dict(color='black', line_dash='dashed', line_width=2)
     p.line(x=[b1,b1], y=[start, topr+shft], **line_opt)
     p.line(x=[start,topr+shft], y=[b1,b1], **line_opt)
@@ -429,8 +439,6 @@ def test_trigger_regions(indir, sample, channel, spin, deltaR):
         if utils.is_nan(w_btag)   : w_btag=1
   
         evt_weight = w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu * w_btag
-        if utils.is_nan(evt_weight):
-            evt_weight = 1
 
         if utils.is_channel_consistent(channel, entries.pairType):
             if not sel.selection_cuts(lepton_veto=True, bjets_cut=True,
@@ -523,6 +531,7 @@ if __name__ == '__main__':
                         help='Reuse previously produced data for quick plot changes.')
     parser.add_argument('--copy', action='store_true',
                         help='Copy the outputs to EOS at the end.')
+    parser.add_argument('--notext', action='store_true', help='Square diagram without text.')
     parser.add_argument('--sequential', action='store_true',
                         help='Do not use the multiprocess package.')
     parser.add_argument('--bigtau', action='store_true',
@@ -667,7 +676,7 @@ if __name__ == '__main__':
         text = {'mass': sample,
                 'out': os.path.join(out_counts[categories.index(cat)], 'diagram.html')}
         sq_res = square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, args.channel,
-                                ptcuts, text=text,
+                                ptcuts, text=text, notext=args.notext,
                                 bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
         c1, c2, e1, e2 = sq_res
         contam1.append(c1)
