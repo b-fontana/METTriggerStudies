@@ -47,7 +47,7 @@ def eff_and_sf_aggr(args):
                     outfile=outs_check,
                     logfile=outs_log,
                     queue=main.queue,
-                    machine='llrt3condor')
+                    machine=main.machine)
 
     qlines = []
     for chn in args.channels:

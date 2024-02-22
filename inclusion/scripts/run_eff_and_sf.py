@@ -39,7 +39,7 @@ def paint2d(channel, trig):
     latexChannel.replace('Tau','#tau_{h}')
     l.DrawLatex(lX2, lY, 'Channel: '+latexChannel)
 
-def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
+def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
                        save_names_1D, cfg,
                        tprefix, indir, subtag, mc_name, data_name,
                        intersection_str, debug):
@@ -438,7 +438,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
             latex_Prelim.SetBit(ROOT.kCanDelete)
             latex_Prelim.DrawLatex(lX+4*lXstep, lY+1.3*lYstep, "Preliminary")
 
-            lumi_d = {"2016preVFP": "19.5", "2016postVFP": "16.8", "2017": "41.5", "2018": "59.7"}
+            lumi_d = {"2016APV": "19.5", "2016": "16.8", "2017": "41.5", "2018": "59.7"}
             latex_lumi = ROOT.TLatex()
             latex_lumi.SetTextSize(lumi_text_size*pad_top)
             latex_lumi.SetNDC()
@@ -446,7 +446,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
             latex_lumi.SetTextColor(ROOT.kBlack)
             latex_lumi.SetTextFont(standard_text_font)
             latex_lumi.SetBit(ROOT.kCanDelete)
-            latex_lumi.DrawLatex(lX+22*lXstep, lY+1.3*lYstep, lumi_d[args.period] + " fb^{-1} (13 TeV)")
+            latex_lumi.DrawLatex(lX+22*lXstep, lY+1.3*lYstep, lumi_d[args.year] + " fb^{-1} (13 TeV)")
 
             canvas[atype].cd()
             pad2 = ROOT.TPad('pad2','pad2',0.,0.,1.,0.3)
@@ -546,7 +546,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, period,
         print('[=debug=] 2D Plotting...', flush=True)
 
 
-def draw_eff_and_sf_2d(proc, channel, joinvars, trig, period, save_names_2D,
+def draw_eff_and_sf_2d(proc, channel, joinvars, trig, year, save_names_2D,
                        tprefix, indir, subtag, mc_name, data_name,
                        intersection_str, debug):
     _name = lambda a,b,c,d : a + b + c + d + '.root'
@@ -865,7 +865,7 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name, cfg, tcomb,
 
 
 def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
-                  tcomb, period, channels, variables, subtag,
+                  tcomb, year, channels, variables, subtag,
                   tprefix, intersection_str, debug):
     
     outs1D, extensions, processes = run_eff_sf_1d_outputs(outdir, data_name, mc_name, tcomb,
@@ -899,13 +899,13 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
                         m += ', trigger_combination={}\n'.format(tcomb)
                         print(m)
 
-                draw_eff_and_sf_1d(proc, chn, var, tcomb, period, names1D, config_module,
+                draw_eff_and_sf_1d(proc, chn, var, tcomb, year, names1D, config_module,
                                    tprefix, indir, subtag, mc_name, data_name,
                                    intersection_str, debug)
 
     splits = tcomb.split(intersection_str)
     for x in splits:
-        if x not in main.trig_map:
+        if x not in main.trig_map[args.year]:
             mess = 'Trigger {} was not defined in the configuration.'.format(x)
             raise ValueError(mess)
         
@@ -926,7 +926,7 @@ def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
                         for j in config_module.pairs2D[onetrig]:
                             vname = utils.add_vnames(j[0],j[1])
 
-                            draw_eff_and_sf_2d(proc, chn, vname, tcomb, period, names2D,
+                            draw_eff_and_sf_2d(proc, chn, vname, tcomb, year, names2D,
                                                tprefix, indir, subtag, mc_name, data_name,
                                                intersection_str, debug)
 
@@ -935,17 +935,17 @@ parser.add_argument('--indir', help='Inputs directory', required=True)
 parser.add_argument('--outdir', help='Output directory', required=True, )
 parser.add_argument('--tprefix', help='prefix to the names of the produceyd outputs (targets in luigi lingo)', required=True)
 parser.add_argument('--canvas_prefix', help='canvas prefix', required=True)
-parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
-parser.add_argument('--mc_name', dest='mc_name', required=True, type=str,
+parser.add_argument('--subtag', required=True, help='subtag')
+parser.add_argument('--mc_name', required=True, type=str,
                     help='Id for all MC samples')
-parser.add_argument('--data_name', dest='data_name', required=True, type=str,
+parser.add_argument('--data_name', required=True, type=str,
                     help='Id for all data samples',)
-parser.add_argument('--triggercomb', dest='triggercomb', required=True,
+parser.add_argument('--triggercomb', required=True,
                     help='Trigger intersection combination.')
-parser.add_argument('--channels',   dest='channels',         required=True, nargs='+', type=str,
+parser.add_argument('--channels', required=True, nargs='+', type=str,
                     help='Select the channels over which the workflow will be run.' )
-parser.add_argument('--period', dest='period', default="2018", type=str,
-                    choices=("2016preVFP", "201postVFP", "2017", "2018"), help='Period/era.' )
+parser.add_argument('--year', default="2018", type=str,
+                    choices=("2016", "2016APV", "2017", "2018"), help='Period/era.' )
 parser.add_argument('--variables',        dest='variables',        required=True, nargs='+', type=str,
                     help='Select the variables over which the workflow will be run.' )
 parser.add_argument('--intersection_str', dest='intersection_str', required=False, default=main.inters_str,
@@ -961,7 +961,7 @@ run_eff_sf_1d(args.indir, args.outdir,
               args.data_name, args.mc_name,
               args.configuration,
               args.triggercomb,
-              args.period,
+              args.year,
               args.channels, args.variables,
               args.subtag,
               args.tprefix,

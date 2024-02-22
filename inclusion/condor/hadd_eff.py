@@ -69,7 +69,7 @@ def hadd_eff(args):
                         outfile=out3,
                         logfile=out4,
                         queue=main.queue,
-                        machine='llrt3condor')
+                        machine=main.machine)
 
         qlines = []
         if out1 == outs_job[0]:

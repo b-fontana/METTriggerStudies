@@ -112,10 +112,23 @@ class EventSelection:
         for chn in chns:
             assert int_gen.keys() == int_chn[chn].keys()
 
-        _ref_trigs = {'MET' : ('METNoMu120',),
-                      'EG'  : ('Ele32',),
-                      'Mu'  : ('IsoMu24',),
-                      'Tau' : ('IsoTau180',)}
+        if "2016" in self.year:
+            _ref_trigs = {'MET' : ('METNoMu90',),
+                          'EG'  : ('Ele25',),
+                          'Mu'  : ('IsoMu24',),
+                          'Tau' : ('IsoTau120',)}
+
+        elif self.year == "2017":
+            _ref_trigs = {'MET' : ('METNoMu120',),
+                          'EG'  : ('Ele32',),
+                          'Mu'  : ('IsoMu27',),
+                          'Tau' : ('IsoTau180',)}
+
+        elif self.year == "2018":
+            _ref_trigs = {'MET' : ('METNoMu120',),
+                          'EG'  : ('Ele32',),
+                          'Mu'  : ('IsoMu24',),
+                          'Tau' : ('IsoTau180',)}
 
         ds = []
         ds_ref_trigs = {}
@@ -130,7 +143,7 @@ class EventSelection:
         Returns the trigger bit corresponding to 'main.trig_map'
         """
         s = 'data' if self.isdata else 'mc'
-        res = main.trig_map[trigger_name]
+        res = main.trig_map[self.year][trigger_name]
         try:
             res = res[s]
         except KeyError:
@@ -287,16 +300,14 @@ class EventSelection:
         if bool0 or bool1 or bool2 or bool3:
             return False
 
-        #((tauH_SVFIT_mass-116.)*(tauH_SVFIT_mass-116.))/(35.*35.) + ((bH_mass_raw-111.)*(bH_mass_raw-111.))/(45.*45.) <  1.0
-        svfit_mass = self.entries['tauH_SVFIT_mass']
-        bh_mass    = self.entries['bH_mass_raw']
-
-        mpoint = ((svfit_mass-129.)*(svfit_mass-129.) / (53.*53.) +
-                  (bh_mass-169.)*(bh_mass-169.) / (145.*145.))
+        tauH_mass = self.entries['tauH_mass']
+        bh_mass   = self.entries['bH_mass_raw']
+        mcut = bH_mass > 50 and bH_mass < 270 and tauH_mass > 20 and tauH_mass < 130
+        mcutinv = bH_mass < 50 or bH_mass > 270 or tauH_mass < 20 or tauH_mass > 130
         opt = ('standard', 'inverted')
-        if mass_cut == opt[0] and mpoint < 1.0:
+        if mass_cut == opt[0] and mcutinv:
             return False
-        elif mass_cut == opt[1] and mpoint > 1.0:
+        elif mass_cut == opt[1] and mcut:
             return False
         elif mass_cut not in opt and mass_cut is not None:
             mes = 'Mass cut option {} is not supported!'.format(mass_cut)
@@ -316,26 +327,26 @@ class EventSelection:
 
         if self.run < 317509 and self.isdata:
             if trigger == 'VBFTauCustom':
-                bits = self.check_bit(main.trig_map[trigger]['VBFTau']['data'])
+                bits = self.check_bit(main.trig_map[self.year][trigger]['VBFTau']['data'])
             elif trigger == 'IsoDoubleTauCustom':
-                bits = ( self.check_bit(main.trig_map[trigger]['IsoDoubleTau']['data'][0]) or
-                         self.check_bit(main.trig_map[trigger]['IsoDoubleTau']['data'][1]) or
-                         self.check_bit(main.trig_map[trigger]['IsoDoubleTau']['data'][2]) )
+                bits = ( self.check_bit(main.trig_map[self.year][trigger]['IsoDoubleTau']['data'][0]) or
+                         self.check_bit(main.trig_map[self.year][trigger]['IsoDoubleTau']['data'][1]) or
+                         self.check_bit(main.trig_map[self.year][trigger]['IsoDoubleTau']['data'][2]) )
             elif trigger == 'IsoMuIsoTauCustom':
-                bits = self.check_bit(main.trig_map[trigger]['IsoMuIsoTau']['data'])
+                bits = self.check_bit(main.trig_map[self.year][trigger]['IsoMuIsoTau']['data'])
             elif trigger == 'EleIsoTauCustom':
-                bits = self.check_bit(main.trig_map[trigger]['EleIsoTau']['data'])
+                bits = self.check_bit(main.trig_map[self.year][trigger]['EleIsoTau']['data'])
 
         else:
             s = 'data' if self.isdata else 'mc'
             if trigger == 'VBFTauCustom':
-                bits = self.check_bit(main.trig_map[trigger]['VBFTauHPS'][s])
+                bits = self.check_bit(main.trig_map[self.year][trigger]['VBFTauHPS'][s])
             elif trigger == 'IsoDoubleTauCustom':
-                bits = self.check_bit(main.trig_map[trigger]['IsoDoubleTauHPS'][s])
+                bits = self.check_bit(main.trig_map[self.year][trigger]['IsoDoubleTauHPS'][s])
             elif trigger == 'IsoMuIsoTauCustom':
-                bits = self.check_bit(main.trig_map[trigger]['IsoMuIsoTauHPS'][s])
+                bits = self.check_bit(main.trig_map[self.year][trigger]['IsoMuIsoTauHPS'][s])
             elif trigger == 'EleIsoTauCustom':
-                bits = self.check_bit(main.trig_map[trigger]['EleIsoTauHPS'][s])
+                bits = self.check_bit(main.trig_map[self.year][trigger]['EleIsoTauHPS'][s])
 
         return bits
 

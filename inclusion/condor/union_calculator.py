@@ -65,7 +65,7 @@ def union_calculator(args):
                         outfile=checks[i],
                         logfile=logs[i],
                         queue=main.queue,
-                        machine='llrt3condor')
+                        machine=main.machine)
 
         qlines = []
         for listname in filelist:

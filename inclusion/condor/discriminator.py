@@ -52,7 +52,7 @@ def discriminator(args):
                         outfile=outs_check[i],
                         logfile=outs_log[i],
                         queue=main.queue,
-                        machine='llrt3condor')
+                        machine=main.machine)
         jw.write_queue()
 
 # -- Parse options

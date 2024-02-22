@@ -101,6 +101,13 @@ parser.add_argument(
     help='Select the variables to be used for the display of distributions.'
     )
 parser.add_argument(
+    '--year',
+    required=True,
+    type=str,
+    choices=('2016', '2016APV', '2017' '2018'),
+    help='Data year: impact thresholds and selections.'
+    )
+parser.add_argument(
     '-t',
     '--tag',
     type=str,
@@ -195,6 +202,7 @@ histos_params = {'binedges_filename' : binedges_filename,
                  'mc_vals'           : mc_vals,
                  'channels'          : FLAGS.channels,
                  'variables'         : variables_join,
+                 'year'              : FLAGS.year,
                  'tag'               : FLAGS.tag,
                  'subtag'            : subtag,
                  'intersection_str'  : main.inters_str,
@@ -215,7 +223,7 @@ haddcounts_params = {'indir'    : data_storage,
                      'subtag'   : subtag,
                      'channels' : FLAGS.channels, }
 
-#### drawTriggerScaleFactors
+#### scripts/run_eff_and_sf
 sf_params = {'data_name'            : data_name,
              'mc_name'              : mc_name,
              'draw_independent_MCs' : False,
@@ -226,6 +234,7 @@ sf_params = {'data_name'            : data_name,
              'channels'             : FLAGS.channels,
              'variables'            : FLAGS.variables_for_efficiencies,
              'binedges_filename'    : binedges_filename,
+             'year'                 : FLAGS.year,
              'tag'                  : FLAGS.tag,
              'subtag'               : subtag,
              'canvas_prefix'        : main.pref['canvas'],

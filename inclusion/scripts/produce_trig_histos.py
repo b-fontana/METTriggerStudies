@@ -101,7 +101,7 @@ def build_histograms(args):
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
 
-        sel = selection.EventSelection(entries, isdata=args.isdata, year="2018",
+        sel = selection.EventSelection(entries, isdata=args.isdata, year=args.year,
                                        configuration=config_module)
 
         w_mc     = entries.MC_weight
@@ -318,28 +318,27 @@ def build_histograms(args):
 parser = argparse.ArgumentParser(description='Producer trigger histograms.')
 
 parser.add_argument('--binedges_fname', dest='binedges_fname', required=True, help='where the bin edges are stored')
-parser.add_argument('--outdir', dest='outdir', required=True,
-                    help='output directory')
-parser.add_argument('--dataset', dest='dataset', required=True,
+parser.add_argument('--outdir', required=True, help='output directory')
+parser.add_argument('--dataset', required=True,
                     help='Dataset name as provided by the user: MET, EG, ...')
-parser.add_argument('--sample', dest='sample', required=True,
+parser.add_argument('--sample', required=True,
                     help='Process name as in SKIM directory')
-parser.add_argument('--isdata', dest='isdata', required=True, type=int,
-                    help='Whether it is data or MC')
-parser.add_argument('--file', dest='infile', required=True,
-                    help='Full path of ROOT input file')
-parser.add_argument('--subtag', dest='subtag', required=True,
+parser.add_argument('--isdata', required=True, type=int, help='Whether it is data or MC')
+parser.add_argument('--file', dest='infile', required=True, help='Full path of ROOT input file')
+parser.add_argument('--year', required=True, type=str, choices=('2016', '2016APV', '2017' '2018'),
+                    help='Data year: impact thresholds and selections.')
+parser.add_argument('--subtag', required=True,
                     help='Additional (sub)tag to differentiate similar runs within the same tag.')
-parser.add_argument('--tprefix', dest='tprefix', required=True, help='Targets name prefix.')
-parser.add_argument('--channels', dest='channels', required=True, nargs='+', type=str,  
+parser.add_argument('--tprefix', required=True, help='Targets name prefix.')
+parser.add_argument('--channels', required=True, nargs='+', type=str,  
                     help='Select the channels over which the workflow will be run.' )
-parser.add_argument('--variables',   dest='variables', required=True, nargs='+', type=str,
+parser.add_argument('--variables', required=True, nargs='+', type=str,
                     help='Select the variables over which the workflow will be run.' )
-parser.add_argument('--intersection_str', dest='intersection_str', required=False, default=main.inters_str,
+parser.add_argument('--intersection_str', required=False, default=main.inters_str,
                     help='String used to represent set intersection between triggers.')
-parser.add_argument('--nocut_dummy_str', dest='nocut_dummy_str', required=True,
+parser.add_argument('--nocut_dummy_str', required=True,
                     help='Dummy string associated to trigger histograms were no cuts are applied.')
-parser.add_argument('--configuration', dest='configuration', required=True,
+parser.add_argument('--configuration', required=True,
                     help='Name of the configuration module to use.')
 args = utils.parse_args(parser)
 

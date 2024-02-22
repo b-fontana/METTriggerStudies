@@ -85,7 +85,7 @@ def hadd_counts(args):
                         outfile=out3,
                         logfile=out4,
                         queue=main.queue,
-                        machine='llrt3condor')
+                        machine=main.machine)
 
         qvars = None
         qlines = []

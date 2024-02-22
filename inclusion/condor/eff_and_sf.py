@@ -61,7 +61,7 @@ def eff_and_sf(args):
                     outfile=outs_check,
                     logfile=outs_log,
                     queue=main.queue,
-                    machine='llrt3condor')
+                    machine=main.machine)
 
     cfg = importlib.import_module(args.configuration)
     qlines = []

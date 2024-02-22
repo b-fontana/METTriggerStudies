@@ -96,7 +96,7 @@ class JobWriter:
             raise ValueError('The mode {} is not supported.'.format(mode))
 
     def write_condor(self, filename, shell_exec, real_exec, outfile, logfile,
-                     queue, machine='llrt3condor'):
+                     queue, machine=main.machine):
         self.filenames.append(filename)
         batch_name = os.path.dirname(shell_exec).split('/')[-1]
         m = self.endl.join(('Universe = vanilla',
@@ -158,16 +158,25 @@ class JobWriter:
         os.system('chmod u+rwx '+ filename)
 
     def condor_specific_content(self, queue, machine='llrt3condor'):
-        assert queue in ('short', 'long')
-        m = self.endl + self.endl.join(('T3Queue = {}'.format(queue),
-                                        'WNTag=el7',
-                                        '+SingularityCmd = ""'))
-
-        if machine == 'llrt3condor':
-            m += 2*self.endl + 'include : /opt/exp_soft/cms/t3/t3queue |'
-                  
-        elif machine == 'llrt3condor7':
+        if 'llr' in machine:
+            assert queue in ('short', 'long')
+            assert machine in ('llrt3condor', 'llrt3condor7')
+            m = self.endl + self.endl.join(('T3Queue = {}'.format(queue),
+                                            'WNTag=el7',
+                                            '+SingularityCmd = ""'))
+            if machine == 'llrt3condor':
+                t3 = "t3"
+            elif machine == 'llrt3condor7':
+                t3 = "t3_tst"
             m += 2*self.endl + 'include : /opt/exp_soft/cms/t3_tst/t3queue |'
+
+        elif machine == "lxplus":
+            m = ('requirements = (OpSysAndVer =?= "AlmaLinux9")' +
+                 self.endl + '+JobFlavour = "longlunch"' +
+                 self.endl + 'RequestCpus = 1'
+                 )
+           
+            
         else:
             raise ValueError('Machine {} is not supported.'.format(machine))
         m += self.endl

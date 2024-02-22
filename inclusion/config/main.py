@@ -2,8 +2,10 @@ import os
 
 email = 'bruno.alves@cern.ch'
 queue = 'short'
+machine = 'lxplus' #'llrt3condor'
 
-storage = '/data_CMS/cms/' + os.environ['USER'] + '/TriggerScaleFactors/'
+#storage = '/data_CMS/cms/' + os.environ['USER'] + '/TriggerScaleFactors/'
+storage = '/eos/home-' + os.environ['USER'][0] + '/' + os.environ['USER'] + '/www/TriggerScaleFactors/LxplusRun'
 
 folders = {'base'    : 'METTriggerStudies',
            'main'    : 'inclusion',
@@ -12,10 +14,8 @@ folders = {'base'    : 'METTriggerStudies',
            'subm'    : 'submission',
            'outs'    : 'outputs' }
 
-base_folder = os.path.join(os.environ['HOME'],
-                           'CMSSW_12_5_0_pre1',#os.environ['CMSSW_VERSION'],
-                           'src',
-                           folders['base'])
+#base_folder = os.path.join(os.environ['HOME'], 'CMSSW_12_5_0_pre1', 'src', folders['base'])
+base_folder = '/afs/cern.ch/work/b/bfontana/METTriggerStudies'
 local_folder = os.path.join(base_folder, folders['main'])
 
 targ_def = 'DefaultTarget.txt'
@@ -31,7 +31,6 @@ pref = {'clos': 'Closure',
 extensions = ('png', 'pdf', 'C', 'root')
 placeholder_cuts = '_XXX'
 
-#channels = ( 'all', 'etau', 'mutau', 'tautau', 'mumu' )
 channels = ('etau', 'mutau', 'tautau', 'mumu')
 sel = {'all'    : {'pairType': ('<',  3),},
        'mutau'  : {'pairType': ('==', 0),},
@@ -58,22 +57,46 @@ trig_linear = lambda x : {'mc': x, 'data': x}
 # It does NOT match the 'pass_triggerbit' leaf, which is a skimmed version of the above that might change more often
 # One way to ensure the scheme is still correct is by running the script as shown here:
 # https://github.com/bfonta/useful_scripts/commit/f5e4a0096bc74c89176579a336b0f52b74cb3ed2
-trig_map = {'IsoMu24':    {'mc': 0,  'data': 0},
-            'Ele32':      {'mc': 2,  'data': 2},
-            'METNoMu120': {'mc': 40, 'data': 40},
-            'IsoTau180':  {'mc': 4,  'data': 4},
-            'IsoDoubleTauCustom': {'IsoDoubleTau':    {'mc': 12, 'data': (13,14,15)},
-                                   'IsoDoubleTauHPS': {'mc': 12, 'data': 12}},
-            'IsoMuIsoTauCustom':  {'IsoMuIsoTau':     {'mc': 8,  'data': 9},
-                                   'IsoMuIsoTauHPS':  {'mc': 8,  'data': 8} },
-            'EleIsoTauCustom':    {'EleIsoTau':       {'mc': 10, 'data': 11},
-                                   'EleIsoTauHPS':    {'mc': 10, 'data': 10}},
-            'VBFTauCustom':       {'VBFTau':          {'mc': 16, 'data': 12},
-                                   'VBFTauHPS':       {'mc': 16, 'data': 13}}}
-    
-lep_triggers = {'Ele32', 'EleIsoTauCustom', 'IsoMu24', 'IsoMuIsoTauCustom',
-                'IsoDoubleTauCustom'}
-assert all(x in trig_map.keys() for x in lep_triggers)
+trig_map = {'2018':
+            {'IsoMu24':    {'mc': 0,  'data': 0},
+             'Ele32':      {'mc': 2,  'data': 2},
+             'METNoMu120': {'mc': 40, 'data': 40},
+             'IsoDoubleTauCustom': {'IsoDoubleTau':    {'mc': 12, 'data': (13,14,15)},
+                                    'IsoDoubleTauHPS': {'mc': 12, 'data': 12}},
+             'IsoMuIsoTauCustom':  {'IsoMuIsoTau':     {'mc': 8,  'data': 9},
+                                    'IsoMuIsoTauHPS':  {'mc': 8,  'data': 8} },
+             'EleIsoTauCustom':    {'EleIsoTau':       {'mc': 10, 'data': 11},
+                                    'EleIsoTauHPS':    {'mc': 10, 'data': 10}},
+             'VBFTauCustom':       {'VBFTau':          {'mc': 16, 'data': 12},
+                                    'VBFTauHPS':       {'mc': 16, 'data': 13}}}
+            ,
+
+            '2017':
+            {'IsoMu27':    {'mc': 0,  'data': 0},
+             'Ele32':      {'mc': 2,  'data': 2},
+             'METNoMu120': {'mc': 40, 'data': 40},
+             'IsoDoubleTau': {'mc': (25,27,29), 'data': (25,27,29)},
+             'IsoMuIsoTau': {'mc': 5, 'data': 5},
+             'EleIsoTau': {'mc': 17, 'data': 17}}
+            ,
+            '2016':
+            {'IsoMu24':    {'mc': (5,7),  'data': (5,7)},
+             'Ele25':      {'mc': 13,  'data': 13},
+             'METNoMu90': {'mc': 48, 'data': 48},
+             'IsoDoubleTau': {'mc': (25,27,29), 'data': (25,27,29)},
+             'IsoMuIsoTau': {'mc': 5, 'data': 5}}
+            }
+trig_map['2016APV'] = trig_map['2016']
+
+lep_triggers = {'2018':
+                {'Ele32', 'EleIsoTauCustom', 'IsoMu24', 'IsoMuIsoTauCustom', 'IsoDoubleTauCustom'},
+                '2017':
+                {'Ele32', 'EleIsoTau', 'IsoMu27', 'IsoMuIsoTau', 'IsoDoubleTau'},
+                '2016':
+                {'Ele25', 'IsoMu24', 'IsoMuIsoTau', 'IsoDoubleTau'}
+                }
+for year in {'2016', '2017', '2018'}:
+    assert all(x in trig_map[year].keys() for x in lep_triggers[year])
 
 cuts_ignored = {'HT20':       (),
                 'met_et':     ('metnomu_et',),
@@ -90,8 +113,10 @@ corr = {'etau': {},
         'mumu': {} }
     
 ### Data and MC samples
-inputs = ('/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_Data/',
-          '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_MC/',
+# inputs = ('/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_Data/',
+#           '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_MC/',
+#           )
+inputs = ('/eos/home-t/tokramer/hhbbtautau/skims/SKIMS_UL17/',
           )
 corrupted_files = () #'/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background/TTTo2L2Nu/output_9.root'
 

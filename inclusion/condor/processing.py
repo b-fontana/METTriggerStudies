@@ -115,7 +115,7 @@ def processing(args):
                         outfile=outs_check[i],
                         logfile=outs_log[i],
                         queue=main.queue,
-                        machine='llrt3condor')
+                        machine=main.machine)
         
         qlines = []
         for listname in filelist:
