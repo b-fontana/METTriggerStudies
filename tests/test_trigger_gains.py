@@ -27,12 +27,12 @@ mu  = '\u03BC'
 pm  = '\u00B1'
 ditau = tau+tau
 
-def get_outname(sample, channel, regcuts, ptcuts, met_turnon, tau_turnon,
+def get_outname(sample, channel, regcuts, ptcuts, met_turnon,
                 bigtau, notau, nomet):
     utils.create_single_dir('data')
 
     name = sample + '_' + channel + '_'
-    name += '_'.join((*regcuts, 'ptcuts', *ptcuts, 'turnon', met_turnon, tau_turnon))
+    name += '_'.join((*regcuts, 'ptcuts', *[str(x) for x in ptcuts], 'turnon', str(met_turnon)))
     if bigtau:
         name += '_BIGTAU'
     if notau:
@@ -113,8 +113,8 @@ def main(args):
             ekin[md][chn]['two'],  ekin[md][chn]['vbf']  = [], []
   
             for mass in args.masses:
-                outname = get_outname(mass, chn, args.region_cuts, ptcuts[chn],
-                                      args.met_turnon, args.tau_turnon,
+                outname = get_outname(mass, chn, [str(x) for x in args.region_cuts],
+                                      [str(x) for x in ptcuts[chn]], str(args.met_turnon),
                                       args.bigtau, args.notau, args.nomet)
 
                 with open(outname, "rb") as f:
@@ -278,11 +278,9 @@ if __name__ == '__main__':
                         help='Remove the single tau region (default analysis).')
     parser.add_argument('--nomet', action='store_true',
                         help='Remove the MET region (default analysis).')
-    parser.add_argument('--met_turnon', required=False, type=str,  default='180',
+    parser.add_argument('--met_turnon', required=False, type=str,  default=180,
                         help='MET trigger turnon cut [GeV].' )
-    parser.add_argument('--tau_turnon', required=False, type=str,  default='190',
-                        help='MET trigger turnon cut [GeV].' )
-    parser.add_argument('--region_cuts', required=False, type=str, nargs=2, default=('200', '200'),
+    parser.add_argument('--region_cuts', required=False, type=float, nargs=2, default=(190., 190.),
                         help='High/low regions pT1 and pT2 selection cuts [GeV].' )
 
     args = utils.parse_args(parser)
