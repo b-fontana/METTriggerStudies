@@ -12,11 +12,26 @@ This framework calculates and stores "intersection efficiencies" for the applica
 The processing starts from skimmed ([[https://github.com/LLRCMS/KLUBAnalysis][KLUB]]) Ntuples. The framework is managed by [[https://github.com/spotify/luigi][luigi]] (see ~inclusion/run.py~), which runs local tasks and creates a [[https://htcondor.readthedocs.io/en/latest/index.html][HTCondor]] Direct Acyclic Graph (DAG) (see [[https://htcondor.readthedocs.io/en/latest/users-manual/dagman-workflows.html][DAGMan Workflows]]).
 
 ** Installation
-I recommend using [[https://mamba.readthedocs.io/en/latest/index.html][mamba]]:
+I recommend using [[https://mamba.readthedocs.io/en/latest/index.html][mamba]]. In general the following should work:
 #+BEGIN_SRC shell
 mamba create -n InclusionEnv python=3.11
-mamba install uproot pandas h5py luigi
 mamba activate InclusionEnv
+mamba install uproot pandas h5py luigi
+git clone git@github.com:bfonta/inclusion.git
+#+END_SRC
+
+At =lxplus= (CERN), it is better to use an [[https://lcgdocs.web.cern.ch/lcgdocs/lcgreleases/introduction/][LCG release]], which is dependent on the environment one is using. For instance:
+
+#+BEGIN_SRC shell
+gcc -v # print gcc version
+# the line below shows the most recent
+source /cvmfs/sft.cern.ch/lcg/views/LCG_105/x86_64-el9-gcc11-opt/setup.sh
+#+END_SRC
+
+Some packages (=luigi=, for instance) might not be included in an LCG view. If so:
+
+#+BEGIN_SRC shell
+python -m pip install luigi
 #+END_SRC
 
 ** Configuration
