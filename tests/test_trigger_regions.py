@@ -353,36 +353,37 @@ def which_region(ent, year, ptcuts, regcuts, channel, bigtau=False, notau=False,
     - regcuts: region cuts, delimiting the three regions in the pT space
     """
     leg_eta = ent.dau1_eta <= 2.1 and ent.dau2_eta <= 2.1
-    tau_eta = ent.dau1_eta <= 2.1
+    tau1_eta, tau2_eta = ent.dau1_eta <= 2.1, ent.dau2_eta <= 2.1
     
     if bigtau:
         if channel == "tautau":
             leg = (ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and
                    ent.dau1_pt < regcuts[0] and ent.dau2_pt < regcuts[1] and leg_eta)
-            tau = (ent.dau1_pt >= regcuts[0] or ent.dau2_pt >= regcuts[1]) and tau_eta
+            tau = ((ent.dau1_pt >= regcuts[0] and tau1_eta) or
+                   (ent.dau2_pt >= regcuts[1] and tau2_eta))
  
         elif channel == "etau" and year == "2016":
             leg = ent.dau1_pt >= ptcuts[0] and ent.dau2_pt < regcuts[1]
-            tau = ent.dau2_pt >= regcuts[1] and tau_eta
+            tau = ent.dau2_pt >= regcuts[1] and tau2_eta
  
         else: #mutau or etau non-2016
             leg = (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2]) and
                    ent.dau2_pt < regcuts[1] and leg_eta)
-            tau = ent.dau2_pt >= regcuts[1] and tau_eta
+            tau = ent.dau2_pt >= regcuts[1] and tau2_eta
             
     else:
         if channel == "tautau":
             leg = ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and leg_eta
-            tau = ((ent.dau2_pt < ptcuts[1] and ent.dau1_pt >= regcuts[0] and tau_eta) or 
-                   (ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and tau_eta))
+            tau = ((ent.dau2_pt < ptcuts[1] and ent.dau1_pt >= regcuts[0] and tau1_eta) or 
+                   (ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and tau2_eta))
  
         elif channel == "etau" and year == "2016":
             leg = ent.dau1_pt >= ptcuts[0] and leg_eta
-            tau = ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and tau_eta
+            tau = ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and tau2_eta
  
         else: #mutau or etau non-2016
             leg = ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2]) and leg_eta
-            tau = ent.dau1_pt < ptcuts[1] and ent.dau2_pt >= regcuts[1] and tau_eta
+            tau = ent.dau1_pt < ptcuts[1] and ent.dau2_pt >= regcuts[1] and tau2_eta
 
     met = not leg and not tau
         
@@ -438,7 +439,6 @@ def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
 
-        which_region:
         in_legacy, in_tau, in_met = which_region(entries, year, ptcuts, regcuts, channel,
                                                  bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
         
