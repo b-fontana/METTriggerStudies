@@ -61,7 +61,7 @@ def rec_dd():
     return dd(rec_dd)
 
 def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
-                   ptcuts, text, notext=False, bigtau=False, notau=False, nomet=False):
+                   ptcuts, text, notext=False, bigtau=False):
     base = {'etau': 'e+e'+tau, 'mutau': mu+'+'+mu+tau, 'tautau': ditau}
     output_file(text['out'])
     print('Saving file {}'.format(text['out']))
@@ -103,18 +103,7 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
                      xs=[[[[xgap,b3-shft,b3-shft,xgap]]]] if bigtau else [[[[xgap,topr,topr,xgap]]]],
                      ys=[[[[b3-shft,b3-shft,xgap,xgap]]]] if bigtau else [[[[topr,topr,xgap,xgap]]]],
                      legend_label=base[channel], **polyg_opt)
-    if not nomet:
-        p.multi_polygons(color='blue',
-                         xs=[[[[start+shft,b1-shft,b1-shft,b3-shft,b3-shft,shft]]]],
-                         ys=[[[[b3-shft,b3-shft,b1-shft,b1-shft,shft,shft]]]],
-                         legend_label='MET', **polyg_opt)
-    if not notau:
-        p.multi_polygons(color='red',
-                         xs=([[[[shft,shft,topr,topr,b3+shft,b3+shft,shft]]]] if bigtau else
-                             [[[[shft,shft,b1-shft,b1-shft], [b3+shft,b3+shft,topr,topr]]]]),
-                         ys=([[[[b3+shft,topr,topr,shft,shft,b3+shft,b3+shft]]]] if bigtau else
-                             [[[[b3+shft,topr,topr,b3+shft], [shft,b1-shft,b1-shft,shft]]]]),
-                         legend_label=tau, **polyg_opt)
+
     p.legend.title = 'Regions'
     p.legend.title_text_font_style = 'bold'
     p.legend.border_line_color = None
@@ -136,68 +125,66 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
                        'gain':  Label(x=b1+0.3, y=b1+0.3, text='Gain: '+gain+'%',
                                       text_color='blue', **label_opt),}
         for key,elem in stats_ditau.items():
-            if (nomet and notau and key=='gain') or key=='gain':
-                continue
             p.add_layout(elem)
  
-    if not nomet:
-        try:
-            contam_by_tau = (100*(float(c_tau_trg['met'])+c_legacy_trg['met']) /
-                             (c_met_trg['met']+c_tau_trg['met']+c_legacy_trg['met']))
-            contam_by_tau = str(round(contam_by_tau,2))
-        except ZeroDivisionError:
-            contam_by_tau = '0'
-        if not notext:
-            stats_met = {'met':   Label(x=b1+0.3, y=1.3, text='met: '+str(c_met_trg['met']),
-                                        text_color='black', **label_opt),
-                         'tau':   Label(x=b1+0.3, y=0.5, text=tau+' && !'+ditau+' && !met: '+str(c_tau_trg['met']),
-                                        text_color='black', **label_opt),
-                         'legacy': Label(x=b1+0.3, y=0.9, text=ditau+' && !met: '+str(c_legacy_trg['met']),
-                                         text_color='black', **label_opt),
-                         'contamination': Label(x=b1+0.3, y=0.1, text='Contam.: '+contam_by_tau+'%',
-                                                text_color='blue', **label_opt),}
-            for key,elem in stats_met.items():
-                if key != 'contamination':
-                    p.add_layout(elem)
- 
-    if not notau:
-        num_ditau = float(c_legacy_trg['tau'])
-        num_both = num_ditau + float(c_met_trg['tau'])
-        den = float(c_met_trg['tau']+c_tau_trg['tau']+c_legacy_trg['tau'])
-        if num_ditau == 0 or num_both == 0:
-            contam_ditau = '0'
-            contam_both = '0'
-            err_ditau = '0'
-            err_both = '0'
-        else:
-            contam_ditau = 100*num_ditau/den
-            contam_both = 100*num_both/den
- 
-            enum_ditau = np.sqrt(c_legacy_trg['tau'])
-            eden_ditau = enum_ditau + np.sqrt(c_met_trg['tau']) + np.sqrt(c_tau_trg['tau'])
-            enum_both  = np.sqrt(c_met_trg['tau']) + np.sqrt(c_legacy_trg['tau'])
-            eden_both  = enum_both + np.sqrt(c_tau_trg['tau'])
-            err_ditau = contam_ditau * np.sqrt(enum_ditau**2/num_ditau**2 + eden_ditau**2/den**2)
-            err_both  = contam_both * np.sqrt(enum_both**2/num_both**2 + eden_both**2/den**2)
-        
-            contam_ditau = str(round(contam_ditau,2))
-            contam_both  = str(round(contam_both,2))
-            err_ditau    = str(round(err_ditau,2))
-            err_both     = str(round(err_both,2))
 
-        if not notext:
-            stats_tau = {'tau':   Label(x=b3+0.2, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
-                                        text_color='black', **label_opt),
-                         'met':   Label(x=b3+0.2, y=0.5, text='met && !'+ditau+' && !'+tau+': '+str(c_met_trg['tau']),
-                                        text_color='black', **label_opt),
-                         'legacy': Label(x=b3+0.2, y=0.9, text=ditau+' && !'+tau+': '+str(c_legacy_trg['tau']),
-                                         text_color='black', **label_opt),
-                         'contamination_both': Label(x=b3+0.2, y=0.1,
-                                                     text='Contam.: ('+str(contam_both)+pm+str(err_both)+')%',
-                                                     text_color='blue', **label_opt),}
-            for key,elem in stats_tau.items():
-                if key != 'contamination_both':
-                    p.add_layout(elem)
+    try:
+        contam_by_tau = (100*(float(c_tau_trg['met'])+c_legacy_trg['met']) /
+                         (c_met_trg['met']+c_tau_trg['met']+c_legacy_trg['met']))
+        contam_by_tau = str(round(contam_by_tau,2))
+    except ZeroDivisionError:
+        contam_by_tau = '0'
+    if not notext:
+        stats_met = {'met':   Label(x=b1+0.3, y=1.3, text='met: '+str(c_met_trg['met']),
+                                    text_color='black', **label_opt),
+                     'tau':   Label(x=b1+0.3, y=0.5, text=tau+' && !'+ditau+' && !met: '+str(c_tau_trg['met']),
+                                    text_color='black', **label_opt),
+                     'legacy': Label(x=b1+0.3, y=0.9, text=ditau+' && !met: '+str(c_legacy_trg['met']),
+                                     text_color='black', **label_opt),
+                     'contamination': Label(x=b1+0.3, y=0.1, text='Contam.: '+contam_by_tau+'%',
+                                            text_color='blue', **label_opt),}
+        for key,elem in stats_met.items():
+            if key != 'contamination':
+                p.add_layout(elem)
+ 
+
+    num_ditau = float(c_legacy_trg['tau'])
+    num_both = num_ditau + float(c_met_trg['tau'])
+    den = float(c_met_trg['tau']+c_tau_trg['tau']+c_legacy_trg['tau'])
+    if num_ditau == 0 or num_both == 0:
+        contam_ditau = '0'
+        contam_both = '0'
+        err_ditau = '0'
+        err_both = '0'
+    else:
+        contam_ditau = 100*num_ditau/den
+        contam_both = 100*num_both/den
+
+        enum_ditau = np.sqrt(c_legacy_trg['tau'])
+        eden_ditau = enum_ditau + np.sqrt(c_met_trg['tau']) + np.sqrt(c_tau_trg['tau'])
+        enum_both  = np.sqrt(c_met_trg['tau']) + np.sqrt(c_legacy_trg['tau'])
+        eden_both  = enum_both + np.sqrt(c_tau_trg['tau'])
+        err_ditau = contam_ditau * np.sqrt(enum_ditau**2/num_ditau**2 + eden_ditau**2/den**2)
+        err_both  = contam_both * np.sqrt(enum_both**2/num_both**2 + eden_both**2/den**2)
+    
+        contam_ditau = str(round(contam_ditau,2))
+        contam_both  = str(round(contam_both,2))
+        err_ditau    = str(round(err_ditau,2))
+        err_both     = str(round(err_both,2))
+
+    if not notext:
+        stats_tau = {'tau':   Label(x=b3+0.2, y=1.3, text=tau+': '+str(c_tau_trg['tau']),
+                                    text_color='black', **label_opt),
+                     'met':   Label(x=b3+0.2, y=0.5, text='met && !'+ditau+' && !'+tau+': '+str(c_met_trg['tau']),
+                                    text_color='black', **label_opt),
+                     'legacy': Label(x=b3+0.2, y=0.9, text=ditau+' && !'+tau+': '+str(c_legacy_trg['tau']),
+                                     text_color='black', **label_opt),
+                     'contamination_both': Label(x=b3+0.2, y=0.1,
+                                                 text='Contam.: ('+str(contam_both)+pm+str(err_both)+')%',
+                                                 text_color='blue', **label_opt),}
+        for key,elem in stats_tau.items():
+            if key != 'contamination_both':
+                p.add_layout(elem)
  
     line_opt = dict(color='black', line_dash='dashed', line_width=2)
     p.line(x=[b1,b1], y=[start, topr+shft], **line_opt)
@@ -209,7 +196,7 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
     save(p)
     return contam_ditau, contam_both, err_ditau, err_both
     
-def get_outname(sample, channel, regcuts, ptcuts, met_turnon, bigtau, notau, nomet):
+def get_outname(sample, channel, regcuts, ptcuts, met_turnon, bigtau):
     utils.create_single_dir('data')
 
     name = sample + '_' + channel + '_'
@@ -217,10 +204,6 @@ def get_outname(sample, channel, regcuts, ptcuts, met_turnon, bigtau, notau, nom
                       *[str(x) for x in ptcuts], 'turnon', str(met_turnon)))
     if bigtau:
         name += '_BIGTAU'
-    if notau:
-        name += '_NOTAU'
-    if nomet:
-        name += '_NOMET'
     name += '.pkl'
 
     s = 'data/regions_{}'.format(name)
@@ -346,7 +329,7 @@ def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, r
                               tstr + '_' + 'reg' + region + '_' + '_VS_'.join(two_vars) + '.' + ext))
     c.Close()
 
-def which_region(ent, year, ptcuts, regcuts, channel, met_turnon, bigtau=False, notau=False, nomet=False):
+def which_region(ent, year, ptcuts, regcuts, channel, met_turnon, bigtau=False):
     """
     Select one of the threee non-overlapping regions: leg(acy), met and tau
     - ptcuts: pT cuts, delimiting the three regions based on the HLT pT thresholds
@@ -394,17 +377,12 @@ def which_region(ent, year, ptcuts, regcuts, channel, met_turnon, bigtau=False, 
     # only one True: non-overlapping regions
     assert int(leg)+int(met)+int(tau)<=1
 
-    if notau:
-        tau = False
-    if nomet:
-        met = False
-
     return leg, met, tau
 
 
 def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
     outname = get_outname(sample, channel, regcuts, ptcuts, met_turnon,
-                          args.bigtau, args.notau, args.nomet)
+                          args.bigtau)
     config_module = importlib.import_module(args.configuration)
     if channel == 'etau' or channel == 'mutau':
         iso1 = (24, 0, 8)
@@ -444,7 +422,7 @@ def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
 
         in_legacy, in_met, in_tau = which_region(entries, year, ptcuts, regcuts, channel, met_turnon,
-                                                 bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
+                                                 bigtau=args.bigtau)
         
         sel = selection.EventSelection(entries, isdata=False, configuration=config_module)
 
@@ -588,10 +566,6 @@ if __name__ == '__main__':
                         help='Do not use the multiprocess package.')
     parser.add_argument('--bigtau', action='store_true',
                         help='Consider a larger single tau region, reducing the ditau one.')
-    parser.add_argument('--notau', action='store_true',
-                        help='Remove the single tau region (default analysis).')
-    parser.add_argument('--nomet', action='store_true',
-                        help='Remove the MET region (default analysis).')
     parser.add_argument('--met_turnon', type=float, default=180,
                         help='MET trigger turnon cut [GeV].' )
     parser.add_argument('--region_cuts', required=False, type=float, nargs=2, default=(190, 190),
@@ -610,10 +584,6 @@ if __name__ == '__main__':
                                       str(met_turnon))))
     if args.bigtau:
         main_dir += '_BIGTAU'
-    if args.notau:
-        main_dir += '_NOTAU'
-    if args.nomet:
-        main_dir += '_NOMET'
 
     regions = ('legacy', 'met', 'tau')
         
@@ -636,7 +606,7 @@ if __name__ == '__main__':
     for sample in args.masses:
         outname = get_outname(sample, args.channel,
                               (str(x) for x in regcuts), (str(x) for x in ptcuts),
-                              str(met_turnon), args.bigtau, args.notau, args.nomet)
+                              str(met_turnon), args.bigtau)
         with open(outname, "rb") as f:
             ahistos = pickle.load(f)
 
@@ -683,7 +653,7 @@ if __name__ == '__main__':
                 'out': os.path.join(out_counts[categories.index(cat)], 'diagram.html')}
         sq_res = square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, args.channel,
                                 [str(x) for x in ptcuts], text=text, notext=args.notext,
-                                bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
+                                bigtau=args.bigtau)
         c1, c2, e1, e2 = sq_res
         contam1.append(c1)
         contam2.append(c2)

@@ -27,18 +27,13 @@ mu  = '\u03BC'
 pm  = '\u00B1'
 ditau = tau+tau
 
-def get_outname(sample, channel, regcuts, ptcuts, met_turnon,
-                bigtau, notau, nomet):
+def get_outname(sample, channel, regcuts, ptcuts, met_turnon, bigtau):
     utils.create_single_dir('data')
 
     name = sample + '_' + channel + '_'
     name += '_'.join((*regcuts, 'ptcuts', *[str(x) for x in ptcuts], 'turnon', str(met_turnon)))
     if bigtau:
         name += '_BIGTAU'
-    if notau:
-        name += '_NOTAU'
-    if nomet:
-        name += '_NOMET'
     name += '.pkl'
 
     s = 'data/regions_{}'.format(name)
@@ -115,7 +110,7 @@ def main(args):
             for mass in args.masses:
                 outname = get_outname(mass, chn, [str(x) for x in args.region_cuts],
                                       [str(x) for x in ptcuts[chn]], str(args.met_turnon),
-                                      args.bigtau, args.notau, args.nomet)
+                                      args.bigtau)
 
                 with open(outname, "rb") as f:
                     ahistos = pickle.load(f)
@@ -274,10 +269,6 @@ if __name__ == '__main__':
     parser.add_argument('--deltaR', type=float, default=0.5, help='DeltaR between the two leptons.')
     parser.add_argument('--bigtau', action='store_true',
                         help='Consider a larger single tau region, reducing the ditau one.')
-    parser.add_argument('--notau', action='store_true',
-                        help='Remove the single tau region (default analysis).')
-    parser.add_argument('--nomet', action='store_true',
-                        help='Remove the MET region (default analysis).')
     parser.add_argument('--met_turnon', required=False, type=str,  default=180,
                         help='MET trigger turnon cut [GeV].' )
     parser.add_argument('--region_cuts', required=False, type=float, nargs=2, default=(190., 190.),
