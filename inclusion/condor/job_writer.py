@@ -96,7 +96,7 @@ class JobWriter:
             raise ValueError('The mode {} is not supported.'.format(mode))
 
     def write_condor(self, filename, shell_exec, real_exec, outfile, logfile,
-                     queue, machine=main.machine):
+                     queue, machine):
         self.filenames.append(filename)
         batch_name = os.path.dirname(shell_exec).split('/')[-1]
         m = self.endl.join(('Universe = vanilla',
@@ -157,7 +157,7 @@ class JobWriter:
             self.f.write(m)
         os.system('chmod u+rwx '+ filename)
 
-    def condor_specific_content(self, queue, machine='llrt3condor'):
+    def condor_specific_content(self, queue, machine):
         if 'llr' in machine:
             assert queue in ('short', 'long')
             assert machine in ('llrt3condor', 'llrt3condor7')
