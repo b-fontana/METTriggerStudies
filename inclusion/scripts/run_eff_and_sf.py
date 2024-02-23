@@ -490,7 +490,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             # sf1D_new[atype] = utils.apply_equal_bin_width(sf1D[atype][akey])
             canvas[atype].Update()
             #sf1D[atype][akey].GetYaxis().SetNdivisions(-10)
-            sf1D[atype][akey].GetYaxis().SetRangeUser(0.61,1.04)
+            sf1D[atype][akey].GetYaxis().SetRangeUser(0.551,1.04)
             sf1D[atype][akey].SetLineColor(ROOT.kBlue)
             sf1D[atype][akey].SetLineWidth(2)
             sf1D[atype][akey].SetMarkerColor(ROOT.kBlue)

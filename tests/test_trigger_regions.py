@@ -346,7 +346,58 @@ def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, r
                               tstr + '_' + 'reg' + region + '_' + '_VS_'.join(two_vars) + '.' + ext))
     c.Close()
 
-def test_trigger_regions(indir, sample, channel, spin, deltaR):
+def which_region(ent, year, ptcuts, regcuts, channel, bigtau=False, notau=False, nomet=False):
+    """
+    Select one of the threee non-overlapping regions: leg(acy), met and tau
+    - ptcuts: pT cuts, delimiting the three regions based on the HLT pT thresholds
+    - regcuts: region cuts, delimiting the three regions in the pT space
+    """
+    leg_eta = ent.dau1_eta <= 2.1 and ent.dau2_eta <= 2.1
+    tau_eta = ent.dau1_eta <= 2.1
+    
+    if bigtau:
+        if channel == "tautau":
+            leg = (ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and
+                   ent.dau1_pt < regcuts[0] and ent.dau2_pt < regcuts[1] and leg_eta)
+            tau = (ent.dau1_pt >= regcuts[0] or ent.dau2_pt >= regcuts[1]) and tau_eta
+ 
+        elif channel == "etau" and year == "2016":
+            leg = ent.dau1_pt >= ptcuts[0] and ent.dau2_pt < regcuts[1]
+            tau = ent.dau2_pt >= regcuts[1] and tau_eta
+ 
+        else: #mutau or etau non-2016
+            leg = (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2]) and
+                   ent.dau2_pt < regcuts[1] and leg_eta)
+            tau = ent.dau2_pt >= regcuts[1] and tau_eta
+            
+    else:
+        if channel == "tautau":
+            leg = ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and leg_eta
+            tau = ((ent.dau2_pt < ptcuts[1] and ent.dau1_pt >= regcuts[0] and tau_eta) or 
+                   (ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and tau_eta))
+ 
+        elif channel == "etau" and year == "2016":
+            leg = ent.dau1_pt >= ptcuts[0] and leg_eta
+            tau = ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and tau_eta
+ 
+        else: #mutau or etau non-2016
+            leg = ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2]) and leg_eta
+            tau = ent.dau1_pt < ptcuts[1] and ent.dau2_pt >= regcuts[1] and tau_eta
+
+    met = not leg and not tau
+        
+    # only one True: non-overlapping regions
+    assert sum(int(leg)+int(met)+int(tau))==1
+
+    if notau:
+        tau = False
+    if nomet:
+        met = False
+
+    return leg, met, tau
+
+
+def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
     outname = get_outname(sample, channel, regcuts, ptcuts, met_turnon, tau_turnon,
                           args.bigtau, args.notau, args.nomet)
     config_module = importlib.import_module(args.configuration)
@@ -386,9 +437,11 @@ def test_trigger_regions(indir, sample, channel, spin, deltaR):
     for entry in t_in:
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-        in_met_region = eval(met_region)
-        in_tau_region = eval(tau_region)
-        in_legacy_region = eval(legacy_region)
+
+        which_region:
+        in_legacy, in_tau, in_met = which_region(entries, year, ptcuts, regcuts, channel,
+                                                 bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
+        
         sel = selection.EventSelection(entries, isdata=False, configuration=config_module)
 
         #triggers and turnon cuts
@@ -415,10 +468,10 @@ def test_trigger_regions(indir, sample, channel, spin, deltaR):
                 'NoBaseMETNoTau' : not pass_trg and pass_met and not pass_tau,
                 'BaseMETTau'     : pass_trg and pass_met and pass_tau,
                 'BaseNoMETNoTau' : pass_trg and not pass_met and not pass_tau,
-                'LegacyKin'      : pass_trg and in_legacy_region,
-                'METKin'         : pass_met and in_met_region,
-                'TauKin'         : pass_tau and in_tau_region,
-                'VBFKin'         : pass_vbf and (in_tau_region or in_met_region)
+                'LegacyKin'      : pass_trg and in_legacy,
+                'METKin'         : pass_met and in_met,
+                'TauKin'         : pass_tau and in_tau,
+                'VBFKin'         : pass_vbf and (in_tau or in_met)
                 }
         assert htypes == list(cuts.keys())
         
@@ -449,11 +502,11 @@ def test_trigger_regions(indir, sample, channel, spin, deltaR):
                 if sel.sel_category(cat) and entries.ditau_deltaR > deltaR:
                     ntotal[cat] += 1
 
-                    if in_met_region:
+                    if in_met:
                         reg = 'met'
-                    elif in_tau_region:
+                    elif in_tau:
                         reg = 'tau'
-                    elif in_legacy_region:
+                    elif in_legacy:
                         reg = 'legacy'
                     else:
                         norphans[cat] += 1
@@ -567,62 +620,17 @@ if __name__ == '__main__':
         main_dir += '_NOMET'
 
     regions = ('legacy', 'met', 'tau')
-
-    if args.bigtau:
-        if args.channel == "tautau":
-            legacy_region = ('entries.dau1_pt >= {} and entries.dau2_pt >= {} and '.format(*ptcuts) +
-                             'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(*regcuts))
-            met_region = ('(entries.dau2_pt < {} and entries.dau1_pt < {}) or '.format(ptcuts[1], regcuts[0]) +
-                          '(entries.dau1_pt < {} and entries.dau2_pt < {})'.format(ptcuts[0], regcuts[1]))
-            tau_region = 'entries.dau1_pt >= {} or entries.dau2_pt >= {}'.format(*regcuts)
-
-        elif args.channel == "etau" and args.year == "2016":
-            legacy_region = 'entries.dau1_pt >= {} and entries.dau2_pt < {}'.format(regcuts[1])
-            met_region = 'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(ptcuts[0], regcuts[1])
-            tau_region = 'entries.dau2_pt >= {}'.format(regcuts[1])
-
-        else: #mutau or etau non-2016
-            legacy_region = ('(entries.dau1_pt >= {} or (entries.dau1_pt >= {} and entries.dau2_pt >= {})) and '.format(*ptcuts) +
-                             'entries.dau2_pt < {}'.format(regcuts[1]))
-            met_region = ('(entries.dau1_pt < {} and entries.dau2_pt < {}) or ' + 
-                          '(entries.dau1_pt < {} and entries.dau2_pt < {})').format(ptcuts[0], ptcuts[2], ptcuts[1], regcuts[1])
-            tau_region = 'entries.dau2_pt >= {}'.format(regcuts[1])
-
-    else:
-        if args.channel == "tautau":
-            legacy_region = 'entries.dau1_pt >= {} and entries.dau2_pt >= {}'.format(*ptcuts)
-            met_region = ('(entries.dau2_pt < {} and entries.dau1_pt < {}) or '.format(ptcuts[1], regcuts[0]) +
-                          '(entries.dau1_pt < {} and entries.dau2_pt < {})'.format(ptcuts[0], regcuts[1]))
-            tau_region = ('(entries.dau2_pt < {} and entries.dau1_pt >= {}) or '.format(ptcuts[1], regcuts[0]) +
-                          '(entries.dau1_pt < {} and entries.dau2_pt >= {})'.format(ptcuts[0], regcuts[1]))
-
-        elif args.channel == "etau" and args.year == "2016":
-            legacy_region = 'entries.dau1_pt >= {}'.format(ptcuts[0])
-            met_region = 'entries.dau1_pt < {} and entries.dau2_pt < {}'.format(ptcuts[0], regcuts[1])
-            tau_region = 'entries.dau1_pt < {} and entries.dau2_pt >= {}'.format(ptcuts[0], regcuts[1])
-
-        else: #mutau or etau non-2016
-            legacy_region = 'entries.dau1_pt >= {} or (entries.dau1_pt >= {} and entries.dau2_pt >= {})'.format(*ptcuts)
-            met_region = ('(entries.dau1_pt < {} and entries.dau2_pt < {}) or ' + 
-                          '(entries.dau1_pt < {} and entries.dau2_pt < {})').format(ptcuts[0], ptcuts[2],
-                                                                                    ptcuts[1], regcuts[1])
-            tau_region = 'entries.dau1_pt < {} and entries.dau2_pt >= {}'.format(ptcuts[1], regcuts[1])
-            
-    if args.notau:
-        tau_region = 'False'
-    if args.nomet:
-        met_region = 'False'
         
     #### run main function ###
     if not args.plot:
         if args.sequential:
             for sample in args.masses:
-                test_trigger_regions(args.indir, sample, args.channel, args.spin, args.deltaR)
+                test_trigger_regions(args.indir, sample, args.channel, args.spin, args.year, args.deltaR)
         else:
             pool = multiprocessing.Pool(processes=6)
             pool.starmap(test_trigger_regions,
-                         zip(it.repeat(args.indir), args.masses,
-                             it.repeat(args.channel), it.repeat(args.spin), it.repeat(args.deltaR)))
+                         zip(it.repeat(args.indir), args.masses, it.repeat(args.channel),
+                             it.repeat(args.spin), it.repeat(args.year), it.repeat(args.deltaR)))
     ###########################
 
     sum_stats, err_sum_stats = ([] for _ in range(2))
