@@ -177,7 +177,7 @@ def define_used_tree_variables(cut):
     _entries = ('triggerbit', 'RunNumber', 'HHKin_mass', 'isLeptrigger', 'pairType', 'isOS',
                 'MC_weight', 'IdSF_deep_2d', 'PUReweight', 'L1pref_weight', 'trigSF', 'PUjetID_SF', 'bTagweightReshape',
                 'dau1_eleMVAiso', 'dau1_iso', 'dau2_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
-                'nleps', 'nbjetscand', 'tauH_SVFIT_mass', 'bH_mass_raw',
+                'nleps', 'nbjetscand', 'tauH_mass', 'bH_mass_raw',
                 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor',
                 'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta')
     if cut is not None:
