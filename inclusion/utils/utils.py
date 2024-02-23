@@ -498,7 +498,7 @@ def print_configuration(parse_args):
     for k,v in options.items():
         k = '--' + k
         if isinstance(v, (tuple,list)):
-            v = ' '.join(v)
+            v = ' '.join((str(x) for x in v))
         print('{0:>{d1}}   {1}'.format(k, v, d1=maxlkey+3), flush=True)
     print('----------------------------------------', flush=True)
 
@@ -509,20 +509,20 @@ def get_ptcuts(channel, year):
     """
     if channel == "etau":
         if year == "2016":
-            ptcuts = ('26',)
+            ptcuts = (26,)
         elif year == "2017" or year == "2018":
-            ptcuts = ('33', '25', '35')
+            ptcuts = (33, 25, 35)
 
     elif channel == "mutau":
         if year == "2016":
-            ptcuts = ('25', '20', '25')
+            ptcuts = (25, 20, 25)
         elif year == "2017":
-            ptcuts = ('28', '21', '32')
+            ptcuts = (28, 21, 32)
         elif year == "2018":
-            ptcuts = ('25', '21', '32')
+            ptcuts = (25, 21, 32)
 
     elif channel == "tautau":
-        ptcuts = ('40', '40')
+        ptcuts = (40, 40)
 
     return ptcuts
     

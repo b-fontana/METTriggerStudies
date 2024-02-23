@@ -204,7 +204,13 @@ class EventSelection:
             if trig in self.cfg.trig_custom:
                 flag = self.set_custom_trigger_bit(trig)
             else:
-                flag = self.check_bit(self.get_trigger_bit(trig))
+                bits = self.get_trigger_bit(trig)
+                if isinstance(bits, (tuple,list)):
+                    for bit in bits:
+                        flag = flag or self.check_bit(bit)
+                else:
+                    flag = self.check_bit(bits)
+                
             if flag:
                 return True
         return False    
@@ -336,6 +342,8 @@ class EventSelection:
                 bits = self.check_bit(main.trig_map[self.year][trigger]['IsoMuIsoTau']['data'])
             elif trigger == 'EleIsoTauCustom':
                 bits = self.check_bit(main.trig_map[self.year][trigger]['EleIsoTau']['data'])
+            elif trigger == 'IsoTau180':
+                bits = self.check_bit(main.trig_map[self.year][trigger]['IsoTau180']['data'])
 
         else:
             s = 'data' if self.isdata else 'mc'
@@ -367,7 +375,14 @@ class EventSelection:
         if trig in self.cfg.trig_custom:
             return self.set_custom_trigger_bit(trig)
         else:
-            return self.check_bit(self.get_trigger_bit(trig))
+            flag = False
+            bits = self.get_trigger_bit(trig)
+            if isinstance(bits, (tuple,list)):
+                for bit in bits:
+                    flag = flag or self.check_bit(bit)
+            else:
+                flag = self.check_bit(bits)
+            return flag
 
     def var_cuts(self, trig, variables, nocut_dummy_str):
         """

@@ -11,14 +11,14 @@ from inclusion.utils import utils
 
 bjets_cut = True
 mass_cut = None #standard, inverted
-cuts_custom = None
+custom_cut = None
 
 triggers = tuple(main.trig_map.keys())
 trig_custom = {'VBFTauCustom',
                'IsoDoubleTauCustom',
                'IsoMuIsoTauCustom',
                'EleIsoTauCustom'}
-assert all(x in main.trig_map.keys() for x in trig_custom)
+assert all(x in main.trig_map['2018'].keys() for x in trig_custom)
 assert(trig_custom.issubset(set(triggers)))
 
 # which triggers are exclusive to a particular channel?
@@ -26,8 +26,9 @@ exclusive = {'etau'   : ('Ele32', 'EleIsoTauCustom'),
              'mutau'  : ('IsoMu24', 'IsoMuIsoTauCustom'),
              'tautau' : ('IsoDoubleTauCustom', 'VBFTauCustom'),
              'general': ('METNoMu120', 'IsoTau180')}
-for excl in exclusive.values():
-    assert all(x in main.trig_map.keys() for x in excl)
+for year in {'2016', '2017', '2018'}:
+    for excl in exclusive.values():
+        assert all(x in main.trig_map[year].keys() for x in excl)
 
 cuts = {#'METNoMu120': {'metnomu_et': ('>', [120,180]), 'mhtnomu_et': ('>', [100,160])},
          #'IsoTau50':   {'dau1_pt': ('>', [80]), 'dau1_eta': ('<', [2.0]), 'met_et': ('>', [150])},

@@ -80,7 +80,7 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
     p.xaxis.ticker = [b1,b3]#else [b1, b2, b3]
-    p.xaxis.major_label_overrides = ({b1: ptcuts[0], b3: regcuts[0]})
+    p.xaxis.major_label_overrides = ({b1: str(ptcuts[0]), b3: str(regcuts[0])})
 
     for aaxis in (p.xaxis, p.yaxis):
         aaxis.axis_label_text_font_size = "12pt"
@@ -90,9 +90,9 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
     p.yaxis.axis_label_standoff = 0
     p.yaxis.ticker = [b1, b3]# else [b1, b2, b3]
     if len(ptcuts) > 1:
-        p.yaxis.major_label_overrides = ({b1: ptcuts[0], b3: regcuts[1]})
+        p.yaxis.major_label_overrides = ({b1: str(ptcuts[0]), b3: str(regcuts[1])})
     else:
-        p.yaxis.major_label_overrides = ({b1: ptcuts[0]})
+        p.yaxis.major_label_overrides = ({b1: str(ptcuts[0])})
 
     p.xaxis.axis_label = r'\(p_T(\tau_1)  [GeV]\)'
     p.yaxis.axis_label = r'\(p_T(\tau_2)  [GeV]\)'
@@ -209,12 +209,12 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
     save(p)
     return contam_ditau, contam_both, err_ditau, err_both
     
-def get_outname(sample, channel, regcuts, ptcuts, met_turnon, tau_turnon,
-                bigtau, notau, nomet):
+def get_outname(sample, channel, regcuts, ptcuts, met_turnon, bigtau, notau, nomet):
     utils.create_single_dir('data')
 
     name = sample + '_' + channel + '_'
-    name += '_'.join((*regcuts, 'ptcuts', *ptcuts, 'turnon', met_turnon, tau_turnon))
+    name += '_'.join((*[str(x) for x in regcuts], 'ptcuts',
+                      *[str(x) for x in ptcuts], 'turnon', str(met_turnon)))
     if bigtau:
         name += '_BIGTAU'
     if notau:
@@ -346,49 +346,53 @@ def plot2D(histo, two_vars, channel, sample, trigger_str, category, directory, r
                               tstr + '_' + 'reg' + region + '_' + '_VS_'.join(two_vars) + '.' + ext))
     c.Close()
 
-def which_region(ent, year, ptcuts, regcuts, channel, bigtau=False, notau=False, nomet=False):
+def which_region(ent, year, ptcuts, regcuts, channel, met_turnon, bigtau=False, notau=False, nomet=False):
     """
     Select one of the threee non-overlapping regions: leg(acy), met and tau
     - ptcuts: pT cuts, delimiting the three regions based on the HLT pT thresholds
     - regcuts: region cuts, delimiting the three regions in the pT space
+    Example in tautau:
+    - ptcuts = (40, 40)
+    - regcuts = (190, 190)
     """
-    leg_eta = ent.dau1_eta <= 2.1 and ent.dau2_eta <= 2.1
-    tau1_eta, tau2_eta = ent.dau1_eta <= 2.1, ent.dau2_eta <= 2.1
+    dau1_eta, dau2_eta = ent.dau1_eta <= 2.1, ent.dau2_eta <= 2.1
     
     if bigtau:
         if channel == "tautau":
             leg = (ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and
-                   ent.dau1_pt < regcuts[0] and ent.dau2_pt < regcuts[1] and leg_eta)
-            tau = ((ent.dau1_pt >= regcuts[0] and tau1_eta) or
-                   (ent.dau2_pt >= regcuts[1] and tau2_eta))
+                   ent.dau1_pt < regcuts[0] and ent.dau2_pt < regcuts[1] and
+                   dau1_eta and dau2_eta)
+            tau = ((ent.dau1_pt >= regcuts[0] and dau1_eta) or
+                   (ent.dau2_pt >= regcuts[1] and dau2_eta))
  
         elif channel == "etau" and year == "2016":
             leg = ent.dau1_pt >= ptcuts[0] and ent.dau2_pt < regcuts[1]
-            tau = ent.dau2_pt >= regcuts[1] and tau2_eta
+            tau = ent.dau2_pt >= regcuts[1] and dau2_eta
  
         else: #mutau or etau non-2016
             leg = (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2]) and
-                   ent.dau2_pt < regcuts[1] and leg_eta)
-            tau = ent.dau2_pt >= regcuts[1] and tau2_eta
+                   ent.dau2_pt < regcuts[1] and dau2_eta)
+            tau = ent.dau2_pt >= regcuts[1] and dau2_eta
             
     else:
         if channel == "tautau":
-            leg = ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and leg_eta
-            tau = ((ent.dau2_pt < ptcuts[1] and ent.dau1_pt >= regcuts[0] and tau1_eta) or 
-                   (ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and tau2_eta))
+            leg = (ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and
+                   dau1_eta and dau2_eta)
+            tau = ((ent.dau2_pt < ptcuts[1] and ent.dau1_pt >= regcuts[0] and dau1_eta) or 
+                   (ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and dau2_eta))
  
         elif channel == "etau" and year == "2016":
-            leg = ent.dau1_pt >= ptcuts[0] and leg_eta
-            tau = ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and tau2_eta
+            leg = ent.dau1_pt >= ptcuts[0]
+            tau = ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and dau2_eta
  
         else: #mutau or etau non-2016
-            leg = ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2]) and leg_eta
-            tau = ent.dau1_pt < ptcuts[1] and ent.dau2_pt >= regcuts[1] and tau2_eta
+            leg = ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2]) and dau2_eta
+            tau = ent.dau1_pt < ptcuts[1] and ent.dau2_pt >= regcuts[1] and dau2_eta
 
-    met = not leg and not tau
+    met = ent.metnomu_et > met_turnon and not leg and not tau
         
     # only one True: non-overlapping regions
-    assert sum(int(leg)+int(met)+int(tau))==1
+    assert int(leg)+int(met)+int(tau)<=1
 
     if notau:
         tau = False
@@ -399,7 +403,7 @@ def which_region(ent, year, ptcuts, regcuts, channel, bigtau=False, notau=False,
 
 
 def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
-    outname = get_outname(sample, channel, regcuts, ptcuts, met_turnon, tau_turnon,
+    outname = get_outname(sample, channel, regcuts, ptcuts, met_turnon,
                           args.bigtau, args.notau, args.nomet)
     config_module = importlib.import_module(args.configuration)
     if channel == 'etau' or channel == 'mutau':
@@ -430,7 +434,7 @@ def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
     for f in glob_files:
         t_in.Add(f)
     t_in.SetBranchStatus('*', 0)
-    _entries = utils.define_used_tree_variables(cut=config_module.cuts_custom)
+    _entries = utils.define_used_tree_variables(cut=config_module.custom_cut)
     _entries += tuple(variables)
     for ientry in _entries:
         t_in.SetBranchStatus(ientry, 1)
@@ -439,24 +443,19 @@ def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
 
-        in_legacy, in_tau, in_met = which_region(entries, year, ptcuts, regcuts, channel,
+        in_legacy, in_met, in_tau = which_region(entries, year, ptcuts, regcuts, channel, met_turnon,
                                                  bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
         
         sel = selection.EventSelection(entries, isdata=False, configuration=config_module)
 
-        #triggers and turnon cuts
-        met_turnon_expr = entries.metnomu_et > float(met_turnon)
-        tau_turnon_expr = entries.dau1_pt > float(tau_turnon) or entries.dau2_pt > float(tau_turnon)
-        vbf_turnon_expr = entries.dau1_pt > 25 and entries.dau2_pt > 25
         pass_trg = sel.pass_triggers(triggers[channel]) and entries.isLeptrigger
-        pass_met = sel.pass_triggers(('METNoMu120',)) and met_turnon_expr
-        pass_tau = sel.pass_triggers(('IsoTau180',)) and tau_turnon_expr
-        pass_vbf = sel.pass_triggers(('VBFTauCustom',)) and vbf_turnon_expr
+        pass_met = sel.pass_triggers(('METNoMu120',))
+        pass_tau = sel.pass_triggers(('IsoTau180',))
 
         cuts = {'Base'           : pass_trg,
                 'MET'            : pass_met,
                 'Tau'            : pass_tau,
-                'VBF'            : pass_vbf,
+                'VBF'            : False,
                 'BaseMET'        : pass_trg and pass_met,
                 'BaseTau'        : pass_trg and pass_tau,
                 'METTau'         : pass_met and pass_tau,
@@ -471,7 +470,7 @@ def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
                 'LegacyKin'      : pass_trg and in_legacy,
                 'METKin'         : pass_met and in_met,
                 'TauKin'         : pass_tau and in_tau,
-                'VBFKin'         : pass_vbf and (in_tau or in_met)
+                'VBFKin'         : False
                 }
         assert htypes == list(cuts.keys())
         
@@ -566,7 +565,7 @@ if __name__ == '__main__':
     
     # Parse input arguments
     desc = 'Producer trigger histograms.\n'
-    desc += "Run example: python tests/test_trigger_regions.py --indir /data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv4_Signal/ --masses 400 500 600 700 800 900 1000 1250 1500 --channels ETau --met_turnon 200 --tau_turnon 190 --region_cuts 40 40 --copy"
+    desc += "Run example: python tests/test_trigger_regions.py --indir /data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv4_Signal/ --masses 400 500 600 700 800 900 1000 1250 1500 --channels ETau --met_turnon 180 --region_cuts 40 40 --copy"
     parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('--indir', required=True, type=str,
@@ -593,25 +592,22 @@ if __name__ == '__main__':
                         help='Remove the single tau region (default analysis).')
     parser.add_argument('--nomet', action='store_true',
                         help='Remove the MET region (default analysis).')
-    parser.add_argument('--met_turnon', required=False, type=str,  default='180',
+    parser.add_argument('--met_turnon', type=float, default=180,
                         help='MET trigger turnon cut [GeV].' )
-    parser.add_argument('--tau_turnon', required=False, type=str,  default='190',
-                        help='MET trigger turnon cut [GeV].' )
-    parser.add_argument('--region_cuts', required=False, type=str, nargs=2, default=('190', '190'),
+    parser.add_argument('--region_cuts', required=False, type=float, nargs=2, default=(190, 190),
                         help='High/low regions pT1 and pT2 selection cuts [GeV].' )
     parser.add_argument('--configuration', dest='configuration', required=True,
                         help='Name of the configuration module to use.')
     args = utils.parse_args(parser)
 
     met_turnon = args.met_turnon
-    tau_turnon = args.tau_turnon
     regcuts = args.region_cuts
     ptcuts = utils.get_ptcuts(args.channel, args.year)
         
     main_dir = os.path.join('/eos/home-b/bfontana/www/TriggerScaleFactors/',
-                            '_'.join(('Spin' + str(args.spin), args.channel, *regcuts,
-                                      'DR', str(args.deltaR), 'PT', *ptcuts, 'TURNON',
-                                      met_turnon, tau_turnon)))
+                            '_'.join(('Spin' + str(args.spin), args.channel, *[str(x) for x in regcuts],
+                                      'DR', str(args.deltaR), 'PT', *[str(x) for x in ptcuts], 'TURNON',
+                                      str(met_turnon))))
     if args.bigtau:
         main_dir += '_BIGTAU'
     if args.notau:
@@ -631,14 +627,16 @@ if __name__ == '__main__':
             pool.starmap(test_trigger_regions,
                          zip(it.repeat(args.indir), args.masses, it.repeat(args.channel),
                              it.repeat(args.spin), it.repeat(args.year), it.repeat(args.deltaR)))
+
     ###########################
 
     sum_stats, err_sum_stats = ([] for _ in range(2))
     contam1, contam2, contam1_errors, contam2_errors = ([] for _ in range(4))
     from_directory = os.path.join(main_dir, args.channel)
     for sample in args.masses:
-        outname = get_outname(sample, args.channel, regcuts, ptcuts, met_turnon, tau_turnon,
-                              args.bigtau, args.notau, args.nomet)
+        outname = get_outname(sample, args.channel,
+                              (str(x) for x in regcuts), (str(x) for x in ptcuts),
+                              str(met_turnon), args.bigtau, args.notau, args.nomet)
         with open(outname, "rb") as f:
             ahistos = pickle.load(f)
 
@@ -684,7 +682,7 @@ if __name__ == '__main__':
         text = {'mass': sample,
                 'out': os.path.join(out_counts[categories.index(cat)], 'diagram.html')}
         sq_res = square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, args.channel,
-                                ptcuts, text=text, notext=args.notext,
+                                [str(x) for x in ptcuts], text=text, notext=args.notext,
                                 bigtau=args.bigtau, notau=args.notau, nomet=args.nomet)
         c1, c2, e1, e2 = sq_res
         contam1.append(c1)
@@ -703,9 +701,9 @@ if __name__ == '__main__':
     contam1_errors  = [float(x) for x in contam1_errors]
     contam2_errors  = [float(x) for x in contam2_errors]
     masses = [float(x) for x in args.masses]
-    contamination_save('data', '_'.join(regcuts) + '_' + args.channel,
+    contamination_save('data', '_'.join([str(x) for x in regcuts]) + '_' + args.channel,
                        contam1, contam2, contam1_errors, contam2_errors, masses)
-    stats_save('data', '_'.join(regcuts) + '_' + args.channel,
+    stats_save('data', '_'.join([str(x) for x in regcuts]) + '_' + args.channel,
                sum_stats, err_sum_stats, masses, mode='a')
 
     if args.copy:

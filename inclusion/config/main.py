@@ -71,6 +71,7 @@ trig_map = {'2018':
             {'IsoMu24':    {'mc': 0,  'data': 0},
              'Ele32':      {'mc': 2,  'data': 2},
              'METNoMu120': {'mc': 40, 'data': 40},
+             'IsoTau180':  {'mc': (4,7), 'data': (4,7)},
              'IsoDoubleTauCustom': {'IsoDoubleTau':    {'mc': 12, 'data': (13,14,15)},
                                     'IsoDoubleTauHPS': {'mc': 12, 'data': 12}},
              'IsoMuIsoTauCustom':  {'IsoMuIsoTau':     {'mc': 8,  'data': 9},
@@ -85,6 +86,7 @@ trig_map = {'2018':
             {'IsoMu27':      {'mc': 0,  'data': 0},
              'Ele32':        {'mc': 2,  'data': 2},
              'METNoMu120':   {'mc': 40, 'data': 40},
+             'IsoTau180':    {'mc': (31,32), 'data': (31,32)},
              'IsoDoubleTau': {'mc': (25,27,29), 'data': (25,27,29)},
              'IsoMuIsoTau':  {'mc': 5, 'data': 5},
              'EleIsoTau':    {'mc': 17, 'data': 17}}
@@ -93,6 +95,7 @@ trig_map = {'2018':
             {'IsoMu24':      {'mc': (5,7),  'data': (5,7)},
              'Ele25':        {'mc': 13,  'data': 13},
              'METNoMu90':    {'mc': 48, 'data': 48},
+             'IsoTau130':    {'mc': (46,47),  'data': (46,47)},
              'IsoDoubleTau': {'mc': (27,29), 'data': (27,29)},
              'IsoMuIsoTau':  {'mc': (19,20), 'data': (19,20)}}
             }
@@ -105,7 +108,7 @@ lep_triggers = {'2018':
                 '2016':
                 {'Ele25', 'IsoMu24', 'IsoMuIsoTau', 'IsoDoubleTau'}
                 }
-for year in {'2016', '2017', '2018'}:
+for year in ('2016', '2017', '2018'):
     assert all(x in trig_map[year].keys() for x in lep_triggers[year])
 
 cuts_ignored = {'HT20':       (),
