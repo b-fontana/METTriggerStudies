@@ -104,7 +104,7 @@ parser.add_argument(
     '--year',
     required=True,
     type=str,
-    choices=('2016', '2016APV', '2017' '2018'),
+    choices=('2016', '2016APV', '2017', '2018'),
     help='Data year: impact thresholds and selections.'
     )
 parser.add_argument(
@@ -160,8 +160,8 @@ assert len(mc_keys)==len(mc_vals)
 data_name = 'Data_' + '_'.join(FLAGS.data)
 mc_name   = 'MC_'   + '_'.join(FLAGS.mc_processes)
 
-data_storage = os.path.join(main.storage, FLAGS.tag, 'Data' )
-out_storage = os.path.join(main.storage, FLAGS.tag, 'Outputs')
+data_storage = os.path.join(main.storage[FLAGS.year], FLAGS.tag, 'Data' )
+out_storage = os.path.join(main.storage[FLAGS.year], FLAGS.tag, 'Outputs')
 targets_folder = os.path.join(data_storage, 'targets')    
 binedges_filename = os.path.join(data_storage, 'binedges.hdf5')
 
@@ -176,7 +176,7 @@ sel_config = 'inclusion.config.' + FLAGS.configuration
 #### scripts/def_bins
 bins_params = {'nbins'             : FLAGS.nbins,
                'binedges_filename' : binedges_filename,
-               'indir'             : main.inputs,
+               'indir'             : main.inputs[FLAGS.year],
                'outdir'            : data_storage,
                'data_vals'         : data_vals,
                'variables'         : variables_join,
@@ -188,14 +188,14 @@ bins_params = {'nbins'             : FLAGS.nbins,
 
 #### condor/dag
 write_params = {'data_name' : data_name,
-                'localdir'  : main.base_folder,
+                'localdir'  : main.base_folder[main.machine],
                 'tag'       : FLAGS.tag}
 
 #### scripts/produce_trig_histos
 histos_params = {'binedges_filename' : binedges_filename,
-                 'indir'             : main.inputs,
+                 'indir'             : main.inputs[FLAGS.year],
                  'outdir'            : data_storage,
-                 'localdir'          : main.base_folder,
+                 'localdir'          : main.base_folder[main.machine],
                  'data_keys'         : data_keys,
                  'data_vals'         : data_vals,
                  'mc_keys'           : mc_keys,
@@ -211,14 +211,14 @@ histos_params = {'binedges_filename' : binedges_filename,
 
 #### scripts/hadd_histo
 haddhisto_params = {'indir'    : data_storage,
-                    'localdir' : main.base_folder,
+                    'localdir' : main.base_folder[main.machine],
                     'tag'      : FLAGS.tag,
                     'subtag'   : subtag, }
 
 #### scripts/add_counts
 haddcounts_params = {'indir'    : data_storage,
                      'outdir'   : out_storage,
-                     'localdir'  : main.base_folder,
+                     'localdir'  : main.base_folder[main.machine],
                      'tag'      : FLAGS.tag,
                      'subtag'   : subtag,
                      'channels' : FLAGS.channels, }
@@ -230,7 +230,7 @@ sf_params = {'data_name'            : data_name,
              'indir'                : data_storage,
              'outdir'               : out_storage,
              'configuration'        : sel_config,
-             'localdir'             : main.base_folder,
+             'localdir'             : main.base_folder[main.machine],
              'channels'             : FLAGS.channels,
              'variables'            : FLAGS.variables_for_efficiencies,
              'binedges_filename'    : binedges_filename,
@@ -244,7 +244,7 @@ sf_params = {'data_name'            : data_name,
 
 sfagg_params = {'indir'       : out_storage,
                 'outdir'      : out_storage,
-                'localdir'    : main.base_folder,
+                'localdir'    : main.base_folder[main.machine],
                 'channels'    : FLAGS.channels,
                 'variables'   : FLAGS.variables_for_efficiencies,
                 'tag'         : FLAGS.tag,
@@ -255,7 +255,7 @@ sfagg_params = {'indir'       : out_storage,
 #### scripts/discriminator
 discriminator_params = {'indir'            : data_storage,
                         'outdir'           : data_storage,
-                        'localdir'         : main.base_folder,
+                        'localdir'         : main.base_folder[main.machine],
                         'channels'         : FLAGS.channels,
                         'variables'        : FLAGS.variables_for_efficiencies,
                         'tag'              : FLAGS.tag,
@@ -266,7 +266,7 @@ discriminator_params = {'indir'            : data_storage,
 
 #### scripts/calculator
 calculator_params = {'binedges_filename'       : binedges_filename,
-                     'indir_root'              : main.inputs,
+                     'indir_root'              : main.inputs[FLAGS.year],
                      'indir_json'              : data_storage,
                      'indir_eff'               : out_storage,
                      'outdir'                  : data_storage,
@@ -274,7 +274,7 @@ calculator_params = {'binedges_filename'       : binedges_filename,
                      'data_name'               : data_name,
                      'mc_name'                 : mc_name,
                      'mc_processes'            : mc_vals,
-                     'localdir'                : main.base_folder,
+                     'localdir'                : main.base_folder[main.machine],
                      'closure_single_triggers' : FLAGS.triggers_closure,
                      'channels'                : FLAGS.channels,
                      'variables'               : FLAGS.variables_for_efficiencies,
@@ -296,7 +296,7 @@ closure_params = {'data_name'               : data_name,
                   'mc_processes'            : mc_vals,
                   'out_weighted_prefix'     : main.pref['clos'],
                   'out_original_prefix'     : main.pref['histos'],
-                  'localdir'                : main.base_folder,
+                  'localdir'                : main.base_folder[main.machine],
                   'closure_single_triggers' : FLAGS.triggers_closure,
                   'channels'                : FLAGS.channels,
                   'variables'               : FLAGS.variables_for_efficiencies,

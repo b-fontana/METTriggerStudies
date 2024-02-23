@@ -2,10 +2,13 @@ import os
 
 email = 'bruno.alves@cern.ch'
 queue = 'short'
-machine = 'lxplus' #'llrt3condor'
+machine = 'llrt3condor' #'lxplus'
 
-#storage = '/data_CMS/cms/' + os.environ['USER'] + '/TriggerScaleFactors/'
-storage = '/eos/home-' + os.environ['USER'][0] + '/' + os.environ['USER'] + '/www/TriggerScaleFactors/LxplusRun'
+storage = {'2018': '/data_CMS/cms/' + os.environ['USER'] + '/TriggerScaleFactors/',
+           '2017': '/eos/home-' + os.environ['USER'][0] + '/' + os.environ['USER'] + '/www/TriggerScaleFactors/LxplusRun',
+           '2016': 'XXXX',
+           '2016APV': 'XXXX',
+           }
 
 folders = {'base'    : 'METTriggerStudies',
            'main'    : 'inclusion',
@@ -14,9 +17,10 @@ folders = {'base'    : 'METTriggerStudies',
            'subm'    : 'submission',
            'outs'    : 'outputs' }
 
-#base_folder = os.path.join(os.environ['HOME'], 'CMSSW_12_5_0_pre1', 'src', folders['base'])
-base_folder = '/afs/cern.ch/work/b/bfontana/METTriggerStudies'
-local_folder = os.path.join(base_folder, folders['main'])
+base_folder = {'llrt3condor':  os.path.join(os.environ['HOME'], 'CMSSW_12_5_0_pre1', 'src', folders['base']),
+               'llrt3condor7': os.path.join(os.environ['HOME'], 'CMSSW_12_5_0_pre1', 'src', folders['base']),
+               'lxplus': os.path.join('/afs/cern.ch/work/b/bfontana/', folders['base']),}
+local_folder = os.path.join(base_folder[machine], folders['main'])
 
 targ_def = 'DefaultTarget.txt'
 inters_str = '_PLUS_'
@@ -72,19 +76,19 @@ trig_map = {'2018':
             ,
 
             '2017':
-            {'IsoMu27':    {'mc': 0,  'data': 0},
-             'Ele32':      {'mc': 2,  'data': 2},
-             'METNoMu120': {'mc': 40, 'data': 40},
+            {'IsoMu27':      {'mc': 0,  'data': 0},
+             'Ele32':        {'mc': 2,  'data': 2},
+             'METNoMu120':   {'mc': 40, 'data': 40},
              'IsoDoubleTau': {'mc': (25,27,29), 'data': (25,27,29)},
-             'IsoMuIsoTau': {'mc': 5, 'data': 5},
-             'EleIsoTau': {'mc': 17, 'data': 17}}
+             'IsoMuIsoTau':  {'mc': 5, 'data': 5},
+             'EleIsoTau':    {'mc': 17, 'data': 17}}
             ,
             '2016':
-            {'IsoMu24':    {'mc': (5,7),  'data': (5,7)},
-             'Ele25':      {'mc': 13,  'data': 13},
-             'METNoMu90': {'mc': 48, 'data': 48},
-             'IsoDoubleTau': {'mc': (25,27,29), 'data': (25,27,29)},
-             'IsoMuIsoTau': {'mc': 5, 'data': 5}}
+            {'IsoMu24':      {'mc': (5,7),  'data': (5,7)},
+             'Ele25':        {'mc': 13,  'data': 13},
+             'METNoMu90':    {'mc': 48, 'data': 48},
+             'IsoDoubleTau': {'mc': (27,29), 'data': (27,29)},
+             'IsoMuIsoTau':  {'mc': (19,20), 'data': (19,20)}}
             }
 trig_map['2016APV'] = trig_map['2016']
 
@@ -113,11 +117,16 @@ corr = {'etau': {},
         'mumu': {} }
     
 ### Data and MC samples
-# inputs = ('/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_Data/',
-#           '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_MC/',
-#           )
-inputs = ('/eos/home-t/tokramer/hhbbtautau/skims/SKIMS_UL17/',
-          )
+inputs = {'2018':
+          ('/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_Data/',
+           '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_MC/'),
+          '2017':
+          ('/eos/home-t/tokramer/hhbbtautau/skims/SKIMS_UL17/',),
+          '2016':
+          ('XXX',),
+          '2016APV':
+          ('XXX',)
+          }
 corrupted_files = () #'/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background/TTTo2L2Nu/output_9.root'
 
 # names of the subfolders under 'inputs' above:
