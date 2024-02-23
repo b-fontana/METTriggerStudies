@@ -4,22 +4,28 @@ email = 'bruno.alves@cern.ch'
 queue = 'short'
 machine = 'llrt3condor' #'lxplus'
 
-storage = {'2018': '/data_CMS/cms/' + os.environ['USER'] + '/TriggerScaleFactors/',
-           '2017': '/eos/home-' + os.environ['USER'][0] + '/' + os.environ['USER'] + '/www/TriggerScaleFactors/LxplusRun',
-           '2016': 'XXXX',
-           '2016APV': 'XXXX',
-           }
+storage = {'2018': os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
+           '2017': os.path.join('/eos/home-' + os.environ['USER'][0], os.environ['USER'],
+                                'www', 'TriggerScaleFactors', 'LxplusRun'),
+           '2016': os.path.join('XXXX'),
+           '2016APV': os.path.join('XXXX')}
 
 folders = {'base'    : 'METTriggerStudies',
            'main'    : 'inclusion',
            'scripts' : 'scripts',
            'jobs'    : 'condor',
            'subm'    : 'submission',
-           'outs'    : 'outputs' }
+           'outs'    : 'outputs'}
 
-base_folder = {'llrt3condor':  os.path.join(os.environ['HOME'], 'CMSSW_12_5_0_pre1', 'src', folders['base']),
-               'llrt3condor7': os.path.join(os.environ['HOME'], 'CMSSW_12_5_0_pre1', 'src', folders['base']),
-               'lxplus': os.path.join('/afs/cern.ch/work/b/bfontana/', folders['base']),}
+base_folder = {'llrt3condor':
+               os.path.join(os.environ['HOME'],
+                            'CMSSW_12_5_0_pre1', 'src', folders['base']),
+               'llrt3condor7':
+               os.path.join(os.environ['HOME'],
+                            'CMSSW_12_5_0_pre1', 'src', folders['base']),
+               'lxplus':
+               os.path.join(os.environ['HOME'],
+                            'CMSSW_14_1_0_pre0', 'src', folders['base']),}
 local_folder = os.path.join(base_folder[machine], folders['main'])
 
 targ_def = 'DefaultTarget.txt'

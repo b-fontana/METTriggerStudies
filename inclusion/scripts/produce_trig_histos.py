@@ -325,7 +325,7 @@ parser.add_argument('--sample', required=True,
                     help='Process name as in SKIM directory')
 parser.add_argument('--isdata', required=True, type=int, help='Whether it is data or MC')
 parser.add_argument('--file', dest='infile', required=True, help='Full path of ROOT input file')
-parser.add_argument('--year', required=True, type=str, choices=('2016', '2016APV', '2017' '2018'),
+parser.add_argument('--year', required=True, type=str, choices=('2016', '2016APV', '2017', '2018'),
                     help='Data year: impact thresholds and selections.')
 parser.add_argument('--subtag', required=True,
                     help='Additional (sub)tag to differentiate similar runs within the same tag.')
