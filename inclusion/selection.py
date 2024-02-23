@@ -301,7 +301,7 @@ class EventSelection:
             return False
 
         tauH_mass = self.entries['tauH_mass']
-        bh_mass   = self.entries['bH_mass_raw']
+        bH_mass   = self.entries['bH_mass_raw']
         mcut = bH_mass > 50 and bH_mass < 270 and tauH_mass > 20 and tauH_mass < 130
         mcutinv = bH_mass < 50 or bH_mass > 270 or tauH_mass < 20 or tauH_mass > 130
         opt = ('standard', 'inverted')
