@@ -41,6 +41,7 @@ def eff_and_sf(args):
             'configuration' : args.configuration,
             'subtag'        : args.subtag,
             'tprefix'       : args.tprefix,
+            'year'          : args.year,
             'canvas_prefix' : args.canvas_prefix}
 
     script = 'run_eff_and_sf.py'

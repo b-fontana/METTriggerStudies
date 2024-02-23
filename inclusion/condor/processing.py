@@ -92,6 +92,7 @@ def processing(args):
                 'subtag'        : args.subtag,
                 'channels'      : ' '.join(args.channels),
                 'tprefix'       : args.tprefix,
+                'year'          : args.year,
                 'configuration' : args.configuration}
         script = ('produce_trig_histos.py' if args.mode == 'histos'
                   else 'produce_trig_counts.py')
@@ -128,28 +129,31 @@ def processing(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Command line parser')
 
-    parser.add_argument('--binedges_dataset', dest='binedges_dataset', required=True, help='in directory')
-    parser.add_argument('--localdir', dest='localdir', default=os.getcwd(), help='job out directory')
-    parser.add_argument('--indir', dest='indir', required=True, help='in directory')
-    parser.add_argument('--outdir', dest='outdir', required=True, help='out directory')
-    parser.add_argument('--tag', dest='tag', required=True, help='tag')
-    parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
-    parser.add_argument('--tprefix', dest='tprefix', required=True, help='target prefix')
-    parser.add_argument('--mc_processes', dest='mc_processes', required=True, nargs='+', type=str,
+    parser.add_argument('--binedges_dataset', required=True, help='in directory')
+    parser.add_argument('--localdir', default=os.getcwd(), help='job out directory')
+    parser.add_argument('--indir', required=True, help='in directory')
+    parser.add_argument('--outdir', required=True, help='out directory')
+    parser.add_argument('--tag', required=True, help='tag')
+    parser.add_argument('--subtag', required=True, help='subtag')
+    parser.add_argument('--tprefix', required=True, help='target prefix')
+    parser.add_argument('--year', required=True, type=str,
+                        choices=('2016', '2016APV', '2017', '2018'),
+                        help='Data year: impact thresholds and selections.')
+    parser.add_argument('--mc_processes', required=True, nargs='+', type=str,
                         help='list of MC process names')                
-    parser.add_argument('--data_keys', dest='data_keys', required=True, nargs='+', type=str,
+    parser.add_argument('--data_keys', required=True, nargs='+', type=str,
                         help='list of datasets')
-    parser.add_argument('--data_vals', dest='data_vals', required=True, nargs='+', type=str,
+    parser.add_argument('--data_vals', required=True, nargs='+', type=str,
                         help='list of datasets')
-    parser.add_argument('--channels',   dest='channels', required=True, nargs='+', type=str,
+    parser.add_argument('--channels', required=True, nargs='+', type=str,
                         help='Select the channels over which the workflow will be run.' )
-    parser.add_argument('--variables', dest='variables', required=True, nargs='+', type=str,
+    parser.add_argument('--variables', required=True, nargs='+', type=str,
                         help='Select the variables over which the workflow will be run.' )
-    parser.add_argument('--intersection_str', dest='intersection_str', required=False, default=main.inters_str,
+    parser.add_argument('--intersection_str', required=False, default=main.inters_str,
                         help='String used to represent set intersection between triggers.')
-    parser.add_argument('--nocut_dummy_str', dest='nocut_dummy_str', required=True,
+    parser.add_argument('--nocut_dummy_str', required=True,
                         help='Dummy string associated to trigger histograms were no cuts are applied.')
-    parser.add_argument('--configuration', dest='configuration', required=True,
+    parser.add_argument('--configuration', required=True,
                         help='Name of the configuration module to use.')
     args = parser.parse_args()
 
