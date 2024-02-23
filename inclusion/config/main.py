@@ -24,7 +24,7 @@ base_folder = {'llrt3condor':
                os.path.join(os.environ['HOME'],
                             'CMSSW_12_5_0_pre1', 'src', folders['base']),
                'lxplus':
-               os.path.join(os.environ['HOME'],
+               os.path.join('/afs/cern.ch/work/', os.environ['USER'][0], os.environ['USER'],
                             'CMSSW_14_1_0_pre0', 'src', folders['base']),}
 local_folder = os.path.join(base_folder[machine], folders['main'])
 
