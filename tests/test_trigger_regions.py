@@ -337,12 +337,21 @@ def which_region(ent, year, ptcuts, regcuts, channel, met_turnon, bigtau=False):
     Example in tautau:
     - ptcuts = (40, 40)
     - regcuts = (190, 190)
+
+    Eta cuts are defined with different strategies:
+    - tautau: eta trigger cut at 2.1, so that the MET trigger can take advantage of high-eta events for the legacy region
+    - e/mutau: eta cuts correspond to the analysis selection
+    Since different triggers in the etau and mutau channels can require different eta thresholds
+    (eg: single-muon has no threshold and cross-muon-tau has one at 2.1), a fully correct approach
+    would have to apply different cuts depending on the fired trigger bit. To avoid
+    this extra complication, which would very likely bring a negligible signal acceptance improvement,
+    the eta cuts applied correspond to the object selection in the analysis.
     """
-    dau1_eta[channel] = {"etau":   ent.dau1_eta[channel] <= 2.5,
-                         "mutau":  ent.dau1_eta[channel] <= 2.4,
+    dau1_eta[channel] = {"etau": ent.dau1_eta[channel] <= 2.5,
+                         "mutau": ent.dau1_eta[channel] <= 2.4,
                          "tautau": ent.dau1_eta[channel] <= 2.1}
-    dau2_eta[channel] = {"etau":   ent.dau2_eta[channel] <= 2.5,
-                         "mutau":  ent.dau2_eta[channel] <= 2.4,
+    dau2_eta[channel] = {"etau": ent.dau2_eta[channel] <= 2.5,
+                         "mutau": ent.dau2_eta[channel] <= 2.4,
                          "tautau": ent.dau2_eta[channel] <= 2.1}
     
     if bigtau:
@@ -359,7 +368,7 @@ def which_region(ent, year, ptcuts, regcuts, channel, met_turnon, bigtau=False):
  
         else: #mutau or etau non-2016
             tau = ent.dau2_pt >= regcuts[1] and dau2_eta[channel]
-            leg = (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2] and dau2_eta[channel]) and dau1_eta[channel] and not tau
+            leg = dau1_eta[channel] and dau2_eta[channel] and (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2])) and not tau
             
     else:
         if channel == "tautau":
@@ -373,7 +382,7 @@ def which_region(ent, year, ptcuts, regcuts, channel, met_turnon, bigtau=False):
             tau = ent.dau2_pt >= regcuts[1] and dau2_eta[channel] and not leg
  
         else: #mutau or etau non-2016
-            leg = dau1_eta[channel] and (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2] and dau2_eta[channel]))
+            leg = dau1_eta[channel] and dau2_eta[channel] and (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2]))
             tau = ent.dau2_pt >= regcuts[1] and dau2_eta[channel] and not leg
 
     met = ent.metnomu_et > met_turnon and not leg and not tau
