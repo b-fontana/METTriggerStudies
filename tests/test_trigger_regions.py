@@ -347,43 +347,42 @@ def which_region(ent, year, ptcuts, regcuts, channel, met_turnon, bigtau=False):
     this extra complication, which would very likely bring a negligible signal acceptance improvement,
     the eta cuts applied correspond to the object selection in the analysis.
     """
-    dau1_eta = {"etau": ent.dau1_eta[channel] <= 2.5,
-                "mutau": ent.dau1_eta[channel] <= 2.4,
-                "tautau": ent.dau1_eta[channel] <= 2.1}
-    dau2_eta = {"etau": ent.dau2_eta[channel] <= 2.5,
-                "mutau": ent.dau2_eta[channel] <= 2.4,
-                "tautau": ent.dau2_eta[channel] <= 2.1}
+    eta1_sel = {"etau": abs(ent.dau1_eta) <= 2.5, "mutau": abs(ent.dau1_eta) <= 2.4}
+    eta1_trg = abs(ent.dau1_eta) <= 2.1
+    eta2_trg = abs(ent.dau2_eta) <= 2.1
     
     if bigtau:
         if channel == "tautau":
-            tau = ((ent.dau1_pt >= regcuts[0] and dau1_eta[channel]) or
-                   (ent.dau2_pt >= regcuts[1] and dau2_eta[channel]))
-            leg = (ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and
-                   ent.dau1_pt < regcuts[0] and ent.dau2_pt < regcuts[1] and
-                   dau1_eta[channel] and dau2_eta[channel])
- 
+            tau = (ent.dau1_pt >= regcuts[0] and eta1_trg) or (ent.dau2_pt >= regcuts[1] and eta2_trg)
+            leg = ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and eta1_trg and eta2_trg and not tau
+            
         elif channel == "etau" and year == "2016":
-            tau = ent.dau2_pt >= regcuts[1] and dau2_eta[channel]
-            leg = ent.dau1_pt >= ptcuts[0] and dau1_eta[channel] and not tau
+            tau = ent.dau2_pt >= regcuts[1] and eta2_trg
+            leg = ent.dau1_pt >= ptcuts[0] and eta1_trg and not tau
  
         else: #mutau or etau non-2016
-            tau = ent.dau2_pt >= regcuts[1] and dau2_eta[channel]
-            leg = dau1_eta[channel] and dau2_eta[channel] and (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2])) and not tau
+            single_lepton_validity = ent.dau1_pt >= ptcuts[0] and eta1_sel[channel]
+            cross_lepton_validity  = ent.dau1_pt >= ptcuts[1] and eta1_trg and ent.dau2_pt >= ptcuts[2] and eta2_trg
+
+            tau = ent.dau2_pt >= regcuts[1] and eta2_trg
+            leg = (single_lepton_validity or cross_lepton_validity) and not tau
             
     else:
         if channel == "tautau":
-            leg = (ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and
-                   dau1_eta[channel] and dau2_eta[channel])
-            tau = ((ent.dau2_pt < ptcuts[1] and ent.dau1_pt >= regcuts[0] and dau1_eta[channel]) or 
-                   (ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and dau2_eta[channel]))
+            leg = ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and eta1_trg and eta2_trg
+            tau = ((ent.dau1_pt >= regcuts[0] and eta1_trg) or (ent.dau2_pt >= regcuts[1] and eta2_trg)) and not leg
  
         elif channel == "etau" and year == "2016":
-            leg = ent.dau1_pt >= ptcuts[0] and dau1_eta[channel]
-            tau = ent.dau2_pt >= regcuts[1] and dau2_eta[channel] and not leg
+            leg = ent.dau1_pt >= ptcuts[0] and eta1_trg
+            tau = ent.dau2_pt >= regcuts[1] and eta2_trg and not leg
  
         else: #mutau or etau non-2016
-            leg = dau1_eta[channel] and dau2_eta[channel] and (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2]))
-            tau = ent.dau2_pt >= regcuts[1] and dau2_eta[channel] and not leg
+            single_lepton_validity = ent.dau1_pt >= ptcuts[0] and eta1_sel[channel]
+            cross_lepton_validity  = ent.dau1_pt >= ptcuts[1] and eta1_trg and ent.dau2_pt >= ptcuts[2] and eta2_trg
+            single_tau_validity    = ent.dau2_pt >= regcuts[1] and eta2_trg
+
+            leg = single_lepton_validity or cross_lepton_validity
+            tau = single_tau_validity and not leg
 
     met = ent.metnomu_et > met_turnon and not leg and not tau
         
