@@ -338,39 +338,43 @@ def which_region(ent, year, ptcuts, regcuts, channel, met_turnon, bigtau=False):
     - ptcuts = (40, 40)
     - regcuts = (190, 190)
     """
-    dau1_eta, dau2_eta = ent.dau1_eta <= 2.1, ent.dau2_eta <= 2.1
+    dau1_eta[channel] = {"etau":   ent.dau1_eta[channel] <= 2.5,
+                         "mutau":  ent.dau1_eta[channel] <= 2.4,
+                         "tautau": ent.dau1_eta[channel] <= 2.1}
+    dau2_eta[channel] = {"etau":   ent.dau2_eta[channel] <= 2.5,
+                         "mutau":  ent.dau2_eta[channel] <= 2.4,
+                         "tautau": ent.dau2_eta[channel] <= 2.1}
     
     if bigtau:
         if channel == "tautau":
+            tau = ((ent.dau1_pt >= regcuts[0] and dau1_eta[channel]) or
+                   (ent.dau2_pt >= regcuts[1] and dau2_eta[channel]))
             leg = (ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and
                    ent.dau1_pt < regcuts[0] and ent.dau2_pt < regcuts[1] and
-                   dau1_eta and dau2_eta)
-            tau = ((ent.dau1_pt >= regcuts[0] and dau1_eta) or
-                   (ent.dau2_pt >= regcuts[1] and dau2_eta))
+                   dau1_eta[channel] and dau2_eta[channel])
  
         elif channel == "etau" and year == "2016":
-            leg = ent.dau1_pt >= ptcuts[0] and ent.dau2_pt < regcuts[1]
-            tau = ent.dau2_pt >= regcuts[1] and dau2_eta
+            tau = ent.dau2_pt >= regcuts[1] and dau2_eta[channel]
+            leg = ent.dau1_pt >= ptcuts[0] and dau1_eta[channel] and not tau
  
         else: #mutau or etau non-2016
-            leg = (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2]) and
-                   ent.dau2_pt < regcuts[1] and dau2_eta)
-            tau = ent.dau2_pt >= regcuts[1] and dau2_eta
+            tau = ent.dau2_pt >= regcuts[1] and dau2_eta[channel]
+            leg = (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2] and dau2_eta[channel]) and dau1_eta[channel] and not tau
             
     else:
         if channel == "tautau":
             leg = (ent.dau1_pt >= ptcuts[0] and ent.dau2_pt >= ptcuts[1] and
-                   dau1_eta and dau2_eta)
-            tau = ((ent.dau2_pt < ptcuts[1] and ent.dau1_pt >= regcuts[0] and dau1_eta) or 
-                   (ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and dau2_eta))
+                   dau1_eta[channel] and dau2_eta[channel])
+            tau = ((ent.dau2_pt < ptcuts[1] and ent.dau1_pt >= regcuts[0] and dau1_eta[channel]) or 
+                   (ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and dau2_eta[channel]))
  
         elif channel == "etau" and year == "2016":
-            leg = ent.dau1_pt >= ptcuts[0]
-            tau = ent.dau1_pt < ptcuts[0] and ent.dau2_pt >= regcuts[1] and dau2_eta
+            leg = ent.dau1_pt >= ptcuts[0] and dau1_eta[channel]
+            tau = ent.dau2_pt >= regcuts[1] and dau2_eta[channel] and not leg
  
         else: #mutau or etau non-2016
-            leg = ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2]) and dau2_eta
-            tau = ent.dau1_pt < ptcuts[1] and ent.dau2_pt >= regcuts[1] and dau2_eta
+            leg = dau1_eta[channel] and (ent.dau1_pt >= ptcuts[0] or (ent.dau1_pt >= ptcuts[1] and ent.dau2_pt >= ptcuts[2] and dau2_eta[channel]))
+            tau = ent.dau2_pt >= regcuts[1] and dau2_eta[channel] and not leg
 
     met = ent.metnomu_et > met_turnon and not leg and not tau
         
