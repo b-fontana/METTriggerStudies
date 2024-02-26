@@ -347,12 +347,12 @@ def which_region(ent, year, ptcuts, regcuts, channel, met_turnon, bigtau=False):
     this extra complication, which would very likely bring a negligible signal acceptance improvement,
     the eta cuts applied correspond to the object selection in the analysis.
     """
-    dau1_eta[channel] = {"etau": ent.dau1_eta[channel] <= 2.5,
-                         "mutau": ent.dau1_eta[channel] <= 2.4,
-                         "tautau": ent.dau1_eta[channel] <= 2.1}
-    dau2_eta[channel] = {"etau": ent.dau2_eta[channel] <= 2.5,
-                         "mutau": ent.dau2_eta[channel] <= 2.4,
-                         "tautau": ent.dau2_eta[channel] <= 2.1}
+    dau1_eta = {"etau": ent.dau1_eta[channel] <= 2.5,
+                "mutau": ent.dau1_eta[channel] <= 2.4,
+                "tautau": ent.dau1_eta[channel] <= 2.1}
+    dau2_eta = {"etau": ent.dau2_eta[channel] <= 2.5,
+                "mutau": ent.dau2_eta[channel] <= 2.4,
+                "tautau": ent.dau2_eta[channel] <= 2.1}
     
     if bigtau:
         if channel == "tautau":
