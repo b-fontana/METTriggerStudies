@@ -507,6 +507,13 @@ def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
                             ahistos[key][reg][cat].fill(dau1pt=entries["dau1_pt"],
                                                         dau2pt=entries["dau2_pt"], weight=evt_weight)
 
+    # all MC and signal must be rescaled to get the correct number of events
+    for key,_ in cuts.items():
+        for reg in regions:
+            for cat in categories:
+                ahistos[key][reg][cat] *= (utils.get_lumi(args.year) /
+                                           utils.total_sum_weights(glob_files[0], isdata=False))
+    
     with open(outname, "wb") as f:
         pickle.dump(ahistos, f)
                 
@@ -564,7 +571,7 @@ if __name__ == '__main__':
                         help='Resonance mass')
     parser.add_argument('--channel', required=True, type=str,  
                         help='Select the channel over which the workflow will be run.' )
-    parser.add_argument('--year', required=True, type=str, choices=('2016', '2017', '2018'),
+    parser.add_argument('--year', required=True, type=str, choices=('2016', '2016APV', '2017', '2018'),
                         help='Select the year over which the workflow will be run.' )
     parser.add_argument('--spin', required=True, type=int, choices=(0, 2), 
                         help='Select the spin hypothesis over which the workflow will be run.' )

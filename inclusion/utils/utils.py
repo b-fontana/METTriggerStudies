@@ -502,19 +502,32 @@ def print_configuration(parse_args):
         print('{0:>{d1}}   {1}'.format(k, v, d1=maxlkey+3), flush=True)
     print('----------------------------------------', flush=True)
 
+def get_lumi(year):
+    "Returns dataset luminosity in pb."
+    if year == "2018":
+        return 59741
+    elif year == "2017":
+        return 41529
+    elif year == "2016":
+        return 16800
+    elif year == "2016APV":
+        return "19500"
+    else:
+        raise ValueError("Year {} not supported.".format(year))
+    
 def get_ptcuts(channel, year):
     """
     Trigger pT cuts.
     Order: single lepton, cross lepton leg, cross tau leg.
     """
     if channel == "etau":
-        if year == "2016":
+        if "2016" in year:
             ptcuts = (26,)
         elif year == "2017" or year == "2018":
             ptcuts = (33, 25, 35)
 
     elif channel == "mutau":
-        if year == "2016":
+        if "2016" in year:
             ptcuts = (25, 20, 25)
         elif year == "2017":
             ptcuts = (28, 21, 32)

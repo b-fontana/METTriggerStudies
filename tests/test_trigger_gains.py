@@ -73,6 +73,8 @@ def main(args):
     ptcuts = {chn: utils.get_ptcuts(chn, args.year) for chn in args.channels}
 
     nevents = dd(lambda: dd(dict))
+    ratios, eratios = dd(lambda: dd(dict)), dd(lambda: dd(dict))
+
     yone, yboth, ykin = (dd(lambda: dd(dict)) for _ in range(3))
     eone, eboth, ekin = (dd(lambda: dd(dict)) for _ in range(3))
     for adir in main_dir:
@@ -96,6 +98,8 @@ def main(args):
             in_base = os.path.join(base_dir, md)
 
             nevents[md][chn]['base'], nevents[md][chn]['met'],  nevents[md][chn]['tau'] = [], [], []
+            ratios[md][chn]['two'], ratios[md][chn]['met'], ratios[md][chn]['tau'] = [], [], []
+            eratios[md][chn]['two'], eratios[md][chn]['met'], eratios[md][chn]['tau'] = [], [], []
             
             yone[md][chn]['met'],  yone[md][chn]['tau'], yone[md][chn]['vbf'] = [], [], []
             yboth[md][chn]['met'], yboth[md][chn]['two'] = [], []
@@ -115,6 +119,11 @@ def main(args):
                 with open(outname, "rb") as f:
                     ahistos = pickle.load(f)
 
+                    # all regions summed
+                    sum_base_tot = round(ahistos["Base"]["legacy"]["baseline"].values().sum() +
+                                         ahistos["Base"]["tau"]["baseline"].values().sum() +
+                                         ahistos["Base"]["met"]["baseline"].values().sum())
+                    
                     # legacy region
                     l1 = lambda x : round(x["legacy"]["baseline"].values().sum(), 2)
                     sum_base     = l1(ahistos["Base"])
@@ -136,34 +145,60 @@ def main(args):
                     sum_vbfkin   = l2(ahistos["VBFKin"]) + l3(ahistos["VBFKin"])
 
                     valerr = lambda num, den : ((num/den)*100., clop(num,den)*100.)
-                    frac_one_met, err_one_met = valerr(sum_met, sum_base)
-                    frac_one_tau, err_one_tau = valerr(sum_tau, sum_base)
-                    frac_both, err_both       = valerr(sum_met + sum_only_tau, sum_base)
-                    frac_one_vbf, err_one_vbf = valerr(sum_vbf, sum_base)
-                    frac_metkin,  err_metkin  = valerr(sum_metkin, sum_base)
-                    frac_taukin,  err_taukin  = valerr(sum_taukin, sum_base)
-                    frac_bothkin, err_bothkin = valerr(sum_metkin + sum_taukin, sum_base)
-                    frac_vbfkin,  err_vbfkin  = valerr(sum_vbfkin, sum_base)
+                    # frac_one_met, err_one_met = valerr(sum_met, sum_base)
+                    # frac_one_tau, err_one_tau = valerr(sum_tau, sum_base)
+                    # frac_both, err_both       = valerr(sum_met + sum_only_tau, sum_base)
+                    # frac_one_vbf, err_one_vbf = valerr(sum_vbf, sum_base)
+                    frac_metkin,  err_metkin  = valerr(sum_metkin, sum_base_tot)
+                    frac_taukin,  err_taukin  = valerr(sum_taukin, sum_base_tot)
+                    frac_bothkin, err_bothkin = valerr(sum_metkin + sum_taukin, sum_base_tot)
+                    frac_vbfkin,  err_vbfkin  = valerr(sum_vbfkin, sum_base_tot)
 
                     nevents[md][chn]['base'].append(sum_basekin)
                     nevents[md][chn]['met'].append(sum_basekin + sum_metkin)
                     nevents[md][chn]['tau'].append(sum_basekin + sum_metkin + sum_taukin)
+
+
+                    rat_met_num = sum_basekin + sum_metkin
+                    rat_met_all = rat_met_num / sum_base_tot
+
+                    rat_tau_num = sum_basekin + sum_taukin
+                    rat_tau_all = rat_tau_num / sum_base_tot
+
+                    rat_all_num = sum_basekin + sum_taukin + sum_metkin
+                    rat_all = rat_all_num / sum_base_tot
                     
-                    yone[md][chn]['met'].append(frac_one_met)
-                    yone[md][chn]['tau'].append(frac_one_tau)
-                    yone[md][chn]['vbf'].append(frac_one_vbf)
-                    yboth[md][chn]['met'].append(frac_one_met)
-                    yboth[md][chn]['two'].append(frac_both)
+                    ratios[md][chn]['met'].append((rat_met_all - 1)*100)
+                    ratios[md][chn]['tau'].append((rat_tau_all - 1)*100)
+                    ratios[md][chn]['two'].append((rat_all - 1)*100)
+
+                    e_metkin = np.sqrt(sum_metkin)
+                    e_taukin = np.sqrt(sum_taukin)
+                    e_basekin = np.sqrt(sum_basekin)
+
+                    e_tau_num = np.sqrt(sum_taukin + sum_basekin)
+                    e_met_num = np.sqrt(sum_metkin + sum_basekin)
+                    e_all_num = np.sqrt(sum_metkin + sum_taukin + sum_basekin)
+
+                    eratios[md][chn]['tau'].append(rat_tau_all * np.sqrt(e_tau_num**2/rat_tau_num + 1/sum_base_tot))
+                    eratios[md][chn]['met'].append(rat_met_all * np.sqrt(e_met_num**2/rat_met_num + 1/sum_base_tot))
+                    eratios[md][chn]['two'].append(rat_all * np.sqrt(e_all_num**2/rat_all_num + 1/sum_base_tot))
+                    
+                    # yone[md][chn]['met'].append(frac_one_met)
+                    # yone[md][chn]['tau'].append(frac_one_tau)
+                    # yone[md][chn]['vbf'].append(frac_one_vbf)
+                    # yboth[md][chn]['met'].append(frac_one_met)
+                    # yboth[md][chn]['two'].append(frac_both)
                     ykin[md][chn]['met'].append(frac_metkin)
                     ykin[md][chn]['tau'].append(frac_taukin)
                     ykin[md][chn]['two'].append(frac_bothkin)
                     ykin[md][chn]['vbf'].append(frac_vbfkin)
 
-                    eone[md][chn]['met'].append(err_one_met)
-                    eone[md][chn]['tau'].append(err_one_tau)
-                    eone[md][chn]['vbf'].append(err_one_vbf)
-                    eboth[md][chn]['met'].append(err_one_met)
-                    eboth[md][chn]['two'].append(err_both)
+                    # eone[md][chn]['met'].append(err_one_met)
+                    # eone[md][chn]['tau'].append(err_one_tau)
+                    # eone[md][chn]['vbf'].append(err_one_vbf)
+                    # eboth[md][chn]['met'].append(err_one_met)
+                    # eboth[md][chn]['two'].append(err_both)
                     ekin[md][chn]['met'].append(err_metkin)
                     ekin[md][chn]['tau'].append(err_taukin)
                     ekin[md][chn]['two'].append(err_bothkin)
@@ -190,6 +225,7 @@ def main(args):
         p_opt = dict(width=800, height=400, x_axis_label='x', y_axis_label='y')
         p1 = figure(title='Event number (' + pp(channels[0]) + ')', y_axis_type="linear", **p_opt)
         p2 = figure(title='Acceptance Gain (' + pp(channels[0]) + ')', **p_opt) if len(channels)==1 else figure(**p_opt)
+
         p1.yaxis.axis_label = 'Weighted number of events'
         p2.yaxis.axis_label = 'Trigger acceptance gain (w.r.t. trigger baseline) [%]'
         pics = (p1, p2)
@@ -211,25 +247,21 @@ def main(args):
                     left=edges_x[:-1], right=edges_x[1:],
                     legend_label=legends["tau"]+(' ('+pp(chn)+')' if len(channels)>1 else ''),
                     fill_color="red", line_color="black")
-            # p1.multi_line([(x,x) for x in linear_x],
-            #               [(-0.1,0.1) for x in linear_x],
-            #               color=colors[itd], **opt_line)
 
             for itd,td in enumerate(('met', 'tau', 'two')):
                 p2.circle([x+shift_kin[td][ichn] for x in linear_x],
-                          ykin[md][chn][td], color=colors[itd], fill_alpha=1.,
+                          ratios[md][chn][td], color=colors[itd], fill_alpha=1.,
                           **opt_points)
                 p2.line([x+shift_kin[td][ichn] for x in linear_x],
-                        ykin[md][chn][td], color=colors[itd], line_dash=styles[ichn],
+                        ratios[md][chn][td], color=colors[itd], line_dash=styles[ichn],
                         legend_label=legends[td]+(' ('+pp(chn)+')' if len(channels)>1 else ''), **opt_line)
                 p2.multi_line(
                     [(x+shift_kin[td][ichn],x+shift_kin[td][ichn]) for x in linear_x], 
-                    [(y[0],y[1])
-                     for x,y in zip(ykin[md][chn][td],ekin[md][chn][td])],
+                    [(y-((x-1)*50.),y+((x-1)*50.)) for x,y in zip(eratios[md][chn][td],ratios[md][chn][td])],
                     color=colors[itd], **opt_line)
 
         p1.legend.location = 'top_right'
-        p2.legend.location = 'top_left'                
+        p2.legend.location = 'top_left'
         for p in pics:
             p.xaxis[0].ticker = xticks
             p.xgrid[0].ticker = xticks

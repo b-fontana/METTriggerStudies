@@ -71,20 +71,29 @@ def get_trig_counts(args):
 
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
-        try:
-            evt_weight = (entries.MC_weight / xsec_norm) * entries.lumi
-            evt_weight *= entries.PUReweight * entries.IdSF_deep_2d
-        except TypeError:
-            print('MC_weight: {}'.format(entries.MC_weight))
-            print('Luminosity: {}'.format(entries.lumi))
-            print('PU reweight: {}'.format(entries.PUReweight))
-            print('Tau ID SF: {}'.format(entries.IdSF_deep_2d))
-            raise
 
-        if utils.is_nan(evt_weight) or args.isdata:
-            evt_weight = 1.
+        w_mc     = entries.MC_weight
+        w_pure   = entries.PUReweight
+        w_l1pref = entries.L1pref_weight
+        w_trig   = entries.trigSF
+        w_idiso  = entries.IdSF_deep_2d
+        w_jetpu  = entries.PUjetID_SF
+        w_btag   = entries.bTagweightReshape
+        
+        if utils.is_nan(w_mc)     : w_mc=1
+        if utils.is_nan(w_pure)   : w_pure=1
+        if utils.is_nan(w_l1pref) : w_l1pref=1
+        if utils.is_nan(w_trig)   : w_trig=1
+        if utils.is_nan(w_idiso)  : w_idiso=1
+        if utils.is_nan(w_jetpu)  : w_jetpu=1
+        if utils.is_nan(w_btag)   : w_btag=1
+
+        evt_weight = w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu * w_btag
+        if args.isdata:
+            assert evt_weight == 1.
 
         sel = selection.EventSelection(entries, args.isdata, configuration=config_module)
+
         if not sel.sel_category(config_module.category):
             continue
         
@@ -118,6 +127,7 @@ def get_trig_counts(args):
                         w_inters[chn][tstr] += evt_weight
                         w2_inters[chn][tstr] += evt_weight*evt_weight
                                             
+
     file_id = ''.join( c for c in args.filename[-10:] if c.isdigit() )
 
     proc_folder = os.path.dirname(args.filename).split('/')[-1]
@@ -140,6 +150,13 @@ def get_trig_counts(args):
                 
                 tstr = joinNTC(tcomb)
                 basestr = sep.join((tstr, chn, reftrig))
+
+                if not args.isdata:
+                    norm_factor = utils.get_lumi(args.year) / utils.total_sum_weights(args.file, isdata=False)
+                    w_ref[chn][tstr] *= norm_factor
+                    w_inters[chn][tstr] *= norm_factor
+                    w2_ref[chn][tstr] *= norm_factor**2
+                    w2_inters[chn][tstr] *= norm_factor**2
 
                 counts_ref = str(int(c_ref[chn][tstr]))
                 counts_int = str(int(c_inters[chn][tstr]))
@@ -164,6 +181,8 @@ parser.add_argument('--dataset', dest='dataset', required=True,
                     help='Dataset name as provided by the user: MET, EG, ...')
 parser.add_argument('--sample',      dest='sample',      required=True, help='Process name as in SKIM directory')
 parser.add_argument('--isdata',      dest='isdata',      required=True, help='Whether it is data or MC', type=int)
+parser.add_argument('--year', required=True, type=str, choices=('2016', '2016APV', '2017', '2018'),
+                    help='Data year: impact thresholds and selections.')
 parser.add_argument('--file',        dest='filename',    required=True, help='ID of input root file')
 parser.add_argument('--subtag',      dest='subtag',      required=True,
                     help='Additional (sub)tag to differ  entiate similar runs within the same tag.')

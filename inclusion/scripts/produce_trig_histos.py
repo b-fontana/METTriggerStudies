@@ -101,9 +101,6 @@ def build_histograms(args):
         # this is slow: do it once only
         entries = utils.dot_dict({x: getattr(entry, x) for x in _entries})
 
-        sel = selection.EventSelection(entries, isdata=args.isdata, year=args.year,
-                                       configuration=config_module)
-
         w_mc     = entries.MC_weight
         w_pure   = entries.PUReweight
         w_l1pref = entries.L1pref_weight
@@ -120,11 +117,12 @@ def build_histograms(args):
         if utils.is_nan(w_jetpu)  : w_jetpu=1
         if utils.is_nan(w_btag)   : w_btag=1
 
-        # to get the number of events ths number has to be multiplied by the lumi and divided by the gen sum of weights
-        # the latter is obtained with utils.total_sum_weights()
-        # for efficiencies those get cancelled in the ratio, so we can ignore them
-        # so all counts are wrong for the moment (but efficiencies are correct)!!!!
         evt_weight = w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu * w_btag
+        if args.isdata:
+            assert evt_weight == 1.
+
+        sel = selection.EventSelection(entries, isdata=args.isdata, year=args.year,
+                                       configuration=config_module)
 
         if not sel.sel_category(config_module.category):
             continue
@@ -279,6 +277,13 @@ def build_histograms(args):
     file_id = ''.join( c for c in args.infile[-10:] if c.isdigit() ) 
     outname = os.path.join(outdir, args.tprefix + args.sample + '_' + file_id + args.subtag + '.root')
     empty_files = True
+
+    if not args.isdata:
+        norm_factor = utils.get_lumi(args.year) / utils.total_sum_weights(args.file, isdata=False)
+        hRef.Scale(norm_factor)
+        h2Ref.Scale(norm_factor)
+        hTrig.Scale(norm_factor)
+        h2Trig.Scale(norm_factor)
     
     f_out = ROOT.TFile(outname, 'RECREATE')
     f_out.cd()
