@@ -199,7 +199,7 @@ def square_diagram(c_legacy_trg, c_met_trg, c_tau_trg, channel,
 def get_outname(sample, channel, regcuts, ptcuts, met_turnon, bigtau):
     utils.create_single_dir('data')
 
-    name = sample + '_' + channel + '_'
+    name = sample + '_' + channel + '_'  #*map(str, regcuts)
     name += '_'.join((*[str(x) for x in regcuts], 'ptcuts',
                       *[str(x) for x in ptcuts], 'turnon', str(met_turnon)))
     if bigtau:
