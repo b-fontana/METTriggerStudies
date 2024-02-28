@@ -5,8 +5,7 @@ queue = 'short'
 machine = 'llrt3condor' #'lxplus'
 
 storage = {'2018': os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
-           '2017': os.path.join('/eos/home-' + os.environ['USER'][0], os.environ['USER'],
-                                'www', 'TriggerScaleFactors', 'LxplusRun'),
+           '2017': os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
            '2016': os.path.join('XXXX'),
            '2016APV': os.path.join('XXXX')}
 
@@ -18,11 +17,9 @@ folders = {'base'    : 'METTriggerStudies',
            'outs'    : 'outputs'}
 
 base_folder = {'llrt3condor':
-               os.path.join(os.environ['HOME'],
-                            'CMSSW_12_5_0_pre1', 'src', folders['base']),
+               os.path.join(os.environ['HOME'], 'CMSSW_14_1_0_pre0', 'src', folders['base']),
                'llrt3condor7':
-               os.path.join(os.environ['HOME'],
-                            'CMSSW_12_5_0_pre1', 'src', folders['base']),
+               os.path.join(os.environ['HOME'], 'CMSSW_14_1_0_pre0', 'src', folders['base']),
                'lxplus':
                os.path.join('/afs/cern.ch/work/', os.environ['USER'][0], os.environ['USER'],
                             'CMSSW_14_1_0_pre0', 'src', folders['base']),}

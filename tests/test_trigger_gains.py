@@ -168,9 +168,9 @@ def main(args):
                     rat_all_num = sum_basekin + sum_taukin + sum_metkin
                     rat_all = rat_all_num / sum_base_tot
                     
-                    ratios[md][chn]['met'].append((rat_met_all - 1)*100)
-                    ratios[md][chn]['tau'].append((rat_tau_all - 1)*100)
-                    ratios[md][chn]['two'].append((rat_all - 1)*100)
+                    ratios[md][chn]['met'].append(rat_met_all)
+                    ratios[md][chn]['tau'].append(rat_tau_all)
+                    ratios[md][chn]['two'].append(rat_all)
 
                     e_metkin = np.sqrt(sum_metkin)
                     e_taukin = np.sqrt(sum_taukin)
@@ -180,9 +180,9 @@ def main(args):
                     e_met_num = np.sqrt(sum_metkin + sum_basekin)
                     e_all_num = np.sqrt(sum_metkin + sum_taukin + sum_basekin)
 
-                    eratios[md][chn]['tau'].append(rat_tau_all * np.sqrt(e_tau_num**2/rat_tau_num + 1/sum_base_tot))
-                    eratios[md][chn]['met'].append(rat_met_all * np.sqrt(e_met_num**2/rat_met_num + 1/sum_base_tot))
-                    eratios[md][chn]['two'].append(rat_all * np.sqrt(e_all_num**2/rat_all_num + 1/sum_base_tot))
+                    eratios[md][chn]['tau'].append(rat_tau_all * np.sqrt(e_tau_num**2/rat_tau_num**2 + 1/sum_base_tot))
+                    eratios[md][chn]['met'].append(rat_met_all * np.sqrt(e_met_num**2/rat_met_num**2 + 1/sum_base_tot))
+                    eratios[md][chn]['two'].append(rat_all * np.sqrt(e_all_num**2/rat_all_num**2 + 1/sum_base_tot))
                     
                     # yone[md][chn]['met'].append(frac_one_met)
                     # yone[md][chn]['tau'].append(frac_one_tau)
@@ -250,14 +250,15 @@ def main(args):
 
             for itd,td in enumerate(('met', 'tau', 'two')):
                 p2.circle([x+shift_kin[td][ichn] for x in linear_x],
-                          ratios[md][chn][td], color=colors[itd], fill_alpha=1.,
-                          **opt_points)
+                          [(x-1)*100. for x in ratios[md][chn][td]],
+                          color=colors[itd], fill_alpha=1., **opt_points)
                 p2.line([x+shift_kin[td][ichn] for x in linear_x],
-                        ratios[md][chn][td], color=colors[itd], line_dash=styles[ichn],
+                        [(x-1)*100. for x in ratios[md][chn][td]],
+                        color=colors[itd], line_dash=styles[ichn],
                         legend_label=legends[td]+(' ('+pp(chn)+')' if len(channels)>1 else ''), **opt_line)
                 p2.multi_line(
                     [(x+shift_kin[td][ichn],x+shift_kin[td][ichn]) for x in linear_x], 
-                    [(y-((x-1)*50.),y+((x-1)*50.)) for x,y in zip(eratios[md][chn][td],ratios[md][chn][td])],
+                    [((y-1)*100-(x*50.),(y-1)*100+(x*50.)) for x,y in zip(eratios[md][chn][td],ratios[md][chn][td])],
                     color=colors[itd], **opt_line)
 
         p1.legend.location = 'top_right'

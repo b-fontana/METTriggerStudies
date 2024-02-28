@@ -484,7 +484,8 @@ def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
 
         if utils.is_channel_consistent(channel, entries.pairType):
             if not sel.selection_cuts(lepton_veto=True, bjets_cut=True,
-                                      mass_cut=config_module.mass_cut):
+                                      mass_cut=config_module.mass_cut,
+                                      custom_cut=None):
                 continue
 
             for cat in categories:
