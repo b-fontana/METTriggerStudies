@@ -30,7 +30,7 @@ def build_histograms(args):
     outdir = os.path.join(args.outdir, args.sample)
 
     if not os.path.exists(args.infile):
-        mes = '[' + os.path.basename(__file__) + '] {} does not exist.'.format(infile)
+        mes = '[' + os.path.basename(__file__) + '] {} does not exist.'.format(args.infile)
         raise ValueError(mes)
 
     config_module = importlib.import_module(args.configuration)
@@ -117,9 +117,14 @@ def build_histograms(args):
         if utils.is_nan(w_jetpu)  : w_jetpu=1
         if utils.is_nan(w_btag)   : w_btag=1
 
-        evt_weight = w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu * w_btag
+        evt_weight = w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu
         if args.isdata:
-            assert evt_weight == 1.
+            if evt_weight != 1.:
+                raise RuntimeError('The weight for data is {}!'.format(evt_weight))
+        evt_weight *= w_btag # can be '-1' when no bjets are present, but then fails baseline
+        if args.isdata:
+            if abs(evt_weight) != 1.:
+                raise RuntimeError('The weight for data is {}!'.format(evt_weight))
 
         sel = selection.EventSelection(entries, isdata=args.isdata, year=args.year,
                                        configuration=config_module)
@@ -322,7 +327,7 @@ def build_histograms(args):
 # Parse input arguments
 parser = argparse.ArgumentParser(description='Producer trigger histograms.')
 
-parser.add_argument('--binedges_fname', dest='binedges_fname', required=True, help='where the bin edges are stored')
+parser.add_argument('--binedges_fname', required=True, help='where the bin edges are stored')
 parser.add_argument('--outdir', required=True, help='output directory')
 parser.add_argument('--dataset', required=True,
                     help='Dataset name as provided by the user: MET, EG, ...')
