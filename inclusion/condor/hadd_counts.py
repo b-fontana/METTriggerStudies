@@ -67,12 +67,10 @@ def hadd_counts(args):
     jw = JobWriter()
     for out in outs_job:
         if out == outs_job[0]:
-            jw.write_shell(filename=out, command=comm1,
-                           localdir=args.localdir)
+            jw.write_shell(filename=out, command=comm1, localdir=args.localdir, machine=main.machine)
             jw.add_string('echo "{} without aggregation (dataset {}) done."'.format(script, args.dataset_name))
         elif out == outs_job[1]:
-            jw.write_shell(filename=out, command=comm2,
-                           localdir=args.localdir)
+            jw.write_shell(filename=out, command=comm2, localdir=args.localdir, machine=main.machine)
             jw.add_string('echo "{} with aggregation {} done."'.format(script, args.dataset_name))
 
     #### Write submission file

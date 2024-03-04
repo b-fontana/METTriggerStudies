@@ -143,16 +143,21 @@ class JobWriter:
             else:
                 self.f.write('queue' + self.endl)
 
-    def write_shell(self, filename, command, localdir):
+    def write_shell(self, filename, command, localdir, machine, eos_user='bfontana'):
         self.filenames.append( filename )
         m = ( '#!/bin/bash' +
               self.endl + 'export X509_USER_PROXY=~/.t3/proxy.cert' +
-              self.endl + 'export EXTRA_CLING_ARGS=-O2' +
-              self.endl + 'source /cvmfs/cms.cern.ch/cmsset_default.sh' +
-              self.endl + 'cd {}/'.format(localdir) +
-              self.endl + 'eval `scramv1 runtime -sh`' +
-              self.endl + command +
-              self.endl )
+              self.endl + 'export EXTRA_CLING_ARGS=-O2' )
+
+        if 'llr' in machine:
+              m += ( self.endl + 'export KRB5CCNAME=FILE:/' + os.environ['HOME'] + '/.krb5c/$(whoami)' +
+                     self.endl + '/opt/exp_soft/cms/t3/eos-login -username {} -wn'.format(eos_user) )
+              
+        m += ( self.endl + 'source /cvmfs/cms.cern.ch/cmsset_default.sh' +
+               self.endl + 'cd {}/'.format(localdir) +
+               self.endl + 'eval `scramv1 runtime -sh`' +
+               self.endl + command +
+               self.endl )
         with open(filename, 'w') as self.f:
             self.f.write(m)
         os.system('chmod u+rwx '+ filename)

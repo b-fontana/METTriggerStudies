@@ -53,7 +53,7 @@ def hadd_histo(args):
     comm = 'hadd -f ${1} ${@:2}'
 
     for out in outs_job:
-        jw.write_shell(filename=out, command=comm, localdir=args.localdir)
+        jw.write_shell(filename=out, command=comm, localdir=args.localdir, machine=main.machine)
         if out == outs_job[0]:
             jw.add_string('echo "{} without aggregation (dataset {}) done."'.format(script, args.dataset_name))
         elif out == outs_job[1]:

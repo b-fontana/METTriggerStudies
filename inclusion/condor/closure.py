@@ -43,7 +43,7 @@ def closure(args)                    :
         comm += '--debug '
 
     jw = JobWriter()
-    jw.write_shell(filename=outs_job, command=comm, localdir=args.localdir)
+    jw.write_shell(filename=outs_job, command=comm, localdir=args.localdir, machine=main.machine)
     jw.add_string('echo "{} for channel ${{1}} and single trigger ${{2}} done."'.format(script))
 
     #### Write submission file

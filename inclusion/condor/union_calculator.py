@@ -55,7 +55,7 @@ def union_calculator(args):
         if args.debug:
             comm += '--debug '
 
-        jw.write_shell(filename=jobs[i], command=comm, localdir=args.localdir)
+        jw.write_shell(filename=jobs[i], command=comm, localdir=args.localdir, machine=main.machine)
         jw.add_string('echo "Process {} done."'.format(proc))
 
         #### Write submission file

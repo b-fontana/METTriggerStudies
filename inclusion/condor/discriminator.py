@@ -42,7 +42,7 @@ def discriminator(args):
         if args.debug:
             comm += '--debug '
         
-        jw.write_shell(filename=outs_job[i], command=comm, localdir=args.localdir)
+        jw.write_shell(filename=outs_job[i], command=comm, localdir=args.localdir, machine=main.machine)
         jw.add_string('echo "Script {} with channel {} done."'.format(script, args.channels[i]))
 
         #### Write submission file

@@ -37,7 +37,7 @@ def eff_and_sf_aggr(args):
         comm += '--debug '
 
     jw = JobWriter()
-    jw.write_shell(filename=outs_job, command=comm, localdir=args.localdir)
+    jw.write_shell(filename=outs_job, command=comm, localdir=args.localdir, machine=main.machine)
     jw.add_string('echo "{} done."'.format(script))
 
     #### Write submission file

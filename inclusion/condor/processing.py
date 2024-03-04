@@ -106,7 +106,7 @@ def processing(args):
             comm += utils.build_script_command(name=None, sep=' ', **pars1)
 
         jw = JobWriter()
-        jw.write_shell(filename=outs_job[i], command=comm, localdir=args.localdir)
+        jw.write_shell(filename=outs_job[i], command=comm, localdir=args.localdir, machine=main.machine)
         jw.add_string('echo "Process {} done in mode {}."'.format(vproc,args.mode))
 
         #### Write submission file
