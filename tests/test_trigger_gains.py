@@ -72,11 +72,9 @@ def main(args):
     edges_x  = [k-0.5 for k in range(1,len(args.masses)+1)] + [len(args.masses)+0.5]
     ptcuts = {chn: utils.get_ptcuts(chn, args.year) for chn in args.channels}
 
-    nevents = dd(lambda: dd(dict))
+    nevents, errors = dd(lambda: dd(dict)), dd(lambda: dd(dict))
     ratios, eratios = dd(lambda: dd(dict)), dd(lambda: dd(dict))
 
-    yone, yboth, ykin = (dd(lambda: dd(dict)) for _ in range(3))
-    eone, eboth, ekin = (dd(lambda: dd(dict)) for _ in range(3))
     for adir in main_dir:
         dRstr = str(args.deltaR).replace('.', 'p')
         if len(args.channels) == 1:
@@ -100,17 +98,8 @@ def main(args):
             nevents[md][chn]['base'], nevents[md][chn]['met'],  nevents[md][chn]['tau'] = [], [], []
             ratios[md][chn]['two'], ratios[md][chn]['met'], ratios[md][chn]['tau'] = [], [], []
             eratios[md][chn]['two'], eratios[md][chn]['met'], eratios[md][chn]['tau'] = [], [], []
-            
-            yone[md][chn]['met'],  yone[md][chn]['tau'], yone[md][chn]['vbf'] = [], [], []
-            yboth[md][chn]['met'], yboth[md][chn]['two'] = [], []
-            ykin[md][chn]['met'],  ykin[md][chn]['tau']  = [], []
-            ykin[md][chn]['two'],  ykin[md][chn]['vbf']  = [], []
-            
-            eone[md][chn]['met'],  eone[md][chn]['tau'], eone[md][chn]['vbf']  = [], [], []
-            eboth[md][chn]['met'], eboth[md][chn]['two'] = [], []
-            ekin[md][chn]['met'],  ekin[md][chn]['tau']  = [], []
-            ekin[md][chn]['two'],  ekin[md][chn]['vbf']  = [], []
-  
+            errors[md][chn] = []
+              
             for mass in args.masses:
                 outname = get_outname(mass, chn, [str(x) for x in args.region_cuts],
                                       [str(x) for x in ptcuts[chn]], str(args.met_turnon),
@@ -147,16 +136,6 @@ def main(args):
                     # hypothetical VBF region
                     sum_vbfkin   = l2(ahistos["VBFKin"]) + l3(ahistos["VBFKin"])
 
-                    valerr = lambda num, den : ((num/den)*100., clop(num,den)*100.)
-                    # frac_one_met, err_one_met = valerr(sum_met, sum_base)
-                    # frac_one_tau, err_one_tau = valerr(sum_tau, sum_base)
-                    # frac_both, err_both       = valerr(sum_met + sum_only_tau, sum_base)
-                    # frac_one_vbf, err_one_vbf = valerr(sum_vbf, sum_base)
-                    frac_metkin,  err_metkin  = valerr(sum_metkin, sum_base_tot)
-                    frac_taukin,  err_taukin  = valerr(sum_taukin, sum_base_tot)
-                    frac_bothkin, err_bothkin = valerr(sum_metkin + sum_taukin, sum_base_tot)
-                    frac_vbfkin,  err_vbfkin  = valerr(sum_vbfkin, sum_base_tot)
-
                     nevents[md][chn]['base'].append(sum_basekin)
                     nevents[md][chn]['met'].append(sum_basekin + sum_metkin)
                     nevents[md][chn]['tau'].append(sum_basekin + sum_metkin + sum_taukin)
@@ -185,30 +164,12 @@ def main(args):
                     eratios[md][chn]['tau'].append(rat_tau_all * np.sqrt(e_tau_num**2/rat_tau_num**2 + 1/sum_base_tot))
                     eratios[md][chn]['met'].append(rat_met_all * np.sqrt(e_met_num**2/rat_met_num**2 + 1/sum_base_tot))
                     eratios[md][chn]['two'].append(rat_all * np.sqrt(e_all_num**2/rat_all_num**2 + 1/sum_base_tot))
-                    
-                    # yone[md][chn]['met'].append(frac_one_met)
-                    # yone[md][chn]['tau'].append(frac_one_tau)
-                    # yone[md][chn]['vbf'].append(frac_one_vbf)
-                    # yboth[md][chn]['met'].append(frac_one_met)
-                    # yboth[md][chn]['two'].append(frac_both)
-                    ykin[md][chn]['met'].append(frac_metkin)
-                    ykin[md][chn]['tau'].append(frac_taukin)
-                    ykin[md][chn]['two'].append(frac_bothkin)
-                    ykin[md][chn]['vbf'].append(frac_vbfkin)
+                    errors[md][chn].append(e_all_num)
 
-                    # eone[md][chn]['met'].append(err_one_met)
-                    # eone[md][chn]['tau'].append(err_one_tau)
-                    # eone[md][chn]['vbf'].append(err_one_vbf)
-                    # eboth[md][chn]['met'].append(err_one_met)
-                    # eboth[md][chn]['two'].append(err_both)
-                    ekin[md][chn]['met'].append(err_metkin)
-                    ekin[md][chn]['tau'].append(err_taukin)
-                    ekin[md][chn]['two'].append(err_bothkin)
-                    ekin[md][chn]['vbf'].append(err_vbfkin)
-                
-    with open('data.json', 'w', encoding='utf-8') as json_obj:
-        json_data = {"bigtau" if args.bigtau else
-                     "standard": {chn: nevents[adir[chn]][chn]['tau'] for chn in channels}}
+    json_name = 'data_bigtau.json' if args.bigtau else 'data_standard.json'
+    with open(json_name, 'w', encoding='utf-8') as json_obj:
+        json_data = {"vals": {chn: nevents[adir[chn]][chn]['tau'] for chn in channels}}
+        json_data.update({"errs": {chn: errors[adir[chn]][chn] for chn in channels}})
         json.dump(json_data, json_obj, ensure_ascii=False, indent=4)
 
     opt_points = dict(size=8)
