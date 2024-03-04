@@ -412,9 +412,10 @@ def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
     for reg in regions:                
         for cat in categories:
             for htype in htypes:
-                ahistos[htype][reg][cat] = hist.Hist(
-                    hist.axis.Regular(*binning["dau1_pt"], name="dau1pt"),
-                    hist.axis.Regular(*binning["dau2_pt"], name="dau2pt"),
+                ahistos[htype][reg][cat] = (
+                    hist.Hist.new.Regular(*binning["dau1_pt"], name="dau1pt")
+                    .Regular(*binning["dau2_pt"], name="dau2pt")
+                    .Weight()
                 )
 
     t_in = ROOT.TChain('HTauTauTree')
@@ -482,10 +483,12 @@ def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
   
         evt_weight = w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu * w_btag
 
+        tau_gen_cut = {"etau": None, "mutau": None,
+                       "tautau": 'self.entries["isTau1real"] == 1 and self.entries["isTau2real"] == 1'}
         if utils.is_channel_consistent(channel, entries.pairType):
             if not sel.selection_cuts(lepton_veto=True, bjets_cut=True,
                                       mass_cut=config_module.mass_cut,
-                                      custom_cut=None):
+                                      custom_cut=tau_gen_cut[channel]):
                 continue
 
             for cat in categories:

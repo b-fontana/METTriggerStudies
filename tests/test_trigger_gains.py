@@ -7,7 +7,7 @@ import sys
 parent_dir = os.path.abspath(__file__ + 2 * '/..')
 sys.path.insert(0, parent_dir)
 
-import csv
+import json
 import argparse
 from inclusion.utils import utils
 import numpy as np
@@ -132,14 +132,17 @@ def main(args):
                     sum_only_tau = l1(ahistos["NoBaseNoMETTau"])
                     sum_tau      = l1(ahistos["NoBaseTau"])
                     sum_basekin  = l1(ahistos["LegacyKin"])
-
+                    w2_basekin   = ahistos["METKin"]["legacy"]["baseline"].variances().sum()
+                    
                     # MET region
                     l2 = lambda x : round(x["met"]["baseline"].values().sum(), 2)
-                    sum_metkin   = l2(ahistos["METKin"])
-
+                    sum_metkin = l2(ahistos["METKin"])
+                    w2_metkin = ahistos["METKin"]["met"]["baseline"].variances().sum()
+                    
                     # Single Tau region
                     l3 = lambda x : round(x["tau"]["baseline"].values().sum(), 2)
-                    sum_taukin   = l3(ahistos["TauKin"])
+                    sum_taukin = l3(ahistos["TauKin"])
+                    w2_taukin = ahistos["TauKin"]["tau"]["baseline"].variances().sum()
 
                     # hypothetical VBF region
                     sum_vbfkin   = l2(ahistos["VBFKin"]) + l3(ahistos["VBFKin"])
@@ -158,7 +161,6 @@ def main(args):
                     nevents[md][chn]['met'].append(sum_basekin + sum_metkin)
                     nevents[md][chn]['tau'].append(sum_basekin + sum_metkin + sum_taukin)
 
-
                     rat_met_num = sum_basekin + sum_metkin
                     rat_met_all = rat_met_num / sum_base_tot
 
@@ -172,13 +174,13 @@ def main(args):
                     ratios[md][chn]['tau'].append(rat_tau_all)
                     ratios[md][chn]['two'].append(rat_all)
 
-                    e_metkin = np.sqrt(sum_metkin)
-                    e_taukin = np.sqrt(sum_taukin)
-                    e_basekin = np.sqrt(sum_basekin)
+                    e_metkin = np.sqrt(w2_metkin)
+                    e_taukin = np.sqrt(w2_taukin)
+                    e_basekin = np.sqrt(w2_basekin)
 
-                    e_tau_num = np.sqrt(sum_taukin + sum_basekin)
-                    e_met_num = np.sqrt(sum_metkin + sum_basekin)
-                    e_all_num = np.sqrt(sum_metkin + sum_taukin + sum_basekin)
+                    e_tau_num = np.sqrt(w2_taukin + w2_basekin)
+                    e_met_num = np.sqrt(w2_metkin + w2_basekin)
+                    e_all_num = np.sqrt(w2_metkin + w2_taukin + w2_basekin)
 
                     eratios[md][chn]['tau'].append(rat_tau_all * np.sqrt(e_tau_num**2/rat_tau_num**2 + 1/sum_base_tot))
                     eratios[md][chn]['met'].append(rat_met_all * np.sqrt(e_met_num**2/rat_met_num**2 + 1/sum_base_tot))
@@ -203,6 +205,11 @@ def main(args):
                     ekin[md][chn]['tau'].append(err_taukin)
                     ekin[md][chn]['two'].append(err_bothkin)
                     ekin[md][chn]['vbf'].append(err_vbfkin)
+                
+    with open('data.json', 'w', encoding='utf-8') as json_obj:
+        json_data = {"bigtau" if args.bigtau else
+                     "standard": {chn: nevents[adir[chn]][chn]['tau'] for chn in channels}}
+        json.dump(json_data, json_obj, ensure_ascii=False, indent=4)
 
     opt_points = dict(size=8)
     opt_line = dict(width=1.5)

@@ -179,7 +179,8 @@ def define_used_tree_variables(cut):
                 'dau1_eleMVAiso', 'dau1_iso', 'dau2_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
                 'nleps', 'nbjetscand', 'tauH_mass', 'bH_mass_raw',
                 'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor',
-                'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta')
+                'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta',
+                'isTau1real', 'isTau2real')
     if cut is not None:
         _regex = tuple(set(re.findall(r'self\.entries\.(.+?)\s', cut)))
     else:
