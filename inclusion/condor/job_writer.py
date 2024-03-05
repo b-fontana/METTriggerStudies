@@ -151,7 +151,7 @@ class JobWriter:
 
         if 'llr' in machine:
               m += ( self.endl + 'export KRB5CCNAME=FILE:/' + os.environ['HOME'] + '/.krb5c/$(whoami)' +
-                     self.endl + '/opt/exp_soft/cms/t3/eos-login -username {} -wn'.format(eos_user) )
+                     self.endl + '/opt/exp_soft/cms/t3/eos-login -username {}'.format(eos_user) )
               
         m += ( self.endl + 'source /cvmfs/cms.cern.ch/cmsset_default.sh' +
                self.endl + 'cd {}/'.format(localdir) +
