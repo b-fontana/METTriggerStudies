@@ -96,7 +96,7 @@ def compare_ratios(tag, channels, variable, var_units):
     ax1.set_ylim(0.64, 1.015)
     for yval in (0., 0.0025, 0.005):
         ax2.axhline(y=yval, **line_opt)
-        ax2.set_ylim(-0.003, 0.007)
+    ax2.set_ylim(-0.003, 0.007)
 
     # comparison of ratios using the first partial fit as reference
     # the x range is the minimum interval common to both ratios

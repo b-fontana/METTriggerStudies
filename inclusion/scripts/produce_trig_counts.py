@@ -92,7 +92,11 @@ def get_trig_counts(args):
         if args.isdata:
             if evt_weight != 1.:
                 raise RuntimeError('The weight for data is {}!'.format(evt_weight))
-        evt_weight *= w_btag # can be '-1' when no bjets are present, but then fails baseline
+
+        if config_module.category != "baseline" and config_module.category != "boosted":
+            # can be '-1' when no bjets are present
+            evt_weight *= w_btag 
+
         if args.isdata:
             if abs(evt_weight) != 1.:
                 raise RuntimeError('The weight for data is {}!'.format(evt_weight))

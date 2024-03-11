@@ -471,7 +471,7 @@ def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
         w_trig   = entries.trigSF
         w_idiso  = entries.IdSF_deep_2d
         w_jetpu  = entries.PUjetID_SF
-        w_btag   = entries.bTagweightReshape
+        # w_btag   = entries.bTagweightReshape
         
         if utils.is_nan(w_mc)     : w_mc=1
         if utils.is_nan(w_pure)   : w_pure=1
@@ -479,9 +479,9 @@ def test_trigger_regions(indir, sample, channel, spin, year, deltaR):
         if utils.is_nan(w_trig)   : w_trig=1
         if utils.is_nan(w_idiso)  : w_idiso=1
         if utils.is_nan(w_jetpu)  : w_jetpu=1
-        if utils.is_nan(w_btag)   : w_btag=1
+        # if utils.is_nan(w_btag)   : w_btag=1
   
-        evt_weight = w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu * w_btag
+        evt_weight = w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu # * w_btag
 
         tau_gen_cut = {"etau": None, "mutau": None,
                        "tautau": 'self.entries["isTau1real"] == 1 and self.entries["isTau2real"] == 1'}

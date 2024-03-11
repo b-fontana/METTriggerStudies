@@ -166,7 +166,8 @@ def main(args):
                     eratios[md][chn]['two'].append(rat_all * np.sqrt(e_all_num**2/rat_all_num**2 + 1/sum_base_tot))
                     errors[md][chn].append(e_all_num)
 
-    json_name = 'data_bigtau.json' if args.bigtau else 'data_standard.json'
+    json_name = 'data_' + chn + '_'
+    json_name += ('bigtau' if args.bigtau else 'standard') + '.json'
     with open(json_name, 'w', encoding='utf-8') as json_obj:
         json_data = {"vals": {chn: nevents[adir[chn]][chn]['tau'] for chn in channels}}
         json_data.update({"errs": {chn: errors[adir[chn]][chn] for chn in channels}})
@@ -278,9 +279,9 @@ if __name__ == '__main__':
     args = utils.parse_args(parser)
 
     base_dir = '/eos/home-b/bfontana/www/TriggerScaleFactors/'
-    main_dir = [{"etau":   "Region_Spin0_190_190_PT_33_25_35_DR_{}_TURNON_200_190".format(args.deltaR),
-                 "mutau":  "Region_Spin0_190_190_PT_25_21_32_DR_{}_TURNON_200_190".format(args.deltaR),
-                 "tautau": "Region_Spin0_190_190_PT_40_40_DR_{}_TURNON_200_190".format(args.deltaR)},
+    main_dir = [{"etau":   "Region_Spin2_190_190_PT_33_25_35_DR_{}_TURNON_200_190".format(args.deltaR),
+                 "mutau":  "Region_Spin2_190_190_PT_25_21_32_DR_{}_TURNON_200_190".format(args.deltaR),
+                 "tautau": "Region_Spin2_190_190_PT_40_40_DR_{}_TURNON_200_190".format(args.deltaR)},
                 ]
     
     main(args)

@@ -52,12 +52,10 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
     cms_text_offset	= 0.2
     extra_over_CMS_text_size = 0.76
 
-    _name = lambda a,b,c,d : a + b + c + d + '.root'
-
-    name_data = os.path.join(indir, _name( tprefix, data_name, '_Sum', subtag ) )
+    name_data = os.path.join(indir, tprefix + data_name + '_Sum' + subtag + ".root")
     file_data = ROOT.TFile.Open(name_data, 'READ')
 
-    name_mc = os.path.join(indir, _name( tprefix, mc_name, '_Sum', subtag ))
+    name_mc = os.path.join(indir, tprefix + mc_name + '_Sum' + subtag + ".root")
     file_mc   = ROOT.TFile.Open(name_mc, 'READ')
 
     if debug:
@@ -111,21 +109,19 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             hdata1D['trig'][key] = utils.get_root_object(key, file_data)
             hmc1D['trig'][key] = utils.get_root_object(key, file_mc)
 
-            # "solve" TGraphasymmErrors bin skipping when denominator=0
+            # "solve" TGraphAsymmErrors bin skipping when denominator=0
             # see TGraphAsymmErrors::Divide() (the default behaviour is very error prone!)
             # https://root.cern.ch/doc/master/classTGraphAsymmErrors.html#a37a202762b286cf4c7f5d34046be8c0b
             for h1D in (hdata1D,hmc1D):
                 for ibin in range(1,h1D['trig'][key].GetNbinsX()+1):
-                    if ( h1D['trig'][key].GetBinContent(ibin)==0. and
-                         h1D['ref'].GetBinContent(ibin)==0. ):
-                        h1D['ref'].SetBinContent(ibin, 1)
+                    if h1D['trig'][key].GetBinContent(ibin)==0. and h1D['ref'].GetBinContent(ibin)==0.:
+                        h1D['ref'].SetBinContent(ibin, 1.)
 
     # some triggers or their intersection naturally never fire for some channels
     # example: 'IsoMu24' for the etau channel
     if len(hmc1D['trig']) == 0:
         m = ('WARNING [draw_eff_and_sf_1d]: Trigger {} never '.format(trig) +
-             'fired for channel={}, variable={} in MC.'
-              .format(variable, channel))
+             'fired for channel={}, variable={} in MC.'.format(variable, channel))
         print(m)
         return
     
@@ -148,7 +144,6 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             data1D['norm'][kh] = ROOT.TGraphAsymmErrors(data1D['norm'][kh])
         nb = hmc1D['ref'].GetNbinsX()
         for kh, vh in hmc1D['trig'].items():
-
             # avoid underflow and overflow efficiency division issues
             hmc1D['ref'].SetBinContent(0, 0.)
             hmc1D['ref'].SetBinContent(nb+1, 0.)
@@ -549,13 +544,12 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
 def draw_eff_and_sf_2d(proc, channel, joinvars, trig, year, save_names_2D,
                        tprefix, indir, subtag, mc_name, data_name,
                        intersection_str, debug):
-    _name = lambda a,b,c,d : a + b + c + d + '.root'
 
-    name_data = os.path.join(indir, _name( tprefix, data_name, '_Sum', subtag ) )
+    name_data = os.path.join(indir, tprefix + data_name + '_Sum' + subtag + ".root")
 
     file_data = ROOT.TFile.Open(name_data, 'READ')
 
-    name_mc = os.path.join(indir, _name( tprefix, mc_name, '_Sum', subtag ))
+    name_mc = os.path.join(indir, tprefix + mc_name + '_Sum' + subtag + ".root")
     file_mc = ROOT.TFile.Open(name_mc, 'READ')
 
     if debug:

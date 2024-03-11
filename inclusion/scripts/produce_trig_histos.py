@@ -47,19 +47,19 @@ def build_histograms(args):
 
     # Define 1D histograms
     #  hRef: pass the reference trigger
-    #  hTrig: pass the reference trigger + trigger under study
-    hRef, hTrig = ({} for _ in range(2))
+    #  hTrg: pass the reference trigger + trigger under study
+    hRef, hTrg = ({} for _ in range(2))
 
     for chn in args.channels:
-        hRef[chn], hTrig[chn] = ({} for _ in range(2))
+        hRef[chn], hTrg[chn] = ({} for _ in range(2))
         for j in args.variables:
             binning1D = (nbins[j][chn], binedges[j][chn])
-            hTrig[chn][j], hRef[chn][j] = ({} for _ in range(2))
+            hTrg[chn][j], hRef[chn][j] = ({} for _ in range(2))
             for tcomb in triggercomb[chn]:
                 hname = utils.get_hnames('Ref1D')(chn, j, joinNTC(tcomb))
 
                 hRef[chn][j][joinNTC(tcomb)] = ROOT.TH1D(hname, '', *binning1D)
-                hTrig[chn][j][joinNTC(tcomb)] = {}
+                hTrg[chn][j][joinNTC(tcomb)] = {}
 
     # Define 2D histograms
     #  h2Ref: pass the reference trigger
@@ -117,11 +117,15 @@ def build_histograms(args):
         if utils.is_nan(w_jetpu)  : w_jetpu=1
         if utils.is_nan(w_btag)   : w_btag=1
 
-        evt_weight = w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu
+        evt_weight = 1.#w_mc * w_pure * w_l1pref * w_trig * w_idiso * w_jetpu
         if args.isdata:
             if evt_weight != 1.:
                 raise RuntimeError('The weight for data is {}!'.format(evt_weight))
-        evt_weight *= w_btag # can be '-1' when no bjets are present, but then fails baseline
+
+        # if config_module.category != "baseline" and config_module.category != "boosted":
+        #     # can be '-1' when no bjets are present
+        #     evt_weight *= w_btag 
+
         if args.isdata:
             if abs(evt_weight) != 1.:
                 raise RuntimeError('The weight for data is {}!'.format(evt_weight))
@@ -194,10 +198,9 @@ def build_histograms(args):
                             continue
 
                         # avoid underflow bin with negative weights crashing efficiency calculation
-                        if fill_var[j][chn] < binedges[j][chn][0]:
-                            hRef[chn][j][cstr].Fill(fill_var[j][chn], 1)
-                        else:
-                            hRef[chn][j][cstr].Fill(fill_var[j][chn], evt_weight)
+                        underflow = fill_var[j][chn] < binedges[j][chn][0]
+                        fill_info = fill_var[j][chn], 1. if underflow else evt_weight
+                        hRef[chn][j][cstr].Fill(*fill_info)
                         
                         cuts_combinations = list(it.product( *(pcuts1D[atrig][j].items()
                                                              for atrig in tcomb) ))
@@ -206,24 +209,20 @@ def build_histograms(args):
                         # - key: all cut strings joined
                         # - value: logical and of all cuts
                         pcuts_inters = { (args.intersection_str).join(e[0] for e in elem): 
-                                        functools.reduce(                 
-                                            lambda x,y: x and y,
-                                            [ e[1] for e in elem ]
-                                            )
-                                        for elem in cuts_combinations }
-
+                                         functools.reduce(                 
+                                             lambda x,y: x and y,
+                                             [ e[1] for e in elem ]
+                                         )
+                                         for elem in cuts_combinations }
+                    
                         for key,val in pcuts_inters.items():
-                            if key not in hTrig[chn][j][cstr]:
+                            if key not in hTrg[chn][j][cstr]:
                                 base_str = utils.get_hnames('Trig1D')(chn,j,cstr)
                                 htrig_name = utils.rewrite_cut_string(base_str, key)
-                                hTrig[chn][j][cstr][key] = ROOT.TH1D(htrig_name, '', *binning1D)
+                                hTrg[chn][j][cstr][key] = ROOT.TH1D(htrig_name, '', *binning1D)
 
                             if val and pass_trigger_intersection[cstr]:
-                                # avoid underflow bin with negative weights crashing efficiency calculation
-                                if fill_var[j][chn] < binedges[j][chn][0]:
-                                    hTrig[chn][j][cstr][key].Fill(fill_var[j][chn], 1)
-                                else:
-                                    hTrig[chn][j][cstr][key].Fill(fill_var[j][chn], evt_weight)
+                                hTrg[chn][j][cstr][key].Fill(*fill_info)
 
                 # fill 2D efficiencies
                 for onetrig in config_module.triggers:
@@ -243,11 +242,9 @@ def build_histograms(args):
                             for j in config_module.pairs2D[onetrig]:
                                 vname = utils.add_vnames(j[0],j[1])
                                 # avoid underflow bin with negative weights crashing efficiency calculation
-                                if (fill_var[j[0]][chn] < binedges[j[0]][chn][0] or
-                                    fill_var[j[1]][chn] < binedges[j[1]][chn][0]):
-                                    fill_info = (fill_var[j[0]][chn], fill_var[j[1]][chn], 1)
-                                else:
-                                    fill_info = (fill_var[j[0]][chn], fill_var[j[1]][chn], evt_weight)
+                                underflow = (fill_var[j[0]][chn] < binedges[j[0]][chn][0] or
+                                             fill_var[j[1]][chn] < binedges[j[1]][chn][0])
+                                fill_info = (fill_var[j[0]][chn], fill_var[j[1]][chn], 1. if underflow else evt_weight)
 
                                 try:
                                     cuts_combinations = list(it.product(
@@ -279,17 +276,58 @@ def build_histograms(args):
                                     if val and pass_trigger_intersection[cstr]:
                                         h2Trig[chn][vname][cstr][key].Fill(*fill_info)
     
-    file_id = ''.join( c for c in args.infile[-10:] if c.isdigit() ) 
+    file_id = ''.join(c for c in args.infile[-10:] if c.isdigit())
     outname = os.path.join(outdir, args.tprefix + args.sample + '_' + file_id + args.subtag + '.root')
     empty_files = True
 
+    # normalize all histograms with luminosity and sum of weights
     if not args.isdata:
-        norm_factor = utils.get_lumi(args.year) / utils.total_sum_weights(args.file, isdata=False)
-        hRef.Scale(norm_factor)
-        h2Ref.Scale(norm_factor)
-        hTrig.Scale(norm_factor)
-        h2Trig.Scale(norm_factor)
-    
+        norm = utils.get_lumi(args.year) / utils.total_sum_weights(args.infile, isdata=False)
+        for chn in args.channels:
+            for vname in hRef[chn].keys():
+                for cstr in hRef[chn][vname].keys():
+                    hRef[chn][vname][cstr].Scale(norm)
+                    for key in hTrg[chn][vname][cstr].keys():
+                        hTrg[chn][vname][cstr][key].Scale(norm)
+            for vname in h2Ref[chn].keys():
+                for cstr in h2Ref[chn][vname].keys():
+                    h2Ref[chn][vname][cstr].Scale(norm)
+                    for key in h2Trig[chn][vname][cstr].keys():
+                        h2Trig[chn][vname][cstr][key].Scale(norm)
+
+    # sanity check: reference counts must be always equal or larger than after applying some cut
+    # remove negative weights under special conditions
+    for chn in args.channels:
+        for vname in hRef[chn].keys():
+            for cstr in hRef[chn][vname].keys():
+                old_ref = hRef[chn][vname][cstr].Integral()
+                for key in hTrg[chn][vname][cstr].keys():
+                    old_trg = hTrg[chn][vname][cstr][key].Integral()
+                    neg_ref, neg_trg = False, False
+                    for ibin in range(hRef[chn][vname][cstr].GetNbinsX()+1):
+                        val_ref = hRef[chn][vname][cstr].GetBinContent(ibin)
+                        val_trg = hTrg[chn][vname][cstr][key].GetBinContent(ibin)
+                        if val_ref < 0.:
+                            neg_ref = True
+                            hRef[chn][vname][cstr].SetBinContent(ibin, 0.)
+                        if val_trg < 0.:
+                            neg_trg = True
+                            hTrg[chn][vname][cstr][key].SetBinContent(ibin, 0.)
+
+                        val_ref = hRef[chn][vname][cstr].GetBinContent(ibin)
+                        val_trg = hTrg[chn][vname][cstr][key].GetBinContent(ibin)
+                        if val_ref < val_trg:
+                            print("Denominator: {} | Numerator: {}".format(val_ref, val_trg))
+                            print("NegRef? {} | NegTrg? {}".format(neg_ref, neg_trg))
+                            breakpoint()
+                            #raise AssertionError()
+                    if neg_ref:
+                        new = hRef[chn][vname][cstr].Integral()
+                        hRef[chn][vname][cstr].Scale(old_ref/new)
+                    if neg_trg:
+                        new = hTrg[chn][vname][cstr][key].Integral()
+                        hTrg[chn][vname][cstr][key].Scale(old_trg/new)
+
     f_out = ROOT.TFile(outname, 'RECREATE')
     f_out.cd()
     for chn in args.channels:
@@ -301,7 +339,7 @@ def build_histograms(args):
                 
                 hRef[chn][j][cstr].Write( utils.get_hnames('Ref1D')(chn,j,cstr) )
 
-                for khist,vhist in hTrig[chn][j][cstr].items():
+                for khist,vhist in hTrg[chn][j][cstr].items():
                     base_str = utils.get_hnames('Trig1D')(chn, j, cstr)
                     writename = utils.rewrite_cut_string(base_str, khist)
                     vhist.Write(writename)

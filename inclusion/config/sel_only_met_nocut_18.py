@@ -16,8 +16,8 @@ category = 'baseline'
 
 triggers = ('METNoMu120', 'IsoMu24')
 trig_custom = set()
-cuts = {'METNoMu120': {'metnomu_et': ('>', [120,]),
-                       'mhtnomu_et': ('>', [100,])},
+cuts = {'METNoMu120': {'metnomu_et': ('>', [0.,]),
+                       'mhtnomu_et': ('>', [0.,])},
         }
 
 # which triggers are exclusive to a particular channel?
@@ -71,12 +71,7 @@ for x in discr_vars_1D:
 fit_vars = ["metnomu_et",]
 
 ### 2D Plots
-pairs2D = {'METNoMu120': (('metnomu_et', 'mhtnomu_et'),
-                          ('metnomu_et', 'dau1_pt'),
-                          ('mhtnomu_et', 'dau1_pt'),
-                          ('metnomu_et', 'dau1_eta'),
-                          ('mhtnomu_et', 'dau1_eta'),
-                          ('dau1_pt', 'dau1_eta'),)}
+pairs2D = {'METNoMu120': (('metnomu_et', 'mhtnomu_et'),)}
 assert( set(pairs2D.keys()).issubset(set(triggers)) )
 for x in pairs2D.values():
     for pair in x:
