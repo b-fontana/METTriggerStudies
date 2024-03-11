@@ -50,6 +50,11 @@ def sigmoid(x, params):
     return params[2] / (1 + np.exp(-params[0] * (x - params[1])))
 
 def compare_ratios(paths, mode, variable, var_units):
+    """
+    Compare ratios in two modes.
+    - Mode 'ranges': compare change in fit from changing the fit range
+    = Mode 'channels': compare changes from fitting different channels
+    """
     colors = ("blue", "green", "red", "purple")
     var_map = dict(metnomu_et=r"MET-no$\mu$")
 
