@@ -13,21 +13,24 @@ import matplotlib.pyplot as plt
 import mplhep as hep
 plt.style.use(hep.style.ROOT)
 
+mu, tau = '\u03BC','\u03C4'
+dd = {"mumu": mu+mu, "mutau": mu+tau}
+
 def build_path(base, channel, variable):
     path = os.path.join(base, channel, variable)
     return os.path.join(path, "eff_Data_Mu_MC_TT_DY_WJets_" + channel + "_" + variable + "_TRG_METNoMu120_CUTS_*.root")
 
-def get_paths_and_labels(base, mode, channels, variable):
+def get_paths_and_labels(base, mode, channels, variable, var_units):
     assert mode in ("ranges", "channels")
     
     if mode == "ranges":
         labels = ("full", r"$[180;\infty[\:\:{}$".format(var_units),
                   r"$[160;\infty[\:\:{}$".format(var_units), r"$[150;\infty[\:\:{}$".format(var_units))
-        paths = (build_path(base, channels[1], variable),
+        # transfer files with:
+        # cp /data_CMS/cms/alves/TriggerScaleFactors/OpenCADI_18/Outputs/mutau/metnomu_et/eff_Data_Mu_MC_TT_DY_WJets_mutau_metnomu_et_TRG_METNoMu120_CUTS_mhtnomu_et_L_0p0_default.root full_mumu_fit.root
+        paths = ("full_mumu_fit.root",
                  "180_mumu_fit.root", "160_mumu_fit.root", "150_mumu_fit.root")
     else:
-        mu, tau = '\u03BC','\u03C4'
-        dd = {"mumu": mu+mu, "mutau": mu+tau}
         labels = (dd["mutau"], dd["mumu"])
         paths = (build_path(base, channels[0], variable),
                  build_path(base, channels[1], variable),)
@@ -53,7 +56,7 @@ def compare_ratios(paths, mode, variable, var_units):
     """
     Compare ratios in two modes.
     - Mode 'ranges': compare change in fit from changing the fit range
-    = Mode 'channels': compare changes from fitting different channels
+    - Mode 'channels': compare changes from fitting different channels
     """
     colors = ("blue", "green", "red", "purple")
     var_map = dict(metnomu_et=r"MET-no$\mu$")
@@ -84,12 +87,14 @@ def compare_ratios(paths, mode, variable, var_units):
                           np.argmax(fit_xvals > fit_xrange[1])) )
         idx_sel = slice(idx_lims[-1][0],idx_lims[-1][1],1)
 
-        # plot efficiency values and error bars
-        ax1.errorbar(graph_sf.values(axis="x"), graph_sf.values(axis="y"),
-                     xerr=(graph_sf.errors(axis="x", which="low"), graph_sf.errors(axis="x", which="high")),
-                     yerr=(graph_sf.errors(axis="y", which="low"), graph_sf.errors(axis="y", which="high")),
-                     fmt='o', color="black" if mode == "ranges" else colors[ipath])
-
+        # if mode == "ranges" we only want to plot SFs once (all are equal)
+        if mode == "channels" or ipath > 0:            
+            # plot efficiency values and error bars
+            ax1.errorbar(graph_sf.values(axis="x"), graph_sf.values(axis="y"),
+                         xerr=(graph_sf.errors(axis="x", which="low"), graph_sf.errors(axis="x", which="high")),
+                         yerr=(graph_sf.errors(axis="y", which="low"), graph_sf.errors(axis="y", which="high")),
+                         fmt='o', color="black" if mode == "ranges" else colors[ipath])
+            
         fit_ratios.append(fit_data_yvals / fit_mc_yvals)
 
         # plot SF fit (Data/MC)
@@ -101,21 +106,27 @@ def compare_ratios(paths, mode, variable, var_units):
     line_opt = dict(color="grey", linestyle="--")
     met_cuts = [180., 160., 150.]
     if mode == "ranges":
-        ax1.set_ylim(0.64, 1.015)
-        for yval in (0., 0.0025, 0.005):
+        ax1.set_ylim(-0.05, 1.08)
+        yticks = np.arange(-.04, .04, .01)
+        ax2.set_yticks(yticks)
+        for yval in yticks:
             ax2.axhline(y=yval, **line_opt)
-        ax2.set_ylim(-0.003, 0.007)
+        ax2.set_ylim(yticks[0]+1E-5, yticks[-1]-1E-5)
+        ax1.axhline(y=1., **line_opt)
         for cut in met_cuts:
             ax1.axvline(x=cut, **line_opt)
-            ax1.axhline(y=1., **line_opt)
             ax2.axvline(x=cut, **line_opt)
 
     elif mode == "channels":
+        ax1.set_ylim(-0.05, 1.08)
         ax1.axvline(x=150., **line_opt)
         ax2.axvline(x=150., **line_opt)
-        ax2.set_ylim(-0.5, .9)
-        for yval in (0., 0.3, 0.6):
+        yticks = np.arange(-.3, .3, .1)
+        ax2.set_yticks(yticks)
+        ax1.axhline(y=1., **line_opt)
+        for yval in yticks:
             ax2.axhline(y=yval, **line_opt)
+        ax2.set_ylim(yticks[0]+1E-5, yticks[-1]-1E-5)
 
     # comparison of ratios using the first partial fit as reference
     # the x range is the minimum interval common to both ratios
@@ -132,14 +143,20 @@ def compare_ratios(paths, mode, variable, var_units):
     if mode == "ranges":
         ax2.set_ylabel(r"$(SF_{{180\:{u}}}/SF_{{X\:{u}}}) - 1$".format(u=var_units), fontsize=20)
     elif mode == "channels":
-        ax2.set_ylabel(r"Ratio", fontsize=20)
+        ax2.set_ylabel(r"Fit Ratio", fontsize=20)
     ax2.set_xlabel(var_map[variable] + " [" + var_units + "]", fontsize=21)
-    
-    hep.cms.text(' Preliminary', fontsize=22, ax=ax1)
-    hep.cms.lumitext(r"59.7 $fb^{-1}$ (13 TeV)", fontsize=21, ax=ax1)
+
+    hep_opt = dict(ax=ax1)
+    hep.cms.text(' Preliminary', fontsize=22, **hep_opt)
+    if mode == "ranges":
+        hep.cms.lumitext(dd["mumu"] + " (baseline, 2018) | " + r"59.7 $fb^{-1}$ (13 TeV)",
+                         fontsize=19, **hep_opt)
+    else:
+        hep.cms.lumitext(r"59.7 $fb^{-1}$ (13 TeV)",
+                         fontsize=19, **hep_opt)
 
     output = os.path.join("/eos/home-b/bfontana/www/TriggerScaleFactors/CompareRatios/",
-                          os.path.basename(__file__[:-3]))
+                          os.path.basename(__file__[:-3] + '_' + mode))
     for ext in ('.png', '.pdf'):
         fig.savefig(output + ext)
         print('Plot saved under {}'.format(output + ext))
@@ -153,6 +170,6 @@ if __name__ == "__main__":
     FLAGS = parser.parse_args()
 
     base = os.path.join("/data_CMS/cms/alves/TriggerScaleFactors/", FLAGS.tag, "Outputs")
-    paths = get_paths_and_labels(base, FLAGS.mode,
-                                 channels=("mutau", "mumu"), variable="metnomu_et")
+    paths = get_paths_and_labels(base, FLAGS.mode, channels=("mutau", "mumu"),
+                                 variable="metnomu_et", var_units="GeV")
     compare_ratios(paths, mode=FLAGS.mode, variable="metnomu_et", var_units="GeV")
