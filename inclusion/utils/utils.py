@@ -258,7 +258,7 @@ def get_display_variable_name(channel, var):
         var_custom = var
 
     if var == "metnomu_et":
-        var_custom = r"MET (no-\mu)"
+        var_custom = r"MET-no\mu"
     return var_custom
 
 def get_key_list(afile, inherits=['TH1']):

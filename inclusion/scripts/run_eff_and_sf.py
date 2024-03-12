@@ -31,7 +31,7 @@ def paint2d(channel, trig):
     l.SetTextSize(0.03)
     l.SetTextColor(1)
 
-    l.DrawLatex( lX1, lY, trig)
+    l.DrawLatex(lX1, lY, trig)
     
     latexChannel = copy(channel)
     latexChannel.replace('mu','#mu')
@@ -359,9 +359,9 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             y1_pad = pad1.GetUymin()
             y2_pad = pad1.GetUymax()
             if atype == 'eff':
-                data1D[atype][akey].GetYaxis().SetRangeUser(-0.05,1.2)
+                data1D[atype][akey].GetYaxis().SetRangeUser(-0.05,1.22)
                 data1D[atype][akey].GetXaxis().SetRangeUser(x1_pad,x2_pad)
-                mc1D[atype][akey].GetYaxis().SetRangeUser(-0.05,1.2)
+                mc1D[atype][akey].GetYaxis().SetRangeUser(-0.05,1.22)
                 mc1D[atype][akey].GetXaxis().SetRangeUser(x1_pad,x2_pad)
             else:
                 norm_min = amin-intervals[0]*(amax-amin)
@@ -379,7 +379,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             # l.SetLineStyle(7)
             # l.DrawLine(180.,y1_pad,180.,y2_pad)
 
-            leg = ROOT.TLegend(0.61, 0.79, 0.89, 0.89)
+            leg = ROOT.TLegend(0.61, 0.77, 0.89, 0.89)
             leg.SetFillColor(0)
             leg.SetShadowColor(0)
             leg.SetBorderSize(0)
@@ -396,7 +396,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             pad1.RedrawAxis()
             pad1.Draw("same P")
             
-            lX, lY, lXstep, lYstep = 0.18, 0.85, 0.02, 0.05
+            lX, lY, lXstep, lYstep = 0.18, 0.85, 0.02, 0.06
             l = ROOT.TLatex()
             l.SetNDC()
             l.SetTextFont(standard_text_font) #72 bold italic
@@ -485,7 +485,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             # sf1D_new[atype] = utils.apply_equal_bin_width(sf1D[atype][akey])
             canvas[atype].Update()
             #sf1D[atype][akey].GetYaxis().SetNdivisions(-10)
-            sf1D[atype][akey].GetYaxis().SetRangeUser(0.551,1.04)
+            sf1D[atype][akey].GetYaxis().SetRangeUser(-0.15,1.15)
             sf1D[atype][akey].SetLineColor(ROOT.kBlue)
             sf1D[atype][akey].SetLineWidth(2)
             sf1D[atype][akey].SetMarkerColor(ROOT.kBlue)
