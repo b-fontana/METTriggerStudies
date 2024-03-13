@@ -20,9 +20,7 @@ def build_path(base, channel, variable):
     path = os.path.join(base, channel, variable)
     return os.path.join(path, "eff_Data_Mu_MC_TT_DY_WJets_" + channel + "_" + variable + "_TRG_METNoMu120_CUTS_*.root")
 
-def get_paths_and_labels(base, mode, channels, variable, var_units):
-    assert mode in ("ranges", "channels")
-    
+def get_paths_and_labels(base, mode, channels, variable, var_units):   
     if mode == "ranges":
         labels = ("full", r"$[180;\infty[\:\:{}$".format(var_units),
                   r"$[160;\infty[\:\:{}$".format(var_units), r"$[150;\infty[\:\:{}$".format(var_units))
@@ -30,10 +28,15 @@ def get_paths_and_labels(base, mode, channels, variable, var_units):
         # cp /data_CMS/cms/alves/TriggerScaleFactors/OpenCADI_18/Outputs/mutau/metnomu_et/eff_Data_Mu_MC_TT_DY_WJets_mutau_metnomu_et_TRG_METNoMu120_CUTS_mhtnomu_et_L_0p0_default.root full_mumu_fit.root
         paths = ("full_mumu_fit.root",
                  "180_mumu_fit.root", "160_mumu_fit.root", "150_mumu_fit.root")
-    else:
+    elif mode == "channels":
         labels = (dd["mutau"], dd["mumu"])
         paths = (build_path(base, channels[0], variable),
                  build_path(base, channels[1], variable),)
+    elif mode == "datasets":
+        labels = (dd["mumu"]  + ", SingleMuon", dd["mumu"]  + ", DoubleMuon",
+                  dd["mutau"] + ", SingleMuon", dd["mutau"] + ", DoubleMuon")
+        paths = ("full_mumu_fit.root", "full_double_mumu_fit.root",
+                 "full_mutau_fit.root", "full_double_mutau_fit.root")
 
     ret = {}
     for p,l in zip(paths,labels):
@@ -88,7 +91,7 @@ def compare_ratios(paths, mode, variable, var_units):
         idx_sel = slice(idx_lims[-1][0],idx_lims[-1][1],1)
 
         # if mode == "ranges" we only want to plot SFs once (all are equal)
-        if mode == "channels" or ipath > 0:            
+        if mode != "ranges" or ipath > 0:
             # plot efficiency values and error bars
             ax1.errorbar(graph_sf.values(axis="x"), graph_sf.values(axis="y"),
                          xerr=(graph_sf.errors(axis="x", which="low"), graph_sf.errors(axis="x", which="high")),
@@ -128,6 +131,17 @@ def compare_ratios(paths, mode, variable, var_units):
             ax2.axhline(y=yval, **line_opt)
         ax2.set_ylim(yticks[0]+1E-5, yticks[-1]-1E-5)
 
+    elif mode == "datasets":
+        ax1.set_ylim(-0.05, 1.08)
+        ax1.axvline(x=150., **line_opt)
+        ax2.axvline(x=150., **line_opt)
+        yticks = np.arange(-.7, .7, .3)
+        ax2.set_yticks(yticks)
+        ax1.axhline(y=1., **line_opt)
+        for yval in yticks:
+            ax2.axhline(y=yval, **line_opt)
+        ax2.set_ylim(yticks[0]+1E-5, yticks[-1]-1E-5)
+        
     # comparison of ratios using the first partial fit as reference
     # the x range is the minimum interval common to both ratios
     if mode == "ranges":
@@ -140,12 +154,23 @@ def compare_ratios(paths, mode, variable, var_units):
     elif mode == "channels":
         ax2.plot(fit_xvals, (fit_ratios[1]/fit_ratios[0])-1., '--', color=colors[ipath])
 
+    elif mode == "datasets":
+        ax2.plot(fit_xvals, (fit_ratios[1]/fit_ratios[0])-1., '--', color="blue",
+                 label=dd["mumu"] + ": Double/Single")
+        ax2.plot(fit_xvals, (fit_ratios[3]/fit_ratios[2])-1., '--', color="orange",
+                 label=dd["mutau"] + ": Double/Single")
+
     if mode == "ranges":
         ax2.set_ylabel(r"$(SF_{{180\:{u}}}/SF_{{X\:{u}}}) - 1$".format(u=var_units), fontsize=20)
     elif mode == "channels":
         ax2.set_ylabel(r"Fit Ratio", fontsize=20)
+    elif mode == "datasets":
+        ax2.set_ylabel(r"Fit Ratio", fontsize=20)
     ax2.set_xlabel(var_map[variable] + " [" + var_units + "]", fontsize=21)
 
+    if mode == "datasets":
+        ax2.legend(loc="lower right", fontsize=15)
+        
     hep_opt = dict(ax=ax1)
     hep.cms.text(' Preliminary', fontsize=22, **hep_opt)
     if mode == "ranges":
@@ -164,11 +189,15 @@ def compare_ratios(paths, mode, variable, var_units):
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Compare efficiency ratios obtained with two different methods.')
-    parser.add_argument('--tag', help='Tag used to produce the graphs. Same used by the inclusion/run.py command.')
-    parser.add_argument('--mode', default="channel", choices=("ranges", "channels"), help='Which comparison to run.')
+    parser.add_argument('--tag', required=False, default="",
+                        help='Tag used to produce the graphs. Same used by the inclusion/run.py command.')
+    parser.add_argument('--mode', default="channel", choices=("ranges", "channels", "datasets"),
+                        help='Which comparison to run.')
     
     FLAGS = parser.parse_args()
-
+    if FLAGS.mode == "channels":
+        assert FLAGS.tag != ""
+    
     base = os.path.join("/data_CMS/cms/alves/TriggerScaleFactors/", FLAGS.tag, "Outputs")
     paths = get_paths_and_labels(base, FLAGS.mode, channels=("mutau", "mumu"),
                                  variable="metnomu_et", var_units="GeV")
