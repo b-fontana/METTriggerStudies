@@ -32,7 +32,7 @@ class EventSelection:
         self.datasets, self.dataset_ref_trigs = self._deduce_datasets(self.cfg.inters_general,
                                                                       self.cfg.inters)
         for d in self.datasets:
-            assert d in main.data
+            assert d in main.data[self.year]
 
         
     def any_trigger(self, trigs):
@@ -71,7 +71,7 @@ class EventSelection:
                                    custom_cut=self.cfg.custom_cut)
 
     def dataset_name(self, dataset):
-        if dataset not in main.data and dataset not in main.mc_processes:
+        if dataset not in main.data[self.year] and dataset not in main.mc_processes[self.year]:
             mes = 'Dataset {} is not supported '.format(dataset)
             mes += '(prefix `{}` added).'.format(self.prefix)
             raise ValueError(mes)
@@ -160,12 +160,12 @@ class EventSelection:
             return None
         
         # general triggers
-        for k in main.data:
+        for k in main.data[self.year]:
             if tcomb in self.cfg.inters_general[k]:
                 return self.dataset_name(k)
                  
         # channel-specific triggers
-        for k in main.data:
+        for k in main.data[self.year]:
             if tcomb in self.cfg.inters[channel][k]:
                 return self.dataset_name(k)
         raise ValueError(wrong_comb.format(tcomb, channel))
@@ -217,8 +217,8 @@ class EventSelection:
 
     def sel_category(self, category):
         assert category in self.categories
-        deepJetWP = {'2016'    : (0.048, 0.249),
-                     '2016APV' : (0.051, 0.260),
+        deepJetWP = {'2016'    : (0.048, 0.2489),
+                     '2016APV' : (0.0508, 0.2598),
                      '2017'    : (0.0532, 0.3040),
                      '2018'    : (0.0490, 0.2783)}[self.year]
         btagLL = (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[0] and

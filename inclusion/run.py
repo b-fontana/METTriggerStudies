@@ -56,7 +56,7 @@ parser.add_argument(
     type=str,
     nargs='+',
     required=True,
-    choices=main.data.keys(),
+    choices=main.data["2018"].keys(),
     help='Select the data over which the workflow will be run.'
     )
 parser.add_argument(
@@ -64,7 +64,7 @@ parser.add_argument(
     type=str,
     nargs='+',
     required=True,
-    choices=main.mc_processes.keys(),
+    choices=main.mc_processes["2018"].keys(),
     help='Select the MC processes over which the workflow will be run.'
     )
 parser.add_argument(
@@ -147,9 +147,9 @@ parser.add_argument(
     )
 FLAGS, _ = parser.parse_known_args()
          
-user_data = {k:v for k,v in main.data.items()
+user_data = {k:v for k,v in main.data[FLAGS.year].items()
              if k in FLAGS.data}
-user_mc   = {k:v for k,v in main.mc_processes.items()
+user_mc   = {k:v for k,v in main.mc_processes[FLAGS.year].items()
              if k in FLAGS.mc_processes}
 
 data_keys, data_vals = utils.flatten_nested_dict(user_data)
@@ -178,6 +178,7 @@ bins_params = {'nbins'             : FLAGS.nbins,
                'binedges_filename' : binedges_filename,
                'indir'             : main.inputs[FLAGS.year],
                'outdir'            : data_storage,
+               'year'              : FLAGS.year,
                'data_vals'         : data_vals,
                'variables'         : variables_join,
                'channels'          : FLAGS.channels,
@@ -661,7 +662,7 @@ class SubmitDAG(lutils.ForceRun):
         com = 'condor_submit_dag -no_submit -f'
         com += ' -notification Always'
         com += ' -append "notify_user={}"'.format(main.email)
-        bname = 'Inclusion_branch' + self.branch.capitalize()
+        bname = 'Inclusion_' + FLAGS.year + '_branch' + self.branch.capitalize()
         com += ' -batch_name {}'.format(bname)
         com += ' -outfile_dir {} {}'.format(os.path.dirname(outfile), outfile)
     

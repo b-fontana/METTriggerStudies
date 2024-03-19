@@ -333,8 +333,7 @@ def get_root_inputs(proc, indir, include_tree=False):
     #this is the only correct input directory
     inputdir = indir[ fexists.index(True) ]
 
-    inputfiles = glob.glob( os.path.join(indir[fexists.index(True)],
-                                         proc + '*/goodfiles.txt') )
+    inputfiles = glob.glob(os.path.join(indir[fexists.index(True)], proc + '*/goodfiles.txt'))
 
     #### Parse input list
     filelist=[]
@@ -351,8 +350,8 @@ def get_root_inputs(proc, indir, include_tree=False):
                         filelist.append(line + ':HTauTauTree')
                     else:
                         if line[:-1] not in main.corrupted_files:
+                            #filelist.append("root://eosuser.cern.ch/" + line)
                             filelist.append(line)
-                        
     return filelist, inputdir
 
 def get_root_object(name, afile):
@@ -512,7 +511,7 @@ def get_lumi(year):
     elif year == "2016":
         return 16800
     elif year == "2016APV":
-        return "19500"
+        return 19500
     else:
         raise ValueError("Year {} not supported.".format(year))
     

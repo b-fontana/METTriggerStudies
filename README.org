@@ -126,9 +126,16 @@ Use ~-h/--help~ to inspect all options.
 ** Run standalone tests
 Studies were performed using "standalone" scripts (not part of the main chain, running locally, but using some definitions of the "core" package).
 *** Setup
-You should install the following packages:
+To run jobs at LLR accessing files on =/eos/=:
 #+BEGIN_SRC shell
-conda install -c bokeh bokeh
+voms-proxy-init --voms cms --out ~/.t3/proxy.cert
+/opt/exp_soft/cms/t3/eos-login -username bfontana -keytab -init
+#+END_SRC 
+
+The jobs should contain the following lines:
+#+BEGIN_SRC shell
+export X509_USER_PROXY=~/.t3/proxy.cert
+. /opt/exp_soft/cms/t3/eos-login -username bfontana -wn
 #+END_SRC
 
 *** Region statistics of trigger overlaps

@@ -90,8 +90,8 @@ binedges = {
     #("quantiles", 100, 300),
     'metnomu_et': {'mutau' : metnomu_et_binedges['mutau'],
                    'mumu'  : metnomu_et_binedges['mumu'] },
-    'mhtnomu_et': {'mutau' : (120,360),
-                   'mumu'  : (120,360) },
+    'mhtnomu_et': {'mutau' : (90,360),
+                   'mumu'  : (90,360) },
 }
 assert( set(binedges.keys()).issubset(main.var_join) )
 for x in binedges.values():

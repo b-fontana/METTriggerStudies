@@ -35,7 +35,7 @@ def build_histograms(args):
 
     config_module = importlib.import_module(args.configuration)
 
-    f_in = ROOT.TFile(args.infile)
+    f_in = ROOT.TFile.Open(args.infile)
     t_in = f_in.Get('HTauTauTree')
 
     binedges, nbins = utils.load_binning(afile=args.binedges_fname, key=args.subtag,
@@ -150,7 +150,6 @@ def build_histograms(args):
             pcuts2D[trig] = {}
         for trig in config_module.triggers:
             pass_trigger[trig] = sel.trigger_bits(trig)
-
             pcuts1D[trig] = {}
             for var in args.variables:
                 pcuts1D[trig][var] = sel.var_cuts(trig, [var], args.nocut_dummy_str)
@@ -319,8 +318,7 @@ def build_histograms(args):
                         if val_ref < val_trg:
                             print("Denominator: {} | Numerator: {}".format(val_ref, val_trg))
                             print("NegRef? {} | NegTrg? {}".format(neg_ref, neg_trg))
-                            breakpoint()
-                            #raise AssertionError()
+                            raise AssertionError()
                     if neg_ref:
                         new = hRef[chn][vname][cstr].Integral()
                         hRef[chn][vname][cstr].Scale(old_ref/new)

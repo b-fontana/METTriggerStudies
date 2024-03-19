@@ -57,12 +57,12 @@ def define_binning(args):
     """
     quant_down, quant_up = 0., 1.
     cfg = importlib.import_module(args.configuration)
-
-    channel_to_dataset = {'etau'   : 'EGamma',
-                          'mutau'  : 'SingleMuon',
-                          'tautau' : 'Tau',
-                          'mumu'   : 'SingleMuon',
-                          'ee'     : 'EGamma',}
+    
+    channel_to_dataset = {'etau'   : main.data[args.year]['EG'][0],
+                          'mutau'  : main.data[args.year]['Mu'][0],
+                          'tautau' : main.data[args.year]['Tau'][0],
+                          'mumu'   : main.data[args.year]['Mu'][0],
+                          'ee'     : main.data[args.year]['EG'][0],}
     
     min_max, quants = {}, {}
     for k in args.channels:
@@ -183,7 +183,9 @@ if __name__ == '__main__':
     parser.add_argument('-t', '--tag', dest='tag', required=True, help='tag')
     parser.add_argument('--subtag', dest='subtag', required=True, help='subtag')
     parser.add_argument('--data_vals', dest='data_vals', required=True, nargs='+', type=str,
-                        help='list of datasets')                          
+                        help='list of datasets')
+    parser.add_argument('--year', required=True, type=str, choices=('2016', '2016APV', '2017', '2018'),
+                        help='Data year: impact thresholds and selections.')
     parser.add_argument('--variables', dest='variables', required=True, nargs='+', type=str,
                         help='Select the variables to calculate the binning' )
     parser.add_argument('-c', '--channels',   dest='channels',         required=True, nargs='+', type=str,

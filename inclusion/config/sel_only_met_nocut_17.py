@@ -71,12 +71,7 @@ for x in discr_vars_1D:
 fit_vars = ["metnomu_et",]
 
 ### 2D Plots
-pairs2D = {'METNoMu120': (('metnomu_et', 'mhtnomu_et'),
-                          ('metnomu_et', 'dau1_pt'),
-                          ('mhtnomu_et', 'dau1_pt'),
-                          ('metnomu_et', 'dau1_eta'),
-                          ('mhtnomu_et', 'dau1_eta'),
-                          ('dau1_pt', 'dau1_eta'),)}
+pairs2D = {'METNoMu120': (('metnomu_et', 'mhtnomu_et'),)}
 assert( set(pairs2D.keys()).issubset(set(triggers)) )
 for x in pairs2D.values():
     for pair in x:
@@ -95,8 +90,8 @@ binedges = {
     #("quantiles", 100, 300),
     'metnomu_et': {'mutau' : metnomu_et_binedges['mutau'],
                    'mumu'  : metnomu_et_binedges['mumu'] },
-    'mhtnomu_et': {'mutau' : (120,360),
-                   'mumu'  : (120,360) },
+    'mhtnomu_et': {'mutau' : (100,360),
+                   'mumu'  : (100,360) },
 }
 assert( set(binedges.keys()).issubset(main.var_join) )
 for x in binedges.values():

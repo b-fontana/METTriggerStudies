@@ -16,8 +16,8 @@ category = 'baseline'
 
 triggers = ('METNoMu90', 'IsoMu24')
 trig_custom = set()
-cuts = {'METNoMu90': {'metnomu_et': ('>', [90,]),
-                       'mhtnomu_et': ('>', [70,])},
+cuts = {'METNoMu90': {'metnomu_et': ('>', [0,]),
+                      'mhtnomu_et': ('>', [0,])},
         }
 
 # which triggers are exclusive to a particular channel?
@@ -71,12 +71,7 @@ for x in discr_vars_1D:
 fit_vars = ["metnomu_et",]
 
 ### 2D Plots
-pairs2D = {'METNoMu90': (('metnomu_et', 'mhtnomu_et'),
-                          ('metnomu_et', 'dau1_pt'),
-                          ('mhtnomu_et', 'dau1_pt'),
-                          ('metnomu_et', 'dau1_eta'),
-                          ('mhtnomu_et', 'dau1_eta'),
-                          ('dau1_pt', 'dau1_eta'),)}
+pairs2D = {'METNoMu90': (('metnomu_et', 'mhtnomu_et'),)}
 assert( set(pairs2D.keys()).issubset(set(triggers)) )
 for x in pairs2D.values():
     for pair in x:
@@ -85,8 +80,8 @@ for x in pairs2D.values():
 ### Binning
 #pog_pt_binedges = (26., 30., 40., 50., 60., 120., 200)
 metnomu_et_binedges = {
-    'mutau': (50., 75., 90., 100., 110., 120., 130., 140., 150., 160., 170., 190., 210., 225, 240., 260., 290., 325.),
-    'mumu': (50., 75., 90., 100., 110., 120., 130., 140., 150., 160., 170., 190., 210., 225, 240., 260., 290., 325.),
+    'mutau': (50., 75., 95., 115., 130., 140., 150., 160., 170., 180., 190., 200., 210., 222.5, 235., 250., 265., 280., 300., 325.),
+    'mumu': (50., 75., 95., 115., 130., 140., 150., 160., 170., 180., 190., 200., 210., 222.5, 235., 250., 265., 280., 300., 325.),
 }
 binedges = {
     # 'dau1_pt': {'etau':   pog_pt_binedges,
@@ -95,8 +90,8 @@ binedges = {
     #("quantiles", 100, 300),
     'metnomu_et': {'mutau' : metnomu_et_binedges['mutau'],
                    'mumu'  : metnomu_et_binedges['mumu'] },
-    'mhtnomu_et': {'mutau' : (70,360),
-                   'mumu'  : (70,360) },
+    'mhtnomu_et': {'mutau' : (50,360),
+                   'mumu'  : (50,360) },
 }
 assert( set(binedges.keys()).issubset(main.var_join) )
 for x in binedges.values():

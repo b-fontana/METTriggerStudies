@@ -150,9 +150,10 @@ class JobWriter:
               self.endl + 'export EXTRA_CLING_ARGS=-O2' )
 
         if 'llr' in machine:
-              m += ( self.endl + 'export KRB5CCNAME=FILE:/' + os.environ['HOME'] + '/.krb5c/$(whoami)' +
-                     self.endl + '/opt/exp_soft/cms/t3/eos-login -username {}'.format(eos_user) )
-              
+            # m += ( self.endl + 'export KRB5CCNAME=FILE:/' + os.environ['HOME'] + '/.krb5c/$(whoami)' +
+            #        self.endl + '. /opt/exp_soft/cms/t3/eos-login -username {} -wn'.format(eos_user) )
+            m += self.endl + '. /opt/exp_soft/cms/t3/eos-login -username {} -wn'.format(eos_user)
+            
         m += ( self.endl + 'source /cvmfs/cms.cern.ch/cmsset_default.sh' +
                self.endl + 'cd {}/'.format(localdir) +
                self.endl + 'eval `scramv1 runtime -sh`' +
@@ -173,7 +174,7 @@ class JobWriter:
                 t3 = "t3"
             elif machine == 'llrt3condor7':
                 t3 = "t3_tst"
-            m += 2*self.endl + 'include : /opt/exp_soft/cms/t3_tst/t3queue |'
+            m += 2*self.endl + 'include : /opt/exp_soft/cms/t3/t3queue |'
 
         elif machine == "lxplus":
             m = ('requirements = (OpSysAndVer =?= "AlmaLinux9")' +

@@ -4,10 +4,10 @@ email = 'bruno.alves@cern.ch'
 queue = 'short'
 machine = 'llrt3condor' #'lxplus'
 
-storage = {'2018': os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
-           '2017': os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
-           '2016': os.path.join('XXXX'),
-           '2016APV': os.path.join('XXXX')}
+storage = {'2018':    os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
+           '2017':    os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
+           '2016':    os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
+           '2016APV': os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors')}
 
 folders = {'base'    : 'METTriggerStudies',
            'main'    : 'inclusion',
@@ -89,8 +89,8 @@ trig_map = {'2018':
              'EleIsoTau':    {'mc': 17, 'data': 17}}
             ,
             '2016':
-            {'IsoMu24':      {'mc': (5,7),  'data': (5,7)},
-             'Ele25':        {'mc': 13,  'data': 13},
+            {'IsoMu24':      {'mc': 5,  'data': 5},
+             'Ele25':        {'mc': 13, 'data': 13},
              'METNoMu90':    {'mc': 48, 'data': 48},
              'IsoTau130':    {'mc': (46,47),  'data': (46,47)},
              'IsoDoubleTau': {'mc': (27,29), 'data': (27,29)},
@@ -128,36 +128,100 @@ inputs = {'2018':
            '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_MC/'),
           '2017':
           ('/eos/home-t/tokramer/hhbbtautau/skims/SKIMS_UL17/',),
-          '2016':
-          ('XXX',),
           '2016APV':
-          ('XXX',)
+          ('/eos/home-s/spalluot/HHbbtautau/SKIM/SKIMS_UL2016APV_14Feb2024/',),
+          '2016':
+          ('/eos/home-d/dzuolo/SKIMS_UL2016_12Feb2024_newMET_newBoosted/',)
           }
 corrupted_files = () #'/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5HighPrio_Background/TTTo2L2Nu/output_9.root'
 
 # names of the subfolders under 'inputs' above:
 # dictionary that maps specific general triggers to datasets 
-data = {'MET'  : ('MET',),
-        'EG'   : ('EGamma',),
-        'Mu'   : ('SingleMuon',),
-        'Tau'  : ('Tau',)
-        }
+data = {"2018":
+        {'MET'  : ('MET',),
+         'EG'   : ('EGamma',),
+         'Mu'   : ('SingleMuon',),
+         'Tau'  : ('Tau',)
+         },
+        "2017":
+        {'MET'  : ('MET',),
+         'EG'   : ('EGamma',),
+         'Mu'   : ('SingleMuon',),
+         'Tau'  : ('Tau',)
+         },
+        "2016APV":
+        {'MET'  : ('SKIM_MET',),
+         'EG'   : ('SKIM_Electron',),
+         'Mu'   : ('SKIM_SingleMuon',),
+         'Tau'  : ('SKIM_Tau',)
+         },
+        "2016":
+        {'MET'  : ('SKIM_MET',),
+         'EG'   : ('SKIM_Ele',),
+         'Mu'   : ('SKIM_Mu',),
+         'Tau'  : ('SKIM_Tau',)
+         },
+}
 
-mc_processes = {'ggfRadions': (),
-                'ggfBulkGraviton': (),
-                'vbfRadion': (),
-                'vbfBulkGraviton': (),
-                'TT': ('TTToHadronic', 'TTTo2L2Nu', 'TTToSemiLeptonic',),
-                'DY': ('DYJetsToLL_M-10to50', 'DYJetsToLL_M-50_TuneCP5_13TeV-amc',
-                       'DYJetsToLL_0J', 'DYJetsToLL_1J', 'DYJetsToLL_2J',
-                       'DYJetsToLL_LHEFilterPtZ-0To50', 'DYJetsToLL_LHEFilterPtZ-50To100', 'DYJetsToLL_LHEFilterPtZ-100To250',
-                       'DYJetsToLL_LHEFilterPtZ-250To400', 'DYJetsToLL_LHEFilterPtZ-400To650', 'DYJetsToLL_LHEFilterPtZ-650ToInf'),
-                'WJets': ('WJetsToLNu_TuneCP5_13TeV-madgraph',
-                          'WJetsToLNu_HT-70To100',  'WJetsToLNu_HT-100To200', 'WJetsToLNu_HT-200To400',
-                          'WJetsToLNu_HT-400To600', 'WJetsToLNu_HT-600To800', 'WJetsToLNu_HT-800To1200',
-                          'WJetsToLNu_HT-1200To2500', 'WJetsToLNu_HT-2500ToInf'),
-                }
+mc_processes = {"2018":
+                {'ggfRadions': (), 'ggfBulkGraviton': (),
+                 'TT': ('TTToHadronic', 'TTTo2L2Nu', 'TTToSemiLeptonic',),
+                 'DY': ('DYJetsToLL_M-50_TuneCP5_13TeV-amc',
+                        'DYJetsToLL_0J', 'DYJetsToLL_1J',   'DYJetsToLL_2J',
+                        'DYJetsToLL_LHEFilterPtZ-0To50',    'DYJetsToLL_LHEFilterPtZ-50To100',
+                        'DYJetsToLL_LHEFilterPtZ-100To250', 'DYJetsToLL_LHEFilterPtZ-250To400',
+                        'DYJetsToLL_LHEFilterPtZ-400To650', 'DYJetsToLL_LHEFilterPtZ-650ToInf'),
+                 'WJets': ('WJetsToLNu_TuneCP5_13TeV-madgraph',
+                           'WJetsToLNu_HT-70To100',    'WJetsToLNu_HT-100To200', 'WJetsToLNu_HT-200To400',
+                           'WJetsToLNu_HT-400To600',   'WJetsToLNu_HT-600To800', 'WJetsToLNu_HT-800To1200',
+                           'WJetsToLNu_HT-1200To2500', 'WJetsToLNu_HT-2500ToInf'),
+                 },
+                
+"2017":
+                {'ggfRadions': (), 'ggfBulkGraviton': (),
+                 'TT': ('TTToHadronic', 'TTTo2L2Nu', 'TTToSemiLeptonic',),
+                 'DY': ('DYJetsToLL_M-50_TuneCP5_13TeV-amc',
+                        'DYJetsToLL_0J', 'DYJetsToLL_1J',   'DYJetsToLL_2J',
+                        'DYJetsToLL_LHEFilterPtZ-0To50',    'DYJetsToLL_LHEFilterPtZ-50To100',
+                        'DYJetsToLL_LHEFilterPtZ-100To250', 'DYJetsToLL_LHEFilterPtZ-250To400',
+                        'DYJetsToLL_LHEFilterPtZ-400To650', 'DYJetsToLL_LHEFilterPtZ-650ToInf'),
+                 'WJets': ('WJetsToLNu_TuneCP5_13TeV-madgraph',
+                           'WJetsToLNu_HT-70To100',    'WJetsToLNu_HT-100To200', 'WJetsToLNu_HT-200To400',
+                           'WJetsToLNu_HT-400To600',   'WJetsToLNu_HT-600To800', 'WJetsToLNu_HT-800To1200',
+                           'WJetsToLNu_HT-1200To2500', 'WJetsToLNu_HT-2500ToInf'),
+                 },
 
+"2016APV":
+                {'ggfRadions': (), 'ggfBulkGraviton': (),
+                 'TT': ('SKIM_TTToHadronic', 'SKIM_TTTo2L2Nu', 'SKIM_TTToSemiLeptonic',),
+                 'DY': ('SKIM_DYJetsToLL_M-50',
+                        'SKIM_DYJetsToLL_0J',  'SKIM_DYJetsToLL_1J', 'SKIM_DYJetsToLL_2J',
+                        'SKIM_DYJetsToLL_LHEFilterPtZ-0To50',    'SKIM_DYJetsToLL_LHEFilterPtZ-50To100',
+                        'SKIM_DYJetsToLL_LHEFilterPtZ-100To250', 'SKIM_DYJetsToLL_LHEFilterPtZ-250To400',
+                        'SKIM_DYJetsToLL_LHEFilterPtZ-400To650', 'SKIM_DYJetsToLL_LHEFilterPtZ-650ToInf'),
+                 'WJets': ('SKIM_WJetsToLNu',
+                           'SKIM_WJetsToLNu_HT-70To100',    'SKIM_WJetsToLNu_HT-100To200',
+                           'SKIM_WJetsToLNu_HT-200To400',   'SKIM_WJetsToLNu_HT-400To600',
+                           'SKIM_WJetsToLNu_HT-600To800',   'SKIM_WJetsToLNu_HT-800To1200',
+                           'SKIM_WJetsToLNu_HT-1200To2500', 'SKIM_WJetsToLNu_HT-2500ToInf'),
+                 },
+
+"2016":
+                {'ggfRadions': (), 'ggfBulkGraviton': (),
+                 'TT': ('SKIM_TT_fullyHad', 'SKIM_TT_fullyLep', 'SKIM_TT_semiLep',),
+                 'DY': ('SKIM_DY_amc_incl',
+                        'SKIM_DY_amc_0j',  'SKIM_DY_amc_1j', 'SKIM_DY_amc_2j',
+                        'SKIM_DY_amc_PtZ_0To50',    'SKIM_DY_amc_PtZ_50To100',
+                        'SKIM_DY_amc_PtZ_100To250', 'SKIM_DY_amc_PtZ_250to400',
+                        'SKIM_DY_amc_PtZ_400to650', 'SKIM_DY_amc_PtZ_650toInf'),
+                 'WJets': ('SKIM_WJets_HT0To70',
+                           'SKIM_WJets_HT70To100',    'SKIM_WJets_HT100To200',
+                           'SKIM_WJets_HT200To400',   'SKIM_WJets_HT400To600',
+                           'SKIM_WJets_HT600To800',   'SKIM_WJets_HT800To1200',
+                           'SKIM_WJets_HT1200To2500', 'SKIM_WJets_HT2500ToInf'),
+                 },
+
+}
 
 ###############################################################################
 # Sanity checks
