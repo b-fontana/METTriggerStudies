@@ -171,7 +171,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
     # 1-dimensional
     if utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] != "quantiles":
         #frange = cfg.binedges[variable][channel][0], cfg.binedges[variable][channel][-1]
-        frange = 150., cfg.binedges[variable][channel][-1]
+        frange = 160., cfg.binedges[variable][channel][-1]
     elif utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] == "quantiles":
         frange = cfg.binedges[variable][channel][1], cfg.binedges[variable][channel][2]
     else:

@@ -16,8 +16,8 @@ category = 'baseline'
 
 triggers = ('METNoMu120', 'IsoMu27')
 trig_custom = set()
-cuts = {'METNoMu120': {'metnomu_et': ('>', [120,]),
-                       'mhtnomu_et': ('>', [100,])},
+cuts = {'METNoMu120': {'metnomu_et': ('>', [0.,]),
+                       'mhtnomu_et': ('>', [0.,])},
         }
 
 # which triggers are exclusive to a particular channel?
