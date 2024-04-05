@@ -59,7 +59,7 @@ def compute_acceptance_times_efficiency(basepath, masses, spin, year):
 
     return nums_leg, nums_met, nums_tau, denoms
 
-def plot_acceptance_times_efficiency(vals, spin, compare):
+def plot_acceptance_times_efficiency(vals, spin, compare, lowm):
     masses = [float(k) for k in vals[0].keys()]
     chn_unicodes = {"ETau":   r'$e\tau$',
                     "MuTau":  r'$\mu\tau$',
@@ -115,11 +115,12 @@ def plot_acceptance_times_efficiency(vals, spin, compare):
         edo_tau, eup_tau = [x for x,_ in err_tau], [x for _,x in err_tau]
         edo_rel_tau, eup_rel_tau = [y-x for y,x in zip(yvals_tau,edo_tau)], [x-y for y,x in zip(yvals_tau,eup_tau)]
 
+        gap = 2 if lowm else 6
         ax.errorbar(masses, yvals_leg,
                     yerr=(edo_rel_leg,eup_rel_leg), fmt='--o', color="red", label="Legacy")
-        ax.errorbar([m+10 for m in masses], yvals_met,
+        ax.errorbar([m+gap for m in masses], yvals_met,
                     yerr=(edo_rel_met,eup_rel_met), fmt='--^', color="orange", label="Legacy + MET")
-        ax.errorbar([m+20 for m in masses], yvals_tau,
+        ax.errorbar([m+gap*2 for m in masses], yvals_tau,
                     yerr=(edo_rel_tau,eup_rel_tau), fmt='--s', color="green", label=r"Legacy + MET + Single-$\tau$")
         
         # ax.plot(masses, yvals_leg, '--o', color="red", label="Legacy")
@@ -130,6 +131,8 @@ def plot_acceptance_times_efficiency(vals, spin, compare):
             ax.legend(loc="lower right")
             ax.set_xlim(200, 1700)
             # ax.set_ylim(0., 0.149)
+        elif lowm:
+            ax.legend(loc="upper left")
         else:
             ax.legend(loc="upper right")
         
@@ -143,6 +146,8 @@ def plot_acceptance_times_efficiency(vals, spin, compare):
         output = "AccEff_" + chn
         if compare:
             output += "_comp"
+        if lowm:
+            output += "_lowm"
         for ext in ('.png', '.pdf'):
             fig.savefig(output + ext)
         plt.close()
@@ -159,6 +164,8 @@ if __name__ == '__main__':
     parser.add_argument('--year', required=True, choices=("2016", "2016APV", "2017", "2018"),
                         type=str, help='Data taking period.')
     parser.add_argument('--spin', required=True, choices=('0', '2'), help='Signal spin hypothesis.')
+    parser.add_argument('--lowm', action='store_true',
+                        help="Run on low masses only.")
     parser.add_argument('--compare_atlas', action='store_true',
                         help="Format the plot to faciliate a comparison with the ATLAS acceptance times efficiency non-resonant plot.")
     
@@ -167,6 +174,8 @@ if __name__ == '__main__':
     if FLAGS.compare_atlas:
         FLAGS.masses = (250, 260, 270, 280, 300, 320, 350, 400, 450, 500, 550, 600, 650,
                         700, 750, 800, 850, 900, 1000, 1250, 1500)
-
+    if FLAGS.lowm:
+        FLAGS.masses = (250, 260, 270, 280, 300, 320, 350, 400, 450, 500, 550, 600, 650)
+        
     values = compute_acceptance_times_efficiency(FLAGS.basepath, FLAGS.masses, FLAGS.spin, FLAGS.year)
-    plot_acceptance_times_efficiency(values, FLAGS.spin, FLAGS.compare_atlas)
+    plot_acceptance_times_efficiency(values, FLAGS.spin, FLAGS.compare_atlas, FLAGS.lowm)
