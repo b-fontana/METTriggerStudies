@@ -25,24 +25,26 @@ def compute_acceptance_times_efficiency(basepath, masses, spin, year):
         path = os.path.join(basepath, "{}_M-{}_".format(signal[spin], mx), "output_*.root")
         flist = glob.glob(path)
 
-        n1, n2, d = 0, 0, 0
+        n1, n2, n3, n4, d = 0, 0, 0
         for afile in flist:
             with up.open(afile) as upfile:
                 histo = upfile['h_effSummary'].to_hist()
-                n1 += histo['METfilter']
-                n2 += histo['Trigger']
+                n1 += histo['MuTau']
+                n2 += histo['ETau']
+                n3 += histo['TauTau']
+                n4 += histo['MuMu']
                 d += histo['all']
-        vals[mx] = (n1, n2, d)
+        vals[mx] = (n1, n2, n3, n4, d)
 
     return vals
 
 def plot_acceptance_times_efficiency(vals, spin):
     colors = iter(("red", "dodgerblue"))
     masses = [float(k) for k in vals.keys()]
-    chn_unicodes = {"etau":   r'$bb\: e\tau$',
-                    "mutau":  r'$bb\: \mu\tau$',
-                    "tautau": r'$bb\: \tau\tau$',
-                    "mumu":   r'$bb\: \mu\mu$'}
+    chn_unicodes = {"ETau":   r'$bb\: e\tau$',
+                    "MuTau":  r'$bb\: \mu\tau$',
+                    "TauTau": r'$bb\: \tau\tau$',
+                    "MuMu":   r'$bb\: \mu\mu$'}
     spin_map = {'0': "Radion", '2': "BulkGraviton"}
     
     fig, ax = plt.subplots(1)
@@ -50,7 +52,7 @@ def plot_acceptance_times_efficiency(vals, spin):
     ax.set_xlabel("m(X) [GeV]", fontsize=20)
     ax.set_ylabel(r"Acceptance $\times$ Efficiency", fontsize=20)
 
-    channels = ("etau", "mutau")
+    channels = ("MuTau", "ETau", "TauTau", "MuMu")
     assert len(vals[list(vals.keys())[0]]) == len(channels) + 1 # all numerators + the denominator
     
     for ichn, chn in enumerate(channels):
