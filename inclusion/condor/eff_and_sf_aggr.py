@@ -41,17 +41,31 @@ def eff_and_sf_aggr(args):
     jw.add_string('echo "{} done."'.format(script))
 
     #### Write submission file
-    jw.write_condor(filename=outs_submit,
-                    real_exec=utils.build_script_path(script),
-                    shell_exec=outs_job,
-                    outfile=outs_check,
-                    logfile=outs_log,
-                    queue=main.queue,
-                    machine=main.machine)
+    if main.machine == "slurm": 
+            input_params = []
+            for chn in args.channels:
+                input_params.append('"{}"'.format(chn))
 
-    qlines = []
-    for chn in args.channels:
-        qlines.append('  {}'.format(chn))
+            jw.write_batch(filename=outs_submit,
+                        real_exec=utils.build_script_path(script),
+                        shell_exec=outs_job,
+                        outfile=outs_check,
+                        logfile=outs_log,
+                        queue=main.queue,
+                        machine=main.machine,
+                        input_output_params=input_params)
+    else:
+        jw.write_condor(filename=outs_submit,
+                        real_exec=utils.build_script_path(script),
+                        shell_exec=outs_job,
+                        outfile=outs_check,
+                        logfile=outs_log,
+                        queue=main.queue,
+                        machine=main.machine)
 
-    jw.write_queue( qvars=('channel',),
-                    qlines=qlines )
+        qlines = []
+        for chn in args.channels:
+            qlines.append('  {}'.format(chn))
+
+        jw.write_queue( qvars=('channel',),
+                        qlines=qlines )

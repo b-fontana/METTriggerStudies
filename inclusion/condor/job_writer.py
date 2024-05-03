@@ -4,6 +4,7 @@ _all_ = [ 'JobWriter' ]
 
 import os
 import sys
+import re
 parent_dir = os.path.abspath(__file__ + 3 * '/..')
 sys.path.insert(0, parent_dir)
 
@@ -25,7 +26,7 @@ class JobWriter:
             self.f.write( string + self.endl )
 
     @staticmethod
-    def define_output(localdir, data_folders, tag, names=''):
+    def define_output(localdir, data_folders, tag, names='', workflow='condor'):
         """
         Defines where the shell and condor job files, and the HTCondor outputs
         will be stored.
@@ -65,9 +66,12 @@ class JobWriter:
         for jd, cd, name in zip(job_d,out_d,names):
             mkdir(cd)
             job_f.append( os.path.join(jd, 'job{}.sh'.format(name)) )
-            subm_f.append( os.path.join(jd, 'job{}.condor'.format(name)) )
-
-            base_name = 'C$(Cluster)_P$(Process)'
+            if main.machine == 'slurm':
+                subm_f.append( os.path.join(jd, 'job{}.bat'.format(name)) )
+                base_name = '%x-%j'
+            else:
+                subm_f.append( os.path.join(jd, 'job{}.condor'.format(name)) )
+                base_name = 'C$(Cluster)_P$(Process)'
             out_name = '{}.out'.format(base_name)
             log_name = '{}.log'.format(base_name)
             out_f.append( os.path.join(cd, out_name) )
@@ -116,7 +120,57 @@ class JobWriter:
             self.f.write(m)
         os.system('chmod u+rwx '+ filename)
 
-    def write_queue(self, qvars=(), qlines=[]):
+    def write_batch(self, filename, shell_exec, real_exec, outfile, logfile,
+                     queue, machine, input_args=[], additional_args = "", input_output_params = []):
+
+        self.filenames.append(filename)
+        batch_name = os.path.dirname(shell_exec).split('/')[-1]
+
+        if not filename:
+            raise ValueError("file_name must not be empty")
+        if not shell_exec and not real_exec:
+            raise ValueError("either command or executable must not be empty")
+        if not shell_exec:
+            raise ValueError("shell must not be empty")
+
+        filenum_array = []
+        arg_array = []
+        if len(input_args):
+            filenum_array = [re.findall('(\d+)(?!.*\d)', input_arg)[0] for input_arg in input_args]
+            file_root_path = re.split('(\d+)(?!.*\d)', input_args[0])
+            additional_args =  " " + file_root_path[0] + '$SLURM_ARRAY_TASK_ID' + file_root_path[2]
+            
+        if len(input_output_params):
+            arg_array = ["case $SLURM_ARRAY_TASK_ID in"]
+
+            for i in range(len(input_output_params)):
+                arg_array.append("\t{})   IN_N_OUT_ARGS={} ;;".format(i, input_output_params[i]))
+                filenum_array.append(str(i))
+            arg_array.append("esac")
+            
+            additional_args = " $IN_N_OUT_ARGS"
+
+        m = self.endl.join(('#!/usr/bin/env bash',
+                            '#SBATCH --job-name={}'.format(batch_name),
+                            '#SBATCH --partition=standard',
+                            '#SBATCH --output=/dev/null',
+                            '#SBATCH --chdir=/t3home/fbilandz/Run3',
+                            '#SBATCH --time=00:44:59',
+                            '#SBATCH --nodes=1',
+                            '#SBATCH -o {}'.format(outfile),
+                            '#SBATCH -e {}'.format(outfile.replace('.out', '.err')),
+                            '#SBATCH --array={}'.format(','.join(filenum_array)) if len(filenum_array) else "",
+                            '#SBATCH --cpus-per-task=1',
+                            self.endl,
+                            self.endl.join(arg_array) if len(arg_array) else "",
+                            shell_exec + additional_args,
+                            self.endl))
+
+        with open(filename, 'w') as self.f:
+            self.f.write(m)
+        os.system('chmod u+rwx '+ filename)
+        
+    def write_queue(self, qvars=(), qlines=[], machine="condor"):
         """
         Works for any number variables in the queue.
         It is up to the user to guarantee compatibility between queue variables and lines.
@@ -124,7 +178,10 @@ class JobWriter:
         extension = self.filenames[-1].split('.')[-1]
         if extension != self.exts[1]:
             self.extension_exception()
-            
+
+        if machine == "slurm":
+            return 
+
         with open(self.filenames[-1], 'a') as self.f:
             if len(qvars) > 0:
                 argstr = 'Arguments = "'
@@ -164,13 +221,13 @@ class JobWriter:
         os.system('chmod u+rwx '+ filename)
 
     def condor_specific_content(self, queue, machine):
-        if 'llr' in machine:
+        if 'llr' in machine or machine == 'slurm':
             assert queue in ('short', 'long')
-            assert machine in ('llrt3condor', 'llrt3condor7')
+            assert machine in ('llrt3condor', 'llrt3condor7', 'slurm')
             m = self.endl + self.endl.join(('T3Queue = {}'.format(queue),
                                             'WNTag=el7',
                                             '+SingularityCmd = ""'))
-            if machine == 'llrt3condor':
+            if machine == 'llrt3condor' or machine == 'slurm':
                 t3 = "t3"
             elif machine == 'llrt3condor7':
                 t3 = "t3_tst"

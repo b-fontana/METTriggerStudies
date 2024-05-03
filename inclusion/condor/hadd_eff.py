@@ -63,7 +63,28 @@ def hadd_eff(args):
     #### Write submission file
     inputs_join = []
     for out1,out2,out3,out4 in zip(outs_job,outs_submit,outs_check,outs_log):
-        jw.write_condor(filename=out2,
+        if main.machine == "slurm": 
+            input_output_params = []
+            if out1 == outs_job[0]:
+                for t,smpl in zip(targets[1:], args.samples):
+                    inputs = os.path.join(args.indir, smpl, args.outprefix + '*' + args.subtag + '.root ')
+                    inputs_join.append(t)
+                    # join subdatasets (different MC or Data subfolders, ex: TT_fullyHad, TT_semiLep, ...)
+                    jw.add_string('"{} {}"'.format(t, inputs))
+            elif out1 == outs_job[1]:
+                # join MC or Data subdatasets into a single one (ex: TT)
+                jw.add_string('"{} {}"'.format(targets[0], ' '.join(inputs_join)))
+
+            jw.write_batch(filename=out2,
+                        real_exec='/dev/null',
+                        shell_exec=out1,
+                        outfile=out3,
+                        logfile=out4,
+                        queue=main.queue,
+                        machine=main.machine,
+                        input_output_params=input_output_params)   
+        else:
+            jw.write_condor(filename=out2,
                         real_exec='/dev/null',
                         shell_exec=out1,
                         outfile=out3,
@@ -71,16 +92,16 @@ def hadd_eff(args):
                         queue=main.queue,
                         machine=main.machine)
 
-        qlines = []
-        if out1 == outs_job[0]:
-            for t,smpl in zip(targets[1:], args.samples):
-                inputs = os.path.join(args.indir, smpl, args.outprefix + '*' + args.subtag + '.root ')
-                inputs_join.append(t)
-                # join subdatasets (different MC or Data subfolders, ex: TT_fullyHad, TT_semiLep, ...)
-                jw.add_string('  {}, {}'.format(t, inputs))
-        elif out1 == outs_job[1]:
-            # join MC or Data subdatasets into a single one (ex: TT)
-            jw.add_string('  {}, {}'.format(targets[0], ' '.join(inputs_join)))
+            qlines = []
+            if out1 == outs_job[0]:
+                for t,smpl in zip(targets[1:], args.samples):
+                    inputs = os.path.join(args.indir, smpl, args.outprefix + '*' + args.subtag + '.root ')
+                    inputs_join.append(t)
+                    # join subdatasets (different MC or Data subfolders, ex: TT_fullyHad, TT_semiLep, ...)
+                    jw.add_string('  {}, {}'.format(t, inputs))
+            elif out1 == outs_job[1]:
+                # join MC or Data subdatasets into a single one (ex: TT)
+                jw.add_string('  {}, {}'.format(targets[0], ' '.join(inputs_join)))
 
-        jw.write_queue( qvars=('myoutput', 'myinputs'),
-                        qlines=qlines )
+            jw.write_queue( qvars=('myoutput', 'myinputs'),
+                            qlines=qlines )

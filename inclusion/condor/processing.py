@@ -110,20 +110,34 @@ def processing(args):
         jw.add_string('echo "Process {} done in mode {}."'.format(vproc,args.mode))
 
         #### Write submission file
-        jw.write_condor(filename=outs_submit[i],
+        if main.machine == "slurm": 
+            input_args = []
+            for listname in filelist:
+                input_args.append('{}'.format( listname.replace('\n','') ))
+            jw.write_batch(filename=outs_submit[i],
                         real_exec=utils.build_script_path(script),
                         shell_exec=outs_job[i],
                         outfile=outs_check[i],
                         logfile=outs_log[i],
                         queue=main.queue,
-                        machine=main.machine)
+                        machine=main.machine,
+                        input_args=input_args)
+
+        else:
+            jw.write_condor(filename=outs_submit[i],
+                            real_exec=utils.build_script_path(script),
+                            shell_exec=outs_job[i],
+                            outfile=outs_check[i],
+                            logfile=outs_log[i],
+                            queue=main.queue,
+                            machine=main.machine)
         
-        qlines = []
-        for listname in filelist:
-            qlines.append(' {}'.format( listname.replace('\n','') ))
-        
-        jw.write_queue( qvars=('filename',),
-                        qlines=qlines )
+            qlines = []
+            for listname in filelist:
+                qlines.append(' {}'.format( listname.replace('\n','') ))
+            
+            jw.write_queue( qvars=('filename',),
+                            qlines=qlines )
 
 # -- Parse options
 if __name__ == '__main__':
