@@ -22,35 +22,33 @@ def build_path(base, channel, variable):
 
 def get_paths_and_labels(base, mode, channels, variable, year, var_units):
     if mode == "ranges":
-        labels = ["full", r"$[180;\infty[\:\:{}$".format(var_units),
-                  r"$[160;\infty[\:\:{}$".format(var_units), r"$[150;\infty[\:\:{}$".format(var_units)]
-        if year == "2018":
-            labels.append(r"$[140;\infty[\:\:{}$".format(var_units))
+        labels = ["full", r"$[180;350[\:\:{}$".format(var_units),
+                  r"$[160;350[\:\:{}$".format(var_units), r"$[150;350[\:\:{}$".format(var_units),
+                  r"$[140;350[\:\:{}$".format(var_units)]
         # transfer files with:
         # cp /data_CMS/cms/alves/TriggerScaleFactors/OpenCADI_18/Outputs/mutau/metnomu_et/eff_Data_Mu_MC_TT_DY_WJets_mutau_metnomu_et_TRG_METNoMu120_CUTS_mhtnomu_et_L_0p0_default.root full_mumu_fit.root
         paths = ["full_mumu_fit_"+year+".root", "180_mumu_fit_"+year+".root",
-                 "160_mumu_fit_"+year+".root", "150_mumu_fit_"+year+".root"]
-        if year == "2018":
-            paths.append("140_mumu_fit_"+year+".root")
+                 "160_mumu_fit_"+year+".root", "150_mumu_fit_"+year+".root",
+                 "140_mumu_fit_"+year+".root"]
     elif mode == "channels":
         labels = (dd["mutau"], dd["mumu"])
-        paths = (build_path(base, channels[0], variable),
-                 build_path(base, channels[1], variable),)
+        paths = ("150_mutau_fit_"+year+".root", "150_mumu_fit_"+year+".root")
     elif mode == "datasets":
         labels = (dd["mumu"]  + ", SingleMuon", dd["mumu"]  + ", DoubleMuon",
                   dd["mutau"] + ", SingleMuon", dd["mutau"] + ", DoubleMuon")
         paths = ("full_mumu_fit.root", "full_double_mumu_fit.root",
                  "full_mutau_fit.root", "full_double_mutau_fit.root")
     elif mode == "years":
-        labels = ("UL17", "UL18")
-        paths = ("160_mumu_fit_2017.root", "150_mumu_fit_2018.root")
+        labels = ("UL16", "UL16APV", "UL17", "UL18")
+        paths = ("150_mumu_fit_2016.root", "150_mumu_fit_2016APV.root",
+                 "150_mumu_fit_2017.root", "150_mumu_fit_2018.root")
 
     ret = {}
     for p,l in zip(paths,labels):
         tmp = glob.glob(p)
         if len(tmp) != 1:
             print(tmp)
-            raise RuntimeError('[ERROR] Path {} must have lenght 1.'.format(tmp))
+            raise RuntimeError('[ERROR] Path {} with pattern {} must have lenght 1.'.format(tmp, p))
         ret[tmp[0]] = l
 
     return ret
@@ -72,8 +70,11 @@ def compare_ratios(paths, mode, variable, year, var_units):
     var_map = dict(metnomu_et=r"MET-no$\mu$")
 
     fit_ratios, idx_lims = [], []
-    
-    fig, (ax1, ax2) = plt.subplots(2, sharex=True, gridspec_kw={'height_ratios': [3., 1.]})
+
+    if mode != "years":
+        fig, (ax1, ax2) = plt.subplots(2, sharex=True, gridspec_kw={'height_ratios': [3., 1.]})
+    else:
+        fig, ax1 = plt.subplots(1)
     plt.subplots_adjust(wspace=0, hspace=0)
 
     for ipath, (bpath, blabel) in enumerate(paths.items()):
@@ -87,7 +88,7 @@ def compare_ratios(paths, mode, variable, year, var_units):
         fit_xrange    = (fit_data.member('fXmin'), fit_data.member('fXmax'))
         assert fit_xrange == (fit_mc.member('fXmin'), fit_mc.member('fXmax'))
 
-        fit_xvals = np.linspace(0, 350, num=5000)
+        fit_xvals = np.linspace(0, 900.1, num=10000)
 
         fit_data_yvals = sigmoid(fit_xvals, fit_data_pars)
         fit_mc_yvals   = sigmoid(fit_xvals, fit_mc_pars)
@@ -95,7 +96,7 @@ def compare_ratios(paths, mode, variable, year, var_units):
         # get fit validity range, otherwise the full function is plotted
         idx_lims.append( (np.argmax(fit_xvals > fit_xrange[0]),
                           np.argmax(fit_xvals > fit_xrange[1])) )
-        idx_sel = slice(idx_lims[-1][0],idx_lims[-1][1],1)
+        idx_sel = slice(idx_lims[-1][0], idx_lims[-1][1], 1)
 
         # if mode == "ranges" we only want to plot SFs once (all are equal)
         if mode != "ranges" or ipath > 0:
@@ -114,12 +115,12 @@ def compare_ratios(paths, mode, variable, year, var_units):
     ax1.legend(loc="lower right")
 
     line_opt = dict(color="grey", linestyle="--")
-    met_cuts = [180., 160., 150.]
-    if year=="2018":
-        met_cuts.append(140.)
+    met_cuts = [180., 160., 150., 140.]
+
     if mode == "ranges":
-        ax1.set_ylim(-0.05, 1.08)
-        yticks = np.arange(-.06, .06, .02)
+        ax1.set_xlim(130, 360)
+        ax1.set_ylim(-0.05, 1.19)
+        yticks = (-0.16, -0.1, -0.05, 0., 0.05, 0.06)
         ax2.set_yticks(yticks)
         for yval in yticks:
             ax2.axhline(y=yval, **line_opt)
@@ -130,10 +131,10 @@ def compare_ratios(paths, mode, variable, year, var_units):
             ax2.axvline(x=cut, **line_opt)
 
     elif mode == "channels":
-        ax1.set_ylim(-0.05, 1.08)
+        ax1.set_ylim(-0.05, 1.12)
         ax1.axvline(x=150., **line_opt)
         ax2.axvline(x=150., **line_opt)
-        yticks = np.arange(-.3, .3, .1)
+        yticks = (-0.15, -0.1, 0., 0.1, 0.15)
         ax2.set_yticks(yticks)
         ax1.axhline(y=1., **line_opt)
         for yval in yticks:
@@ -154,34 +155,25 @@ def compare_ratios(paths, mode, variable, year, var_units):
     elif mode == "years":
         ax1.set_ylim(-0.05, 1.08)
         ax1.axvline(x=150., **line_opt)
-        ax2.axvline(x=150., **line_opt)
-        yticks = (-.1, 0., .1)
-        ax2.set_yticks(yticks)
         ax1.axhline(y=1., **line_opt)
-        for yval in yticks:
-            ax2.axhline(y=yval, **line_opt)
-        ax2.set_ylim(-.19, .19)
 
     # comparison of ratios using the first partial fit as reference
     # the x range is the minimum interval common to both ratios
     if mode == "ranges":
         for ipath, (bpath,_) in enumerate(paths.items()):
-            if ipath == 0:
-                continue
+            # if ipath == 0:
+            #     continue
             tmp_sel = slice(max(idx_lims[1][0], idx_lims[ipath][0]),
                             min(idx_lims[1][1], idx_lims[ipath][1]), 1)
             ax2.plot(fit_xvals[tmp_sel], (fit_ratios[3][tmp_sel]/fit_ratios[ipath][tmp_sel])-1., '--', color=colors[ipath])
+
     elif mode == "channels":
-        ax2.plot(fit_xvals, (fit_ratios[1]/fit_ratios[0])-1., '--', color=colors[ipath])
+        ax2.plot(fit_xvals, (fit_ratios[1]/fit_ratios[0])-1., '--', color="black")
     elif mode == "datasets":
         ax2.plot(fit_xvals, (fit_ratios[1]/fit_ratios[0])-1., '--', color="blue",
                  label=dd["mumu"] + ": Double/Single")
         ax2.plot(fit_xvals, (fit_ratios[3]/fit_ratios[2])-1., '--', color="orange",
                  label=dd["mutau"] + ": Double/Single")
-    elif mode == "years":
-        tmp_sel = slice(max(idx_lims[1][0], idx_lims[0][0]),
-                        min(idx_lims[1][1], idx_lims[0][1]), 1)
-        ax2.plot(fit_xvals[tmp_sel], (fit_ratios[1][tmp_sel]/fit_ratios[0][tmp_sel])-1., '--', color=colors[ipath])
 
     if mode == "ranges":
         ax2.set_ylabel(r"$(SF_{{150\:{u}}}/SF_{{X\:{u}}}) - 1$".format(u=var_units), fontsize=20)
@@ -189,10 +181,12 @@ def compare_ratios(paths, mode, variable, year, var_units):
         ax2.set_ylabel(r"Fit Ratio", fontsize=20)
     elif mode == "datasets":
         ax2.set_ylabel(r"Fit Ratio", fontsize=20)
-    elif mode == "years":
-        ax2.set_ylabel(r"UL18/UL17 - 1", fontsize=20)
-    ax2.set_xlabel(var_map[variable] + " [" + var_units + "]", fontsize=21)
 
+    if mode != "years":
+        ax2.set_xlabel(var_map[variable] + " [" + var_units + "]", fontsize=21)
+    else:
+        ax1.set_xlabel(var_map[variable] + " [" + var_units + "]", fontsize=21)
+        
     if mode == "datasets":
         ax2.legend(loc="lower right", fontsize=15)
         
@@ -203,7 +197,9 @@ def compare_ratios(paths, mode, variable, year, var_units):
         hep.cms.lumitext(dd["mumu"] + " (baseline, {}) | ".format(year) + r"{} $fb^{{-1}}$ (13 TeV)".format(lumi),
                          fontsize=19, **hep_opt)
     elif mode == "years":
-        hep.cms.lumitext(r"41.7 $fb^{-1}$ [UL17], 59.7 $fb^{-1}$ [UL18] (13 TeV)", fontsize=19, **hep_opt)
+        hep.cms.lumitext(r"13 TeV", fontsize=19, **hep_opt)
+    elif mode == "channels":
+        hep.cms.lumitext(r"{} $fb^{{-1}}$ (13 TeV)".format(lumi), fontsize=19, **hep_opt)
     else:
         hep.cms.lumitext(r"59.7 $fb^{-1}$ (13 TeV)", fontsize=19, **hep_opt)
 
