@@ -59,7 +59,16 @@ def union_calculator(args):
         jw.add_string('echo "Process {} done."'.format(proc))
 
         #### Write submission file
-        jw.write_condor(filename=subs[i],
+        if main.machine == "slurm": 
+            jw.write_batch(filename=subs[i],
+                        real_exec=utils.build_script_path(script),
+                        shell_exec=jobs[i],
+                        outfile=checks[i],
+                        logfile=logs[i],
+                        queue=main.queue,
+                        machine=main.machine)
+        else:
+            jw.write_condor(filename=subs[i],
                         real_exec=utils.build_script_path(script),
                         shell_exec=jobs[i],
                         outfile=checks[i],
@@ -67,10 +76,10 @@ def union_calculator(args):
                         queue=main.queue,
                         machine=main.machine)
 
-        qlines = []
-        for listname in filelist:
-            for trig in args.closure_single_triggers:
-                qlines.append('  {},{}'.format( os.path.basename(listname).replace('\n',''), trig ))
-                        
-        jw.write_queue( qvars=('filename', 'closure_single_trigger'),
-                        qlines=qlines )
+            qlines = []
+            for listname in filelist:
+                for trig in args.closure_single_triggers:
+                    qlines.append('  {},{}'.format( os.path.basename(listname).replace('\n',''), trig ))
+                            
+            jw.write_queue( qvars=('filename', 'closure_single_trigger'),
+                            qlines=qlines )

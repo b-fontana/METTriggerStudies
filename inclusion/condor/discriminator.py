@@ -46,14 +46,23 @@ def discriminator(args):
         jw.add_string('echo "Script {} with channel {} done."'.format(script, args.channels[i]))
 
         #### Write submission file
-        jw.write_condor(filename=outs_submit[i],
-                        real_exec=utils.build_script_path(script),
-                        shell_exec=outs_job[i],
-                        outfile=outs_check[i],
-                        logfile=outs_log[i],
-                        queue=main.queue,
-                        machine=main.machine)
-        jw.write_queue()
+        if main.machine == "slurm": 
+            jw.write_batch(filename=outs_submit[i],
+                            real_exec=utils.build_script_path(script),
+                            shell_exec=outs_job[i],
+                            outfile=outs_check[i],
+                            logfile=outs_log[i],
+                            queue=main.queue,
+                            machine=main.machine)
+        else:
+            jw.write_condor(filename=outs_submit[i],
+                            real_exec=utils.build_script_path(script),
+                            shell_exec=outs_job[i],
+                            outfile=outs_check[i],
+                            logfile=outs_log[i],
+                            queue=main.queue,
+                            machine=main.machine)
+            jw.write_queue()
 
 # -- Parse options
 if __name__ == '__main__':

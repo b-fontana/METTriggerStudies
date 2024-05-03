@@ -2,9 +2,11 @@ import os
 
 email = 'bruno.alves@cern.ch'
 queue = 'short'
-machine = 'llrt3condor' #'lxplus'
+machine = 'slurm' #'lxplus' or 'llrt3condor'
 
-storage = {'2018':    os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
+storage = {
+           '2022':    os.path.join('/t3home/', os.environ['USER'], 'TriggerScaleFactors'),
+           '2018':    os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
            '2017':    os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
            '2016':    os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors'),
            '2016APV': os.path.join('/data_CMS/cms/', os.environ['USER'], 'TriggerScaleFactors')}
@@ -16,7 +18,10 @@ folders = {'base'    : 'METTriggerStudies',
            'subm'    : 'submission',
            'outs'    : 'outputs'}
 
-base_folder = {'llrt3condor':
+base_folder = {
+              'slurm':
+               os.path.join(os.environ['HOME'], 'HHbbtautau/inclusionRun3'),
+              'llrt3condor':
                os.path.join(os.environ['HOME'], 'CMSSW_14_1_0_pre0', 'src', folders['base']),
                'llrt3condor7':
                os.path.join(os.environ['HOME'], 'CMSSW_14_1_0_pre0', 'src', folders['base']),
@@ -48,15 +53,22 @@ sel = {'all'    : {'pairType': ('<',  3),},
        'emu'    : {'pairType': ('==', 5),} }
 
 # variables considered for calculating and plotting efficiencies
-var_eff = ('HT20', 'met_et', 'mht_et', 'metnomu_et', 'mhtnomu_et',
-           'dau1_pt', 'dau2_pt', 'dau1_eta', 'dau2_eta')
+var_eff = (
+    # 'met_et', 'mht_et', 'metnomu_et', 'mhtnomu_et',
+           'dau1_pt', 'dau2_pt', 'dau1_eta', 
+        #    'dau2_eta'
+           )
 
 # variables considered for plotting MC/data comparison distributions
-var_dist = ('dau1_pt', 'HH_mass')
+var_dist = ('dau1_pt', 
+# 'HH_mass'
+)
 # joining the two lists above
 var_join = set(var_eff + var_dist)
 
-var_unionweights = ('dau1_pt', 'dau2_pt', 'dau1_eta', 'dau2_eta')
+var_unionweights = ('dau1_pt', 'dau2_pt', 'dau1_eta', 
+# 'dau2_eta'
+)
 
 trig_linear = lambda x : {'mc': x, 'data': x}
 
@@ -64,7 +76,23 @@ trig_linear = lambda x : {'mc': x, 'data': x}
 # It does NOT match the 'pass_triggerbit' leaf, which is a skimmed version of the above that might change more often
 # One way to ensure the scheme is still correct is by running the script as shown here:
 # https://github.com/bfonta/useful_scripts/commit/f5e4a0096bc74c89176579a336b0f52b74cb3ed2
-trig_map = {'2018':
+filterbit_map = {
+    '2022': {
+        'IsoMu24': {'mc': {13: (1, 3)},  'data': {13: (1, 3)}},
+        'IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1': {'mc': {13: (2, ), 15: (3, 5, 9)}, 'data': {13: (2, ), 15: (3, 5, 9)}},
+        "LooseDeepTauPFTauHPS180_L2NN_eta2p1": {'mc': {}, 'data': {}}, 
+        "PFMETNoMu120_PFMHTNoMu120_IDTight": {'mc': {}, 'data': {}}, 
+    }
+}
+
+trig_map = {
+       '2022': {
+            'IsoMu24': {'mc': 0,  'data': 0},
+            'IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1': {'mc': 2, 'data': 2},
+            "LooseDeepTauPFTauHPS180_L2NN_eta2p1": {'mc': 11, 'data': 11}, 
+            "PFMETNoMu120_PFMHTNoMu120_IDTight": {'mc': 12, 'data': 12}, 
+       },
+       '2018':
             {'IsoMu24':    {'mc': 0,  'data': 0},
              'Ele32':      {'mc': 2,  'data': 2},
              'METNoMu120': {'mc': 40, 'data': 40},
@@ -98,21 +126,25 @@ trig_map = {'2018':
             }
 trig_map['2016APV'] = trig_map['2016']
 
-lep_triggers = {'2018':
+lep_triggers = {
+                '2022': {
+                    'IsoMu24', 'IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1'
+                },
+                '2018':
                 {'Ele32', 'EleIsoTauCustom', 'IsoMu24', 'IsoMuIsoTauCustom', 'IsoDoubleTauCustom'},
                 '2017':
                 {'Ele32', 'EleIsoTau', 'IsoMu27', 'IsoMuIsoTau', 'IsoDoubleTau'},
                 '2016':
                 {'Ele25', 'IsoMu24', 'IsoMuIsoTau', 'IsoDoubleTau'}
                 }
-for year in ('2016', '2017', '2018'):
+for year in ('2016', '2017', '2018', '2022'):
     assert all(x in trig_map[year].keys() for x in lep_triggers[year])
 
-cuts_ignored = {'HT20':       (),
-                'met_et':     ('metnomu_et',),
-                'mht_et':     ('mhtnomu_et',),
-                'metnomu_et': ('met_et',),
-                'mhtnomu_et': ('mht_et',),
+cuts_ignored = {#'HT20':       (),
+                # 'met_et':     ('metnomu_et',),
+                # 'mht_et':     ('mhtnomu_et',),
+                # 'metnomu_et': ('met_et',),
+                # 'mhtnomu_et': ('mht_et',),
                 'dau1_pt':    (),
                 'dau2_pt':    ()}
 
@@ -123,7 +155,9 @@ corr = {'etau': {},
         'mumu': {} }
     
 ### Data and MC samples
-inputs = {'2018':
+inputs = {
+        '2022': ('/t3home/fbilandz/HHbbtautau/Run3/MC/PreprocessOutputs'),
+        '2018':
           ('/data_CMS/cms/portales/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_Data/',
            '/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_OpenCADI_MC/'),
           '2017':
@@ -137,7 +171,14 @@ corrupted_files = () #'/data_CMS/cms/alves/HHresonant_SKIMS/SKIMS_UL18_EOSv5High
 
 # names of the subfolders under 'inputs' above:
 # dictionary that maps specific general triggers to datasets 
-data = {"2018":
+data = {
+    "2022":
+        {'MET'  : ('MET',),
+         'EG'   : ('EGamma',),
+         'Mu'   : ('SingleMuon',),
+         'Tau'  : ('Tau',)
+         },
+    "2018":
         {'MET'  : ('MET',),
          'EG'   : ('EGamma',),
          'Mu'   : ('SingleMuon',),
@@ -163,7 +204,13 @@ data = {"2018":
          },
 }
 
-mc_processes = {"2018":
+mc_processes = {
+    "2022": {
+        'TT': ('TTToHadronic', 'TTToFullyLeptonic', 
+        'TTToSemiLeptonic',),
+        'DY': ('DYJetsToLL_M-50')
+    },
+    "2018":
                 {'ggfRadions': (), 'ggfBulkGraviton': (),
                  'TT': ('TTToHadronic', 'TTTo2L2Nu', 'TTToSemiLeptonic',),
                  'DY': ('DYJetsToLL_M-50_TuneCP5_13TeV-amc',

@@ -56,26 +56,49 @@ def eff_and_sf(args):
     jw.add_string('echo "{} done."'.format(script))
 
     #### Write submission file
-    jw.write_condor(filename=outs_submit,
-                    real_exec=utils.build_script_path(script),
-                    shell_exec=outs_job,
-                    outfile=outs_check,
-                    logfile=outs_log,
-                    queue=main.queue,
-                    machine=main.machine)
+    if main.machine == "slurm": 
+            cfg = importlib.import_module(args.configuration)
+            input_params = []
+            for chn in args.channels:
+                if chn == args.channels[0]:
+                    triggercomb = utils.generate_trigger_combinations(chn, cfg.triggers,
+                                                                    cfg.exclusive)
+                else:
+                    triggercomb += utils.generate_trigger_combinations(chn, cfg.triggers,
+                                                                    cfg.exclusive)
+                    
+            for tcomb in set(triggercomb):
+                input_params.append('"{}"'.format( utils.join_name_trigger_intersection(tcomb)) )
 
-    cfg = importlib.import_module(args.configuration)
-    qlines = []
-    for chn in args.channels:
-        if chn == args.channels[0]:
-            triggercomb = utils.generate_trigger_combinations(chn, cfg.triggers,
-                                                              cfg.exclusive)
-        else:
-            triggercomb += utils.generate_trigger_combinations(chn, cfg.triggers,
-                                                               cfg.exclusive)
-            
-    for tcomb in set(triggercomb):
-        qlines.append('  {}'.format( utils.join_name_trigger_intersection(tcomb)) )
+            jw.write_batch(filename=outs_submit,
+                        real_exec=utils.build_script_path(script),
+                        shell_exec=outs_job,
+                        outfile=outs_check,
+                        logfile=outs_log,
+                        queue=main.queue,
+                        machine=main.machine,
+                        input_output_params=input_params )
+    else:
+        jw.write_condor(filename=outs_submit,
+                        real_exec=utils.build_script_path(script),
+                        shell_exec=outs_job,
+                        outfile=outs_check,
+                        logfile=outs_log,
+                        queue=main.queue,
+                        machine=main.machine)
 
-    jw.write_queue( qvars=('triggercomb',),
-                    qlines=qlines )
+        cfg = importlib.import_module(args.configuration)
+        qlines = []
+        for chn in args.channels:
+            if chn == args.channels[0]:
+                triggercomb = utils.generate_trigger_combinations(chn, cfg.triggers,
+                                                                cfg.exclusive)
+            else:
+                triggercomb += utils.generate_trigger_combinations(chn, cfg.triggers,
+                                                                cfg.exclusive)
+                
+        for tcomb in set(triggercomb):
+            qlines.append('  {}'.format( utils.join_name_trigger_intersection(tcomb)) )
+
+        jw.write_queue( qvars=('triggercomb',),
+                        qlines=qlines )

@@ -47,7 +47,16 @@ def closure(args)                    :
     jw.add_string('echo "{} for channel ${{1}} and single trigger ${{2}} done."'.format(script))
 
     #### Write submission file
-    jw.write_condor(filename=outs_submit,
+    if main.machine == "slurm": 
+            jw.write_batch(filename=outs_submit,
+                    real_exec=utils.build_script_path(script),
+                    shell_exec=outs_job,
+                    outfile=outs_check,
+                    logfile=outs_log,
+                    queue=main.queue,
+                    machine=main.machine)
+    else:
+        jw.write_condor(filename=outs_submit,
                     real_exec=utils.build_script_path(script),
                     shell_exec=outs_job,
                     outfile=outs_check,
@@ -55,10 +64,10 @@ def closure(args)                    :
                     queue=main.queue,
                     machine=main.machine)
 
-    qlines = []
-    for chn in args.channels:
-        for trig in args.closure_single_triggers:
-            qlines.append('  {},{}'.format(chn,trig))
+        qlines = []
+        for chn in args.channels:
+            for trig in args.closure_single_triggers:
+                qlines.append('  {},{}'.format(chn,trig))
 
-    jw.write_queue( qvars=('channel', 'closure_single_trigger'),
-                    qlines=qlines )
+        jw.write_queue( qvars=('channel', 'closure_single_trigger'),
+                        qlines=qlines )

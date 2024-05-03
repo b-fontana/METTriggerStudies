@@ -77,29 +77,38 @@ def hadd_counts(args):
     inputs_join = {}
     nchannels = len(args.channels)
     for out1,out2,out3,out4 in zip(outs_job,outs_submit,outs_check,outs_log):
-        jw.write_condor(filename=out2,
+        if main.machine == "slurm": 
+            jw.write_batch(filename=out2,
                         real_exec=utils.build_script_path(script),
                         shell_exec=out1,
                         outfile=out3,
                         logfile=out4,
                         queue=main.queue,
-                        machine=main.machine)
+                        machine=main.machine,)
+        else:
+            jw.write_condor(filename=out2,
+                            real_exec=utils.build_script_path(script),
+                            shell_exec=out1,
+                            outfile=out3,
+                            logfile=out4,
+                            queue=main.queue,
+                            machine=main.machine)
 
-        qvars = None
-        qlines = []
-        if out1 == outs_job[0]:
-            qvars = ('myoutput', 'channel', 'sample')
-            for it,t in enumerate(targets[nchannels:]):
-                smpl = args.samples[ int(it/nchannels) ]
-                chn = args.channels[ int(it%nchannels) ]
-                if chn not in inputs_join:
-                    inputs_join[chn] = []
-                inputs_join[chn].append(t)
-                qlines.append('  {}, {}, {}'.format(t,smpl,chn))
+            qvars = None
+            qlines = []
+            if out1 == outs_job[0]:
+                qvars = ('myoutput', 'channel', 'sample')
+                for it,t in enumerate(targets[nchannels:]):
+                    smpl = args.samples[ int(it/nchannels) ]
+                    chn = args.channels[ int(it%nchannels) ]
+                    if chn not in inputs_join:
+                        inputs_join[chn] = []
+                    inputs_join[chn].append(t)
+                    qlines.append('  {}, {}, {}'.format(t,smpl,chn))
 
-        elif out1 == outs_job[1]:
-            qvars = ('channel', 'myinputs')
-            for ichn,chn in enumerate(args.channels):
-                qlines.append(" {}, '{}'".format(chn, ' '.join(inputs_join[chn])))
+            elif out1 == outs_job[1]:
+                qvars = ('channel', 'myinputs')
+                for ichn,chn in enumerate(args.channels):
+                    qlines.append(" {}, '{}'".format(chn, ' '.join(inputs_join[chn])))
 
-        jw.write_queue( qvars=qvars, qlines=qlines )
+            jw.write_queue( qvars=qvars, qlines=qlines )

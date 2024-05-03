@@ -3,6 +3,7 @@
 _all_ = [ ]
     
 import os
+import subprocess
 import sys
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, parent_dir)
@@ -104,7 +105,7 @@ parser.add_argument(
     '--year',
     required=True,
     type=str,
-    choices=('2016', '2016APV', '2017', '2018'),
+    choices=('2016', '2016APV', '2017', '2018', '2022'),
     help='Data year: impact thresholds and selections.'
     )
 parser.add_argument(
@@ -639,6 +640,22 @@ class Dag(lutils.ForceRun):
                                            jobs,
                                            branch=self.branch )
         dag_manager.write_all()
+        dag_manager.cleanup()
+
+    @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
+    def requires(self):
+        return [Processing(mode='histos'),
+            Processing(mode='counts'),
+            HaddHisto(dataset_name=data_name, samples=data_vals),
+            HaddHisto(dataset_name=mc_name, samples=mc_vals),
+            HaddCounts(dataset_name=data_name, samples=data_vals),
+            HaddCounts(dataset_name=mc_name, samples=mc_vals ),
+            EffAndSF(),
+            EffAndSFAggr(),
+            Discriminator(),
+            UnionCalculator(),
+            Closure(),
+        ]
         
 class SubmitDAG(lutils.ForceRun):
     """Submission class."""
@@ -658,20 +675,45 @@ class SubmitDAG(lutils.ForceRun):
         
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def run(self):
-        outfile = self.input()[-1][0].path
-        com = 'condor_submit_dag -no_submit -f'
-        com += ' -notification Always'
-        com += ' -append "notify_user={}"'.format(main.email)
-        bname = 'Inclusion_' + FLAGS.year + '_branch' + self.branch.capitalize()
-        com += ' -batch_name {}'.format(bname)
-        com += ' -outfile_dir {} {}'.format(os.path.dirname(outfile), outfile)
-    
-        os.system(com)
-        time.sleep(.5)
-        self.edit_condor_submission_file(outfile + '.condor.sub')
-        time.sleep(.5)
-        subm_com = '{}.condor.sub'.format(outfile)
-        os.system(subm_com)
+        if main.machine == "slurm":
+            outfile = self.input()[-1][0].path
+            job_registry = {}
+            dependencies_dict = {}
+            job_ids = {}
+            with open(outfile, "r", encoding="utf-8") as f:
+                for line in f:
+                    if "JOB" in line:
+                        job = line.split(" ")
+                        job_registry[job[1]] = job[2].strip()
+                    if "CHILD" in line:
+                        job_names = line.split()
+                        child_name = job_names[-1]
+                        parent_names = job_names[1:job_names.index("CHILD")]
+                        dependencies_dict[child_name] = parent_names
+            for job in job_registry:
+                if job not in dependencies_dict or len(dependencies_dict[job]) == 0:
+                    status = subprocess.run(["sbatch", "--parsable", "-p", "short", job_registry[job]], capture_output=True)
+                    job_ids[job] = status.stdout.decode().strip()
+                else:
+                    dependency_ids = [job_ids[dependency_name] for dependency_name in dependencies_dict[job]]
+                    status = subprocess.run(["sbatch", "--dependency=afterok:{}".format(":".join(dependency_ids)), "--parsable", "-p", "short", job_registry[job]], capture_output=True)
+                    job_ids[job] = status.stdout.decode().strip()
+                    
+        else:
+            outfile = self.input()[-1][0].path
+            com = 'condor_submit_dag -no_submit -f'
+            com += ' -notification Always'
+            com += ' -append "notify_user={}"'.format(main.email)
+            bname = 'Inclusion_' + FLAGS.year + '_branch' + self.branch.capitalize()
+            com += ' -batch_name {}'.format(bname)
+            com += ' -outfile_dir {} {}'.format(os.path.dirname(outfile), outfile)
+        
+            os.system(com)
+            time.sleep(.5)
+            self.edit_condor_submission_file(outfile + '.condor.sub')
+            time.sleep(.5)
+            subm_com = '{}.condor.sub'.format(outfile)
+            os.system(subm_com)
  
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def output(self):
@@ -681,19 +723,7 @@ class SubmitDAG(lutils.ForceRun):
  
     @lutils.WorkflowDebugger(flag=FLAGS.debug_workflow)
     def requires(self):
-        return [ Processing(mode='histos'),
-                 Processing(mode='counts'),
-                 HaddHisto(dataset_name=data_name, samples=data_vals),
-                 HaddHisto(dataset_name=mc_name, samples=mc_vals),
-                 HaddCounts(dataset_name=data_name, samples=data_vals),
-                 HaddCounts(dataset_name=mc_name, samples=mc_vals ),
-                 EffAndSF(),
-                 EffAndSFAggr(),
-                 Discriminator(),
-                 UnionCalculator(),
-                 Closure(),
-                 Dag(branch=self.branch),
-                ]
+        return [Dag(branch=self.branch)]
 
 utils.create_single_dir( data_storage )
 utils.create_single_dir( targets_folder )
