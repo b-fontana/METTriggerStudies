@@ -106,10 +106,12 @@ def define_binning(args):
                     sel_chn = batch.pairType < main.sel[chn]['pairType'][1]
                 else:
                     sel_chn = batch.pairType == main.sel[chn]['pairType'][1]
+
                 batch_chn, batch_sel = batch[sel_chn], {}
                 for v in args.variables:
                     if utils.key_exists(cfg.binedges, v, chn) and cfg.binedges[v][chn][0] == "quantiles":
-                        batch_sel[v] = batch_chn[v][(batch_chn[v] > cfg.binedges[v][chn][1]) & (batch_chn[v] < cfg.binedges[v][chn][2])]
+                        batch_sel[v] = batch_chn[v][(batch_chn[v] > cfg.binedges[v][chn][1]) &
+                                                    (batch_chn[v] < cfg.binedges[v][chn][2])]
                     else:
                         batch_sel[v] = batch_chn[v]
 
@@ -128,7 +130,7 @@ def define_binning(args):
     ############## Data Loop: End #################
     ###############################################
     for _ in (True,): #breakable scope (otherwise 'break' cannot be used)
-        with h5py.File( define_binning_outputs(args), 'a') as f:
+        with h5py.File(define_binning_outputs(args), 'a') as f:
             try:
                 group = f.create_group(args.subtag)
             except ValueError:

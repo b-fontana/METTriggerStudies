@@ -6,7 +6,7 @@ import os
 import argparse
 import glob
 import uproot as up
-import hist
+
 import pickle
 
 import matplotlib; import matplotlib.pyplot as plt
@@ -439,7 +439,7 @@ if __name__ == '__main__':
     parser.add_argument('--mode', default="trigger", choices=("trigger", "mass"),
                         type=str, help='Signal particle type')
     parser.add_argument('--save', action="store_false",
-                        help='Wether to save the histograms or to use the ones produced.')
+                        help='Whether to save the histograms or to use the ones produced.')
     FLAGS = parser.parse_args()
 
     base = "/data_CMS/cms/alves/HHresonant_SKIMS/"

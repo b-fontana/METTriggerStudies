@@ -133,15 +133,95 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
         mc1D[atype], mc1D_new[atype] = ({} for _ in range(2))
         sf1D[atype], sf1D_new[atype] = ({} for _ in range(2))
 
+    # data1D_temp, mc1D_temp = ({} for _ in range(2))
+    # for atype in ('eff', 'norm'):
+    #     data1D_temp[atype], mc1D_temp[atype] = ({} for _ in range(2))
+
+    # nbins_temp = 17
+
     try:
         for kh, vh in hdata1D['trig'].items():
-            data1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hdata1D['ref'], "cp")
+            data1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hdata1D['ref'], "cp cl=0.95")
             data1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
             try:
                 data1D['norm'][kh].Scale(1./data1D['norm'][kh].Integral())
             except ZeroDivisionError:
                 data1D['norm'][kh].Scale(1.)
             data1D['norm'][kh] = ROOT.TGraphAsymmErrors(data1D['norm'][kh])
+
+            ############Data
+            # x, y, exu, exd, eyu, eyd = (
+            #     utils.dot_dict({'num': [[] for _ in range(nb1D)],    
+            #                     'den': [[] for _ in range(nb1D)],
+            #                     'rat': [[] for _ in range(nb1D)]})  
+            #     for _ in range(6))
+
+            # for i in range(nbins_temp):
+            #     x.num[i] = ctypes.c_double(0.)
+            #     y.num[i] = ctypes.c_double(0.)
+            #     vh.GetPoint(i, x.num[i], y.num[i])
+            #     x.num[i] = x.num[i].value
+            #     y.num[i] = y.num[i].value
+                
+            #     exu.num[i] = vnum.GetErrorXhigh(i)
+            #     exd.num[i] = vnum.GetErrorXlow(i)
+            #     eyu.num[i] = vnum.GetErrorYhigh(i)
+            #     eyd.num[i] = vnum.GetErrorYlow(i)
+                
+            #     x.den[i] = ctypes.c_double(0.)
+            #     y.den[i] = ctypes.c_double(0.)
+            #     hdata1D['ref'].GetPoint(i, x.den[i], y.den[i])
+            #     x.den[i] = x.den[i].value
+            #     y.den[i] = y.den[i].value
+
+            #     exu.den[i] = hdata1D['ref'].GetErrorXhigh(i)
+            #     exd.den[i] = hdata1D['ref'].GetErrorXlow(i)
+            #     eyu.den[i] = hdata1D['ref'].GetErrorYhigh(i)
+            #     eyd.den[i] = hdata1D['ref'].GetErrorYlow(i)
+                
+            #     if debug:
+            #         print('X NUM: xp[{}] = {} +{}/-{} '
+            #               .format(i,x.num[i],exu.num[i],exd.num[i]), flush=True)
+            #         print('Y NUM: yp[{}] = {} +{}/-{} '
+            #               .format(i,y.num[i],eyu.num[i],eyd.num[i]), flush=True)
+            #         print('X Data: xp[{}] = {} +{}/-{} '
+            #               .format(i,x.den[i],exu.den[i],exd.den[i]), flush=True)
+            #         print('Y Data: yp[{}] = {} +{}/-{}'
+            #               .format(i,y.den[i],eyu.den[i],eyd.den[i]), flush=True)
+   
+            #     x.rat[i] = x.mc[i]
+            #     exu.rat[i] = exu.mc[i]
+            #     exd.rat[i] = exd.mc[i]
+            #     assert x.dt[i] == x.mc[i]
+            #     assert exu.dt[i] == exu.mc[i]
+            #     assert exd.dt[i] == exd.mc[i]
+   
+            #     try:
+            #         y.rat[i] = y.dt[i] / y.mc[i]
+            #     except ZeroDivisionError:
+            #         print('There was a division by zero!', flush=True)
+            #         y.rat[i] = 0
+   
+            #     if y.rat[i] == 0:
+            #         eyu.rat[i] = 0
+            #         eyd.rat[i] = 0
+            #     else:
+            #         eyu.rat[i] = np.sqrt( eyu.num[i]**2 + eyu.den[i]**2 )
+            #         eyd.rat[i] = np.sqrt( eyd.num[i]**2 + eyd.den[i]**2 )
+   
+            #     if debug:
+            #         print('X Scale Factors: xp[{}] = {} +{}/-{}'
+            #               .format(i,x.rat[i],exu.rat[i],exd.rat[i]), flush=True)
+            #         print('Y Scale Factors: yp[{}] = {} +{}/-{}'
+            #               .format(i,y.rat[i],eyu.rat[i],eyd.rat[i]), flush=True)
+            #         print('', flush=True)
+
+            # smoothing fits
+            # data1D_temp[atype][kdata] = ROOT.TGraphAsymmErrors(
+            #     nb1D, darr(x.rat), darr(y.rat),
+            #     darr(exd.rat), darr(exu.rat), darr(eyd.rat), darr(eyu.rat))
+
+            
         nb = hmc1D['ref'].GetNbinsX()
         for kh, vh in hmc1D['trig'].items():
             # avoid underflow and overflow efficiency division issues
@@ -150,13 +230,85 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             vh.SetBinContent(0, 0.)
             vh.SetBinContent(nb+1, 0.)
 
-            mc1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hmc1D['ref'], "cp")
+            mc1D['eff'][kh] = ROOT.TGraphAsymmErrors(vh, hmc1D['ref'], "cp cl=0.95")
             mc1D['norm'][kh] = vh.Clone('norm_' + vh.GetName() + '_' + kh)
             try:
                 mc1D['norm'][kh].Scale(1/mc1D['norm'][kh].Integral())
             except ZeroDivisionError:
                 mc1D['norm'][kh].Scale(1)
-            mc1D['norm'][kh] = ROOT.TGraphAsymmErrors(mc1D['norm'][kh])            
+            mc1D['norm'][kh] = ROOT.TGraphAsymmErrors(mc1D['norm'][kh])
+        
+            ############MC
+            # x, y, exu, exd, eyu, eyd = (
+            #     utils.dot_dict({'num': [[] for _ in range(nb1D)],    # data 
+            #                     'den': [[] for _ in range(nb1D)],
+            #                     'rat': [[] for _ in range(nb1D)]})   # MC
+            #     for _ in range(6))
+
+            # for i in range(nb_temp):
+            #     x.num[i] = ctypes.c_double(0.)
+            #     y.num[i] = ctypes.c_double(0.)
+            #     vh.GetPoint(i, x.num[i], y.num[i])
+            #     x.num[i] = x.num[i].value
+            #     y.num[i] = y.num[i].value
+                
+            #     exu.num[i] = vnum.GetErrorXhigh(i)
+            #     exd.num[i] = vnum.GetErrorXlow(i)
+            #     eyu.num[i] = vnum.GetErrorYhigh(i)
+            #     eyd.num[i] = vnum.GetErrorYlow(i)
+                
+            #     x.den[i] = ctypes.c_double(0.)
+            #     y.den[i] = ctypes.c_double(0.)
+            #     hmc1D['ref'].GetPoint(i, x.den[i], y.den[i])
+            #     x.den[i] = x.den[i].value
+            #     y.den[i] = y.den[i].value
+
+            #     exu.den[i] = hmc1D['ref'].GetErrorXhigh(i)
+            #     exd.den[i] = hmc1D['ref'].GetErrorXlow(i)
+            #     eyu.den[i] = hmc1D['ref'].GetErrorYhigh(i)
+            #     eyd.den[i] = hmc1D['ref'].GetErrorYlow(i)
+                
+            #     if debug:
+            #         print('X NUM: xp[{}] = {} +{}/-{} '
+            #               .format(i,x.num[i],exu.num[i],exd.num[i]), flush=True)
+            #         print('Y NUM: yp[{}] = {} +{}/-{} '
+            #               .format(i,y.num[i],eyu.num[i],eyd.num[i]), flush=True)
+            #         print('X Data: xp[{}] = {} +{}/-{} '
+            #               .format(i,x.den[i],exu.den[i],exd.den[i]), flush=True)
+            #         print('Y Data: yp[{}] = {} +{}/-{}'
+            #               .format(i,y.den[i],eyu.den[i],eyd.den[i]), flush=True)
+   
+            #     x.rat[i] = x.mc[i]
+            #     exu.rat[i] = exu.mc[i]
+            #     exd.rat[i] = exd.mc[i]
+            #     assert x.dt[i] == x.mc[i]
+            #     assert exu.dt[i] == exu.mc[i]
+            #     assert exd.dt[i] == exd.mc[i]
+   
+            #     try:
+            #         y.rat[i] = y.dt[i] / y.mc[i]
+            #     except ZeroDivisionError:
+            #         print('There was a division by zero!', flush=True)
+            #         y.rat[i] = 0
+   
+            #     if y.rat[i] == 0:
+            #         eyu.rat[i] = 0
+            #         eyd.rat[i] = 0
+            #     else:
+            #         eyu.rat[i] = np.sqrt( eyu.num[i]**2 + eyu.den[i]**2 )
+            #         eyd.rat[i] = np.sqrt( eyd.num[i]**2 + eyd.den[i]**2 )
+   
+            #     if debug:
+            #         print('X Scale Factors: xp[{}] = {} +{}/-{}'
+            #               .format(i,x.rat[i],exu.rat[i],exd.rat[i]), flush=True)
+            #         print('Y Scale Factors: yp[{}] = {} +{}/-{}'
+            #               .format(i,y.rat[i],eyu.rat[i],eyd.rat[i]), flush=True)
+            #         print('', flush=True)
+
+            # mc1D_temp[atype][kdata] = ROOT.TGraphAsymmErrors(
+            #     nb1D, darr(x.rat), darr(y.rat),
+            #     darr(exd.rat), darr(exu.rat), darr(eyd.rat), darr(eyu.rat))
+            
             
     except SystemError:
         m = 'There is likely a mismatch in the number of bins.'
@@ -171,7 +323,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
     # 1-dimensional
     if utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] != "quantiles":
         #frange = cfg.binedges[variable][channel][0], cfg.binedges[variable][channel][-1]
-        frange = 160., cfg.binedges[variable][channel][-1]
+        frange = 150., 350.
     elif utils.key_exists(cfg.binedges, variable, channel) and cfg.binedges[variable][channel][0] == "quantiles":
         frange = cfg.binedges[variable][channel][1], cfg.binedges[variable][channel][2]
     else:
@@ -252,20 +404,26 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
                 nb1D, darr(x.sf), darr(y.sf),
                 darr(exd.sf), darr(exu.sf), darr(eyd.sf), darr(eyu.sf))
             if atype == 'eff' and variable in cfg.fit_vars:
+
+                # Data Tampering, yeah!
+                # if variable == "metnomu_et":
+                #     for iibin, xxval in enumerate(data1D[atype][kdata].GetX()):
+                #         if xxval > 310 and xxval < 400:
+                #             data1D[atype][kdata].SetPoint(iibin+1, data1D[atype][kdata].GetPointX(iibin+1), 1.)
+
                 fit_data_name = _fit_pp("fit_sigmoid_data_"+kdata)
                 fit_sigmoid_data[kdata] = ROOT.TF1(fit_data_name, "[2]/(1+exp(-[0]*(x-[1])))",
                                                    frange[0], frange[1])
                 fit_sigmoid_data[kdata].SetLineColor(ROOT.kBlack)
-                fit_sigmoid_data[kdata].SetLineStyle(2)
-                fit_sigmoid_data[kdata].SetParameters(0.05,175.,0.95)
+                fit_sigmoid_data[kdata].SetParameters(0.03, 180., 0.98)
                 data1D[atype][kdata].Fit(fit_data_name, "EM", "", frange[0], frange[1])
-
+                                            
                 fit_mc_name = _fit_pp("fit_sigmoid_mc_"+kdata)
                 fit_sigmoid_mc[kdata] = ROOT.TF1(fit_mc_name, "[2]/(1+exp(-[0]*(x-[1])))",
                                                  frange[0], frange[1])
                 fit_sigmoid_mc[kdata].SetLineColor(ROOT.kRed)
-                fit_sigmoid_mc[kdata].SetLineStyle(2)
-                fit_sigmoid_mc[kdata].SetParameters(0.05,175.,0.95)
+                #fit_sigmoid_mc[kdata].SetLineStyle(2)
+                fit_sigmoid_mc[kdata].SetParameters(0.05, 190., 0.98)
                 mc1D[atype][kdata].Fit(fit_mc_name, "EM", "", frange[0], frange[1])
 
                 def _ratio_func(x, par):
@@ -277,24 +435,24 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
                 fit_sigmoid_ratio[kdata] = ROOT.TF1("fit_ratio_"+kdata, _ratio_func,
                                                     frange[0], frange[1])
                 fit_sigmoid_ratio[kdata].SetLineColor(ROOT.kBlue)
-                fit_sigmoid_ratio[kdata].SetLineStyle(2)
         
     if debug:
         print('[=debug=] 1D Plotting...', flush=True)
 
+    canvas_dims = 900, 600
     n1dt, n1mc, n1sf, n1sigmfunc = 'Data1D', 'MC1D', 'SF1D', 'SigmoidFunc'
     for akey in sf1D['eff']:
         canvas_name = os.path.basename(save_names_1D[0]).split('.')[0]
         canvas_name = utils.rewrite_cut_string(canvas_name, akey, regex=True)
         canvas = {}
-        canvas['eff'] = ROOT.TCanvas(canvas_name, 'canvas', 600, 600)
-        canvas['norm'] = ROOT.TCanvas(canvas_name + '_norm', 'canvas_norm', 600, 600)
+        canvas['eff'] = ROOT.TCanvas(canvas_name, 'canvas', *canvas_dims)
+        canvas['norm'] = ROOT.TCanvas(canvas_name + '_norm', 'canvas_norm', *canvas_dims)
 
         for atype in ('eff', 'norm'):
             canvas[atype].cd()
             pad1 = ROOT.TPad('pad1', 'pad1', 0, 0.3, 1, 1)
             pad1.SetBottomMargin(0.005)
-            pad1.SetLeftMargin(0.15)
+            pad1.SetLeftMargin(0.12)
             pad1.Draw()
             pad1.cd()
                 
@@ -329,14 +487,19 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             # data1D_new[atype][akey] = utils.apply_equal_bin_width(data1D[atype][akey])
             # mc1D_new[atype][akey] = utils.apply_equal_bin_width(mc1D[atype][akey])
             data1D[atype][akey].GetYaxis().SetTitleSize(0.2)
-            data1D[atype][akey].GetYaxis().SetTitleOffset(1.0)
+            data1D[atype][akey].GetYaxis().SetTitleOffset(.8)
             data1D[atype][akey].GetYaxis().SetTitle('Efficiency' if atype=='eff' else 'Normalized counts')
 
+            transp = 0.5
+            
             data1D[atype][akey].SetLineColor(1)
             data1D[atype][akey].SetLineWidth(2)
             data1D[atype][akey].SetMarkerColor(1)
             data1D[atype][akey].SetMarkerSize(1.3)
             data1D[atype][akey].SetMarkerStyle(20)
+            data1D[atype][akey].SetLineColorAlpha(ROOT.kBlack, transp);
+            data1D[atype][akey].SetMarkerColorAlpha(ROOT.kBlack, transp);
+
             data1D[atype][akey].GetYaxis().SetLabelSize(0.05)
             data1D[atype][akey].GetXaxis().SetLabelSize(0.05)
             data1D[atype][akey].GetXaxis().SetTitleSize(0.05)
@@ -347,6 +510,8 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             mc1D[atype][akey].SetLineColor(ROOT.kRed)
             mc1D[atype][akey].SetLineWidth(2)
             mc1D[atype][akey].SetMarkerColor(ROOT.kRed)
+            mc1D[atype][akey].SetLineColorAlpha(ROOT.kRed, transp);
+            mc1D[atype][akey].SetMarkerColorAlpha(ROOT.kRed, transp);
             mc1D[atype][akey].SetMarkerSize(1.3)
             mc1D[atype][akey].SetMarkerStyle(22)
             mc1D[atype][akey].Draw("same P")
@@ -370,16 +535,11 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
                 mc1D[atype][akey].GetYaxis().SetRangeUser(norm_min,norm_max)
 
             l = ROOT.TLine()
-            l.SetLineWidth(2)
+            l.SetLineWidth(1)
             l.SetLineStyle(7)
             l.DrawLine(x1_pad,1.,x2_pad,1.)
 
-            # l = ROOT.TLine()
-            # l.SetLineWidth(2)
-            # l.SetLineStyle(7)
-            # l.DrawLine(180.,y1_pad,180.,y2_pad)
-
-            leg = ROOT.TLegend(0.61, 0.77, 0.89, 0.89)
+            leg = ROOT.TLegend(0.71, 0.77, 0.89, 0.89)
             leg.SetFillColor(0)
             leg.SetShadowColor(0)
             leg.SetBorderSize(0)
@@ -396,7 +556,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             pad1.RedrawAxis()
             pad1.Draw("same P")
             
-            lX, lY, lXstep, lYstep = 0.18, 0.85, 0.02, 0.06
+            lX, lY, lXstep, lYstep = 0.15, 0.85, 0.02, 0.06
             l = ROOT.TLatex()
             l.SetNDC()
             l.SetTextFont(standard_text_font) #72 bold italic
@@ -431,7 +591,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             latex_Prelim.SetTextColor(ROOT.kBlack)
             latex_Prelim.SetTextFont(extra_text_font)
             latex_Prelim.SetBit(ROOT.kCanDelete)
-            latex_Prelim.DrawLatex(lX+4*lXstep, lY+1.3*lYstep, "Preliminary")
+            latex_Prelim.DrawLatex(lX+2.5*lXstep, lY+1.3*lYstep, "Preliminary")
 
             lumi_d = {"2016APV": "19.5", "2016": "16.8", "2017": "41.5", "2018": "59.7"}
             latex_lumi = ROOT.TLatex()
@@ -441,13 +601,13 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             latex_lumi.SetTextColor(ROOT.kBlack)
             latex_lumi.SetTextFont(standard_text_font)
             latex_lumi.SetBit(ROOT.kCanDelete)
-            latex_lumi.DrawLatex(lX+22*lXstep, lY+1.3*lYstep, lumi_d[args.year] + " fb^{-1} (13 TeV)")
+            latex_lumi.DrawLatex(lX+28*lXstep, lY+1.3*lYstep, lumi_d[args.year] + " fb^{-1} (13 TeV)")
 
             canvas[atype].cd()
             pad2 = ROOT.TPad('pad2','pad2',0.,0.,1.,0.3)
             pad2.SetTopMargin(0.01)
             pad2.SetBottomMargin(0.3)
-            pad2.SetLeftMargin(0.15)
+            pad2.SetLeftMargin(0.12)
             pad2.Draw()
             pad2.cd()
             pad2.SetGridy()
@@ -485,10 +645,13 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             # sf1D_new[atype] = utils.apply_equal_bin_width(sf1D[atype][akey])
             canvas[atype].Update()
             #sf1D[atype][akey].GetYaxis().SetNdivisions(-10)
-            sf1D[atype][akey].GetYaxis().SetRangeUser(-0.15,1.15)
+            sf1D[atype][akey].GetYaxis().SetRangeUser(.3,1.10)
             sf1D[atype][akey].SetLineColor(ROOT.kBlue)
             sf1D[atype][akey].SetLineWidth(2)
             sf1D[atype][akey].SetMarkerColor(ROOT.kBlue)
+
+            sf1D[atype][akey].SetLineColorAlpha(ROOT.kBlue, transp);
+            sf1D[atype][akey].SetMarkerColorAlpha(ROOT.kBlue, transp);
             sf1D[atype][akey].SetMarkerSize(1.3)
             sf1D[atype][akey].SetMarkerStyle(22)
             sf1D[atype][akey].GetYaxis().SetLabelSize(0.1)
@@ -496,7 +659,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
             sf1D[atype][akey].GetXaxis().SetTitleSize(0.1)
             sf1D[atype][akey].GetYaxis().SetTitleSize(0.1)
             sf1D[atype][akey].GetXaxis().SetTitleOffset(1.)
-            sf1D[atype][akey].GetYaxis().SetTitleOffset(0.45)
+            sf1D[atype][akey].GetYaxis().SetTitleOffset(0.3)
             sf1D[atype][akey].GetYaxis().SetTitle('Data/MC')
             xlabel = utils.get_display_variable_name(channel, variable)
             if "met" in variable:
@@ -544,7 +707,7 @@ def draw_eff_and_sf_1d(proc, channel, variable, trig, year,
 def draw_eff_and_sf_2d(proc, channel, joinvars, trig, year, save_names_2D,
                        tprefix, indir, subtag, mc_name, data_name,
                        intersection_str, debug):
-
+    canvas_dims = 900, 600
     name_data = os.path.join(indir, tprefix + data_name + '_Sum' + subtag + ".root")
 
     file_data = ROOT.TFile.Open(name_data, 'READ')
@@ -690,8 +853,8 @@ def draw_eff_and_sf_2d(proc, channel, joinvars, trig, year, save_names_2D,
                     if eff_ed.GetBinContent(abin)==0.:
                         eff_ed.SetBinContent(abin, 1.e-10)
 
-            canvas = ROOT.TCanvas(cnames[itype]+obj[0], cnames[itype]+obj[0], 600, 600)
-            canvas.SetLeftMargin(0.10)
+            canvas = ROOT.TCanvas(cnames[itype]+obj[0], cnames[itype]+obj[0], *canvas_dims)
+            canvas.SetLeftMargin(0.08)
             canvas.SetRightMargin(0.15);
             canvas.cd()
       
@@ -861,7 +1024,7 @@ def run_eff_sf_2d_outputs(outdir, proc, data_name, cfg, tcomb,
 def run_eff_sf_1d(indir, outdir, data_name, mc_name, configuration,
                   tcomb, year, channels, variables, subtag,
                   tprefix, intersection_str, debug):
-    
+
     outs1D, extensions, processes = run_eff_sf_1d_outputs(outdir, data_name, mc_name, tcomb,
                                                           channels, variables, subtag)
 

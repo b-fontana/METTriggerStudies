@@ -14,22 +14,22 @@ mass_cut = None #standard, inverted
 custom_cut = None
 category = 'baseline'
 
-triggers = ('METNoMu90', 'IsoMu24')
+triggers = ('METNoMu120', 'IsoMu24')
 trig_custom = set()
-cuts = {'METNoMu90': {'metnomu_et': ('>', [0,]),
+cuts = {'METNoMu120': {'metnomu_et': ('>', [0,]),
                       'mhtnomu_et': ('>', [0,])},
         }
 
 # which triggers are exclusive to a particular channel?
 exclusive = {'mutau'   : (),
              'mumu'    : (),
-             'general' : ('IsoMu24','METNoMu90'),}
+             'general' : ('IsoMu24','METNoMu120'),}
 
 inters_general = {'MET' : (),
                   'EG'  : (),
-                  'Mu'  : (('METNoMu90',),
+                  'Mu'  : (('METNoMu120',),
                            ('IsoMu24',),
-                           ('IsoMu24', 'METNoMu90'),
+                           ('IsoMu24', 'METNoMu120'),
                            ),
                   'Tau' : ()}
 inters = {
@@ -53,14 +53,14 @@ discr_vars_1D =  {
     'mutau':
     {
         ('IsoMu24',)  : 'dau1_pt',
-        ('METNoMu90',) : 'dau1_pt',
-        ('IsoMu24', 'METNoMu90') : 'dau1_pt',
+        ('METNoMu120',) : 'dau1_pt',
+        ('IsoMu24', 'METNoMu120') : 'dau1_pt',
     },
     'mumu':
     {
         ('IsoMu24',)  : 'dau1_pt',
-        ('METNoMu90',) : 'dau1_pt',
-        ('IsoMu24', 'METNoMu90') : 'dau1_pt',
+        ('METNoMu120',) : 'dau1_pt',
+        ('IsoMu24', 'METNoMu120') : 'dau1_pt',
     }
 
 }
@@ -71,7 +71,7 @@ for x in discr_vars_1D:
 fit_vars = ["metnomu_et",]
 
 ### 2D Plots
-pairs2D = {'METNoMu90': (('metnomu_et', 'mhtnomu_et'),)}
+pairs2D = {'METNoMu120': (('metnomu_et', 'mhtnomu_et'),)}
 assert( set(pairs2D.keys()).issubset(set(triggers)) )
 for x in pairs2D.values():
     for pair in x:
@@ -80,8 +80,8 @@ for x in pairs2D.values():
 ### Binning
 #pog_pt_binedges = (26., 30., 40., 50., 60., 120., 200)
 metnomu_et_binedges = {
-    'mutau': (50., 75., 95., 115., 130., 140., 150., 160., 170., 180., 190., 200., 210., 222.5, 235., 250., 265., 280., 300., 325.),
-    'mumu': (50., 75., 95., 115., 130., 140., 150., 160., 170., 180., 190., 200., 210., 222.5, 235., 250., 265., 280., 300., 325.),
+    'mutau': (10, 40, 70., 95., 110., 125., 137.5, 150., 162.5, 175., 187.5, 200., 212.5, 225., 237.5, 250., 265., 280., 300., 325., 350., 380, 430, 500, 650, 900),
+    'mumu':  (10, 40, 70., 95., 110., 125., 137.5, 150., 162.5, 175., 187.5, 200., 212.5, 225., 237.5, 250., 265., 280., 300., 325., 350., 380, 430, 500, 650, 900),
 }
 binedges = {
     # 'dau1_pt': {'etau':   pog_pt_binedges,

@@ -71,7 +71,9 @@ for x in discr_vars_1D:
 fit_vars = ["metnomu_et",]
 
 ### 2D Plots
-pairs2D = {'METNoMu120': (('metnomu_et', 'mhtnomu_et'),)}
+pairs2D = {
+    #'METNoMu120': (('metnomu_et', 'mhtnomu_et'),)
+}
 assert( set(pairs2D.keys()).issubset(set(triggers)) )
 for x in pairs2D.values():
     for pair in x:
@@ -80,8 +82,8 @@ for x in pairs2D.values():
 ### Binning
 #pog_pt_binedges = (2.6, 30., 40., 50., 60., 120., 200)
 metnomu_et_binedges = {
-    'mutau': (70., 95., 110., 125., 137.5, 150., 162.5, 175., 187.5, 200., 212.5, 225., 237.5, 250., 265., 280., 300., 325.),
-    'mumu':  (70., 95., 110., 125., 137.5, 150., 162.5, 175., 187.5, 200., 212.5, 225., 237.5, 250., 265., 280., 300., 325.),
+    'mutau': (10, 40, 70., 95., 110., 125., 137.5, 150., 162.5, 175., 187.5, 200., 212.5, 225., 237.5, 250., 265., 280., 300., 325., 350., 380, 430, 500, 650, 900),
+    'mumu':  (10, 40, 70., 95., 110., 125., 137.5, 150., 162.5, 175., 187.5, 200., 212.5, 225., 237.5, 250., 265., 280., 300., 325., 350., 380, 430, 500, 650, 900),
 }
 binedges = {
     # 'dau1_pt': {'etau':   pog_pt_binedges,
@@ -90,8 +92,8 @@ binedges = {
     #("quantiles", 100, 300),
     'metnomu_et': {'mutau' : metnomu_et_binedges['mutau'],
                    'mumu'  : metnomu_et_binedges['mumu'] },
-    'mhtnomu_et': {'mutau' : (90,360),
-                   'mumu'  : (90,360) },
+    # 'mhtnomu_et': {'mutau' : (90,360),
+    #                'mumu'  : (90,360) },
 }
 assert( set(binedges.keys()).issubset(main.var_join) )
 for x in binedges.values():

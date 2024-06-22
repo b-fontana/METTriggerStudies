@@ -34,7 +34,6 @@ class EventSelection:
         for d in self.datasets:
             assert d in main.data[self.year]
 
-        
     def any_trigger(self, trigs):
         """
         Checks at least one trigger was fired.
@@ -307,7 +306,7 @@ class EventSelection:
             return False
 
         tauH_mass = self.entries['tauH_mass']
-        bH_mass   = self.entries['bH_mass_raw']
+        bH_mass   = self.entries['bH_mass']
         mcut = bH_mass > 50 and bH_mass < 270 and tauH_mass > 20 and tauH_mass < 130
         mcutinv = bH_mass < 50 or bH_mass > 270 or tauH_mass < 20 or tauH_mass > 130
         opt = ('standard', 'inverted')

@@ -79,7 +79,7 @@ Run the submission workflow (check the meaning of the arguments by adding ~--hel
 
 #+NAME: running_command
 #+BEGIN_SRC shell
-python3 inclusion/run.py --branch nocounts --data Mu --mc_processes TT --configuration sel_only_met_nocut --channels mutau mumu --nbins 25 --tag NoCustomCut
+python3 inclusion/run.py --branch nocounts --data Mu --mc_processes TT --configuration sel_only_met_nocut --channels mutau mumu --nbins 25 --tag Tag2018 --year 2018
 #+END_SRC
 
 where the configuration file must be defined under ~inclusion/config/~.
