@@ -35,7 +35,7 @@ mu  = '\u03BC'
 pm  = '\u00B1'
 ditau = tau+tau
     
-def get_outname(channel, bigtau):
+def get_outname(channel):
     utils.create_single_dir('data')
     
     name = ""
@@ -44,6 +44,8 @@ def get_outname(channel, bigtau):
     s = 'data/regions_{}'.format(name)
     return s
 
+def rec_dd():
+    return dd(rec_dd)
 
 def trigger_regions(indir, channel, year, outname):
     outname = get_outname(outname)
@@ -54,7 +56,7 @@ def trigger_regions(indir, channel, year, outname):
     elif channel == 'tautau':
         iso1 = range(0, 401, 8)
     pNet_dist = [x/12. for x in range(13)]
-    binning.update({
+    binning = {
                     'genHH_mass': ([250, 300, 350, 400, 450, 500, 550, 600, 675, 800, 1000, 1600],),
                     'dau1_iso': (iso1,),
                     'dau1_pt': ([0, 20, 30, 40, 60, 80, 100, 125, 150, 200, 250],),
@@ -71,7 +73,7 @@ def trigger_regions(indir, channel, year, outname):
                     'bjet1_eta': ([-3, -2.5, -2.1, -1.8, -1.5, -1.2, -0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.5, 1.8, 2.1, 2.5, 3],),
                     'bjet2_eta': ([-3, -2.5, -2.1, -1.8, -1.5, -1.2, -0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.5, 1.8, 2.1, 2.5, 3],),
                     # 'triggerbits': (range(31))
-                    })
+                    }
     
     norphans, ntotal = ({k:0 for k in categories} for _ in range(2))
     
@@ -210,9 +212,8 @@ if __name__ == '__main__':
     args = utils.parse_args(parser)
         
     #### run main function ###
-    if not args.plot:
         # for sample in args.masses:
-        trigger_regions(args.indir, args.channel, args.year, args.outname)
+    trigger_regions(args.indir, args.channel, args.year, args.outname)
 
     ###########################
 

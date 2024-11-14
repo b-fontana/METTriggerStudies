@@ -198,7 +198,7 @@ def define_used_tree_variables(cut):
                 'dau1_eleMVAiso', 'dau1_iso', 'dau2_iso', 'dau1_eta', 'dau2_eta', 'dau1_tauIdVSjet', 'dau2_tauIdVSjet',
                 # 'dau1_mass', 'dau2_mass', 'Jet_mass', 
                 'Jet_btagPNetB', 'Jet_btagDeepFlavB', 'Jet_pt', 'Jet_eta', 'bjet1_JetIdx', 'bjet2_JetIdx', 
-                # 'dau1_pt', 'dau2_pt',
+                'dau1_pt', 'dau2_pt',
                 # 'nleps', 'event', 
                 'isQuadJetTrigger',  
                 # 'bjet1_filterbits', 'bjet2_filterbits', 'tau1_filterbits', 'tau2_filterbits'
