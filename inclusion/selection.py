@@ -14,12 +14,26 @@ from inclusion.config import main
 import functools
 from collections import defaultdict
 import itertools as it
+import numpy as np
 
 class EventSelection:
     def __init__(self, entries, isdata, year='2018', configuration=None, debug=False):
         self.entries = entries
-        self.bit = self.entries['triggerbit']
-        self.run = self.entries['RunNumber']
+        # self.bit = self.entries['triggerbit']
+        self.filterbits = self.entries['TrigObj_filterBits']
+        self.obj_id = self.entries['TrigObj_id']
+        # self.HLT_IsoMu24 = self.entries['HLT_IsoMu24']
+        # self.HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1 = self.entries['HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1']
+        # self.HLT_LooseDeepTauPFTauHPS180_L2NN_eta2p1 = self.entries['HLT_LooseDeepTauPFTauHPS180_L2NN_eta2p1']
+        # self.HLT_PFMETNoMu120_PFMHTNoMu120_IDTight = self.entries['HLT_PFMETNoMu120_PFMHTNoMu120_IDTight']
+        # self.HLT_Ele30_WPTight_Gsf = self.entries['HLT_Ele30_WPTight_Gsf']
+        # self.HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1 = self.entries['HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1']
+        # self.HLT_DoubleMediumDeepTauPFTauHPS35_L2NN_eta2p1 = self.entries['HLT_DoubleMediumDeepTauPFTauHPS35_L2NN_eta2p1']
+        # self.HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet60 = self.entries['HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet60']
+        # self.HLT_QuadPFJet70_50_40_30_PFBTagParticleNet_2BTagSum0p65 = self.entries['HLT_QuadPFJet70_50_40_30_PFBTagParticleNet_2BTagSum0p65']
+        self.entries['bjet1_btagDeepFlavB'] = self.entries['Jet_btagDeepFlavB'][self.entries['bjet1_JetIdx']]
+        self.entries['bjet2_btagDeepFlavB'] = self.entries['Jet_btagDeepFlavB'][self.entries['bjet2_JetIdx']]
+        self.run = self.entries['run']
         self.isdata = isdata
         self.year = year
         self.debug = debug
@@ -45,6 +59,26 @@ class EventSelection:
     def check_bit(self, bitpos):
         bitdigit = 1
         res = bool(self.bit&(bitdigit<<bitpos))
+        return res
+
+    def check_filterbit(self, bitobj):
+        bitdigit = 1
+        filterBits = np.frombuffer(self.filterbits, dtype=np.int32)
+        obj_ids = np.frombuffer(self.obj_id, dtype=np.ushort)
+        res_objs = {}
+        for obj in bitobj.keys():
+            res_objs[obj] = False
+            if not obj in obj_ids:
+                return False
+            
+            ids = np.where(obj_ids == obj)[0]
+            for id in ids:
+                res_bit = True
+                for bit in bitobj[obj]:
+
+                    res_bit = res_bit and bool(filterBits[id]&(bitdigit<<bit))
+                res_objs[obj] = res_objs[obj] or res_bit
+        res = functools.reduce(lambda a, b: a and b, res_objs.values())
         return res
     
     def dataset_cuts(self, tcomb, channel):
@@ -129,6 +163,12 @@ class EventSelection:
                           'EG'  : ('Ele32',),
                           'Mu'  : ('IsoMu24',),
                           'Tau' : ('IsoTau180',)}
+        
+        elif self.year == "2022":
+            _ref_trigs = {
+                'Mu'  : ('IsoMu24',),
+                'Tau' : ('DoubleMediumDeepTauPFTauHPS35_L2NN_eta2p1',),
+            }
 
         ds = []
         ds_ref_trigs = {}
@@ -144,6 +184,19 @@ class EventSelection:
         """
         s = 'data' if self.isdata else 'mc'
         res = main.trig_map[self.year][trigger_name]
+        try:
+            res = res[s]
+        except KeyError:
+            print('You likely forgot to add your custom trigger to `self.cfg.trig_custom`.')
+            raise
+        return res
+
+    def get_filter_bit(self, trigger_name):
+        """
+        Returns the filterBits bit corresponding to 'main.filterbit_map'
+        """
+        s = 'data' if self.isdata else 'mc'
+        res = main.filterbit_map[self.year][trigger_name]
         try:
             res = res[s]
         except KeyError:
@@ -167,6 +220,7 @@ class EventSelection:
         # channel-specific triggers
         for k in main.data[self.year]:
             if tcomb in self.cfg.inters[channel][k]:
+                print(channel, k, self.cfg.inters[channel][k])
                 return self.dataset_name(k)
         raise ValueError(wrong_comb.format(tcomb, channel))
 
@@ -204,31 +258,36 @@ class EventSelection:
             if trig in self.cfg.trig_custom:
                 flag = self.set_custom_trigger_bit(trig)
             else:
-                bits = self.get_trigger_bit(trig)
-                if isinstance(bits, (tuple,list)):
-                    for bit in bits:
-                        flag = flag or self.check_bit(bit)
-                else:
-                    flag = self.check_bit(bits)
+                flag = self.pass_trigger(trig)
+                # bits = self.get_trigger_bit(trig)
+                # if isinstance(bits, (tuple,list)):
+                #     for bit in bits:
+                #         flag = flag or self.check_bit(bit)
+                # else:
+                #     flag = self.check_bit(bits)
                 
             if flag:
                 return True
-        return False    
+        return False
+    
+    def pass_trigger(self, trig):
+        return self.entries['HLT_'+trig]
 
     def sel_category(self, category):
         assert category in self.categories
         deepJetWP = {'2016'    : (0.048, 0.2489),
                      '2016APV' : (0.0508, 0.2598),
                      '2017'    : (0.0532, 0.3040),
-                     '2018'    : (0.0490, 0.2783)}[self.year]
-        btagLL = (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[0] and
-                  self.entries['bjet2_bID_deepFlavor'] > deepJetWP[0])
-        btagM  = ((self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1]
-                   and self.entries['bjet2_bID_deepFlavor'] < deepJetWP[1]) or
-                  (self.entries['bjet1_bID_deepFlavor'] < deepJetWP[1]
-                   and self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1]))
-        btagMM = (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1] and
-                  self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1])
+                     '2018'    : (0.0490, 0.2783),
+                     '2022'    : (0.0583, 0.3086)}[self.year]
+        btagLL = (self.entries['Jet_btagDeepFlavB'][self.entries['bjet1_JetIdx']] > deepJetWP[0] and
+                  self.entries['Jet_btagDeepFlavB'][self.entries['bjet2_JetIdx']] > deepJetWP[0])
+        btagM  = ((self.entries['Jet_btagDeepFlavB'][self.entries['bjet1_JetIdx']] > deepJetWP[1]
+                   and self.entries['Jet_btagDeepFlavB'][self.entries['bjet2_JetIdx']] < deepJetWP[1]) or
+                  (self.entries['Jet_btagDeepFlavB'][self.entries['bjet1_JetIdx']] < deepJetWP[1]
+                   and self.entries['Jet_btagDeepFlavB'][self.entries['bjet2_JetIdx']] > deepJetWP[1]))
+        btagMM = (self.entries['Jet_btagDeepFlavB'][self.entries['bjet1_JetIdx']] > deepJetWP[1] and
+                  self.entries['Jet_btagDeepFlavB'][self.entries['bjet2_JetIdx']] > deepJetWP[1])
         
         # common = not (self.entries['bjet1_bID_deepFlavor'] > deepJetWP[1] or
         #               self.entries['bjet2_bID_deepFlavor'] > deepJetWP[1])
@@ -267,8 +326,8 @@ class EventSelection:
         dau1_eleiso = self.entries['dau1_eleMVAiso']
         dau1_muiso  = self.entries['dau1_iso']
         dau2_muiso  = self.entries['dau2_iso']
-        dau1_tauiso = self.entries['dau1_deepTauVsJet']
-        dau2_tauiso = self.entries['dau2_deepTauVsJet']
+        dau1_tauiso = self.entries['dau1_tauIdVSjet']
+        dau2_tauiso = self.entries['dau2_tauIdVSjet']
 
         # third lepton veto
         nleps = self.entries['nleps']
@@ -276,9 +335,9 @@ class EventSelection:
             return False
 
         # require at least two b jet candidates
-        nbjetscand = self.entries['nbjetscand']
-        if nbjetscand <= 1 and bjets_cut:
-            return False
+        # nbjetscand = self.entries['nbjetscand']
+        # if nbjetscand <= 1 and bjets_cut:
+        #     return False
 
         # Loose / Medium / Tight
         iso_allowed = { 'dau1_ele': 1., 'dau1_mu': 0.15, 'dau2_mu': 0.15,
@@ -305,9 +364,9 @@ class EventSelection:
                                  dau2_muiso >= iso_cuts['dau2_mu'])
         if bool0 or bool1 or bool2 or bool3:
             return False
-
-        tauH_mass = self.entries['tauH_mass']
-        bH_mass   = self.entries['bH_mass_raw']
+            
+        tauH_mass = self.entries['Htt_mass' if self.isdata else 'Htt_mass_corr_Medium_corr']
+        bH_mass   = self.entries['Hbb_mass' if self.isdata else 'Hbb_mass_corr_Medium_corr']
         mcut = bH_mass > 50 and bH_mass < 270 and tauH_mass > 20 and tauH_mass < 130
         mcutinv = bH_mass < 50 or bH_mass > 270 or tauH_mass < 20 or tauH_mass > 130
         opt = ('standard', 'inverted')
@@ -377,11 +436,12 @@ class EventSelection:
         else:
             flag = False
             bits = self.get_trigger_bit(trig)
+            # filterbits = self.get_filter_bit(trig)
             if isinstance(bits, (tuple,list)):
                 for bit in bits:
                     flag = flag or self.check_bit(bit)
             else:
-                flag = self.check_bit(bits)
+                flag = self.check_bit(bits) # and self.check_filterbit(filterbits)
             return flag
 
     def var_cuts(self, trig, variables, nocut_dummy_str):

@@ -56,6 +56,8 @@ sel = {'all'    : {'pairType': ('<',  3),},
 var_eff = (
     # 'met_et', 'mht_et', 'metnomu_et', 'mhtnomu_et',
            'dau1_pt', 'dau2_pt', 'dau1_eta', 
+           'dau1_tauIdVSjet', 'dau2_tauIdVSjet',
+           'bjet1_btagDeepFlavB', 'bjet2_btagDeepFlavB'
         #    'dau2_eta'
            )
 
@@ -88,7 +90,7 @@ filterbit_map = {
 trig_map = {
        '2022': {
             'IsoMu24': {'mc': 0,  'data': 0},
-            'IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1': {'mc': 2, 'data': 2},
+            'IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1': {'mc': 1, 'data': 1},
             "LooseDeepTauPFTauHPS180_L2NN_eta2p1": {'mc': 11, 'data': 11}, 
             "PFMETNoMu120_PFMHTNoMu120_IDTight": {'mc': 12, 'data': 12}, 
        },
@@ -175,7 +177,9 @@ data = {
     "2022":
         {'MET'  : ('MET',),
          'EG'   : ('EGamma',),
-         'Mu'   : ('SingleMuon',),
+         'Mu'   : (
+            #  'SingleMuon',
+               'Muon',),
          'Tau'  : ('Tau',)
          },
     "2018":

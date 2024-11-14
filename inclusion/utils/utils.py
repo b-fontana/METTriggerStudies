@@ -8,6 +8,7 @@ import functools
 import itertools as it
 import numpy as np
 import h5py
+import json
 from types import SimpleNamespace
 
 import inclusion
@@ -94,9 +95,10 @@ def check_inters_correctness(triggers, dchn, dgen, channel, exclusive):
     d = {'dataset1': (tuple1, tuple2,), 'dataset2': (tuple3, tuple4,), ...}
     """
     chn_inters = generate_trigger_combinations(channel, triggers, exclusive)
+    print(chn_inters, dchn, dgen)
     flatten =  [ tuple(sorted(w)) for x in dchn for w in dchn[x] ]
     flatten += [ tuple(sorted(w)) for x in dgen for w in dgen[x] ]
-    
+    print(flatten)
     # type check
     for x in flatten:
         if not isinstance(x, tuple):
@@ -174,18 +176,56 @@ def define_used_tree_variables(cut):
     in the user-provided custom cut.
     Repeated variables are deleted.
     """
-    _entries = ('triggerbit', 'RunNumber', 'HHKin_mass', 'isLeptrigger', 'pairType', 'isOS',
-                'MC_weight', 'IdSF_deep_2d', 'PUReweight', 'L1pref_weight', 'trigSF', 'PUjetID_SF', 'bTagweightReshape',
-                'dau1_eleMVAiso', 'dau1_iso', 'dau2_iso', 'dau1_deepTauVsJet', 'dau2_deepTauVsJet',
-                'nleps', 'nbjetscand', 'tauH_mass', 'bH_mass_raw',
-                'bjet1_bID_deepFlavor', 'bjet2_bID_deepFlavor',
-                'isVBF', 'VBFjj_mass', 'VBFjj_deltaEta',
-                'isTau1real', 'isTau2real')
+    _entries = ('TrigObj_filterBits', 
+                # 'triggerbit', 
+                'TrigObj_id', 'run', 
+                # 'HHKinFit_mass',
+                # 'isTauTauJetTrigger', 
+                'pairType', 
+                'isOS',
+                # 'genWeight', 
+                # 'IdSF_deep_2d', 
+                # 'puWeight', 
+                # 'trigSF', 
+                # 'bTagweightReshape',
+                'genHH_mass',
+                'MET_pt',
+                'HLT_IsoMu24', 'HLT_IsoMu20_eta2p1_LooseDeepTauPFTauHPS27_eta2p1_CrossL1',
+                'HLT_LooseDeepTauPFTauHPS180_L2NN_eta2p1', 'HLT_PFMETNoMu120_PFMHTNoMu120_IDTight',
+                'HLT_Ele30_WPTight_Gsf', 'HLT_Ele24_eta2p1_WPTight_Gsf_LooseDeepTauPFTauHPS30_eta2p1_CrossL1',
+                'HLT_DoubleMediumDeepTauPFTauHPS35_L2NN_eta2p1', 'HLT_DoubleMediumDeepTauPFTauHPS30_L2NN_eta2p1_PFJet60',
+                # "HLT_PFHT280_QuadPFJet30_PNet2BTagMean0p55",
+                'dau1_eleMVAiso', 'dau1_iso', 'dau2_iso', 'dau1_eta', 'dau2_eta', 'dau1_tauIdVSjet', 'dau2_tauIdVSjet',
+                # 'dau1_mass', 'dau2_mass', 'Jet_mass', 
+                'Jet_btagPNetB', 'Jet_btagDeepFlavB', 'Jet_pt', 'Jet_eta', 'bjet1_JetIdx', 'bjet2_JetIdx', 
+                # 'dau1_pt', 'dau2_pt',
+                # 'nleps', 'event', 
+                'isQuadJetTrigger',  
+                # 'bjet1_filterbits', 'bjet2_filterbits', 'tau1_filterbits', 'tau2_filterbits'
+                # 'nbjetscand', 'SoftActivityJetHT',
+                #  'Htt_mass', 'Hbb_mass',
+                # 'bjet1_btagDeepFlavB', 'bjet2_btagDeepFlavB',
+                # 'isVBFtrigger', 
+                # 'VBFjj_mass', 'VBFjj_deltaEta',
+                #'isTau1real', 'isTau2real',
+                )
+    mc_corrections = {
+        # 'dau1_pt': '_corr_Medium',
+        # 'dau2_pt': '_corr_Medium',
+        # 'HHKinFit_mass': '_corr_Medium_corr',
+        # 'Htt_mass': '_corr_Medium_corr',
+        # 'Hbb_mass': '_corr_Medium_corr',
+        # 'VBFjj_mass': '_corr_Medium_corr',
+        # 'VBFjj_deltaEta': '_corr_Medium_corr',
+        # 'HH_svfit_mass': '_corr_Medium_corr'
+        # '_corr_Medium': ('dau1_pt', 'dau2_pt')
+    }
+    
     if cut is not None:
         _regex = tuple(set(re.findall(r'self\.entries\.(.+?)\s', cut)))
     else:
         _regex = ()
-    return tuple(set(_entries + _regex))
+    return tuple(set(_entries + _regex)), mc_corrections
     
 class dot_dict(dict):
     """dot.notation access to dictionary attributes"""
@@ -347,7 +387,7 @@ def get_root_inputs(proc, indir, include_tree=False):
                             mes = '[' + os.path.basename(__file__) + '] '
                             mes += ' The input file does not exist: {}'.format(line)
                             raise ValueError(mes)
-                        filelist.append(line + ':HTauTauTree')
+                        filelist.append(line + ':Events')
                     else:
                         if line[:-1] not in main.corrupted_files:
                             #filelist.append("root://eosuser.cern.ch/" + line)
@@ -391,7 +431,7 @@ def is_trigger_comb_in_channel(chn, tcomb, triggers, exclusive):
     return split in possible_trigs
                                
 def is_nan(num):
-    return num!= num
+    return num!= num or num is None
 
 def join_name_trigger_intersection(tuple_element):
     inters = main.inters_str
@@ -409,16 +449,21 @@ def load_binning(afile, key, variables, channels):
     """
     binedges, nbins = ({} for _ in range(2))
     with h5py.File(afile, 'r') as f:
+        # print(f.keys(), list(f.keys()), key)
+        # x = {}
+        # print(dict(f.items()))
         try:
-            group = f[key]
+            group = dict(f.items())[key]
         except KeyError:
-          missing_key_print(afile, key)
+          missing_key_print(afile, key, f)
           
         for var in variables:
+            print(var)
             try:
-                subgroup = group[var]
+                print(dict(group.items()))
+                subgroup = dict(group.items())[var]
             except KeyError:
-                missing_key_print(afile, key)
+                missing_key_print(afile, key, f)
                 
             binedges[var], nbins[var] = ({} for _ in range(2))
             for chn in channels:
@@ -427,7 +472,7 @@ def load_binning(afile, key, variables, channels):
 
     return binedges, nbins
     
-def missing_key_print(afile, key):
+def missing_key_print(afile, key, f):
     print('{} does not have key {}.'.format(afile, key))
     print('Available keys: {}'.format(f.keys()))
     raise
@@ -512,6 +557,8 @@ def get_lumi(year):
         return 16800
     elif year == "2016APV":
         return 19500
+    elif year == "2022":
+        return 38010
     else:
         raise ValueError("Year {} not supported.".format(year))
     
@@ -525,6 +572,8 @@ def get_ptcuts(channel, year):
             ptcuts = (26,)
         elif year == "2017" or year == "2018":
             ptcuts = (33, 25, 35)
+        elif year == "2022":
+            ptcuts = (33, 25, 35)
 
     elif channel == "mutau":
         if "2016" in year:
@@ -532,6 +581,8 @@ def get_ptcuts(channel, year):
         elif year == "2017":
             ptcuts = (28, 21, 32)
         elif year == "2018":
+            ptcuts = (25, 21, 32)
+        elif year == "2022":
             ptcuts = (25, 21, 32)
 
     elif channel == "tautau":
@@ -598,8 +649,14 @@ def total_sum_weights(f, isdata):
         xsec_norm = 0.
         with open(search_str, 'r') as afile:
             for elem in afile:
-                ftmp = ROOT.TFile(elem.replace('\n', ''), "READ")
-                xsec_norm += ftmp.Get('h_eff').GetBinContent(1)     
+                if '.json' in elem:
+                    ftmp = json.load(open(elem.replace('\n', '')))
+                    xsec_norm += float(ftmp['nweightedevents'])
+                else: 
+                    ftmp = ROOT.TFile(elem.replace('\n', ''), "READ")
+                    # Find a way to connect PreCounter with this
+                    xsec_norm += ftmp.Get('h_eff').GetBinContent(1)     
+                    # xsec_norm += 1.
         return xsec_norm
     return None
 
