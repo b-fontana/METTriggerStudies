@@ -39,6 +39,7 @@ def get_outname(channel):
     utils.create_single_dir('data')
     
     name = ""
+    name += str(channel)
     name += '.root'
 
     s = 'data/regions_{}'.format(name)
